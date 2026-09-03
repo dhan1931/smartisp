@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechStore - Inicio Rápido</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #003366 0%, #00A8E8 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 51, 102, 0.2);
+            max-width: 600px;
+            padding: 3rem;
+            text-align: center;
+        }
+        h1 {
+            color: #003366;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .tagline {
+            color: #00A8E8;
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+        .status {
+            background: #F5F5F5;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+            border-left: 4px solid #00A8E8;
+        }
+        .status h3 {
+            color: #003366;
+            margin-bottom: 1rem;
+        }
+        .file-list {
+            text-align: left;
+            display: inline-block;
+            margin: 1rem 0;
+        }
+        .file-item {
+            padding: 0.5rem;
+            color: #333;
+            font-family: 'Courier New', monospace;
+            background: white;
+            margin: 0.5rem 0;
+            border-radius: 4px;
+            border-left: 3px solid #00A8E8;
+            padding-left: 1rem;
+        }
+        .file-item strong {
+            color: #003366;
+        }
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary {
+            background: #00A8E8;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0089B8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 168, 232, 0.3);
+        }
+        .btn-secondary {
+            background: #003366;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #00254D;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 51, 102, 0.3);
+        }
+        .instructions {
+            text-align: left;
+            background: #F5F5F5;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+        .instructions h4 {
+            color: #003366;
+            margin-bottom: 1rem;
+        }
+        .instructions ol {
+            margin-left: 1.5rem;
+            color: #333;
+            line-height: 1.8;
+        }
+        .instructions li {
+            margin-bottom: 0.75rem;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        .feature-card {
+            background: #F5F5F5;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        .feature-card h5 {
+            color: #003366;
+            margin-bottom: 0.5rem;
+        }
+        .feature-card p {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        .footer {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 2px solid #E0E0E0;
+            font-size: 0.9rem;
+            color: #999;
+        }
+        code {
+            background: #f0f0f0;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #003366;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛍️ TechStore</h1>
+        <p class="tagline">Electrónica & Infraestructura TI</p>
+
+        <div class="status">
+            <h3>✅ Proyecto Creado Exitosamente</h3>
+            <p>Tu tienda de electrónica está lista para ser usada. Todos los archivos han sido generados correctamente.</p>
+        </div>
+
+        <div class="instructions">
+            <h4>📂 Archivos Creados:</h4>
+            <div class="file-list">
+                <div class="file-item">📄 <strong>index.html</strong> - Estructura de la tienda</div>
+                <div class="file-item">🎨 <strong>styles.css</strong> - Estilos y diseño</div>
+                <div class="file-item">⚙️ <strong>app.js</strong> - Lógica de la aplicación</div>
+                <div class="file-item">📖 <strong>README.md</strong> - Documentación completa</div>
+            </div>
+        </div>
+
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h5>Interfaz Moderna</h5>
+                <p>Diseño limpio con colores azul, blanco y celeste</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔍</div>
+                <h5>Búsqueda Avanzada</h5>
+                <p>Filtros por categoría, marca y precio</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h5>Responsive</h5>
+                <p>Funciona en desktop, tablet y móvil</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🛒</div>
+                <h5>Carrito Completo</h5>
+                <p>Gestión de productos y carrito integrada</p>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h4>🚀 Cómo Abrir tu Tienda:</h4>
+            <ol>
+                <li>
+                    <strong>Opción 1 (Más Fácil):</strong><br>
+                    Haz doble clic en <code>index.html</code> o arrastralo a tu navegador web
+                </li>
+                <li>
+                    <strong>Opción 2 (Recomendado):</strong><br>
+                    Si instalaste Live Server en VS Code: click derecho en <code>index.html</code> → "Open with Live Server"
+                </li>
+                <li>
+                    <strong>Opción 3 (Con servidor local):</strong><br>
+                    En terminal: <code>python -m http.server 8000</code><br>
+                    Luego abre: <code>http://localhost:8000</code>
+                </li>
+            </ol>
+        </div>
+
+        <div class="button-group">
+            <a href="index.html" class="btn btn-primary">🚀 Ir a la Tienda</a>
+            <a href="README.md" class="btn btn-secondary">📖 Ver Documentación</a>
+        </div>
+
+        <div class="instructions">
+            <h4>✨ Características Principales:</h4>
+            <ul style="text-align: left; margin-left: 1.5rem; color: #333; line-height: 1.8;">
+                <li>✅ 24 productos de electrónica e infraestructura TI</li>
+                <li>✅ Sistema completo de filtros (categoría, marca, precio)</li>
+                <li>✅ Búsqueda en tiempo real</li>
+                <li>✅ Carrito de compras funcional</li>
+                <li>✅ Ordenamiento por múltiples criterios</li>
+                <li>✅ Resumen de compra con totales</li>
+                <li>✅ Diseño responsive (mobile-first)</li>
+                <li>✅ Sin dependencias externas</li>
+            </ul>
+        </div>
+
+        <div class="instructions">
+            <h4>📦 Categorías Disponibles:</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; text-align: left; margin-left: 0.5rem;">
+                <div>💻 Laptops</div>
+                <div>⚙️ Componentes</div>
+                <div>🌐 Networking</div>
+                <div>💾 Almacenamiento</div>
+                <div>🖥️ Servidores</div>
+                <div>🖱️ Periféricos</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Versión 1.0.0 • Última actualización: 2026-08-18</p>
+            <p>Colores: Azul (#003366) • Celeste (#00A8E8) • Blanco (#FFFFFF)</p>
+        </div>
+    </div>
+</body>
+</html>
