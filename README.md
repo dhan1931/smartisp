@@ -166,6 +166,18 @@ Esta es una demostración/prototipo de frontend. Para una tienda real:
 - Integrar pasarela de pagos real
 - Proteger datos sensibles
 
+## 🗄️ Persistencia de Usuarios
+
+El backend usa PostgreSQL cuando existe la variable `DATABASE_URL`. Al iniciar crea automáticamente la tabla `users` y guarda los registros de forma permanente. Copia `.env.example` como `.env` y completa una conexión de PostgreSQL, por ejemplo de Neon o Supabase:
+
+```env
+DATABASE_URL=postgresql://usuario:contraseña@host:5432/base_de_datos
+SESSION_SECRET=una-clave-segura
+NODE_ENV=production
+```
+
+En Vercel, configura estas variables en **Project Settings → Environment Variables**. No subas `.env` a GitHub. Sin `DATABASE_URL`, el proyecto usa memoria temporal únicamente para desarrollo local.
+
 ## 📝 Próximas Mejoras Posibles
 
 - [ ] Backend con base de datos
