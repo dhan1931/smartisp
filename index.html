@@ -122,7 +122,8 @@
 		.form-options { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 12px; margin: 10px 0 20px; }
 		.form-options a { color: var(--blue); }
 		.account-submit { width: 100%; justify-content: center; }
-		.form-message { color: #11815d; background: #e5faf1; padding: 11px; font-size: 12px; margin-top: 14px; display: none; }
+		.form-message { color: #11815d; background: #e5faf1; border: 1px solid #b9ead7; border-radius: 6px; padding: 11px; font-size: 12px; margin-top: 14px; display: none; }
+		.form-message.error { color: #a53b3b; background: #fff0f0; border-color: #f1c5c5; }
 		.form-message.show { display: block; }
 		.drawer { position: fixed; inset: 0; background: rgba(16,42,67,.35); z-index: 10; visibility: hidden; opacity: 0; transition: .2s; }
 		.drawer.open { visibility: visible; opacity: 1; }
@@ -197,7 +198,7 @@
 	<header class="nav">
 		<a class="logo" href="#">smart<b>isp</b><span style="color:#f5a524">.</span></a>
 		<form class="search" id="searchForm"><input id="searchInput" type="search" placeholder="¿Qué estás buscando hoy?" aria-label="Buscar productos"><button aria-label="Buscar"><i data-lucide="search" width="18"></i></button></form>
-		<div class="nav-actions"><button class="nav-action" id="openAccount"><i data-lucide="user-round" width="18"></i><span>Mi cuenta</span></button><button class="nav-action cart-button" id="openCart"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="cart-count" id="cartCount">0</b></button></div>
+		<div class="nav-actions"><button class="nav-action" id="openAccount"><i data-lucide="user-round" width="18"></i><span id="accountLabel">Mi cuenta</span></button><button class="nav-action cart-button" id="openCart"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="cart-count" id="cartCount">0</b></button></div>
 	</header>
 	<nav class="category-nav" aria-label="Categorías del catálogo"><a href="#catalogo">Todo</a><a href="#catalogo" data-filter="Notebooks">Notebooks</a><a href="#catalogo" data-filter="Redes">Redes</a><a href="#catalogo" data-filter="Servidores">Servidores</a><a href="#catalogo" data-filter="Accesorios">Accesorios</a><a href="#catalogo" data-filter="Monitores">Monitores</a></nav>
 	<main>
@@ -236,6 +237,8 @@
 	</script>
 	<script>
 		const showAccountView = view => { document.querySelector('#loginView').hidden = view !== 'login'; document.querySelector('#registerView').hidden = view !== 'register'; };
+		const setSignedInUser = user => { signedIn = true; document.querySelector('#accountLabel').textContent = user.name; document.querySelector('#profileEmail').textContent = user.email; document.querySelector('#profileView h2').textContent = `Hola, ${user.name}`; };
+		const showFormMessage = (element, text, isError = false) => { element.textContent = text; element.classList.toggle('error', isError); element.classList.add('show'); };
 		document.querySelector('#openAccount').addEventListener('click', () => { if (!signedIn) showAccountView('login'); });
 		document.querySelector('#showRegister').addEventListener('click', () => showAccountView('register'));
 		document.querySelector('#showLogin').addEventListener('click', () => showAccountView('login'));
@@ -251,14 +254,35 @@
 				const response = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password }) });
 				const result = await response.json();
 				if (!response.ok) throw new Error(result.error);
-				signedIn = true;
-				document.querySelector('#profileEmail').textContent = result.user.email;
+				setSignedInUser(result.user);
 				document.querySelector('#profileView h2').textContent = `Hola, ${result.user.name}`;
 				document.querySelector('#profileView').hidden = false;
 				document.querySelector('#registerView').hidden = true;
-				message.classList.remove('show');
+				showFormMessage(message, 'Cuenta creada correctamente. Bienvenido a SmartISP.');
 				lucide.createIcons();
-			} catch (error) { message.textContent = error.message || 'No se pudo crear la cuenta.'; message.classList.add('show'); }
+			} catch (error) { showFormMessage(message, error.message || 'No se pudo crear la cuenta.', true); }
+		});
+	</script>
+	<script>
+		document.querySelector('#accountForm').addEventListener('submit', async event => {
+			event.preventDefault();
+			event.stopImmediatePropagation();
+			const message = document.querySelector('#formMessage');
+			try {
+				const response = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.querySelector('#emailInput').value.trim().toLowerCase(), password: document.querySelector('#passwordInput').value }) });
+				const result = await response.json();
+				if (!response.ok) throw new Error(result.error);
+				setSignedInUser(result.user);
+				document.querySelector('#loginView').hidden = true;
+				document.querySelector('#profileView').hidden = false;
+				showFormMessage(message, 'Inicio de sesión correcto. Bienvenido a SmartISP.');
+				lucide.createIcons();
+			} catch (error) {
+				showFormMessage(message, error.message || 'No se pudo conectar con el servidor.', true);
+			}
+		}, true);
+		document.querySelector('#logoutButton').addEventListener('click', () => {
+			document.querySelector('#accountLabel').textContent = 'Mi cuenta';
 		});
 	</script>
 </body>
