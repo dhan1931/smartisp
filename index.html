@@ -191,6 +191,26 @@
 		.account-switch { width: 100%; border: 0; background: transparent; color: var(--muted); padding: 17px 4px 2px; font-size: 12px; }
 		.account-switch strong { color: var(--blue); }
 		.account-switch:hover strong { text-decoration: underline; }
+		#accountModal .modal-panel { overflow: hidden; padding: 0; background: linear-gradient(145deg, #ffffff 0%, #f4fbfa 100%); }
+		#accountModal .modal-close { top: 20px; right: 20px; width: 36px; height: 36px; background: rgba(255,255,255,.82); box-shadow: 0 8px 20px rgba(16,44,61,.1); transition: transform .25s ease, background .25s ease; }
+		#accountModal .modal-close:hover { background: white; transform: rotate(90deg); }
+		#loginView, #registerView, #profileView { padding: 42px 38px 34px; animation: accountReveal .45s cubic-bezier(.2,.8,.2,1) both; }
+		#loginView::before, #registerView::before, #profileView::before { content: ''; display: block; width: 54px; height: 4px; margin-bottom: 28px; border-radius: 99px; background: linear-gradient(90deg, var(--blue), #62c8bd); }
+		#accountModal .form-field input { border-radius: 7px; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+		#accountModal .form-field input:focus { transform: translateY(-1px); }
+		.account-submit { min-height: 46px; transition: transform .2s ease, box-shadow .2s ease, background .2s ease; }
+		.account-submit.is-loading { pointer-events: none; opacity: .75; }
+		.account-submit.is-loading i { animation: accountSpin .8s linear infinite; }
+		.profile-card { position: relative; overflow: hidden; margin-top: 24px; padding: 22px; border: 1px solid #cfe8e2; border-radius: 12px; background: rgba(255,255,255,.78); box-shadow: 0 12px 28px rgba(16,44,61,.08); }
+		.profile-card::after { content: ''; position: absolute; width: 110px; height: 110px; right: -42px; top: -48px; border-radius: 50%; background: #d9f2eb; }
+		.profile-avatar { position: relative; z-index: 1; display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 15px; border-radius: 50%; color: white; background: linear-gradient(135deg, var(--blue), #55bcae); font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 700; }
+		.profile-card h2 { position: relative; z-index: 1; margin: 0 0 5px; }
+		.profile-email { position: relative; z-index: 1; color: var(--muted); font-size: 13px; }
+		.logout-button { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 20px; padding: 12px; border: 1px solid #edcaca; border-radius: 7px; color: #a53b3b; background: #fff8f8; font-weight: 700; cursor: pointer; transition: background .2s ease, transform .2s ease, border-color .2s ease; }
+		.logout-button:hover { border-color: #d99696; background: #fff0f0; transform: translateY(-1px); }
+		@keyframes accountReveal { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+		@keyframes accountSpin { to { transform: rotate(360deg); } }
+		@media (max-width: 430px) { #loginView, #registerView, #profileView { padding: 34px 24px 26px; } }
 	</style>
 </head>
 <body>
@@ -283,6 +303,56 @@
 		}, true);
 		document.querySelector('#logoutButton').addEventListener('click', () => {
 			document.querySelector('#accountLabel').textContent = 'Mi cuenta';
+		});
+	</script>
+	<script>
+		const accountModal = document.querySelector('#accountModal');
+		const accountLabel = document.querySelector('#accountLabel');
+		const loginView = document.querySelector('#loginView');
+		const registerView = document.querySelector('#registerView');
+		const profileView = document.querySelector('#profileView');
+		const accountForm = document.querySelector('#accountForm');
+		const logoutButton = document.querySelector('#logoutButton');
+
+		const resetAccountState = () => {
+			signedIn = false;
+			accountLabel.textContent = 'Mi cuenta';
+			loginView.hidden = false;
+			registerView.hidden = true;
+			profileView.hidden = true;
+			accountForm.reset();
+			document.querySelector('#formMessage').classList.remove('show');
+			document.querySelector('#registerMessage').classList.remove('show');
+		};
+
+		const prepareAccountProfile = () => {
+			profileView.classList.add('profile-card');
+			if (!profileView.querySelector('.profile-avatar')) {
+				const avatar = document.createElement('div');
+				avatar.className = 'profile-avatar';
+				avatar.innerHTML = '<i data-lucide="user-round" width="21"></i>';
+				profileView.prepend(avatar);
+			}
+			lucide.createIcons();
+		};
+
+		logoutButton.addEventListener('click', async () => {
+			logoutButton.disabled = true;
+			logoutButton.classList.add('is-loading');
+			const icon = logoutButton.querySelector('i');
+			if (icon) icon.setAttribute('data-lucide', 'loader-circle');
+			lucide.createIcons();
+			try { await fetch('/api/auth/logout', { method: 'POST' }); } catch (error) { console.warn('Sesión local cerrada.'); }
+			resetAccountState();
+			logoutButton.disabled = false;
+			logoutButton.classList.remove('is-loading');
+			accountModal.classList.remove('open');
+			lucide.createIcons();
+		});
+
+		profileView.addEventListener('animationstart', prepareAccountProfile, { once: true });
+		accountModal.addEventListener('click', event => {
+			if (event.target === accountModal && signedIn) prepareAccountProfile();
 		});
 	</script>
 </body>
