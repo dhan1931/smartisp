@@ -26,17 +26,27 @@ const ensureDatabase = async () => {
       name TEXT NOT NULL,
       surname TEXT NOT NULL,
       phone TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'customer',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )`);
+    );
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'customer';`)
+      .then(async result => {
+        if (process.env.ADMIN_EMAIL) {
+          await getPool().query("UPDATE users SET role = 'admin' WHERE email = $1", [process.env.ADMIN_EMAIL.trim().toLowerCase()]);
+        }
+        return result;
+      });
   }
   await databaseReady;
 };
 
 const publicUser = user => ({
+  id: user.id,
   email: user.email,
   name: user.name,
   surname: user.surname || '',
-  phone: user.phone || ''
+  phone: user.phone || '',
+  role: user.role || 'customer'
 });
 
 const signSession = userId => {
@@ -74,6 +84,26 @@ const clearSessionCookie = res => {
 
 const bodyOf = req => typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
 
+const getAuthenticatedUser = async (req, database) => {
+  const userId = getSessionUserId(req);
+  if (!userId) return null;
+  const result = await database.query('SELECT id, email, name, surname, phone, role FROM users WHERE id = $1 LIMIT 1', [userId]);
+  return result.rows[0] || null;
+};
+
+const requireAdmin = async (req, res, database) => {
+  const user = await getAuthenticatedUser(req, database);
+  if (!user) {
+    res.status(401).json({ error: 'Debes iniciar sesión.' });
+    return null;
+  }
+  if (user.role !== 'admin') {
+    res.status(403).json({ error: 'No tienes permisos de administrador.' });
+    return null;
+  }
+  return user;
+};
+
 export default async function handler(req, res) {
   const action = req.query?.action || req.url?.split('?')[0].split('/').filter(Boolean).pop();
   try {
@@ -84,7 +114,7 @@ export default async function handler(req, res) {
       const body = bodyOf(req);
       const email = String(body.email || '').trim().toLowerCase();
       const password = String(body.password || '');
-      const result = await database.query('SELECT id, email, password_hash AS "passwordHash", name, surname, phone FROM users WHERE email = $1 LIMIT 1', [email]);
+      const result = await database.query('SELECT id, email, password_hash AS "passwordHash", name, surname, phone, role FROM users WHERE email = $1 LIMIT 1', [email]);
       const user = result.rows[0];
       if (!user || !(await bcrypt.compare(password, user.passwordHash))) return res.status(401).json({ error: 'Correo o contraseña incorrectos.' });
       setSessionCookie(res, signSession(user.id));
@@ -104,7 +134,9 @@ export default async function handler(req, res) {
       const existing = await database.query('SELECT id FROM users WHERE email = $1 LIMIT 1', [email]);
       if (existing.rowCount) return res.status(409).json({ error: 'Ya existe una cuenta con ese correo.' });
       const user = { id: crypto.randomUUID(), email, name, surname, phone, passwordHash: await bcrypt.hash(password, 12) };
-      await database.query('INSERT INTO users (id, email, password_hash, name, surname, phone) VALUES ($1, $2, $3, $4, $5, $6)', [user.id, user.email, user.passwordHash, user.name, user.surname, user.phone]);
+      const role = process.env.ADMIN_EMAIL?.trim().toLowerCase() === email ? 'admin' : 'customer';
+      user.role = role;
+      await database.query('INSERT INTO users (id, email, password_hash, name, surname, phone, role) VALUES ($1, $2, $3, $4, $5, $6, $7)', [user.id, user.email, user.passwordHash, user.name, user.surname, user.phone, user.role]);
       setSessionCookie(res, signSession(user.id));
       return res.status(201).json({ user: publicUser(user) });
     }
@@ -112,9 +144,84 @@ export default async function handler(req, res) {
     if (action === 'me' && req.method === 'GET') {
       const userId = getSessionUserId(req);
       if (!userId) return res.status(401).json({ error: 'No hay una sesión activa.' });
-      const result = await database.query('SELECT email, name, surname, phone FROM users WHERE id = $1 LIMIT 1', [userId]);
+      const result = await database.query('SELECT id, email, name, surname, phone, role FROM users WHERE id = $1 LIMIT 1', [userId]);
       if (!result.rows[0]) return res.status(401).json({ error: 'No hay una sesión activa.' });
       return res.status(200).json({ user: publicUser(result.rows[0]) });
+    }
+
+    if (action === 'admin-products' && (req.method === 'GET' || req.method === 'POST' || req.method === 'DELETE')) {
+      if (!await requireAdmin(req, res, database)) return;
+      await database.query(`CREATE TABLE IF NOT EXISTS products (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        price NUMERIC(12, 2) NOT NULL DEFAULT 0,
+        category TEXT NOT NULL DEFAULT '',
+        image_url TEXT NOT NULL DEFAULT '',
+        visible BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )`);
+      if (req.method === 'GET') {
+        const result = await database.query('SELECT id, name, description, price, category, image_url AS "imageUrl", visible FROM products ORDER BY created_at DESC');
+        return res.status(200).json({ products: result.rows });
+      }
+      if (req.method === 'DELETE') {
+        const id = String(req.query?.id || '');
+        await database.query('DELETE FROM products WHERE id = $1', [id]);
+        return res.status(200).json({ ok: true });
+      }
+      const product = bodyOf(req);
+      const id = String(product.id || crypto.randomUUID());
+      await database.query(`INSERT INTO products (id, name, description, price, category, image_url, visible, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+        ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description, price = EXCLUDED.price,
+        category = EXCLUDED.category, image_url = EXCLUDED.image_url, visible = EXCLUDED.visible, updated_at = NOW()`,
+        [id, String(product.name || '').trim(), String(product.description || '').trim(), Number(product.price || 0), String(product.category || '').trim(), String(product.imageUrl || '').trim(), product.visible !== false]);
+      return res.status(200).json({ ok: true, id });
+    }
+
+    if (action === 'admin-content' && (req.method === 'GET' || req.method === 'POST')) {
+      if (!await requireAdmin(req, res, database)) return;
+      await database.query(`CREATE TABLE IF NOT EXISTS site_content (
+        content_key TEXT PRIMARY KEY,
+        content_value TEXT NOT NULL DEFAULT '',
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )`);
+      if (req.method === 'GET') {
+        const result = await database.query('SELECT content_key AS "key", content_value AS value FROM site_content ORDER BY content_key');
+        return res.status(200).json({ content: result.rows });
+      }
+      const content = bodyOf(req);
+      for (const [key, value] of Object.entries(content)) {
+        await database.query(`INSERT INTO site_content (content_key, content_value, updated_at) VALUES ($1, $2, NOW())
+          ON CONFLICT (content_key) DO UPDATE SET content_value = EXCLUDED.content_value, updated_at = NOW()`, [String(key), String(value ?? '')]);
+      }
+      return res.status(200).json({ ok: true });
+    }
+
+    if (action === 'catalog' && req.method === 'GET') {
+      await database.query(`CREATE TABLE IF NOT EXISTS products (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        price NUMERIC(12, 2) NOT NULL DEFAULT 0,
+        category TEXT NOT NULL DEFAULT '',
+        image_url TEXT NOT NULL DEFAULT '',
+        visible BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )`);
+      await database.query(`CREATE TABLE IF NOT EXISTS site_content (
+        content_key TEXT PRIMARY KEY,
+        content_value TEXT NOT NULL DEFAULT '',
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )`);
+      const [products, content] = await Promise.all([
+        database.query('SELECT id, name, description, price, category, image_url AS "imageUrl" FROM products WHERE visible = TRUE ORDER BY created_at DESC'),
+        database.query('SELECT content_key AS "key", content_value AS value FROM site_content')
+      ]);
+      return res.status(200).json({ products: products.rows, content: content.rows });
     }
 
     if (action === 'logout' && req.method === 'POST') {
