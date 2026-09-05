@@ -6,10 +6,12 @@ let pool;
 let databaseReady;
 
 const getPool = () => {
-  const connectionString = process.env.DATABASE_URL || process.env.DATABASE_POSTGRES_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL;
-  if (!connectionString) throw new Error('No hay una URL de PostgreSQL configurada en Vercel.');
+  const configuredUrl = process.env.DATABASE_URL || process.env.DATABASE_POSTGRES_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL;
+  if (!configuredUrl) throw new Error('No hay una URL de PostgreSQL configurada en Vercel.');
+  const connectionUrl = new URL(configuredUrl);
+  connectionUrl.searchParams.delete('sslmode');
   pool ||= new Pool({
-    connectionString,
+    connectionString: connectionUrl.toString(),
     ssl: { rejectUnauthorized: false }
   });
   return pool;
