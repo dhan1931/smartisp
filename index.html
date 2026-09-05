@@ -42,6 +42,9 @@
 		.search button { background: var(--blue); border: 0; color: var(--white); width: 48px; display: grid; place-items: center; }
 		.nav-actions { margin-left: auto; display: flex; gap: 18px; align-items: center; }
 		.nav-action { border: 0; background: transparent; color: var(--navy); display: flex; align-items: center; gap: 7px; font-weight: 600; padding: 4px; }
+		.admin-nav-link { display: none; color: #087ea4; border: 1px solid #a9d8d0; background: #eaf7f5; padding: 8px 11px; border-radius: 7px; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; }
+		.admin-nav-link.is-visible { display: inline-flex; }
+		.admin-nav-link:hover { background: #d7f0e8; }
 		.cart-button { position: relative; }
 		.cart-count { background: var(--orange); border-radius: 50%; color: #172b3a; font-size: 10px; min-width: 17px; height: 17px; display: grid; place-items: center; position: absolute; top: -7px; left: 17px; }
 		.cart-count.bump { animation: cartBump .45s ease; }
@@ -268,7 +271,7 @@
 	<header class="nav">
 		<a class="logo" href="#">smart<b>isp</b><span style="color:#f5a524">.</span></a>
 		<form class="search" id="searchForm"><input id="searchInput" type="search" placeholder="¿Qué estás buscando hoy?" aria-label="Buscar productos"><button aria-label="Buscar"><i data-lucide="search" width="18"></i></button></form>
-		<div class="nav-actions"><button class="nav-action" id="openAccount"><i data-lucide="user-round" width="18"></i><span id="accountLabel">Mi cuenta</span></button><button class="nav-action cart-button" id="openCart"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="cart-count" id="cartCount">0</b></button></div>
+		<div class="nav-actions"><button class="nav-action" id="openAccount"><i data-lucide="user-round" width="18"></i><span id="accountLabel">Mi cuenta</span></button><a class="admin-nav-link" id="adminNavLink" href="/admin.html"><i data-lucide="layout-dashboard" width="16"></i><span>Panel admin</span></a><button class="nav-action cart-button" id="openCart"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="cart-count" id="cartCount">0</b></button></div>
 	</header>
 	<nav class="category-nav" aria-label="Categorías del catálogo"><a href="#catalogo">Todo</a><a href="#catalogo" data-filter="Notebooks">Notebooks</a><a href="#catalogo" data-filter="Redes">Redes</a><a href="#catalogo" data-filter="Servidores">Servidores</a><a href="#catalogo" data-filter="Accesorios">Accesorios</a><a href="#catalogo" data-filter="Monitores">Monitores</a></nav>
 	<main>
@@ -425,8 +428,10 @@
 		const renderAccountProfile = () => { const user = accountState.user; accountSystem.querySelector('[data-profile-name]').textContent = `${user.name} ${user.surname || ''}`.trim(); accountSystem.querySelector('[data-profile-email]').textContent = `${user.email} · ${user.phone || 'Sin teléfono'}`; accountSystem.querySelectorAll('[data-edit]').forEach(input => { input.value = user[input.dataset.edit] || ''; }); const photo = accountSystem.querySelector('[data-profile-photo]'); photo.innerHTML = accountState.photo ? `<img src="${accountState.photo}" alt="Foto de perfil">` : '<i data-lucide="user-round" width="23"></i>'; accountSystem.querySelector('[data-theme-select]').value = accountState.theme; accountSystem.querySelector('[data-compact-toggle]').checked = accountState.compact; lucide.createIcons(); };
 		const openAccountSystem = () => { accountSystem.classList.add('is-open'); accountSystem.querySelector('[data-account-tab="login"]').focus(); };
 		const closeAccountSystem = () => accountSystem.classList.remove('is-open');
-		const setAccountUser = user => { accountState.user = user; signedIn = true; document.querySelector('#accountLabel').textContent = user.name; accountAuthView.hidden = true; accountProfileView.hidden = false; renderAccountProfile(); };
-		const resetAccountUser = () => { accountState.user = null; signedIn = false; document.querySelector('#accountLabel').textContent = 'Mi cuenta'; accountAuthView.hidden = false; accountProfileView.hidden = true; accountSystem.querySelectorAll('form').forEach(form => form.reset()); accountSystem.querySelectorAll('[data-account-message]').forEach(message => message.classList.remove('show')); showAccountTab('login'); };
+		const adminNavLink = document.querySelector('#adminNavLink');
+		const updateAdminAccess = user => { adminNavLink.classList.toggle('is-visible', user?.role === 'admin'); };
+		const setAccountUser = user => { accountState.user = user; signedIn = true; document.querySelector('#accountLabel').textContent = user.name; updateAdminAccess(user); accountAuthView.hidden = true; accountProfileView.hidden = false; renderAccountProfile(); };
+		const resetAccountUser = () => { accountState.user = null; signedIn = false; updateAdminAccess(null); document.querySelector('#accountLabel').textContent = 'Mi cuenta'; accountAuthView.hidden = false; accountProfileView.hidden = true; accountSystem.querySelectorAll('form').forEach(form => form.reset()); accountSystem.querySelectorAll('[data-account-message]').forEach(message => message.classList.remove('show')); showAccountTab('login'); };
 		const accountTrigger = document.querySelector('#openAccount');
 		const cleanAccountTrigger = accountTrigger.cloneNode(true);
 		accountTrigger.replaceWith(cleanAccountTrigger);
