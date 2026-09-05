@@ -6,9 +6,10 @@ let pool;
 let databaseReady;
 
 const getPool = () => {
-  if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL no está configurada en Vercel.');
+  const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL;
+  if (!connectionString) throw new Error('No hay una URL de PostgreSQL configurada en Vercel.');
   pool ||= new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString,
     ssl: { rejectUnauthorized: false }
   });
   return pool;
