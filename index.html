@@ -430,8 +430,8 @@
 		const closeAccountSystem = () => accountSystem.classList.remove('is-open');
 		const adminNavLink = document.querySelector('#adminNavLink');
 		const updateAdminAccess = user => { adminNavLink.classList.toggle('is-visible', user?.role === 'admin'); };
-		const setAccountUser = user => { accountState.user = user; signedIn = true; document.querySelector('#accountLabel').textContent = user.name; updateAdminAccess(user); accountAuthView.hidden = true; accountProfileView.hidden = false; renderAccountProfile(); };
-		const resetAccountUser = () => { accountState.user = null; signedIn = false; updateAdminAccess(null); document.querySelector('#accountLabel').textContent = 'Mi cuenta'; accountAuthView.hidden = false; accountProfileView.hidden = true; accountSystem.querySelectorAll('form').forEach(form => form.reset()); accountSystem.querySelectorAll('[data-account-message]').forEach(message => message.classList.remove('show')); showAccountTab('login'); };
+		const setAccountUser = user => { accountState.user = user; localStorage.setItem('smartisp.accountUser', JSON.stringify(user)); signedIn = true; document.querySelector('#accountLabel').textContent = user.name; updateAdminAccess(user); accountAuthView.hidden = true; accountProfileView.hidden = false; renderAccountProfile(); };
+		const resetAccountUser = () => { accountState.user = null; localStorage.removeItem('smartisp.accountUser'); signedIn = false; updateAdminAccess(null); document.querySelector('#accountLabel').textContent = 'Mi cuenta'; accountAuthView.hidden = false; accountProfileView.hidden = true; accountSystem.querySelectorAll('form').forEach(form => form.reset()); accountSystem.querySelectorAll('[data-account-message]').forEach(message => message.classList.remove('show')); showAccountTab('login'); };
 		const accountTrigger = document.querySelector('#openAccount');
 		const cleanAccountTrigger = accountTrigger.cloneNode(true);
 		accountTrigger.replaceWith(cleanAccountTrigger);
