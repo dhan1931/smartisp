@@ -13,6 +13,7 @@ const port = process.env.PORT || 3000;
 const users = new Map();
 const wishlists = new Map();
 const orders = new Map();
+const passwordResets = new Map();
 const pool = process.env.DATABASE_URL ? new Pool({ connectionString: process.env.DATABASE_URL, ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined }) : null;
 
 const demoPasswordHash = await bcrypt.hash('pepe1234', 12);
@@ -38,6 +39,7 @@ const findUserById = async id => {
   const result = await pool.query('SELECT id, email, password_hash AS "passwordHash", name, surname, phone FROM users WHERE id = $1 LIMIT 1', [id]);
   return result.rows[0];
 };
+const sendResetEmail = async (email, resetUrl) => { if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) throw new Error('El servicio de correo no está configurado.'); const response = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: process.env.EMAIL_FROM, to: [email], subject: 'Restablece tu contraseña de SmartISP', html: `<p>Recibimos una solicitud para cambiar tu contraseña.</p><p><a href="${resetUrl}">Cambiar contraseña</a></p><p>Este enlace caduca en 1 hora y solo puede utilizarse una vez.</p>` }) }); if (!response.ok) throw new Error('No se pudo enviar el correo de recuperación.'); };
 const initializeDatabase = async () => {
   if (!pool) return;
   await pool.query(`CREATE TABLE IF NOT EXISTS users (
@@ -121,6 +123,33 @@ app.post('/api/auth/change-password', async (req, res) => {
   if (!(await bcrypt.compare(currentPassword, user.passwordHash))) return res.status(401).json({ error: 'La contraseña actual no es correcta.' });
   user.passwordHash = await bcrypt.hash(newPassword, 12);
   if (pool) await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [user.passwordHash, user.id]);
+  return res.json({ ok: true });
+});
+
+app.post('/api/auth/request-password-reset', async (req, res) => {
+  const email = String(req.body.email || '').trim().toLowerCase();
+  const user = await findUserByEmail(email);
+  if (!user) return res.json({ ok: true });
+  const token = crypto.randomBytes(32).toString('hex');
+  passwordResets.set(token, { userId: user.id, expiresAt: Date.now() + 60 * 60 * 1000 });
+  const baseUrl = String(process.env.APP_URL || `http://localhost:${port}`).replace(/\/$/, '');
+  try { await sendResetEmail(user.email, `${baseUrl}/reset-password.html?token=${encodeURIComponent(token)}`); } catch (error) { passwordResets.delete(token); return res.status(500).json({ error: error.message }); }
+  return res.json({ ok: true });
+});
+
+app.post('/api/auth/reset-password', async (req, res) => {
+  const token = String(req.body.token || '');
+  const reset = passwordResets.get(token);
+  const password = String(req.body.password || '');
+  const confirmation = String(req.body.confirmation || '');
+  if (password.length < 8) return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres.' });
+  if (password !== confirmation) return res.status(400).json({ error: 'Las contraseñas no coinciden.' });
+  if (!reset || reset.expiresAt < Date.now()) return res.status(400).json({ error: 'El enlace no es válido o ya expiró.' });
+  const user = await findUserById(reset.userId);
+  if (!user) return res.status(400).json({ error: 'El enlace no es válido.' });
+  user.passwordHash = await bcrypt.hash(password, 12);
+  if (pool) await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [user.passwordHash, user.id]);
+  passwordResets.delete(token);
   return res.json({ ok: true });
 });
 

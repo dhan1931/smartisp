@@ -85,6 +85,9 @@ const clearSessionCookie = res => {
 };
 
 const bodyOf = req => typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+const hashResetToken = token => crypto.createHash('sha256').update(token).digest('hex');
+const appUrl = req => String(process.env.APP_URL || `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host || 'localhost'}`).replace(/\/$/, '');
+const sendResetEmail = async (email, resetUrl) => { if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) throw new Error('El servicio de correo no está configurado.'); const response = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: process.env.EMAIL_FROM, to: [email], subject: 'Restablece tu contraseña de SmartISP', html: `<p>Recibimos una solicitud para cambiar tu contraseña.</p><p><a href="${resetUrl}">Cambiar contraseña</a></p><p>Este enlace caduca en 1 hora y solo puede utilizarse una vez.</p>` }) }); if (!response.ok) throw new Error('No se pudo enviar el correo de recuperación.'); };
 
 const getAuthenticatedUser = async (req, database) => {
   const userId = getSessionUserId(req);
@@ -186,6 +189,37 @@ export default async function handler(req, res) {
       const result = await database.query('SELECT password_hash AS "passwordHash" FROM users WHERE id = $1 LIMIT 1', [userId]);
       if (!result.rows[0] || !(await bcrypt.compare(currentPassword, result.rows[0].passwordHash))) return res.status(401).json({ error: 'La contraseña actual no es correcta.' });
       await database.query('UPDATE users SET password_hash = $1 WHERE id = $2', [await bcrypt.hash(newPassword, 12), userId]);
+      return res.status(200).json({ ok: true });
+    }
+
+    if (action === 'request-password-reset' && req.method === 'POST') {
+      const email = String(bodyOf(req).email || '').trim().toLowerCase();
+      const result = await database.query('SELECT id, email FROM users WHERE email = $1 LIMIT 1', [email]);
+      if (!result.rows[0]) return res.status(200).json({ ok: true });
+      await database.query(`CREATE TABLE IF NOT EXISTS password_resets (
+        token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TIMESTAMPTZ NOT NULL, used_at TIMESTAMPTZ
+      )`);
+      await database.query('DELETE FROM password_resets WHERE user_id = $1 OR expires_at < NOW()', [result.rows[0].id]);
+      const token = crypto.randomBytes(32).toString('hex');
+      await database.query('INSERT INTO password_resets (token_hash, user_id, expires_at) VALUES ($1, $2, NOW() + INTERVAL \'1 hour\')', [hashResetToken(token), result.rows[0].id]);
+      await sendResetEmail(result.rows[0].email, `${appUrl(req)}/reset-password.html?token=${encodeURIComponent(token)}`);
+      return res.status(200).json({ ok: true });
+    }
+
+    if (action === 'reset-password' && req.method === 'POST') {
+      const body = bodyOf(req);
+      const token = String(body.token || '');
+      const password = String(body.password || '');
+      const confirmation = String(body.confirmation || '');
+      if (password.length < 8) return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres.' });
+      if (password !== confirmation) return res.status(400).json({ error: 'Las contraseñas no coinciden.' });
+      await database.query(`CREATE TABLE IF NOT EXISTS password_resets (
+        token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at TIMESTAMPTZ NOT NULL, used_at TIMESTAMPTZ
+      )`);
+      const reset = await database.query('SELECT user_id FROM password_resets WHERE token_hash = $1 AND used_at IS NULL AND expires_at > NOW() LIMIT 1', [hashResetToken(token)]);
+      if (!reset.rows[0]) return res.status(400).json({ error: 'El enlace no es válido o ya expiró.' });
+      await database.query('UPDATE users SET password_hash = $1 WHERE id = $2', [await bcrypt.hash(password, 12), reset.rows[0].user_id]);
+      await database.query('UPDATE password_resets SET used_at = NOW() WHERE token_hash = $1', [hashResetToken(token)]);
       return res.status(200).json({ ok: true });
     }
 
