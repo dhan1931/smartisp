@@ -114,6 +114,7 @@ const ensureCustomerTables = async database => {
     product_price NUMERIC(12, 2) NOT NULL DEFAULT 0,
     product_image TEXT NOT NULL DEFAULT '',
     product_category TEXT NOT NULL DEFAULT '',
+    position INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (user_id, product_id)
   );
@@ -124,7 +125,7 @@ const ensureCustomerTables = async database => {
     status TEXT NOT NULL DEFAULT 'received',
     items JSONB NOT NULL DEFAULT '[]'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-  )`);
+  ); ALTER TABLE wishlists ADD COLUMN IF NOT EXISTS position INTEGER NOT NULL DEFAULT 0;`);
 };
 
 export default async function handler(req, res) {
@@ -193,18 +194,22 @@ export default async function handler(req, res) {
       if (!userId) return res.status(401).json({ error: 'Debes iniciar sesión.' });
       await ensureCustomerTables(database);
       if (req.method === 'GET') {
-        const result = await database.query('SELECT product_id AS "productId", product_name AS name, product_price AS price, product_image AS image, product_category AS category FROM wishlists WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
+        const result = await database.query('SELECT product_id AS "productId", product_name AS name, product_price AS price, product_image AS image, product_category AS category FROM wishlists WHERE user_id = $1 ORDER BY position ASC, created_at DESC', [userId]);
         return res.status(200).json({ wishlist: result.rows });
       }
       const body = bodyOf(req);
+      if (req.method === 'POST' && Array.isArray(body.order)) {
+        for (const [position, productId] of body.order.entries()) await database.query('UPDATE wishlists SET position = $1 WHERE user_id = $2 AND product_id = $3', [position, userId, String(productId)]);
+        return res.status(200).json({ saved: true });
+      }
       const productId = String(body.productId || body.id || '').trim();
       if (!productId) return res.status(400).json({ error: 'El producto no es válido.' });
       if (req.method === 'DELETE') {
         await database.query('DELETE FROM wishlists WHERE user_id = $1 AND product_id = $2', [userId, productId]);
         return res.status(200).json({ saved: false });
       }
-      await database.query(`INSERT INTO wishlists (user_id, product_id, product_name, product_price, product_image, product_category)
-        VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (user_id, product_id) DO UPDATE SET product_name = EXCLUDED.product_name,
+      await database.query(`INSERT INTO wishlists (user_id, product_id, product_name, product_price, product_image, product_category, position)
+        VALUES ($1, $2, $3, $4, $5, $6, COALESCE((SELECT MAX(position) + 1 FROM wishlists WHERE user_id = $1), 0)) ON CONFLICT (user_id, product_id) DO UPDATE SET product_name = EXCLUDED.product_name,
         product_price = EXCLUDED.product_price, product_image = EXCLUDED.product_image, product_category = EXCLUDED.product_category`,
         [userId, productId, String(body.name || ''), Number(body.price || 0), String(body.image || ''), String(body.category || '')]);
       return res.status(200).json({ saved: true });
