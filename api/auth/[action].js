@@ -106,6 +106,27 @@ const requireAdmin = async (req, res, database) => {
   return user;
 };
 
+const ensureCustomerTables = async database => {
+  await database.query(`CREATE TABLE IF NOT EXISTS wishlists (
+    user_id TEXT NOT NULL,
+    product_id TEXT NOT NULL,
+    product_name TEXT NOT NULL DEFAULT '',
+    product_price NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    product_image TEXT NOT NULL DEFAULT '',
+    product_category TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, product_id)
+  );
+  CREATE TABLE IF NOT EXISTS orders (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    total NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'received',
+    items JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
+};
+
 export default async function handler(req, res) {
   const action = req.query?.action || req.url?.split('?')[0].split('/').filter(Boolean).pop();
   try {
@@ -165,6 +186,45 @@ export default async function handler(req, res) {
       if (!result.rows[0] || !(await bcrypt.compare(currentPassword, result.rows[0].passwordHash))) return res.status(401).json({ error: 'La contraseña actual no es correcta.' });
       await database.query('UPDATE users SET password_hash = $1 WHERE id = $2', [await bcrypt.hash(newPassword, 12), userId]);
       return res.status(200).json({ ok: true });
+    }
+
+    if (action === 'customer-wishlist' && (req.method === 'GET' || req.method === 'POST' || req.method === 'DELETE')) {
+      const userId = getSessionUserId(req);
+      if (!userId) return res.status(401).json({ error: 'Debes iniciar sesión.' });
+      await ensureCustomerTables(database);
+      if (req.method === 'GET') {
+        const result = await database.query('SELECT product_id AS "productId", product_name AS name, product_price AS price, product_image AS image, product_category AS category FROM wishlists WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
+        return res.status(200).json({ wishlist: result.rows });
+      }
+      const body = bodyOf(req);
+      const productId = String(body.productId || body.id || '').trim();
+      if (!productId) return res.status(400).json({ error: 'El producto no es válido.' });
+      if (req.method === 'DELETE') {
+        await database.query('DELETE FROM wishlists WHERE user_id = $1 AND product_id = $2', [userId, productId]);
+        return res.status(200).json({ saved: false });
+      }
+      await database.query(`INSERT INTO wishlists (user_id, product_id, product_name, product_price, product_image, product_category)
+        VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (user_id, product_id) DO UPDATE SET product_name = EXCLUDED.product_name,
+        product_price = EXCLUDED.product_price, product_image = EXCLUDED.product_image, product_category = EXCLUDED.product_category`,
+        [userId, productId, String(body.name || ''), Number(body.price || 0), String(body.image || ''), String(body.category || '')]);
+      return res.status(200).json({ saved: true });
+    }
+
+    if (action === 'customer-orders' && (req.method === 'GET' || req.method === 'POST')) {
+      const userId = getSessionUserId(req);
+      if (!userId) return res.status(401).json({ error: 'Debes iniciar sesión.' });
+      await ensureCustomerTables(database);
+      if (req.method === 'GET') {
+        const result = await database.query('SELECT id, total, status, items, created_at AS "createdAt" FROM orders WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
+        return res.status(200).json({ orders: result.rows });
+      }
+      const body = bodyOf(req);
+      const items = Array.isArray(body.items) ? body.items.slice(0, 50).map(item => ({ id: String(item.id || item.name || ''), name: String(item.name || ''), price: Number(item.price || 0), quantity: Number(item.quantity || 1), image: String(item.image || '') })) : [];
+      if (!items.length) return res.status(400).json({ error: 'El carrito está vacío.' });
+      const total = items.reduce((sum, item) => sum + item.price * Math.max(1, item.quantity), 0);
+      const id = crypto.randomUUID();
+      await database.query('INSERT INTO orders (id, user_id, total, status, items) VALUES ($1, $2, $3, $4, $5::jsonb)', [id, userId, total, 'received', JSON.stringify(items)]);
+      return res.status(201).json({ id, total, status: 'received' });
     }
 
     if (action === 'admin-products' && (req.method === 'GET' || req.method === 'POST' || req.method === 'DELETE')) {

@@ -11,6 +11,8 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = process.env.PORT || 3000;
 const users = new Map();
+const wishlists = new Map();
+const orders = new Map();
 const pool = process.env.DATABASE_URL ? new Pool({ connectionString: process.env.DATABASE_URL, ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined }) : null;
 
 const demoPasswordHash = await bcrypt.hash('pepe1234', 12);
@@ -120,6 +122,46 @@ app.post('/api/auth/change-password', async (req, res) => {
   user.passwordHash = await bcrypt.hash(newPassword, 12);
   if (pool) await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [user.passwordHash, user.id]);
   return res.json({ ok: true });
+});
+
+app.get('/api/auth/customer-wishlist', async (req, res) => {
+  const user = await findUserById(req.session.userId);
+  if (!user) return res.status(401).json({ error: 'Debes iniciar sesión.' });
+  return res.json({ wishlist: wishlists.get(user.id) || [] });
+});
+
+app.post('/api/auth/customer-wishlist', async (req, res) => {
+  const user = await findUserById(req.session.userId);
+  if (!user) return res.status(401).json({ error: 'Debes iniciar sesión.' });
+  const productId = String(req.body.productId || req.body.id || '').trim();
+  const list = wishlists.get(user.id) || [];
+  const item = { productId, name: String(req.body.name || ''), price: Number(req.body.price || 0), image: String(req.body.image || ''), category: String(req.body.category || '') };
+  wishlists.set(user.id, [item, ...list.filter(saved => saved.productId !== productId)]);
+  return res.json({ saved: true });
+});
+
+app.delete('/api/auth/customer-wishlist', async (req, res) => {
+  const user = await findUserById(req.session.userId);
+  if (!user) return res.status(401).json({ error: 'Debes iniciar sesión.' });
+  const productId = String(req.query.productId || '');
+  wishlists.set(user.id, (wishlists.get(user.id) || []).filter(item => item.productId !== productId));
+  return res.json({ saved: false });
+});
+
+app.get('/api/auth/customer-orders', async (req, res) => {
+  const user = await findUserById(req.session.userId);
+  if (!user) return res.status(401).json({ error: 'Debes iniciar sesión.' });
+  return res.json({ orders: orders.get(user.id) || [] });
+});
+
+app.post('/api/auth/customer-orders', async (req, res) => {
+  const user = await findUserById(req.session.userId);
+  if (!user) return res.status(401).json({ error: 'Debes iniciar sesión.' });
+  const items = Array.isArray(req.body.items) ? req.body.items : [];
+  if (!items.length) return res.status(400).json({ error: 'El carrito está vacío.' });
+  const order = { id: crypto.randomUUID(), total: items.reduce((sum, item) => sum + Number(item.price || 0), 0), status: 'received', items, createdAt: new Date().toISOString() };
+  orders.set(user.id, [order, ...(orders.get(user.id) || [])]);
+  return res.status(201).json(order);
 });
 
 app.post('/api/auth/logout', (req, res) => {
