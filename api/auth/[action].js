@@ -266,14 +266,14 @@ export default async function handler(req, res) {
         return res.status(200).json({ orders: result.rows });
       }
       const body = bodyOf(req);
-      const shipping = {
+      const shippingDetails = {
         name: String(body.shipping?.name || '').trim().slice(0, 100),
         email: String(body.shipping?.email || '').trim().toLowerCase().slice(0, 160),
         phone: String(body.shipping?.phone || '').trim().slice(0, 30),
         address: String(body.shipping?.address || '').trim().slice(0, 200),
         city: String(body.shipping?.city || '').trim().slice(0, 80)
       };
-      if (!shipping.name || !shipping.email.includes('@') || shipping.phone.length < 7 || !shipping.address || !shipping.city) {
+      if (!shippingDetails.name || !shippingDetails.email.includes('@') || shippingDetails.phone.length < 7 || !shippingDetails.address || !shippingDetails.city) {
         return res.status(400).json({ error: 'Completa los datos de entrega.' });
       }
       const requestedItems = Array.isArray(body.items) ? body.items.slice(0, 50) : [];
@@ -292,7 +292,7 @@ export default async function handler(req, res) {
       const shipping = 0;
       const total = subtotal + shipping;
       const id = crypto.randomUUID();
-      await database.query('INSERT INTO orders (id, user_id, total, status, items, shipping, payment_status) VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7)', [id, userId, total, 'pending_payment', JSON.stringify({ subtotal, shipping: 0, items }), JSON.stringify(shipping), 'pending']);
+      await database.query('INSERT INTO orders (id, user_id, total, status, items, shipping, payment_status) VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7)', [id, userId, total, 'pending_payment', JSON.stringify({ subtotal, shipping: 0, items }), JSON.stringify(shippingDetails), 'pending']);
       return res.status(201).json({ id, subtotal, shipping, total, status: 'pending_payment', paymentStatus: 'pending' });
     }
 
