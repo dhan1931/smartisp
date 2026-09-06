@@ -59,7 +59,8 @@ app.use(session({
   cookie: {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production'
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 1000 * 60 * 60 * 24 * 7
   }
 }));
 app.use(express.static(__dirname));
@@ -75,7 +76,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   req.session.userId = user.id;
-  req.session.cookie.maxAge = remember ? 1000 * 60 * 60 * 24 * 30 : null;
+  req.session.cookie.maxAge = remember ? 1000 * 60 * 60 * 24 * 30 : 1000 * 60 * 60 * 24 * 7;
   return res.json({ user: publicUser(user) });
 });
 

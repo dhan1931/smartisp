@@ -50,7 +50,7 @@ const publicUser = user => ({
 });
 
 const signSession = (userId, remember = false) => {
-  const duration = remember ? 1000 * 60 * 60 * 24 * 30 : 1000 * 60 * 60 * 24;
+  const duration = remember ? 1000 * 60 * 60 * 24 * 30 : 1000 * 60 * 60 * 24 * 7;
   const payload = Buffer.from(JSON.stringify({ userId, exp: Date.now() + duration })).toString('base64url');
   const secret = process.env.SESSION_SECRET || 'cambia-esta-clave-en-produccion';
   const signature = crypto.createHmac('sha256', secret).update(payload).digest('base64url');
@@ -76,7 +76,7 @@ const getSessionUserId = req => {
 
 const setSessionCookie = (res, token, remember = false) => {
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  const maxAge = remember ? '; Max-Age=2592000' : '';
+  const maxAge = remember ? '; Max-Age=2592000' : '; Max-Age=604800';
   res.setHeader('Set-Cookie', `smartisp_session=${token}; Path=/; HttpOnly; SameSite=Lax${maxAge}${secure}`);
 };
 
