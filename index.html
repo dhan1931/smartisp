@@ -448,6 +448,7 @@
 		accountSystem.querySelector('[data-theme-select]').addEventListener('change', event => { accountState.theme = event.target.value; applyAccountPreferences(); });
 		accountSystem.querySelector('[data-compact-toggle]').addEventListener('change', event => { accountState.compact = event.target.checked; applyAccountPreferences(); });
 		applyAccountPreferences();
+		fetch('/api/auth/me', { credentials: 'include' }).then(async response => { if (!response.ok) throw new Error('No hay una sesion activa.'); return response.json(); }).then(result => { setAccountUser(result.user); }).catch(() => {});
 		resetAccountUser();
 		fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
 	</script>
