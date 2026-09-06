@@ -202,7 +202,7 @@ export default async function handler(req, res) {
         for (const [position, productId] of body.order.entries()) await database.query('UPDATE wishlists SET position = $1 WHERE user_id = $2 AND product_id = $3', [position, userId, String(productId)]);
         return res.status(200).json({ saved: true });
       }
-      const productId = String(body.productId || body.id || '').trim();
+      const productId = String(req.query?.productId || body.productId || body.id || '').trim();
       if (!productId) return res.status(400).json({ error: 'El producto no es válido.' });
       if (req.method === 'DELETE') {
         await database.query('DELETE FROM wishlists WHERE user_id = $1 AND product_id = $2', [userId, productId]);
