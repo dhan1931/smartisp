@@ -152,6 +152,21 @@ export default async function handler(req, res) {
       return res.status(200).json({ user: publicUser(result.rows[0]) });
     }
 
+    if (action === 'change-password' && req.method === 'POST') {
+      const userId = getSessionUserId(req);
+      if (!userId) return res.status(401).json({ error: 'Debes iniciar sesión.' });
+      const body = bodyOf(req);
+      const currentPassword = String(body.currentPassword || '');
+      const newPassword = String(body.newPassword || '');
+      const confirmation = String(body.confirmation || '');
+      if (newPassword.length < 8) return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 8 caracteres.' });
+      if (newPassword !== confirmation) return res.status(400).json({ error: 'La confirmación no coincide con la nueva contraseña.' });
+      const result = await database.query('SELECT password_hash AS "passwordHash" FROM users WHERE id = $1 LIMIT 1', [userId]);
+      if (!result.rows[0] || !(await bcrypt.compare(currentPassword, result.rows[0].passwordHash))) return res.status(401).json({ error: 'La contraseña actual no es correcta.' });
+      await database.query('UPDATE users SET password_hash = $1 WHERE id = $2', [await bcrypt.hash(newPassword, 12), userId]);
+      return res.status(200).json({ ok: true });
+    }
+
     if (action === 'admin-products' && (req.method === 'GET' || req.method === 'POST' || req.method === 'DELETE')) {
       if (!await requireAdmin(req, res, database)) return;
       await database.query(`CREATE TABLE IF NOT EXISTS products (

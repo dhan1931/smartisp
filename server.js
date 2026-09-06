@@ -108,6 +108,20 @@ app.get('/api/auth/me', async (req, res) => {
   return res.json({ user: publicUser(user) });
 });
 
+app.post('/api/auth/change-password', async (req, res) => {
+  const user = await findUserById(req.session.userId);
+  if (!user) return res.status(401).json({ error: 'Debes iniciar sesión.' });
+  const currentPassword = String(req.body.currentPassword || '');
+  const newPassword = String(req.body.newPassword || '');
+  const confirmation = String(req.body.confirmation || '');
+  if (newPassword.length < 8) return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 8 caracteres.' });
+  if (newPassword !== confirmation) return res.status(400).json({ error: 'La confirmación no coincide con la nueva contraseña.' });
+  if (!(await bcrypt.compare(currentPassword, user.passwordHash))) return res.status(401).json({ error: 'La contraseña actual no es correcta.' });
+  user.passwordHash = await bcrypt.hash(newPassword, 12);
+  if (pool) await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [user.passwordHash, user.id]);
+  return res.json({ ok: true });
+});
+
 app.post('/api/auth/logout', (req, res) => {
   req.session.destroy(() => res.json({ ok: true }));
 });
