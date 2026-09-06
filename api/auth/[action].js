@@ -49,8 +49,9 @@ const publicUser = user => ({
   role: user.role || 'customer'
 });
 
-const signSession = userId => {
-  const payload = Buffer.from(JSON.stringify({ userId, exp: Date.now() + 1000 * 60 * 60 * 24 * 7 })).toString('base64url');
+const signSession = (userId, remember = false) => {
+  const duration = remember ? 1000 * 60 * 60 * 24 * 30 : 1000 * 60 * 60 * 24;
+  const payload = Buffer.from(JSON.stringify({ userId, exp: Date.now() + duration })).toString('base64url');
   const secret = process.env.SESSION_SECRET || 'cambia-esta-clave-en-produccion';
   const signature = crypto.createHmac('sha256', secret).update(payload).digest('base64url');
   return `${payload}.${signature}`;
@@ -73,9 +74,10 @@ const getSessionUserId = req => {
   }
 };
 
-const setSessionCookie = (res, token) => {
+const setSessionCookie = (res, token, remember = false) => {
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  res.setHeader('Set-Cookie', `smartisp_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${secure}`);
+  const maxAge = remember ? '; Max-Age=2592000' : '';
+  res.setHeader('Set-Cookie', `smartisp_session=${token}; Path=/; HttpOnly; SameSite=Lax${maxAge}${secure}`);
 };
 
 const clearSessionCookie = res => {
@@ -114,10 +116,11 @@ export default async function handler(req, res) {
       const body = bodyOf(req);
       const email = String(body.email || '').trim().toLowerCase();
       const password = String(body.password || '');
+      const remember = body.remember === true || body.remember === 'true' || body.remember === 'on';
       const result = await database.query('SELECT id, email, password_hash AS "passwordHash", name, surname, phone, role FROM users WHERE email = $1 LIMIT 1', [email]);
       const user = result.rows[0];
       if (!user || !(await bcrypt.compare(password, user.passwordHash))) return res.status(401).json({ error: 'Correo o contraseña incorrectos.' });
-      setSessionCookie(res, signSession(user.id));
+      setSessionCookie(res, signSession(user.id, remember), remember);
       return res.status(200).json({ user: publicUser(user) });
     }
 

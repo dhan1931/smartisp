@@ -59,8 +59,7 @@ app.use(session({
   cookie: {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 1000 * 60 * 60 * 24 * 7
+    secure: process.env.NODE_ENV === 'production'
   }
 }));
 app.use(express.static(__dirname));
@@ -68,6 +67,7 @@ app.use(express.static(__dirname));
 app.post('/api/auth/login', async (req, res) => {
   const email = String(req.body.email || '').trim().toLowerCase();
   const password = String(req.body.password || '');
+  const remember = req.body.remember === true || req.body.remember === 'true' || req.body.remember === 'on';
   const user = await findUserByEmail(email);
 
   if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
@@ -75,6 +75,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   req.session.userId = user.id;
+  req.session.cookie.maxAge = remember ? 1000 * 60 * 60 * 24 * 30 : null;
   return res.json({ user: publicUser(user) });
 });
 
