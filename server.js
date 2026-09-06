@@ -133,6 +133,12 @@ app.get('/api/auth/customer-wishlist', async (req, res) => {
 app.post('/api/auth/customer-wishlist', async (req, res) => {
   const user = await findUserById(req.session.userId);
   if (!user) return res.status(401).json({ error: 'Debes iniciar sesión.' });
+  if (Array.isArray(req.body.order)) {
+    const list = wishlists.get(user.id) || [];
+    const byId = new Map(list.map(item => [item.productId, item]));
+    wishlists.set(user.id, req.body.order.map(productId => byId.get(String(productId))).filter(Boolean));
+    return res.json({ saved: true });
+  }
   const productId = String(req.body.productId || req.body.id || '').trim();
   const list = wishlists.get(user.id) || [];
   const item = { productId, name: String(req.body.name || ''), price: Number(req.body.price || 0), image: String(req.body.image || ''), category: String(req.body.category || '') };
