@@ -127,6 +127,7 @@ const ensureCustomerTables = async database => {
     total NUMERIC(12, 2) NOT NULL DEFAULT 0,
     status TEXT NOT NULL DEFAULT 'received',
     items JSONB NOT NULL DEFAULT '[]'::jsonb,
+    shipping JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     payment_status TEXT NOT NULL DEFAULT 'pending',
@@ -134,7 +135,8 @@ const ensureCustomerTables = async database => {
   ); ALTER TABLE wishlists ADD COLUMN IF NOT EXISTS position INTEGER NOT NULL DEFAULT 0;`);
   await database.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_status TEXT NOT NULL DEFAULT 'pending';
-    ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_provider TEXT;`);
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_provider TEXT;
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping JSONB NOT NULL DEFAULT '{}'::jsonb;`);
 };
 
 export default async function handler(req, res) {
@@ -264,6 +266,16 @@ export default async function handler(req, res) {
         return res.status(200).json({ orders: result.rows });
       }
       const body = bodyOf(req);
+      const shipping = {
+        name: String(body.shipping?.name || '').trim().slice(0, 100),
+        email: String(body.shipping?.email || '').trim().toLowerCase().slice(0, 160),
+        phone: String(body.shipping?.phone || '').trim().slice(0, 30),
+        address: String(body.shipping?.address || '').trim().slice(0, 200),
+        city: String(body.shipping?.city || '').trim().slice(0, 80)
+      };
+      if (!shipping.name || !shipping.email.includes('@') || shipping.phone.length < 7 || !shipping.address || !shipping.city) {
+        return res.status(400).json({ error: 'Completa los datos de entrega.' });
+      }
       const requestedItems = Array.isArray(body.items) ? body.items.slice(0, 50) : [];
       const quantities = new Map();
       for (const item of requestedItems) {
@@ -280,7 +292,7 @@ export default async function handler(req, res) {
       const shipping = 0;
       const total = subtotal + shipping;
       const id = crypto.randomUUID();
-      await database.query('INSERT INTO orders (id, user_id, total, status, items, payment_status) VALUES ($1, $2, $3, $4, $5::jsonb, $6)', [id, userId, total, 'pending_payment', JSON.stringify({ subtotal, shipping, items }), 'pending']);
+      await database.query('INSERT INTO orders (id, user_id, total, status, items, shipping, payment_status) VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7)', [id, userId, total, 'pending_payment', JSON.stringify({ subtotal, shipping: 0, items }), JSON.stringify(shipping), 'pending']);
       return res.status(201).json({ id, subtotal, shipping, total, status: 'pending_payment', paymentStatus: 'pending' });
     }
 
