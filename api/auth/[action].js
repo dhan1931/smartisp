@@ -127,8 +127,14 @@ const ensureCustomerTables = async database => {
     total NUMERIC(12, 2) NOT NULL DEFAULT 0,
     status TEXT NOT NULL DEFAULT 'received',
     items JSONB NOT NULL DEFAULT '[]'::jsonb,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    payment_status TEXT NOT NULL DEFAULT 'pending',
+    payment_provider TEXT
   ); ALTER TABLE wishlists ADD COLUMN IF NOT EXISTS position INTEGER NOT NULL DEFAULT 0;`);
+  await database.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_status TEXT NOT NULL DEFAULT 'pending';
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_provider TEXT;`);
 };
 
 export default async function handler(req, res) {
@@ -258,12 +264,24 @@ export default async function handler(req, res) {
         return res.status(200).json({ orders: result.rows });
       }
       const body = bodyOf(req);
-      const items = Array.isArray(body.items) ? body.items.slice(0, 50).map(item => ({ id: String(item.id || item.name || ''), name: String(item.name || ''), price: Number(item.price || 0), quantity: Number(item.quantity || 1), image: String(item.image || '') })) : [];
-      if (!items.length) return res.status(400).json({ error: 'El carrito está vacío.' });
-      const total = items.reduce((sum, item) => sum + item.price * Math.max(1, item.quantity), 0);
+      const requestedItems = Array.isArray(body.items) ? body.items.slice(0, 50) : [];
+      const quantities = new Map();
+      for (const item of requestedItems) {
+        const id = String(item?.id || '').trim();
+        const quantity = Math.floor(Number(item?.quantity || 1));
+        if (id && quantity > 0 && quantity <= 99) quantities.set(id, (quantities.get(id) || 0) + quantity);
+      }
+      if (!quantities.size) return res.status(400).json({ error: 'El carrito está vacío.' });
+      const productIds = [...quantities.keys()];
+      const catalog = await database.query('SELECT id, name, price, image_url AS "imageUrl" FROM products WHERE visible = TRUE AND id = ANY($1::text[])', [productIds]);
+      if (catalog.rowCount !== productIds.length) return res.status(400).json({ error: 'Uno de los productos ya no está disponible.' });
+      const items = catalog.rows.map(product => ({ id: product.id, name: product.name, price: Number(product.price), quantity: quantities.get(product.id), image: product.imageUrl || '' }));
+      const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      const shipping = 0;
+      const total = subtotal + shipping;
       const id = crypto.randomUUID();
-      await database.query('INSERT INTO orders (id, user_id, total, status, items) VALUES ($1, $2, $3, $4, $5::jsonb)', [id, userId, total, 'received', JSON.stringify(items)]);
-      return res.status(201).json({ id, total, status: 'received' });
+      await database.query('INSERT INTO orders (id, user_id, total, status, items, payment_status) VALUES ($1, $2, $3, $4, $5::jsonb, $6)', [id, userId, total, 'pending_payment', JSON.stringify({ subtotal, shipping, items }), 'pending']);
+      return res.status(201).json({ id, subtotal, shipping, total, status: 'pending_payment', paymentStatus: 'pending' });
     }
 
     if (action === 'admin-products' && (req.method === 'GET' || req.method === 'POST' || req.method === 'DELETE')) {
