@@ -311,7 +311,7 @@
 	</script>
 	<script>
 		const showAccountView = view => { document.querySelector('#loginView').hidden = view !== 'login'; document.querySelector('#registerView').hidden = view !== 'register'; };
-		const setSignedInUser = user => { signedIn = true; document.querySelector('#accountLabel').textContent = user.name; document.querySelector('#profileEmail').textContent = user.email; document.querySelector('#profileView h2').textContent = `Hola, ${user.name}`; };
+		const setSignedInUser = user => { localStorage.setItem('smartisp.accountUser', JSON.stringify(user)); signedIn = true; document.querySelector('#accountLabel').textContent = user.name; document.querySelector('#profileEmail').textContent = user.email; document.querySelector('#profileView h2').textContent = `Hola, ${user.name}`; };
 		const showFormMessage = (element, text, isError = false) => { element.textContent = text; element.classList.toggle('error', isError); element.classList.add('show'); };
 		document.querySelector('#openAccount').addEventListener('click', () => { if (!signedIn) showAccountView('login'); });
 		document.querySelector('#showRegister').addEventListener('click', () => showAccountView('register'));

@@ -59,7 +59,12 @@
     $('#clearContentButton').addEventListener('click', () => { fillForm($('#contentForm'), DEFAULT_CONTENT); showMessage($('#contentMessage'), 'Campos restablecidos. Guarda para aplicar los cambios.'); });
     $('#newProductButton').addEventListener('click', () => { $('#productsList').insertAdjacentHTML('afterbegin', productFields({})); const form = $('#productsList .product-row'); form.scrollIntoView({ behavior: 'smooth' }); form.addEventListener('submit', async event => { event.preventDefault(); const values = Object.fromEntries(new FormData(form)); values.price = Number(values.price); values.visible = values.visible === 'true'; try { await api('admin-products', { method: 'POST', body: JSON.stringify(values) }); showMessage($('#productMessage'), 'Producto creado correctamente.'); await loadProducts(); } catch (error) { showMessage($('#productMessage'), error.message, true); } }); form.querySelector('[data-delete]').addEventListener('click', () => form.remove()); });
     $('#logoutButton').addEventListener('click', async () => { await api('logout', { method: 'POST' }); localStorage.removeItem('smartisp.accountUser'); location.reload(); });
-    api('me').then(result => { if (result.user.role === 'admin') return openPanel(result.user); throw new Error('No es administrador.'); }).catch(() => { $('#loginPanel').classList.remove('hidden'); });
+    const savedAccount = (() => { try { return JSON.parse(localStorage.getItem('smartisp.accountUser') || 'null'); } catch { return null; } })();
+    if (savedAccount?.role === 'admin') {
+      openPanel(savedAccount).catch(() => {});
+    } else {
+      api('me').then(result => { if (result.user.role === 'admin') return openPanel(result.user); throw new Error('No es administrador.'); }).catch(() => { $('#loginPanel').classList.remove('hidden'); });
+    }
   </script>
 </body>
 </html>
