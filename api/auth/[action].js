@@ -76,7 +76,7 @@ const getSessionUserId = req => {
 
 const setSessionCookie = (res, token, remember = false) => {
   const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  const maxAge = remember ? '; Max-Age=2592000' : '; Max-Age=604800';
+  const maxAge = remember ? '; Max-Age=2592000' : '';
   res.setHeader('Set-Cookie', `smartisp_session=${token}; Path=/; HttpOnly; SameSite=Lax${maxAge}${secure}`);
 };
 

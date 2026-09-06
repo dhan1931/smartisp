@@ -311,7 +311,7 @@
 	</script>
 	<script>
 		const showAccountView = view => { document.querySelector('#loginView').hidden = view !== 'login'; document.querySelector('#registerView').hidden = view !== 'register'; };
-		const setSignedInUser = user => { localStorage.setItem('smartisp.accountUser', JSON.stringify(user)); signedIn = true; document.querySelector('#accountLabel').textContent = user.name; document.querySelector('#profileEmail').textContent = user.email; document.querySelector('#profileView h2').textContent = `Hola, ${user.name}`; };
+		const setSignedInUser = (user, remember = false) => { (remember ? localStorage : sessionStorage).setItem('smartisp.accountUser', JSON.stringify(user)); if (remember) localStorage.setItem('smartisp.accountRemembered', 'true'); else { localStorage.removeItem('smartisp.accountUser'); localStorage.removeItem('smartisp.accountRemembered'); } signedIn = true; document.querySelector('#accountLabel').textContent = user.name; document.querySelector('#profileEmail').textContent = user.email; document.querySelector('#profileView h2').textContent = `Hola, ${user.name}`; };
 		const showFormMessage = (element, text, isError = false) => { element.textContent = text; element.classList.toggle('error', isError); element.classList.add('show'); };
 		document.querySelector('#openAccount').addEventListener('click', () => { if (!signedIn) showAccountView('login'); });
 		document.querySelector('#showRegister').addEventListener('click', () => showAccountView('register'));
@@ -328,7 +328,7 @@
 				const response = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password }) });
 				const result = await response.json();
 				if (!response.ok) throw new Error(result.error);
-				setSignedInUser(result.user);
+				setSignedInUser(result.user, false);
 				document.querySelector('#profileView h2').textContent = `Hola, ${result.user.name}`;
 				document.querySelector('#profileView').hidden = false;
 				document.querySelector('#registerView').hidden = true;
@@ -346,7 +346,7 @@
 				const response = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.querySelector('#emailInput').value.trim().toLowerCase(), password: document.querySelector('#passwordInput').value }) });
 				const result = await response.json();
 				if (!response.ok) throw new Error(result.error);
-				setSignedInUser(result.user);
+				setSignedInUser(result.user, document.querySelector('#accountForm [name="remember"]')?.checked);
 				document.querySelector('#loginView').hidden = true;
 				document.querySelector('#profileView').hidden = false;
 				showFormMessage(message, 'Inicio de sesión correcto. Bienvenido a SmartISP.');
@@ -430,8 +430,8 @@
 		const closeAccountSystem = () => accountSystem.classList.remove('is-open');
 		const adminNavLink = document.querySelector('#adminNavLink');
 		const updateAdminAccess = user => { adminNavLink.classList.toggle('is-visible', user?.role === 'admin'); };
-		const setAccountUser = user => { accountState.user = user; localStorage.setItem('smartisp.accountUser', JSON.stringify(user)); signedIn = true; document.querySelector('#accountLabel').textContent = user.name; updateAdminAccess(user); accountAuthView.hidden = true; accountProfileView.hidden = false; renderAccountProfile(); };
-		const resetAccountUser = () => { accountState.user = null; localStorage.removeItem('smartisp.accountUser'); signedIn = false; updateAdminAccess(null); document.querySelector('#accountLabel').textContent = 'Mi cuenta'; accountAuthView.hidden = false; accountProfileView.hidden = true; accountSystem.querySelectorAll('form').forEach(form => form.reset()); accountSystem.querySelectorAll('[data-account-message]').forEach(message => message.classList.remove('show')); showAccountTab('login'); };
+		const setAccountUser = (user, remember = localStorage.getItem('smartisp.accountRemembered') === 'true') => { accountState.user = user; (remember ? localStorage : sessionStorage).setItem('smartisp.accountUser', JSON.stringify(user)); if (remember) localStorage.setItem('smartisp.accountRemembered', 'true'); else { localStorage.removeItem('smartisp.accountUser'); localStorage.removeItem('smartisp.accountRemembered'); } signedIn = true; document.querySelector('#accountLabel').textContent = user.name; updateAdminAccess(user); accountAuthView.hidden = true; accountProfileView.hidden = false; renderAccountProfile(); };
+		const resetAccountUser = () => { accountState.user = null; localStorage.removeItem('smartisp.accountUser'); localStorage.removeItem('smartisp.accountRemembered'); sessionStorage.removeItem('smartisp.accountUser'); signedIn = false; updateAdminAccess(null); document.querySelector('#accountLabel').textContent = 'Mi cuenta'; accountAuthView.hidden = false; accountProfileView.hidden = true; accountSystem.querySelectorAll('form').forEach(form => form.reset()); accountSystem.querySelectorAll('[data-account-message]').forEach(message => message.classList.remove('show')); showAccountTab('login'); };
 		const accountTrigger = document.querySelector('#openAccount');
 		const cleanAccountTrigger = accountTrigger.cloneNode(true);
 		accountTrigger.replaceWith(cleanAccountTrigger);
@@ -439,7 +439,7 @@
 		accountSystem.querySelector('.account-system-close').addEventListener('click', closeAccountSystem);
 		accountSystem.addEventListener('click', event => { if (event.target === accountSystem) closeAccountSystem(); });
 		accountSystem.querySelectorAll('[data-account-tab]').forEach(button => button.addEventListener('click', () => showAccountTab(button.dataset.accountTab)));
-		accountSystem.querySelector('#systemLoginForm').addEventListener('submit', async event => { event.preventDefault(); const form = event.currentTarget; const button = form.querySelector('button[type="submit"]'); button.classList.add('is-loading'); try { const response = await fetch('/api/auth/login', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(form))) }); const result = await readApiResponse(response); if (!response.ok) throw new Error(result.error); setAccountUser(result.user); } catch (error) { showAccountMessage(form, error.message || 'No se pudo iniciar sesión.', true); } finally { button.classList.remove('is-loading'); } });
+		accountSystem.querySelector('#systemLoginForm').addEventListener('submit', async event => { event.preventDefault(); const form = event.currentTarget; const values = Object.fromEntries(new FormData(form)); const button = form.querySelector('button[type="submit"]'); button.classList.add('is-loading'); try { const response = await fetch('/api/auth/login', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values) }); const result = await readApiResponse(response); if (!response.ok) throw new Error(result.error); setAccountUser(result.user, values.remember === 'on'); } catch (error) { showAccountMessage(form, error.message || 'No se pudo iniciar sesión.', true); } finally { button.classList.remove('is-loading'); } });
 		accountSystem.querySelector('#systemRegisterForm').addEventListener('submit', async event => { event.preventDefault(); const form = event.currentTarget; const values = Object.fromEntries(new FormData(form)); if (values.password !== values.confirmation) { showAccountMessage(form, 'Las contraseñas no coinciden.', true); return; } const button = form.querySelector('button[type="submit"]'); button.classList.add('is-loading'); try { const response = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values) }); const result = await readApiResponse(response); if (!response.ok) throw new Error(result.error); setAccountUser(result.user); } catch (error) { showAccountMessage(form, error.message || 'No se pudo crear la cuenta.', true); } finally { button.classList.remove('is-loading'); } });
 		accountSystem.querySelector('[data-system-logout]').addEventListener('click', async event => { const button = event.currentTarget; button.disabled = true; try { await fetch('/api/auth/logout', { method: 'POST' }); } finally { resetAccountUser(); button.disabled = false; closeAccountSystem(); } });
 		accountSystem.querySelectorAll('[data-account-panel]').forEach(button => button.addEventListener('click', () => { accountSystem.querySelector('[data-profile-editor]').hidden = button.dataset.accountPanel !== 'profile'; accountSystem.querySelector('[data-preferences]').hidden = button.dataset.accountPanel !== 'settings'; }));
@@ -449,8 +449,6 @@
 		accountSystem.querySelector('[data-compact-toggle]').addEventListener('change', event => { accountState.compact = event.target.checked; applyAccountPreferences(); });
 		applyAccountPreferences();
 		fetch('/api/auth/me', { credentials: 'include' }).then(async response => { if (!response.ok) throw new Error('No hay una sesion activa.'); return response.json(); }).then(result => { setAccountUser(result.user); }).catch(() => {});
-		resetAccountUser();
-		fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
 	</script>
 </body>
 </html>
