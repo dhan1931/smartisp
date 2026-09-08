@@ -6,14 +6,15 @@ REM ═════════════════════════�
 chcp 65001 >nul
 setlocal enabledelayedexpansion
 
-title 🛍️ TechStore - Abriendo en Navegador...
+title 🌐 SmartISP - Presentación Corporativa & Tienda Online
 
 echo.
 echo ═══════════════════════════════════════════════════════════════════
-echo   🛍️  TECHSTORE - Tienda de Electrónica e Infraestructura TI
+echo   🌐  SMARTISP - Presentación de Empresa & Tienda Online
 echo ═══════════════════════════════════════════════════════════════════
 echo.
-echo 🚀 Abriendo la tienda en tu navegador...
+echo 🚀 Abriendo la página de presentación en tu navegador...
+echo    (Desde allí encontrarás el botón directo a la Tienda Online)
 echo.
 
 REM Obtener la ruta completa del archivo index.html
@@ -22,8 +23,7 @@ set "indexPath=%cd%\index.html"
 REM Abrir en el navegador predeterminado
 start "" "%indexPath%"
 
-echo ✅ Tienda abierta en tu navegador
-echo.
-echo Colores: Azul #003366 | Celeste #00A8E8 | Blanco #FFFFFF
+echo ✅ Página de presentación abierta en tu navegador
+echo    Acceso directo a la tienda: tienda.html
 echo.
 timeout /t 3 /nobreak

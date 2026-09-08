@@ -6,6 +6,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: 'index.html',
+        tienda: 'tienda.html',
+        checkout: 'checkout.html',
         admin: 'admin.html',
         resetPassword: 'reset-password.html'
       }

@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="SmartISP: infraestructura de red y tecnología para proveedores de internet.">
+	<title>SmartISP | Tienda Online & Equipamiento TI</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+	<script src="https://unpkg.com/lucide@latest"></script>
+	<style>
+		:root {
+			--navy: #102a43;
+			--blue: #1177c9;
+			--sky: #dff3ff;
+			--pale: #f5fbff;
+			--ink: #17324d;
+			--muted: #6c8195;
+			--line: #d7e7f1;
+			--orange: #ff9f43;
+			--white: #fff;
+		}
+		body.dark-mode { --pale: #0b1927; --white: #12283b; --ink: #e1f2fc; --navy: #071722; --muted: #9bb3c3; --line: #294557; --sky: #183b52; background: var(--pale); }
+		body.dark-mode .nav, body.dark-mode footer, body.dark-mode .product, body.dark-mode .category, body.dark-mode .select, body.dark-mode .modal-panel, body.dark-mode .drawer-panel, body.dark-mode .search, body.dark-mode .heart { background: var(--white); }
+		body.dark-mode .hero { background-color: #163b51; }
+		body.dark-mode .hero::after { background: linear-gradient(90deg, rgba(22,59,81,.98) 0%, rgba(22,59,81,.91) 42%, rgba(22,59,81,.1) 78%); }
+		body.dark-mode .hero h1, body.dark-mode .section-heading h2, body.dark-mode .product h3, body.dark-mode .price, body.dark-mode .logo, body.dark-mode .nav-action, body.dark-mode .form-field { color: var(--ink); }
+		body.dark-mode .category-nav { background: var(--white); }
+		* { box-sizing: border-box; }
+		body { margin: 0; background: var(--pale); color: var(--ink); font-family: 'DM Sans', sans-serif; }
+		a { color: inherit; text-decoration: none; }
+		button, input { font: inherit; }
+		button { cursor: pointer; }
+		.topbar { background: var(--navy); color: #d9efff; font-size: 12px; letter-spacing: .02em; padding: 9px 5vw; display: flex; justify-content: space-between; }
+		.topbar span { display: flex; align-items: center; gap: 7px; }
+		.nav { background: var(--white); border-bottom: 1px solid var(--line); padding: 18px 5vw; display: flex; align-items: center; gap: 28px; position: sticky; top: 0; z-index: 5; }
+		.logo { font-family: 'Space Grotesk', sans-serif; font-size: 23px; font-weight: 700; color: var(--navy); white-space: nowrap; letter-spacing: -.06em; }
+		.logo b { color: var(--blue); }
+		.search { display: flex; flex: 1; max-width: 640px; background: var(--pale); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+		.search input { width: 100%; border: 0; outline: 0; padding: 12px 15px; background: transparent; color: var(--ink); }
+		.search button { background: var(--blue); border: 0; color: var(--white); width: 48px; display: grid; place-items: center; }
+		.nav-actions { margin-left: auto; display: flex; gap: 18px; align-items: center; }
+		.nav-action { border: 0; background: transparent; color: var(--navy); display: flex; align-items: center; gap: 7px; font-weight: 600; padding: 4px; }
+		.admin-nav-link { display: none; color: #087ea4; border: 1px solid #a9d8d0; background: #eaf7f5; padding: 8px 11px; border-radius: 7px; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; }
+		.admin-nav-link.is-visible { display: inline-flex; }
+		.admin-nav-link:hover { background: #d7f0e8; }
+		.cart-button { position: relative; }
+		.cart-count { background: var(--orange); border-radius: 50%; color: #172b3a; font-size: 10px; min-width: 17px; height: 17px; display: grid; place-items: center; position: absolute; top: -7px; left: 17px; }
+		.cart-count.bump { animation: cartBump .45s ease; }
+		@keyframes cartBump { 0% { transform: scale(1); } 45% { transform: scale(1.45); } 100% { transform: scale(1); } }
+		.category-nav { background: var(--white); padding: 0 5vw 14px; display: flex; gap: 25px; font-size: 13px; color: var(--muted); }
+		.category-nav a:first-child { color: var(--blue); font-weight: 700; }
+		.hero { margin: 28px 5vw 0; min-height: 335px; padding: 46px clamp(24px, 7vw, 90px); background: #c9ebfc url('https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1600&q=85') center right/cover; position: relative; overflow: hidden; display: flex; align-items: center; }
+		.hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(223,243,255,.98) 0%, rgba(223,243,255,.91) 42%, rgba(223,243,255,.1) 78%); }
+		.hero-content { max-width: 475px; position: relative; z-index: 1; }
+		.eyebrow { color: var(--blue); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .15em; }
+		h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; margin: 0; letter-spacing: -.045em; }
+		h1 { color: var(--navy); font-size: clamp(36px, 5vw, 60px); line-height: .98; margin: 13px 0 18px; }
+		.hero p { color: #45667e; line-height: 1.6; margin: 0 0 26px; max-width: 400px; }
+		.primary { background: var(--blue); color: white; border: 0; padding: 13px 19px; border-radius: 5px; font-weight: 700; display: inline-flex; align-items: center; gap: 9px; }
+		.primary:hover { background: #0d64aa; }
+		.content { padding: 38px 5vw; }
+		.section-heading { display: flex; align-items: end; justify-content: space-between; margin-bottom: 20px; }
+		.section-heading h2 { font-size: 29px; color: var(--navy); }
+		.section-heading a { color: var(--blue); font-size: 13px; font-weight: 700; }
+		.categories { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 45px; }
+		.category { background: white; border: 1px solid var(--line); padding: 19px 16px; min-height: 110px; display: flex; flex-direction: column; justify-content: space-between; transition: .2s; }
+		.category:hover, .category.active { border-color: var(--blue); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(30,103,150,.1); }
+		.category i { color: var(--blue); }
+		.category strong { font-size: 14px; }
+		.category small { color: var(--muted); font-size: 11px; }
+		.toolbar { display: flex; justify-content: space-between; align-items: center; margin: 0 0 18px; }
+		.result-count { color: var(--muted); font-size: 13px; }
+		.select { border: 1px solid var(--line); background: white; padding: 10px 13px; color: var(--ink); border-radius: 4px; }
+		.products { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+		.product { background: white; border: 1px solid var(--line); position: relative; padding: 11px; display: flex; flex-direction: column; min-width: 0; }
+		.product-image { background: #edf8fd; aspect-ratio: 1.15; display: grid; place-items: center; overflow: hidden; position: relative; }
+		.product-image img { width: 100%; height: 100%; object-fit: cover; mix-blend-mode: multiply; }
+		.tag { background: var(--orange); color: #603b18; font-size: 10px; font-weight: 700; padding: 5px 8px; position: absolute; top: 10px; left: 10px; z-index: 1; }
+		.heart { position: absolute; z-index: 1; top: 9px; right: 9px; border: 0; background: white; border-radius: 50%; width: 32px; height: 32px; display: grid; place-items: center; color: var(--muted); }
+		.product-info { padding: 16px 4px 4px; }
+		.product-brand { color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+		.product h3 { font-family: 'DM Sans', sans-serif; font-size: 15px; letter-spacing: 0; line-height: 1.35; margin: 6px 0 10px; min-height: 41px; }
+		.stars { color: #e99824; font-size: 12px; letter-spacing: 1px; }
+		.reviews { color: var(--muted); font-size: 11px; margin-left: 4px; letter-spacing: 0; }
+		.price-row { display: flex; justify-content: space-between; align-items: center; margin-top: 13px; }
+		.price { color: var(--navy); font-family: 'Space Grotesk', sans-serif; font-size: 21px; font-weight: 700; }
+		.add { color: var(--blue); border: 1px solid #9acfe9; background: #effaff; width: 35px; height: 35px; display: grid; place-items: center; border-radius: 4px; }
+		.add:hover { background: var(--blue); color: white; }
+		.benefits { background: var(--navy); color: white; display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; padding: 25px 5vw; }
+		.benefit { display: flex; gap: 14px; align-items: center; }
+		.benefit i { color: #7bd6ff; }
+		.benefit strong { display: block; font-size: 13px; margin-bottom: 4px; }
+		.benefit span { color: #a8c0d0; font-size: 11px; }
+		footer { padding: 35px 5vw; background: white; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 30px; color: var(--muted); font-size: 12px; }
+		footer .logo { color: var(--navy); margin-bottom: 9px; }
+		.footer-links { display: flex; gap: 30px; }
+		.footer-links a:hover { color: var(--blue); }
+		.empty { grid-column: 1/-1; padding: 50px; text-align: center; color: var(--muted); background: white; border: 1px dashed var(--line); }
+		.product { cursor: pointer; transition: .2s; }
+		.product:hover { border-color: #9acfe9; box-shadow: 0 12px 24px rgba(30,103,150,.12); transform: translateY(-3px); }
+		.product button { cursor: pointer; }
+		.modal { position: fixed; inset: 0; background: rgba(16,42,67,.45); z-index: 12; display: grid; place-items: center; padding: 20px; visibility: hidden; opacity: 0; transition: .2s; }
+		.modal.open { visibility: visible; opacity: 1; }
+		.modal-panel { width: min(720px, 100%); max-height: min(680px, 92vh); overflow-y: auto; background: white; position: relative; padding: 30px; transform: translateY(12px); transition: .25s; }
+		.modal.open .modal-panel { transform: translateY(0); }
+		.modal-close { position: absolute; top: 17px; right: 17px; z-index: 1; }
+		.detail-layout { display: grid; grid-template-columns: .9fr 1.1fr; gap: 30px; }
+		.detail-image { background: var(--sky); aspect-ratio: 1; display: grid; place-items: center; overflow: hidden; }
+		.detail-image img { width: 100%; height: 100%; object-fit: cover; mix-blend-mode: multiply; }
+		.detail-copy { padding-top: 8px; }
+		.detail-copy h2 { font-size: 30px; line-height: 1.05; max-width: 470px; margin: 8px 0 12px; }
+		.detail-copy .price { display: block; margin: 20px 0; }
+		.detail-description { color: var(--muted); line-height: 1.6; font-size: 13px; }
+		.specs { border-top: 1px solid var(--line); margin-top: 22px; padding-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 11px 22px; }
+		.spec { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; border-bottom: 1px solid #eef5f8; padding-bottom: 8px; }
+		.spec span { color: var(--muted); }
+		.account-panel { width: min(430px, 100%); }
+		.account-panel h2 { font-size: 28px; margin: 8px 0; }
+		.account-panel p { color: var(--muted); font-size: 13px; line-height: 1.5; }
+		.form-field { display: block; margin: 17px 0; color: var(--navy); font-size: 12px; font-weight: 700; }
+		.form-field input { width: 100%; border: 1px solid var(--line); background: var(--pale); padding: 12px; margin-top: 7px; outline: 0; color: var(--ink); }
+		.form-field input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(17,119,201,.1); }
+		.form-options { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 12px; margin: 10px 0 20px; }
+		.form-options a { color: var(--blue); }
+		.account-submit { width: 100%; justify-content: center; }
+		.form-message { color: #11815d; background: #e5faf1; border: 1px solid #b9ead7; border-radius: 6px; padding: 11px; font-size: 12px; margin-top: 14px; display: none; }
+		.form-message.error { color: #a53b3b; background: #fff0f0; border-color: #f1c5c5; }
+		.form-message.show { display: block; }
+		.drawer { position: fixed; inset: 0; background: rgba(16,42,67,.35); z-index: 10; visibility: hidden; opacity: 0; transition: .2s; }
+		.drawer.open { visibility: visible; opacity: 1; }
+		.drawer-panel { width: min(390px, 100%); height: 100%; background: white; margin-left: auto; padding: 25px; transform: translateX(100%); transition: .25s; }
+		.drawer.open .drawer-panel { transform: translateX(0); }
+		.drawer-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding-bottom: 17px; }
+		.drawer-head h2 { font-size: 23px; }
+		.icon-button { border: 0; background: transparent; color: var(--muted); padding: 4px; }
+		.cart-items { padding: 20px 0; min-height: 180px; color: var(--muted); font-size: 13px; }
+		.cart-item { display: flex; gap: 12px; border-bottom: 1px solid var(--line); padding: 12px 0; color: var(--ink); }
+		.cart-item img { width: 55px; height: 55px; object-fit: cover; background: var(--sky); }
+		.cart-item strong { display: block; font-size: 13px; }
+		.cart-item small { color: var(--muted); }
+		.cart-item-copy { flex: 1; min-width: 0; }
+		.remove-item { border: 0; background: transparent; color: #c25b5b; padding: 3px; align-self: center; }
+		.remove-item:hover { color: #9b3030; }
+		.cart-total { border-top: 1px solid var(--line); padding-top: 18px; display: flex; justify-content: space-between; font-weight: 700; }
+		.checkout { width: 100%; margin-top: 18px; justify-content: center; }
+		@media (max-width: 800px) { .nav { flex-wrap: wrap; gap: 15px; } .search { order: 3; flex-basis: 100%; max-width: none; } .nav-actions { gap: 8px; } .nav-action span { display: none; } .category-nav { overflow-x: auto; white-space: nowrap; } .hero { margin-top: 18px; min-height: 390px; background-position: 68% center; } .hero::after { background: linear-gradient(90deg, rgba(223,243,255,.98), rgba(223,243,255,.7)); } .categories { grid-template-columns: repeat(2, 1fr); } .products { grid-template-columns: repeat(2, minmax(0, 1fr)); } .benefits { grid-template-columns: 1fr; gap: 18px; } footer { flex-direction: column; } .detail-layout { grid-template-columns: 1fr; gap: 20px; } .detail-copy h2 { font-size: 25px; } }
+		@media (max-width: 430px) { .topbar { display: none; } .nav { padding: 14px 4vw; } .content { padding: 30px 4vw; } .hero { margin-left: 4vw; margin-right: 4vw; padding: 36px 25px; } .section-heading h2 { font-size: 24px; } .section-heading a { font-size: 11px; } .products { gap: 9px; } .product { padding: 8px; } .product h3 { font-size: 13px; } .price { font-size: 17px; } .footer-links { flex-wrap: wrap; gap: 14px; } }
+		/* Smart-ISP visual system */
+		:root { --navy: #102c3d; --blue: #087ea4; --sky: #e4f5f3; --pale: #f3f7f8; --ink: #163342; --muted: #6b7f88; --line: #d8e5e7; --orange: #f5a524; --mint: #d7f0e8; }
+		body { background: #f3f7f8; color: var(--ink); }
+		.topbar { background: #102c3d; padding-top: 8px; padding-bottom: 8px; }
+		.nav { padding-top: 15px; padding-bottom: 15px; box-shadow: 0 5px 18px rgba(16,44,61,.06); }
+		.logo { font-size: 25px; letter-spacing: -.07em; }
+		.logo b { color: #087ea4; }
+		.search { border-radius: 8px; background: #f3f7f8; }
+		.search:focus-within { border-color: #087ea4; box-shadow: 0 0 0 3px rgba(8,126,164,.11); }
+		.search button { background: #087ea4; }
+		.nav-action { color: #102c3d; }
+		.nav-action:hover { color: #087ea4; }
+		.cart-count { background: #f5a524; }
+		.category-nav { padding-top: 1px; padding-bottom: 15px; gap: 28px; }
+		.category-nav a { position: relative; }
+		.category-nav a:first-child::after { content: ''; position: absolute; left: 0; right: 0; bottom: -15px; height: 2px; background: #087ea4; }
+		.hero { margin-top: 30px; min-height: 370px; border-radius: 12px; background-color: #cdeee9; box-shadow: 0 18px 36px rgba(16,44,61,.12); }
+		.hero::after { background: linear-gradient(90deg, rgba(228,245,243,.99) 0%, rgba(228,245,243,.94) 42%, rgba(228,245,243,.12) 82%); }
+		.hero-content { max-width: 510px; }
+		.hero { min-height: var(--hero-height, 370px); background-position: var(--hero-image-position, center); }
+		.hero::after { background: linear-gradient(90deg, var(--hero-overlay, rgba(228,245,243,.99)) 0%, var(--hero-overlay, rgba(228,245,243,.94)) 42%, rgba(228,245,243,0) 82%); }
+		.hero-content { max-width: var(--hero-content-width, 510px); }
+		.hero h1 { color: var(--hero-text-color, #102c3d); }
+		.hero p { color: color-mix(in srgb, var(--hero-text-color, #102c3d) 72%, transparent); }
+		.eyebrow { color: #087ea4; letter-spacing: .17em; }
+		h1 { color: #102c3d; font-size: clamp(38px, 5vw, 64px); }
+		.hero p { color: #4e6974; font-size: 15px; }
+		.primary { background: #087ea4; border-radius: 7px; box-shadow: 0 8px 18px rgba(8,126,164,.2); }
+		.primary:hover { background: #06677f; transform: translateY(-1px); }
+		.content { padding-top: 48px; }
+		.section-heading { margin-bottom: 22px; }
+		.section-heading h2 { color: #102c3d; font-size: 31px; }
+		.categories { gap: 14px; margin-bottom: 50px; }
+		.category, .product { border-radius: 9px; background: #fff; box-shadow: 0 5px 16px rgba(16,44,61,.04); }
+		.category { min-height: 122px; padding: 20px 17px; }
+		.category:hover, .category.active { border-color: #087ea4; box-shadow: 0 10px 24px rgba(8,126,164,.13); }
+		.category.active { background: #f0faf8; }
+		.select { border-radius: 7px; background: #fff; }
+		.product { padding: 10px; }
+		.product-image { border-radius: 6px; background: #edf7f7; }
+		.product-info { padding: 18px 5px 5px; }
+		.product h3 { color: #163342; }
+		.add { border-radius: 7px; color: #087ea4; background: #eaf7f5; border-color: #a9d8d0; }
+		.benefits { background: #102c3d; padding-top: 28px; padding-bottom: 28px; }
+		.benefit i { color: #62c8bd; }
+		footer { padding-top: 42px; padding-bottom: 42px; }
+		.modal-panel, .drawer-panel { border-radius: 10px; box-shadow: 0 24px 70px rgba(16,44,61,.22); }
+		.modal-close { border-radius: 50%; }
+		@media (max-width: 800px) { .hero { border-radius: 10px; } .hero::after { background: linear-gradient(90deg, rgba(228,245,243,.99), rgba(228,245,243,.78)); } }
+		.account-switch { width: 100%; border: 0; background: transparent; color: var(--muted); padding: 17px 4px 2px; font-size: 12px; }
+		.account-switch strong { color: var(--blue); }
+		.account-switch:hover strong { text-decoration: underline; }
+		#accountModal .modal-panel { overflow: hidden; padding: 0; background: linear-gradient(145deg, #ffffff 0%, #f4fbfa 100%); }
+		#accountModal .modal-close { top: 20px; right: 20px; width: 36px; height: 36px; background: rgba(255,255,255,.82); box-shadow: 0 8px 20px rgba(16,44,61,.1); transition: transform .25s ease, background .25s ease; }
+		#accountModal .modal-close:hover { background: white; transform: rotate(90deg); }
+		#loginView, #registerView, #profileView { padding: 42px 38px 34px; animation: accountReveal .45s cubic-bezier(.2,.8,.2,1) both; }
+		#loginView::before, #registerView::before, #profileView::before { content: ''; display: block; width: 54px; height: 4px; margin-bottom: 28px; border-radius: 99px; background: linear-gradient(90deg, var(--blue), #62c8bd); }
+		#accountModal .form-field input { border-radius: 7px; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+		#accountModal .form-field input:focus { transform: translateY(-1px); }
+		.account-submit { min-height: 46px; transition: transform .2s ease, box-shadow .2s ease, background .2s ease; }
+		.account-submit.is-loading { pointer-events: none; opacity: .75; }
+		.account-submit.is-loading i { animation: accountSpin .8s linear infinite; }
+		.profile-card { position: relative; overflow: hidden; margin-top: 24px; padding: 22px; border: 1px solid #cfe8e2; border-radius: 12px; background: rgba(255,255,255,.78); box-shadow: 0 12px 28px rgba(16,44,61,.08); }
+		.profile-card::after { content: ''; position: absolute; width: 110px; height: 110px; right: -42px; top: -48px; border-radius: 50%; background: #d9f2eb; }
+		.profile-avatar { position: relative; z-index: 1; display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 15px; border-radius: 50%; color: white; background: linear-gradient(135deg, var(--blue), #55bcae); font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 700; }
+		.profile-card h2 { position: relative; z-index: 1; margin: 0 0 5px; }
+		.profile-email { position: relative; z-index: 1; color: var(--muted); font-size: 13px; }
+		.logout-button { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 20px; padding: 12px; border: 1px solid #edcaca; border-radius: 7px; color: #a53b3b; background: #fff8f8; font-weight: 700; cursor: pointer; transition: background .2s ease, transform .2s ease, border-color .2s ease; }
+		.logout-button:hover { border-color: #d99696; background: #fff0f0; transform: translateY(-1px); }
+		@keyframes accountReveal { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+		@keyframes accountSpin { to { transform: rotate(360deg); } }
+		@media (max-width: 430px) { #loginView, #registerView, #profileView { padding: 34px 24px 26px; } }
+		.account-system { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 20px; background: rgba(16,44,61,.62); backdrop-filter: blur(10px); opacity: 0; visibility: hidden; transition: opacity .28s ease, visibility .28s ease; }
+		.account-system.is-open { opacity: 1; visibility: visible; }
+		.account-shell { width: min(860px, 100%); max-height: min(720px, 92vh); overflow: auto; border: 1px solid rgba(255,255,255,.7); border-radius: 18px; background: #f4fbfa; box-shadow: 0 30px 90px rgba(6,31,43,.35); transform: translateY(18px) scale(.97); transition: transform .4s cubic-bezier(.2,.8,.2,1); }
+		.account-system.is-open .account-shell { transform: translateY(0) scale(1); }
+		.account-layout { display: grid; grid-template-columns: .78fr 1.22fr; min-height: 540px; }
+		.account-aside { display: flex; flex-direction: column; justify-content: space-between; padding: 38px 30px; color: white; background: linear-gradient(150deg, #102c3d, #087ea4 75%, #55bcae); }
+		.account-aside h2 { max-width: 230px; margin: 18px 0 12px; color: white; font-size: 34px; line-height: 1.02; }
+		.account-aside p { color: #d8f4f0; font-size: 13px; line-height: 1.6; }
+		.account-aside-mark { display: grid; place-items: center; width: 48px; height: 48px; border: 1px solid rgba(255,255,255,.4); border-radius: 14px; background: rgba(255,255,255,.12); }
+		.account-aside-note { display: flex; gap: 9px; align-items: center; color: #d8f4f0; font-size: 11px; }
+		.account-main { position: relative; padding: 32px 38px; background: white; }
+		.account-system-close { position: absolute; top: 18px; right: 18px; z-index: 2; width: 34px; height: 34px; border: 0; border-radius: 50%; color: var(--muted); background: #eef7f5; cursor: pointer; transition: transform .2s ease, background .2s ease; }
+		.account-system-close:hover { background: #dff1ed; transform: rotate(90deg); }
+		.account-kicker { color: var(--blue); font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+		.account-main h2 { margin: 7px 0 8px; color: var(--navy); font-size: 30px; }
+		.account-main-intro { margin-bottom: 20px; color: var(--muted); font-size: 13px; }
+		.account-tabs { display: flex; gap: 7px; margin: 0 0 23px; padding: 4px; border-radius: 9px; background: #edf6f4; }
+		.account-tab { flex: 1; padding: 10px 8px; border: 0; border-radius: 6px; color: var(--muted); background: transparent; font-size: 12px; font-weight: 700; cursor: pointer; transition: color .2s ease, background .2s ease, box-shadow .2s ease; }
+		.account-tab.is-active { color: var(--navy); background: white; box-shadow: 0 4px 12px rgba(16,44,61,.1); }
+		.account-pane { animation: accountPaneIn .35s ease both; }
+		.account-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+		.account-grid .form-field { margin: 10px 0; }
+		.account-system .form-field { margin: 12px 0; }
+		.account-system .form-field input, .account-system .form-field select { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 7px; background: #f8fbfb; color: var(--ink); outline: 0; }
+		.account-system .form-field input:focus, .account-system .form-field select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(8,126,164,.12); }
+		.account-system .primary { min-height: 45px; }
+		.account-system .form-message { margin: 12px 0 0; }
+		.account-link { width: 100%; margin-top: 15px; border: 0; color: var(--blue); background: transparent; font-size: 12px; cursor: pointer; }
+		.profile-summary { display: flex; align-items: center; gap: 14px; margin: 14px 0 23px; padding: 16px; border: 1px solid #d8ebe7; border-radius: 12px; background: #f3faf8; }
+		.profile-photo { display: grid; place-items: center; width: 58px; height: 58px; overflow: hidden; flex: 0 0 auto; border-radius: 50%; color: white; background: linear-gradient(135deg, var(--blue), #55bcae); font-size: 20px; font-weight: 800; }
+		.profile-photo img { width: 100%; height: 100%; object-fit: cover; }
+		.account-nav-avatar { display: inline-grid; place-items: center; width: 24px; height: 24px; overflow: hidden; border-radius: 50%; color: white; background: linear-gradient(135deg, var(--blue), #55bcae); font-size: 11px; font-weight: 700; }
+		.account-nav-avatar img { width: 100%; height: 100%; object-fit: cover; }
+		.heart.is-saved { color: #d35b63; background: #fff0f1; border-color: #efb8bd; }
+		.wishlist-toast { position: fixed; right: 24px; bottom: 24px; z-index: 5000; display: flex; align-items: center; gap: 9px; max-width: min(360px, calc(100vw - 32px)); padding: 13px 16px; border: 1px solid #b9ded5; border-radius: 10px; color: #0d644f; background: #effbf7; box-shadow: 0 14px 34px rgba(16,44,61,.2); font-size: 13px; font-weight: 700; opacity: 0; transform: translateY(14px); pointer-events: none; transition: opacity .25s ease, transform .25s ease; }
+		.wishlist-toast.is-visible { opacity: 1; transform: translateY(0); }
+		.wishlist-toast::before { content: '\2713'; display: grid; place-items: center; width: 21px; height: 21px; border-radius: 50%; color: white; background: #168b6b; }
+		.wishlist-toast.is-removed { color: #8b3e45; border-color: #efc1c5; background: #fff5f5; }
+		.wishlist-toast.is-removed::before { content: '\2212'; background: #c25a64; }
+		@media (max-width: 520px) { .wishlist-toast { right: 16px; bottom: 16px; left: 16px; max-width: none; } }
+		.profile-crop-modal { position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center; padding: 18px; background: rgba(9,30,42,.72); }
+		.profile-crop-modal[hidden] { display: none; }
+		.profile-crop-dialog { width: min(680px, 100%); padding: 22px; border-radius: 14px; background: white; box-shadow: 0 24px 60px rgba(0,0,0,.28); }
+		.profile-crop-stage { position: relative; display: grid; place-items: center; min-height: 280px; overflow: hidden; border-radius: 10px; background: #102c3d; }
+		.profile-crop-stage canvas { display: block; max-width: 100%; max-height: 58vh; }
+		.profile-crop-box { position: absolute; border: 2px solid white; box-shadow: 0 0 0 9999px rgba(0,0,0,.48); cursor: move; touch-action: none; }
+		.profile-crop-box::before, .profile-crop-box::after { content: ''; position: absolute; inset: 33.33% 0; border-top: 1px solid rgba(255,255,255,.55); border-bottom: 1px solid rgba(255,255,255,.55); }
+		.profile-crop-box::after { inset: 0 33.33%; border-top: 0; border-bottom: 0; border-left: 1px solid rgba(255,255,255,.55); border-right: 1px solid rgba(255,255,255,.55); }
+		.profile-crop-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+		.profile-summary strong { display: block; color: var(--navy); font-size: 17px; }
+		.profile-summary span { color: var(--muted); font-size: 12px; }
+		.profile-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+		.password-section { margin-top: 24px; padding-top: 22px; border-top: 1px solid var(--line); }
+		.password-section h3 { margin: 0 0 5px; color: var(--navy); font-size: 17px; }
+		.password-section p { margin: 0 0 14px; color: var(--muted); font-size: 12px; }
+		.password-section .primary { margin-top: 6px; }
+		.customer-hub { margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--line); }
+		.customer-hub h3 { margin: 0 0 12px; color: var(--navy); }
+		.hub-list { display: grid; gap: 9px; max-height: 260px; overflow: auto; }
+		.hub-item { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 9px; background: white; }
+		.hub-item img { width: 48px; height: 48px; object-fit: contain; border-radius: 7px; background: #eef7f6; }
+		.hub-item strong { display: block; color: var(--navy); font-size: 13px; }
+		.hub-item small { color: var(--muted); }
+		.hub-empty { padding: 18px; color: var(--muted); border: 1px dashed var(--line); border-radius: 9px; text-align: center; font-size: 13px; }
+		.wishlist-tools { display: flex; gap: 4px; margin-left: auto; }
+		.wishlist-tools button { width: 28px; height: 28px; border: 1px solid var(--line); border-radius: 6px; color: var(--navy); background: #f7fcfc; cursor: pointer; }
+		.wishlist-tools button:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
+		.wishlist-tools button:last-child { color: #a53b3b; }
+		.wishlist-tools button:disabled { cursor: not-allowed; opacity: .35; }
+		.order-item { display: block; }
+		.order-head { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
+		.profile-action { display: flex; align-items: center; gap: 9px; padding: 14px; border: 1px solid var(--line); border-radius: 9px; color: var(--navy); background: white; text-align: left; cursor: pointer; transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease; }
+		.profile-action:hover { border-color: #9acfc2; box-shadow: 0 8px 20px rgba(16,44,61,.08); transform: translateY(-2px); }
+		.profile-action small { display: block; margin-top: 3px; color: var(--muted); }
+		.settings-section { margin-top: 19px; padding-top: 17px; border-top: 1px solid var(--line); }
+		.settings-section h3 { margin-bottom: 8px; color: var(--navy); font-size: 15px; }
+		.setting-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 0; border-bottom: 1px solid #edf3f2; color: var(--navy); font-size: 12px; }
+		.setting-row small { display: block; margin-top: 3px; color: var(--muted); }
+		.setting-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--blue); }
+		.logout-button { margin-top: 24px; }
+		@keyframes accountPaneIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+		body[data-account-theme="contrast"] { --blue: #005a70; --line: #a9c4c6; }
+		body[data-account-theme="night"] { --navy: #0d2632; --ink: #183845; --pale: #edf4f5; --line: #b8cdd0; }
+		body.account-compact .product-info { padding-top: 10px; }
+		body.account-compact .categories { margin-bottom: 30px; }
+		@media (max-width: 680px) { .account-layout { grid-template-columns: 1fr; } .account-aside { display: none; } .account-main { padding: 28px 23px; } }
+		@media (max-width: 430px) { .account-grid, .profile-actions { grid-template-columns: 1fr; } .account-main h2 { font-size: 26px; } }
+	</style>
+</head>
+<body>
+	<div class="topbar"><span><i data-lucide="truck" width="14"></i> Envío gratis desde $75.000</span><span><a href="index.html" style="color:#d9efff;text-decoration:none;margin-right:16px;display:inline-flex;align-items:center;gap:4px;"><i data-lucide="building-2" width="13"></i> Conoce nuestra empresa</a> Atención experta · Lun a Vie 9:00 a 18:00</span></div>
+	<header class="nav">
+		<a class="logo" href="index.html" title="SmartISP - Volver a la presentación">smart<b>isp</b><span style="color:#f5a524">.</span></a>
+		<form class="search" id="searchForm"><input id="searchInput" type="search" placeholder="¿Qué estás buscando hoy?" aria-label="Buscar productos"><button aria-label="Buscar"><i data-lucide="search" width="18"></i></button></form>
+		<div class="nav-actions"><a class="nav-action" href="index.html" title="Conocer sobre la empresa"><i data-lucide="building-2" width="16"></i><span>Empresa</span></a><button class="nav-action" id="openAccount"><span id="accountNavAvatar" class="account-nav-avatar"><i data-lucide="user-round" width="14"></i></span><span id="accountLabel">Mi cuenta</span></button><a class="admin-nav-link" id="adminNavLink" href="/admin.html"><i data-lucide="layout-dashboard" width="16"></i><span>Panel admin</span></a><button class="nav-action cart-button" id="openCart"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="cart-count" id="cartCount">0</b></button></div>
+	</header>
+	<nav class="category-nav" aria-label="Categorías del catálogo"><a href="#catalogo">Todo</a><a href="#catalogo" data-filter="Notebooks">Notebooks</a><a href="#catalogo" data-filter="Redes">Redes</a><a href="#catalogo" data-filter="Servidores">Servidores</a><a href="#catalogo" data-filter="Accesorios">Accesorios</a><a href="#catalogo" data-filter="Monitores">Monitores</a></nav>
+	<main>
+		<section class="hero"><div class="hero-content"><div class="eyebrow" id="heroEyebrow">Infraestructura para proveedores de internet</div><h1 id="heroTitle">Conecta más. Opera mejor.</h1><p id="heroText">Equipamiento confiable para redes, servidores y equipos de trabajo que mantienen tu servicio siempre en línea.</p><a class="primary" id="heroButton" href="#catalogo"><span id="heroButtonText">Explorar soluciones</span> <i data-lucide="arrow-right" width="17"></i></a></div></section>
+		<section class="content">
+			<div class="section-heading"><h2>Compra por categoría</h2><a href="#catalogo">Ver todas <i data-lucide="arrow-up-right" width="14" style="vertical-align:middle"></i></a></div>
+			<div class="categories"><button class="category active" data-filter="all"><i data-lucide="layers" width="22"></i><strong>Todo el catálogo</strong><small>240 productos</small></button><button class="category" data-filter="Notebooks"><i data-lucide="laptop" width="22"></i><strong>Notebooks</strong><small>45 productos</small></button><button class="category" data-filter="Redes"><i data-lucide="network" width="22"></i><strong>Redes</strong><small>38 productos</small></button><button class="category" data-filter="Servidores"><i data-lucide="server" width="22"></i><strong>Servidores</strong><small>22 productos</small></button><button class="category" data-filter="Accesorios"><i data-lucide="cable" width="22"></i><strong>Accesorios</strong><small>86 productos</small></button></div>
+			<div id="catalogo" class="toolbar"><div class="result-count" id="resultCount">Mostrando 4 productos destacados</div><select class="select" id="sortSelect" aria-label="Ordenar productos"><option value="featured">Más relevantes</option><option value="low">Precio: menor a mayor</option><option value="high">Precio: mayor a menor</option></select></div>
+			<div class="products" id="products"></div>
+		</section>
+		<section class="benefits"><div class="benefit"><i data-lucide="shield-check" width="25"></i><div><strong>Compra segura</strong><span>Protegemos cada transacción</span></div></div><div class="benefit"><i data-lucide="headphones" width="25"></i><div><strong>Asesoría especializada</strong><span>Personas reales, respuestas claras</span></div></div><div class="benefit"><i data-lucide="package-check" width="25"></i><div><strong>Despacho a todo Ecuador</strong><span>Recibe donde estés</span></div></div></section>
+	</main>
+	<footer><div><div class="logo">smart<b>isp</b><span style="color:#f5a524">.</span></div><div>Infraestructura que mantiene tu red en movimiento.</div></div><div class="footer-links"><a href="index.html">Sobre la Empresa</a><a href="index.html#contacto">Contacto y Soporte</a><a href="#">Despachos</a><a href="#">Garantías</a></div><div>© 2026 SmartISP</div></footer>
+		<aside class="drawer" id="drawer"><div class="drawer-panel"><div class="drawer-head"><h2>Tu carrito</h2><button class="icon-button" id="closeCart" aria-label="Cerrar carrito"><i data-lucide="x"></i></button></div><div class="cart-items" id="cartItems">Tu carrito está vacío.</div><div class="cart-total"><span>Total</span><span id="cartTotal">$0</span></div><button class="primary checkout">Finalizar compra <i data-lucide="arrow-up-right" width="16"></i></button></div></aside>
+		<div class="modal" id="productModal" role="dialog" aria-modal="true" aria-labelledby="detailTitle"><div class="modal-panel"><button class="icon-button modal-close" data-close-modal="productModal" aria-label="Cerrar especificaciones"><i data-lucide="x"></i></button><div id="productDetail"></div></div></div>
+		<div class="modal" id="accountModal" role="dialog" aria-modal="true" aria-labelledby="accountTitle"><div class="modal-panel account-panel"><button class="icon-button modal-close" data-close-modal="accountModal" aria-label="Cerrar acceso"><i data-lucide="x"></i></button><div id="loginView"><div class="eyebrow">Área personal</div><h2 id="accountTitle">Entra a tu cuenta</h2><p>Usa tu acceso demo para consultar preferencias y configuraciones.</p><form id="accountForm"><label class="form-field">Correo electrónico<input id="emailInput" type="email" placeholder="tu@correo.com" required autocomplete="email"></label><label class="form-field">Contraseña<input id="passwordInput" type="password" placeholder="Mínimo 6 caracteres" minlength="6" required autocomplete="current-password"></label><div class="form-options"><label><input type="checkbox"> Recordarme</label><a href="#">¿Olvidaste tu contraseña?</a></div><button class="primary account-submit" type="submit">Ingresar <i data-lucide="arrow-right" width="16"></i></button><div class="form-message" id="formMessage"></div></form><button class="account-switch" id="showRegister" type="button">¿Aún no tienes cuenta? <strong>Regístrate</strong></button></div><div id="registerView" hidden><div class="eyebrow">Nueva cuenta</div><h2>Únete a SmartISP</h2><p>Crea tu acceso para guardar tus preferencias y agilizar tus compras.</p><form id="registerForm"><label class="form-field">Nombre<input id="registerName" type="text" placeholder="Tu nombre" minlength="2" required autocomplete="name"></label><label class="form-field">Correo electrónico<input id="registerEmail" type="email" placeholder="tu@correo.com" required autocomplete="email"></label><label class="form-field">Contraseña<input id="registerPassword" type="password" placeholder="Mínimo 6 caracteres" minlength="6" required autocomplete="new-password"></label><label class="form-field">Confirmar contraseña<input id="registerPasswordConfirm" type="password" placeholder="Repite tu contraseña" minlength="6" required autocomplete="new-password"></label><button class="primary account-submit" type="submit">Crear cuenta <i data-lucide="arrow-right" width="16"></i></button><div class="form-message" id="registerMessage"></div></form><button class="account-switch" id="showLogin" type="button">¿Ya tienes cuenta? <strong>Ingresar</strong></button></div><div id="profileView" hidden><div class="eyebrow">Cuenta activa</div><h2>Hola, Medardo</h2><p id="profileEmail">medardo@gmail.com</p><div class="profile-options"><label class="form-options"><span><i data-lucide="moon" width="16" style="vertical-align:middle"></i> Modo oscuro</span><input id="darkModeToggle" type="checkbox"></label><label class="form-options"><span><i data-lucide="bell" width="16" style="vertical-align:middle"></i> Notificaciones de ofertas</span><input type="checkbox" checked></label><label class="form-options"><span><i data-lucide="globe" width="16" style="vertical-align:middle"></i> Idioma</span><select class="select"><option>Español</option><option>English</option></select></label></div><button class="primary account-submit" id="logoutButton" type="button">Cerrar sesión <i data-lucide="log-out" width="16"></i></button></div></div></div>
+	<script>
+		let products = [
+			{ name: 'MacBook Air M2 13”', brand: 'Apple', category: 'Notebooks', price: 899990, reviews: 124, image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=700&q=80', tag: 'Más vendido', description: 'Potencia silenciosa y una batería que acompaña toda tu jornada. Ideal para trabajo, estudio y creación.', specs: [['Procesador', 'Apple M2'], ['Memoria RAM', '8 GB'], ['Almacenamiento', '256 GB SSD'], ['Pantalla', '13.6” Liquid Retina'], ['Batería', 'Hasta 18 horas'], ['Conectividad', 'WiFi 6 / Bluetooth 5.0']] },
+			{ name: 'Router WiFi 6 AX3000', brand: 'TP-Link', category: 'Redes', price: 74990, reviews: 86, image: 'https://images.unsplash.com/photo-1647427060118-4911c9821b82?auto=format&fit=crop&w=700&q=80', tag: 'Oferta', description: 'Conecta más dispositivos con menos latencia. Cobertura estable para hogares y oficinas pequeñas.', specs: [['Velocidad', '3.0 Gbps'], ['Estándar', 'WiFi 6 AX3000'], ['Puertos', '4 × Gigabit LAN'], ['Cobertura', 'Hasta 230 m²'], ['Seguridad', 'WPA3'], ['Gestión', 'App TP-Link']] },
+			{ name: 'Servidor PowerEdge T150', brand: 'Dell', category: 'Servidores', price: 1299990, reviews: 31, image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=700&q=80', tag: 'Pro IT', description: 'Servidor torre compacto para centralizar datos, aplicaciones y respaldos de pequeñas empresas.', specs: [['Procesador', 'Intel Xeon E-2314'], ['Memoria RAM', '16 GB ECC'], ['Almacenamiento', '2 × 1 TB SATA'], ['Formato', 'Torre 4U'], ['Red', '2 × Gigabit Ethernet'], ['Garantía', '3 años en sitio']] },
+			{ name: 'Monitor UltraWide 34” QHD', brand: 'LG', category: 'Monitores', price: 369990, reviews: 57, image: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=700&q=80', tag: '', description: 'Más espacio para tus proyectos con una imagen nítida y una experiencia envolvente para trabajar.', specs: [['Resolución', '3440 × 1440 QHD'], ['Panel', 'IPS curvo 21:9'], ['Tasa de refresco', '160 Hz'], ['Conexiones', 'HDMI / DisplayPort'], ['Tamaño', '34 pulgadas'], ['Sincronización', 'AMD FreeSync']] }
+		];
+		let selectedFilter = 'all'; let cart = JSON.parse(localStorage.getItem('smartisp.cart') || '[]'); let signedIn = false; let wishlistIds = new Set();
+		const money = value => '$' + value.toLocaleString('es-CL');
+		const productKey = product => String(product.id || product.name);
+		const render = () => { const query = document.querySelector('#searchInput').value.toLowerCase(); const sort = document.querySelector('#sortSelect').value; let shown = products.filter(product => (selectedFilter === 'all' || product.category === selectedFilter) && `${product.name} ${product.brand} ${product.category}`.toLowerCase().includes(query)); if (sort === 'low') shown.sort((a,b) => a.price-b.price); if (sort === 'high') shown.sort((a,b) => b.price-a.price); document.querySelector('#resultCount').textContent = `Mostrando ${shown.length} producto${shown.length === 1 ? '' : 's'}${query ? ' encontrados' : ' destacados'}`; document.querySelector('#products').innerHTML = shown.length ? shown.map(product => `<article class="product" data-index="${products.indexOf(product)}" tabindex="0" role="group" aria-label="Ver especificaciones de ${product.name}"><div class="product-image">${product.tag ? `<span class="tag">${product.tag}</span>` : ''}<button class="heart" aria-label="Agregar a favoritos"><i data-lucide="heart" width="16"></i></button><img src="${product.image}" alt="${product.name}" loading="lazy"></div><div class="product-info"><div class="product-brand">${product.brand}</div><h3>${product.name}</h3><div><span class="stars">★★★★★</span><span class="reviews">(${product.reviews})</span></div><div class="price-row"><span class="price">${money(product.price)}</span><button class="add" data-index="${products.indexOf(product)}" aria-label="Agregar ${product.name} al carrito"><i data-lucide="plus" width="18"></i></button></div></div></article>`).join('') : '<div class="empty">No encontramos productos con esa búsqueda.</div>'; lucide.createIcons(); document.querySelectorAll('.add').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); cart.push(products[button.dataset.index]); updateCart(); })); document.querySelectorAll('.heart').forEach(button => button.addEventListener('click', event => event.stopPropagation())); document.querySelectorAll('.product').forEach(card => { const open = () => openProduct(products[card.dataset.index]); card.addEventListener('click', event => { if (!event.target.closest('button')) open(); }); card.addEventListener('keydown', event => { if ((event.key === 'Enter' || event.key === ' ') && !event.target.closest('button')) { event.preventDefault(); open(); } }); }); };
+		const openProduct = product => { document.querySelector('#productDetail').innerHTML = `<div class="detail-layout"><div class="detail-image"><img src="${product.image}" alt="${product.name}"></div><div class="detail-copy"><div class="product-brand">${product.brand} · ${product.category}</div><h2 id="detailTitle">${product.name}</h2><div><span class="stars">★★★★★</span><span class="reviews">${product.reviews} opiniones</span></div><span class="price">${money(product.price)}</span><p class="detail-description">${product.description}</p><div class="specs">${product.specs.map(spec => `<div class="spec"><span>${spec[0]}</span><strong>${spec[1]}</strong></div>`).join('')}</div><button class="primary" data-detail-add="${products.indexOf(product)}" style="margin-top:22px">Agregar al carrito <i data-lucide="shopping-cart" width="16"></i></button></div></div>`; document.querySelector('#productModal').classList.add('open'); lucide.createIcons(); document.querySelector('[data-detail-add]').addEventListener('click', () => addToCart(product)); };
+		const addToCart = product => { cart.push(product); updateCart(true); };
+		const updateCart = (animate = true) => { localStorage.setItem('smartisp.cart', JSON.stringify(cart)); const count = document.querySelector('#cartCount'); count.textContent = cart.length; if (animate) { count.classList.remove('bump'); void count.offsetWidth; count.classList.add('bump'); } document.querySelector('#cartItems').innerHTML = cart.length ? cart.map((item, index) => `<div class="cart-item"><img src="${item.image}" alt=""><div class="cart-item-copy"><strong>${item.name}</strong><small>${money(item.price)}</small></div><button class="remove-item" data-remove-index="${index}" aria-label="Eliminar ${item.name} del carrito"><i data-lucide="trash-2" width="16"></i></button></div>`).join('') : 'Tu carrito está vacío.'; document.querySelector('#cartTotal').textContent = money(cart.reduce((total, item) => total + item.price, 0)); lucide.createIcons(); document.querySelectorAll('[data-remove-index]').forEach(button => button.addEventListener('click', () => { cart.splice(Number(button.dataset.removeIndex), 1); updateCart(false); })); };
+		document.querySelectorAll('[data-filter]').forEach(button => button.addEventListener('click', event => { event.preventDefault(); selectedFilter = button.dataset.filter; document.querySelectorAll('.category').forEach(category => category.classList.toggle('active', category.dataset.filter === selectedFilter)); render(); document.querySelector('#catalogo').scrollIntoView({ behavior: 'smooth' }); }));
+		document.querySelector('#searchForm').addEventListener('submit', event => { event.preventDefault(); render(); document.querySelector('#catalogo').scrollIntoView({ behavior: 'smooth' }); }); document.querySelector('#searchInput').addEventListener('input', render); document.querySelector('#sortSelect').addEventListener('change', render);
+		document.querySelector('#openCart').addEventListener('click', () => document.querySelector('#drawer').classList.add('open')); document.querySelector('#closeCart').addEventListener('click', () => document.querySelector('#drawer').classList.remove('open')); document.querySelector('#drawer').addEventListener('click', event => { if (event.target.id === 'drawer') event.target.classList.remove('open'); });
+		document.querySelector('#openAccount').addEventListener('click', async () => { document.querySelector('#accountModal').classList.add('open'); document.querySelector('#loginView').hidden = signedIn; document.querySelector('#profileView').hidden = !signedIn; if (!signedIn) { try { const response = await fetch('/api/auth/me'); if (response.ok) { signedIn = true; document.querySelector('#loginView').hidden = true; document.querySelector('#profileView').hidden = false; } } catch (error) { console.warn('Backend no disponible'); } } }); document.querySelectorAll('[data-close-modal]').forEach(button => button.addEventListener('click', () => document.querySelector(`#${button.dataset.closeModal}`).classList.remove('open'))); document.querySelectorAll('.modal').forEach(modal => modal.addEventListener('click', event => { if (event.target === modal) modal.classList.remove('open'); })); document.querySelector('#accountForm').addEventListener('submit', async event => { event.preventDefault(); const email = document.querySelector('#emailInput').value.trim().toLowerCase(); const password = document.querySelector('#passwordInput').value; const message = document.querySelector('#formMessage'); try { const response = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) }); const result = await response.json(); if (!response.ok) throw new Error(result.error); signedIn = true; document.querySelector('#profileEmail').textContent = result.user.email; document.querySelector('#loginView').hidden = true; document.querySelector('#profileView').hidden = false; message.classList.remove('show'); lucide.createIcons(); } catch (error) { message.textContent = error.message || 'No se pudo conectar con el servidor.'; message.style.color = '#a53b3b'; message.style.background = '#fff0f0'; message.classList.add('show'); } }); document.querySelector('#logoutButton').addEventListener('click', async () => { await fetch('/api/auth/logout', { method: 'POST' }); signedIn = false; document.querySelector('#profileView').hidden = true; document.querySelector('#loginView').hidden = false; document.querySelector('#accountForm').reset(); document.querySelector('#formMessage').classList.remove('show'); }); document.querySelector('#darkModeToggle').addEventListener('change', event => document.body.classList.toggle('dark-mode', event.target.checked));
+		document.addEventListener('keydown', event => { if (event.key === 'Escape') document.querySelectorAll('.modal.open, .drawer.open').forEach(element => element.classList.remove('open')); });
+		const applyRemoteSite = async () => { try { const response = await fetch('/api/auth/catalog'); if (!response.ok) return; const remote = await response.json(); if (remote.products.length) { products = remote.products.map(product => ({ ...product, brand: product.category || 'SmartISP', image: product.imageUrl, reviews: 0, tag: '', specs: [] })); render(); } const content = Object.fromEntries(remote.content.map(item => [item.key, item.value])); if (content.hero_title) document.querySelector('.hero h1').textContent = content.hero_title; if (content.hero_text) document.querySelector('.hero p').textContent = content.hero_text; if (content.hero_image) document.querySelector('.hero').style.backgroundImage = `url("${content.hero_image}")`; if (content.primary_color) document.documentElement.style.setProperty('--blue', content.primary_color); if (content.brand_name) document.querySelectorAll('.logo').forEach(logo => { logo.textContent = content.brand_name; }); if (content.footer_text) document.querySelector('footer > div:first-child > div:last-child').textContent = content.footer_text; if (content.catalog_visible === 'false') document.querySelector('#catalogo').hidden = true; if (content.hero_visible === 'false') document.querySelector('.hero').hidden = true; if (content.benefits_visible === 'false') document.querySelector('.benefits').hidden = true; } catch (error) { console.warn('Contenido remoto no disponible.'); } };
+		document.addEventListener('click', event => { const heart = event.target.closest('.heart'); if (!heart) return; const card = heart.closest('.product'); if (!card) return; event.preventDefault(); event.stopImmediatePropagation(); toggleWishlist(products[card.dataset.index], heart); }, true);
+		render(); lucide.createIcons(); applyRemoteSite();
+	</script>
+	<script>
+		const showAccountView = view => { document.querySelector('#loginView').hidden = view !== 'login'; document.querySelector('#registerView').hidden = view !== 'register'; };
+		const updateMainAvatar = photo => { const avatar = document.querySelector('#accountNavAvatar'); avatar.innerHTML = photo ? `<img src="${photo}" alt="">` : '<i data-lucide="user-round" width="14"></i>'; lucide.createIcons(); };
+		const setSignedInUser = (user, remember = false) => { (remember ? localStorage : sessionStorage).setItem('smartisp.accountUser', JSON.stringify(user)); if (remember) localStorage.setItem('smartisp.accountRemembered', 'true'); else { localStorage.removeItem('smartisp.accountUser'); localStorage.removeItem('smartisp.accountRemembered'); } signedIn = true; document.querySelector('#accountLabel').textContent = user.name; updateMainAvatar(localStorage.getItem('smartisp.profilePhoto') || ''); document.querySelector('#profileEmail').textContent = user.email; document.querySelector('#profileView h2').textContent = `Hola, ${user.name}`; };
+		const showFormMessage = (element, text, isError = false) => { element.textContent = text; element.classList.toggle('error', isError); element.classList.add('show'); };
+		document.querySelector('#openAccount').addEventListener('click', () => { if (!signedIn) showAccountView('login'); });
+		document.querySelector('#showRegister').addEventListener('click', () => showAccountView('register'));
+		document.querySelector('#showLogin').addEventListener('click', () => showAccountView('login'));
+		document.querySelector('#registerForm').addEventListener('submit', async event => {
+			event.preventDefault();
+			const name = document.querySelector('#registerName').value.trim();
+			const email = document.querySelector('#registerEmail').value.trim().toLowerCase();
+			const password = document.querySelector('#registerPassword').value;
+			const confirmation = document.querySelector('#registerPasswordConfirm').value;
+			const message = document.querySelector('#registerMessage');
+			if (password !== confirmation) { message.textContent = 'Las contraseñas no coinciden.'; message.classList.add('show'); return; }
+			try {
+				const response = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password }) });
+				const result = await response.json();
+				if (!response.ok) throw new Error(result.error);
+				setSignedInUser(result.user, false);
+				document.querySelector('#profileView h2').textContent = `Hola, ${result.user.name}`;
+				document.querySelector('#profileView').hidden = false;
+				document.querySelector('#registerView').hidden = true;
+				showFormMessage(message, 'Cuenta creada correctamente. Bienvenido a SmartISP.');
+				lucide.createIcons();
+			} catch (error) { showFormMessage(message, error.message || 'No se pudo crear la cuenta.', true); }
+		});
+	</script>
+	<script>
+		document.querySelector('#accountForm').addEventListener('submit', async event => {
+			event.preventDefault();
+			event.stopImmediatePropagation();
+			const message = document.querySelector('#formMessage');
+			try {
+				const response = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.querySelector('#emailInput').value.trim().toLowerCase(), password: document.querySelector('#passwordInput').value }) });
+				const result = await response.json();
+				if (!response.ok) throw new Error(result.error);
+				setSignedInUser(result.user, document.querySelector('#accountForm [name="remember"]')?.checked);
+				document.querySelector('#loginView').hidden = true;
+				document.querySelector('#profileView').hidden = false;
+				showFormMessage(message, 'Inicio de sesión correcto. Bienvenido a SmartISP.');
+				lucide.createIcons();
+			} catch (error) {
+				showFormMessage(message, error.message || 'No se pudo conectar con el servidor.', true);
+			}
+		}, true);
+		document.querySelector('#logoutButton').addEventListener('click', () => {
+			document.querySelector('#accountLabel').textContent = 'Mi cuenta';
+		});
+	</script>
+	<script>
+		const accountModal = document.querySelector('#accountModal');
+		const accountLabel = document.querySelector('#accountLabel');
+		const loginView = document.querySelector('#loginView');
+		const registerView = document.querySelector('#registerView');
+		const profileView = document.querySelector('#profileView');
+		const accountForm = document.querySelector('#accountForm');
+		const logoutButton = document.querySelector('#logoutButton');
+
+		const resetAccountState = () => {
+			signedIn = false;
+			accountLabel.textContent = 'Mi cuenta';
+			loginView.hidden = false;
+			registerView.hidden = true;
+			profileView.hidden = true;
+			accountForm.reset();
+			document.querySelector('#formMessage').classList.remove('show');
+			document.querySelector('#registerMessage').classList.remove('show');
+		};
+
+		const prepareAccountProfile = () => {
+			profileView.classList.add('profile-card');
+			if (!profileView.querySelector('.profile-avatar')) {
+				const avatar = document.createElement('div');
+				avatar.className = 'profile-avatar';
+				avatar.innerHTML = '<i data-lucide="user-round" width="21"></i>';
+				profileView.prepend(avatar);
+			}
+			lucide.createIcons();
+		};
+
+		logoutButton.addEventListener('click', async () => {
+			logoutButton.disabled = true;
+			logoutButton.classList.add('is-loading');
+			const icon = logoutButton.querySelector('i');
+			if (icon) icon.setAttribute('data-lucide', 'loader-circle');
+			lucide.createIcons();
+			try { await fetch('/api/auth/logout', { method: 'POST' }); } catch (error) { console.warn('Sesión local cerrada.'); }
+			resetAccountState();
+			logoutButton.disabled = false;
+			logoutButton.classList.remove('is-loading');
+			accountModal.classList.remove('open');
+			lucide.createIcons();
+		});
+
+		profileView.addEventListener('animationstart', prepareAccountProfile, { once: true });
+		accountModal.addEventListener('click', event => {
+			if (event.target === accountModal && signedIn) prepareAccountProfile();
+		});
+	</script>
+	<script>
+		const legacyAccountModal = document.querySelector('#accountModal');
+		legacyAccountModal.style.display = 'none';
+		const accountSystem = document.createElement('div');
+		accountSystem.className = 'account-system';
+		accountSystem.innerHTML = `<div class="account-shell"><div class="account-layout"><aside class="account-aside"><div><div class="account-aside-mark"><i data-lucide="shield-check" width="23"></i></div><h2>Tu espacio, a tu manera.</h2><p>Gestiona tus datos, preferencias y seguridad desde un solo lugar.</p></div><div class="account-aside-note"><i data-lucide="lock-keyhole" width="15"></i><span>Tus datos viajan protegidos</span></div></aside><section class="account-main"><button class="account-system-close" type="button" aria-label="Cerrar cuenta"><i data-lucide="x" width="18"></i></button><div id="accountAuthView"><div class="account-kicker">Área personal</div><h2 id="accountSystemTitle">Inicia sesión</h2><p class="account-main-intro">Accede a tus preferencias y agiliza tus próximas compras.</p><div class="account-tabs"><button class="account-tab is-active" type="button" data-account-tab="login">Iniciar sesión</button><button class="account-tab" type="button" data-account-tab="register">Crear cuenta</button></div><div class="account-pane" id="accountLoginPane"><form id="systemLoginForm"><label class="form-field">Email<input name="email" type="email" placeholder="tu@correo.com" required autocomplete="email"></label><label class="form-field">Contraseña<input name="password" type="password" placeholder="Tu contraseña" minlength="6" required autocomplete="current-password"></label><div class="form-options"><label><input type="checkbox" name="remember"> Recordarme</label><a href="#">¿Olvidaste tu contraseña?</a></div><button class="primary account-submit" type="submit">Entrar <i data-lucide="arrow-right" width="16"></i></button><div class="form-message" data-account-message></div></form></div><div class="account-pane" id="accountRegisterPane" hidden><form id="systemRegisterForm"><div class="account-grid"><label class="form-field">Nombre<input name="name" type="text" placeholder="Tu nombre" minlength="2" required autocomplete="given-name"></label><label class="form-field">Apellido<input name="surname" type="text" placeholder="Tu apellido" minlength="2" required autocomplete="family-name"></label></div><label class="form-field">Email<input name="email" type="email" placeholder="tu@correo.com" required autocomplete="email"></label><label class="form-field">Teléfono<input name="phone" type="tel" placeholder="+593 999 999 999" minlength="7" required autocomplete="tel"></label><div class="account-grid"><label class="form-field">Contraseña<input name="password" type="password" placeholder="Mínimo 6 caracteres" minlength="6" required autocomplete="new-password"></label><label class="form-field">Repetir contraseña<input name="confirmation" type="password" placeholder="Repite tu contraseña" minlength="6" required autocomplete="new-password"></label></div><button class="primary account-submit" type="submit">Crear cuenta <i data-lucide="arrow-right" width="16"></i></button><div class="form-message" data-account-message></div></form></div></div><div id="accountProfileView" hidden><div class="account-kicker">Cuenta activa</div><h2>Tu perfil</h2><p class="account-main-intro">Administra tu información y la experiencia de SmartISP.</p><div class="profile-summary"><div class="profile-photo" data-profile-photo><i data-lucide="user-round" width="23"></i></div><div><strong data-profile-name></strong><span data-profile-email></span></div></div><div class="profile-actions"><button class="profile-action" type="button" data-account-panel="profile"><i data-lucide="user-cog" width="18"></i><span>Datos personales<small>Editar tu información</small></span></button><button class="profile-action" type="button" data-account-panel="settings"><i data-lucide="sliders-horizontal" width="18"></i><span>Configuraciones<small>Apariencia y preferencias</small></span></button></div><div class="settings-section" data-profile-editor hidden><h3>Datos personales</h3><div class="account-grid"><label class="form-field">Nombre<input data-edit="name" type="text"></label><label class="form-field">Apellido<input data-edit="surname" type="text"></label></div><label class="form-field">Email<input data-edit="email" type="email" disabled></label><label class="form-field">Teléfono<input data-edit="phone" type="tel"></label><label class="form-field">Foto de perfil<input data-photo-input type="file" accept="image/*"></label><button class="primary account-submit" type="button" data-save-profile>Guardar cambios <i data-lucide="check" width="16"></i></button><div class="form-message" data-account-message></div></div><div class="settings-section" data-preferences hidden><h3>Preferencias</h3><label class="form-field">Apariencia<select data-theme-select><option value="natural">Natural</option><option value="contrast">Contraste alto</option><option value="night">Noche</option></select></label><label class="setting-row"><span>Interfaz compacta<small>Reduce espacios para mostrar más productos</small></span><input data-compact-toggle type="checkbox"></label></div><button class="logout-button" type="button" data-system-logout><i data-lucide="log-out" width="16"></i> Cerrar sesión</button></div></section></div></div>`;
+		document.body.append(accountSystem);
+		const profileCropModal = document.createElement('div');
+		profileCropModal.className = 'profile-crop-modal';
+		profileCropModal.hidden = true;
+		profileCropModal.innerHTML = '<section class="profile-crop-dialog" role="dialog" aria-modal="true" aria-labelledby="profileCropTitle"><h2 id="profileCropTitle">Ajustar foto de perfil</h2><p class="account-main-intro">Arrastra la imagen y ajusta el recuadro antes de guardar.</p><div class="profile-crop-stage"><canvas id="profileCropCanvas"></canvas><div id="profileCropBox" class="profile-crop-box"></div></div><div class="profile-crop-actions"><button id="profileCropCancel" class="secondary" type="button">Cancelar</button><button id="profileCropApply" class="primary" type="button">Aplicar recorte</button></div></section>';
+		document.body.append(profileCropModal);
+		const profileCropCanvas = profileCropModal.querySelector('#profileCropCanvas');
+		const profileCropBox = profileCropModal.querySelector('#profileCropBox');
+		const profileCropState = { image: null, file: null, box: null, width: 0, height: 0, offsetX: 0, offsetY: 0, dragging: false, startX: 0, startY: 0, startBoxX: 0, startBoxY: 0 };
+		const positionProfileCrop = () => { const stage = profileCropModal.querySelector('.profile-crop-stage'); const size = Math.min(profileCropState.width, profileCropState.height) * .78; profileCropState.box = { x: (profileCropState.width - size) / 2, y: (profileCropState.height - size) / 2, w: size, h: size }; profileCropState.offsetX = (stage.clientWidth - profileCropState.width) / 2; profileCropState.offsetY = (stage.clientHeight - profileCropState.height) / 2; profileCropBox.style.cssText = `left:${profileCropState.offsetX + profileCropState.box.x}px;top:${profileCropState.offsetY + profileCropState.box.y}px;width:${size}px;height:${size}px`; };
+		const openProfileCrop = file => { if (!file.type.startsWith('image/')) return; if (file.size > 3 * 1024 * 1024) return; const image = new Image(); image.onload = () => { profileCropState.image = image; const scale = Math.min(620 / image.width, 460 / image.height, 1); profileCropState.width = Math.round(image.width * scale); profileCropState.height = Math.round(image.height * scale); profileCropCanvas.width = profileCropState.width; profileCropCanvas.height = profileCropState.height; profileCropCanvas.style.width = `${profileCropState.width}px`; profileCropCanvas.style.height = `${profileCropState.height}px`; profileCropCanvas.getContext('2d').drawImage(image, 0, 0, profileCropState.width, profileCropState.height); profileCropModal.hidden = false; requestAnimationFrame(positionProfileCrop); }; image.src = URL.createObjectURL(file); };
+		const closeProfileCrop = () => { profileCropModal.hidden = true; profileCropState.image = null; profileCropState.file = null; };
+		profileCropModal.querySelector('#profileCropApply').addEventListener('click', () => { const { image, box, width, height } = profileCropState; if (!image || !box) return; const scale = image.width / width; const output = document.createElement('canvas'); const sourceSize = Math.round(box.w * scale); output.width = Math.min(1200, sourceSize); output.height = output.width; output.getContext('2d').drawImage(image, Math.round(box.x * scale), Math.round(box.y * scale), sourceSize, sourceSize, 0, 0, output.width, output.height); accountState.photo = output.toDataURL('image/jpeg', .9); localStorage.setItem('smartisp.profilePhoto', accountState.photo); renderAccountProfile(); closeProfileCrop(); });
+		profileCropModal.querySelector('#profileCropCancel').addEventListener('click', closeProfileCrop);
+		lucide.createIcons();
+		const accountState = { user: null, photo: localStorage.getItem('smartisp.profilePhoto') || '', theme: localStorage.getItem('smartisp.theme') || 'natural', compact: localStorage.getItem('smartisp.compact') === 'true' };
+		const readApiResponse = async response => { const text = await response.text(); try { return text ? JSON.parse(text) : { error: `El servidor respondió vacío (HTTP ${response.status}).` }; } catch { return { error: text.slice(0, 180) || `Respuesta inválida del servidor (HTTP ${response.status}).` }; } };
+		const accountAuthView = accountSystem.querySelector('#accountAuthView');
+		const accountProfileView = accountSystem.querySelector('#accountProfileView');
+		const profileEditor = accountSystem.querySelector('[data-profile-editor]');
+		profileEditor.insertAdjacentHTML('beforeend', '<section class="password-section"><h3>Cambiar contraseña</h3><p>Confirma tu contraseña actual para establecer una nueva.</p><form id="passwordChangeForm"><label class="form-field">Contraseña actual<input name="currentPassword" type="password" required autocomplete="current-password"></label><label class="form-field">Nueva contraseña<input name="newPassword" type="password" minlength="8" required autocomplete="new-password"></label><label class="form-field">Repetir nueva contraseña<input name="confirmation" type="password" minlength="8" required autocomplete="new-password"></label><button class="primary" type="submit">Actualizar contraseña</button><div class="form-message" data-account-message></div></form></section>');
+		accountProfileView.querySelector('.profile-actions').insertAdjacentHTML('beforeend', '<button class="profile-action" type="button" data-account-panel="wishlist"><i data-lucide="heart" width="18"></i><span>Wishlist<small>Productos guardados</small></span></button><button class="profile-action" type="button" data-account-panel="orders"><i data-lucide="package-check" width="18"></i><span>Pedidos e historial<small>Consulta tus compras</small></span></button>');
+		accountProfileView.insertAdjacentHTML('beforeend', '<section class="customer-hub" data-customer-hub hidden><div data-hub-view="wishlist"><h3>Mi wishlist</h3><div class="hub-list" data-wishlist-list></div></div><div data-hub-view="orders" hidden><h3>Pedidos e historial</h3><div class="hub-list" data-orders-list></div></div></section>');
+		const accountMessage = form => form.querySelector('[data-account-message]');
+		const showAccountMessage = (form, text, error = false) => { const message = accountMessage(form); message.textContent = text; message.classList.toggle('error', error); message.classList.add('show'); };
+		const showAccountTab = tab => { accountSystem.querySelectorAll('[data-account-tab]').forEach(button => button.classList.toggle('is-active', button.dataset.accountTab === tab)); accountSystem.querySelector('#accountLoginPane').hidden = tab !== 'login'; accountSystem.querySelector('#accountRegisterPane').hidden = tab !== 'register'; accountSystem.querySelector('#accountSystemTitle').textContent = tab === 'login' ? 'Inicia sesión' : 'Crea tu cuenta'; };
+		const customerData = { wishlist: [], orders: [] };
+		const wishlistToast = document.createElement('div'); wishlistToast.className = 'wishlist-toast'; wishlistToast.setAttribute('role', 'status'); wishlistToast.setAttribute('aria-live', 'polite'); document.body.append(wishlistToast); let wishlistToastTimer;
+		const showWishlistToast = (text, removed = false) => { clearTimeout(wishlistToastTimer); wishlistToast.textContent = text; wishlistToast.classList.toggle('is-removed', removed); wishlistToast.classList.remove('is-visible'); requestAnimationFrame(() => wishlistToast.classList.add('is-visible')); wishlistToastTimer = setTimeout(() => wishlistToast.classList.remove('is-visible'), 2800); };
+		const customerApi = async (action, options = {}) => { const response = await fetch(`/api/auth/${action}`, { credentials: 'include', headers: { 'Content-Type': 'application/json' }, ...options }); const result = await readApiResponse(response); if (!response.ok) throw new Error(result.error || 'No se pudo completar la operación.'); return result; };
+		const syncWishlistButtons = () => document.querySelectorAll('.product').forEach(card => card.querySelector('.heart')?.classList.toggle('is-saved', wishlistIds.has(productKey(products[card.dataset.index]))));
+		const renderWishlist = () => { const list = accountProfileView.querySelector('[data-wishlist-list]'); list.innerHTML = customerData.wishlist.length ? customerData.wishlist.map((item, index) => `<div class="hub-item" data-wishlist-item="${index}"><img src="${item.image || ''}" alt=""><div><strong>${item.name}</strong><small>${money(Number(item.price || 0))} · ${item.category || 'SmartISP'}</small></div><div class="wishlist-tools"><button type="button" data-wishlist-action="up" aria-label="Subir" ${index === 0 ? 'disabled' : ''}>↑</button><button type="button" data-wishlist-action="down" aria-label="Bajar" ${index === customerData.wishlist.length - 1 ? 'disabled' : ''}>↓</button><button type="button" data-wishlist-action="remove" aria-label="Quitar">×</button></div></div>`).join('') : '<div class="hub-empty">Todavía no tienes productos guardados.</div>'; };
+		const renderOrders = () => { const list = accountProfileView.querySelector('[data-orders-list]'); list.innerHTML = customerData.orders.length ? customerData.orders.map(order => `<div class="hub-item order-item"><div class="order-head"><strong>Pedido #${String(order.id).slice(0, 8)}</strong><small>${new Date(order.createdAt).toLocaleDateString('es-ES')}</small></div><small>${order.items?.items?.length || order.items?.length || 0} producto(s) · ${money(Number(order.total || 0))} · ${order.status || 'pending_payment'}</small></div>`).join('') : '<div class="hub-empty">Aún no tienes pedidos registrados.</div>'; };
+		const loadCustomerData = async () => { try { const [wishlist, orders] = await Promise.all([customerApi('customer-wishlist'), customerApi('customer-orders')]); customerData.wishlist = wishlist.wishlist || []; customerData.orders = orders.orders || []; wishlistIds = new Set(customerData.wishlist.map(item => String(item.productId))); renderWishlist(); renderOrders(); render(); syncWishlistButtons(); } catch (error) { customerData.wishlist = []; customerData.orders = []; } };
+		const toggleWishlist = async (product, heart = null) => { if (!signedIn) return openAccountSystem(); const id = productKey(product); const saved = wishlistIds.has(id); if (heart) heart.classList.toggle('is-saved', !saved); try { await customerApi(`customer-wishlist${saved ? `?productId=${encodeURIComponent(id)}` : ''}`, { method: saved ? 'DELETE' : 'POST', body: saved ? undefined : JSON.stringify({ productId: id, name: product.name, price: product.price, image: product.image, category: product.category }) }); if (saved) { wishlistIds.delete(id); customerData.wishlist = customerData.wishlist.filter(item => String(item.productId) !== id); } else { wishlistIds.add(id); customerData.wishlist.unshift({ productId: id, name: product.name, price: product.price, image: product.image, category: product.category }); } renderWishlist(); render(); syncWishlistButtons(); showWishlistToast(saved ? 'Lo eliminaste de tu wishlist' : 'Se agregó a tu wishlist', saved); } catch (error) { if (heart) heart.classList.toggle('is-saved', saved); } };
+		const saveWishlistOrder = async () => { await customerApi('customer-wishlist', { method: 'POST', body: JSON.stringify({ order: customerData.wishlist.map(item => item.productId) }) }); };
+		accountProfileView.addEventListener('click', async event => { const button = event.target.closest('[data-wishlist-action]'); if (!button) return; event.preventDefault(); event.stopPropagation(); const row = button.closest('[data-wishlist-item]'); const index = Number(row.dataset.wishlistItem); const action = button.dataset.wishlistAction; try { if (action === 'remove') { await customerApi(`customer-wishlist?productId=${encodeURIComponent(customerData.wishlist[index].productId)}`, { method: 'DELETE' }); wishlistIds.delete(String(customerData.wishlist[index].productId)); customerData.wishlist.splice(index, 1); } else { const nextIndex = action === 'up' ? index - 1 : index + 1; if (nextIndex < 0 || nextIndex >= customerData.wishlist.length) return; [customerData.wishlist[index], customerData.wishlist[nextIndex]] = [customerData.wishlist[nextIndex], customerData.wishlist[index]]; await saveWishlistOrder(); } renderWishlist(); render(); syncWishlistButtons(); if (action === 'remove') showWishlistToast('Lo eliminaste de tu wishlist', true); } catch (error) {} });
+		const completeCheckout = () => { if (!cart.length) return; window.open('/checkout.html', '_blank', 'noopener'); };
+		document.querySelectorAll('a').forEach(link => { if (link.textContent.includes('Olvidaste tu contraseña')) { link.href = '/reset-password.html'; link.target = '_blank'; link.rel = 'noopener'; } });
+		const applyAccountPreferences = () => { document.body.dataset.accountTheme = accountState.theme; document.body.classList.toggle('account-compact', accountState.compact); localStorage.setItem('smartisp.theme', accountState.theme); localStorage.setItem('smartisp.compact', accountState.compact); };
+		const renderAccountProfile = () => { const user = accountState.user; accountSystem.querySelector('[data-profile-name]').textContent = `${user.name} ${user.surname || ''}`.trim(); accountSystem.querySelector('[data-profile-email]').textContent = `${user.email} · ${user.phone || 'Sin teléfono'}`; accountSystem.querySelectorAll('[data-edit]').forEach(input => { input.value = user[input.dataset.edit] || ''; }); const photo = accountSystem.querySelector('[data-profile-photo]'); photo.innerHTML = accountState.photo ? `<img src="${accountState.photo}" alt="Foto de perfil">` : '<i data-lucide="user-round" width="23"></i>'; updateMainAvatar(accountState.photo); accountSystem.querySelector('[data-theme-select]').value = accountState.theme; accountSystem.querySelector('[data-compact-toggle]').checked = accountState.compact; lucide.createIcons(); };
+		const openAccountSystem = () => { accountSystem.classList.add('is-open'); accountSystem.querySelector('[data-account-tab="login"]').focus(); };
+		const closeAccountSystem = () => accountSystem.classList.remove('is-open');
+		const adminNavLink = document.querySelector('#adminNavLink');
+		const updateAdminAccess = user => { adminNavLink.classList.toggle('is-visible', user?.role === 'admin'); };
+		const setAccountUser = (user, remember = localStorage.getItem('smartisp.accountRemembered') === 'true') => { accountState.user = user; (remember ? localStorage : sessionStorage).setItem('smartisp.accountUser', JSON.stringify(user)); if (remember) localStorage.setItem('smartisp.accountRemembered', 'true'); else { localStorage.removeItem('smartisp.accountUser'); localStorage.removeItem('smartisp.accountRemembered'); } signedIn = true; document.querySelector('#accountLabel').textContent = user.name; updateAdminAccess(user); accountAuthView.hidden = true; accountProfileView.hidden = false; renderAccountProfile(); loadCustomerData(); };
+		const resetAccountUser = () => { accountState.user = null; localStorage.removeItem('smartisp.accountUser'); localStorage.removeItem('smartisp.accountRemembered'); sessionStorage.removeItem('smartisp.accountUser'); signedIn = false; updateAdminAccess(null); document.querySelector('#accountLabel').textContent = 'Mi cuenta'; updateMainAvatar(''); accountAuthView.hidden = false; accountProfileView.hidden = true; accountSystem.querySelectorAll('form').forEach(form => form.reset()); accountSystem.querySelectorAll('[data-account-message]').forEach(message => message.classList.remove('show')); showAccountTab('login'); };
+		const accountTrigger = document.querySelector('#openAccount');
+		const cleanAccountTrigger = accountTrigger.cloneNode(true);
+		accountTrigger.replaceWith(cleanAccountTrigger);
+		cleanAccountTrigger.addEventListener('click', event => { event.preventDefault(); openAccountSystem(); });
+		accountSystem.querySelector('.account-system-close').addEventListener('click', closeAccountSystem);
+		accountSystem.addEventListener('click', event => { if (event.target === accountSystem) closeAccountSystem(); });
+		accountSystem.querySelectorAll('[data-account-tab]').forEach(button => button.addEventListener('click', () => showAccountTab(button.dataset.accountTab)));
+		accountSystem.querySelector('#systemLoginForm').addEventListener('submit', async event => { event.preventDefault(); const form = event.currentTarget; const values = Object.fromEntries(new FormData(form)); const button = form.querySelector('button[type="submit"]'); button.classList.add('is-loading'); try { const response = await fetch('/api/auth/login', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values) }); const result = await readApiResponse(response); if (!response.ok) throw new Error(result.error); setAccountUser(result.user, values.remember === 'on'); } catch (error) { showAccountMessage(form, error.message || 'No se pudo iniciar sesión.', true); } finally { button.classList.remove('is-loading'); } });
+		accountSystem.querySelector('#systemRegisterForm').addEventListener('submit', async event => { event.preventDefault(); const form = event.currentTarget; const values = Object.fromEntries(new FormData(form)); if (values.password !== values.confirmation) { showAccountMessage(form, 'Las contraseñas no coinciden.', true); return; } const button = form.querySelector('button[type="submit"]'); button.classList.add('is-loading'); try { const response = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values) }); const result = await readApiResponse(response); if (!response.ok) throw new Error(result.error); setAccountUser(result.user); } catch (error) { showAccountMessage(form, error.message || 'No se pudo crear la cuenta.', true); } finally { button.classList.remove('is-loading'); } });
+		accountSystem.querySelector('[data-system-logout]').addEventListener('click', async event => { const button = event.currentTarget; button.disabled = true; try { await fetch('/api/auth/logout', { method: 'POST' }); } finally { resetAccountUser(); button.disabled = false; closeAccountSystem(); } });
+		accountSystem.querySelectorAll('[data-account-panel]').forEach(button => button.addEventListener('click', () => { const panel = button.dataset.accountPanel; accountSystem.querySelector('[data-profile-editor]').hidden = panel !== 'profile'; accountSystem.querySelector('[data-preferences]').hidden = panel !== 'settings'; const hub = accountSystem.querySelector('[data-customer-hub]'); hub.hidden = !['wishlist', 'orders'].includes(panel); if (hub.hidden) return; hub.querySelector('[data-hub-view="wishlist"]').hidden = panel !== 'wishlist'; hub.querySelector('[data-hub-view="orders"]').hidden = panel !== 'orders'; }));
+		accountSystem.querySelector('[data-save-profile]').addEventListener('click', () => { accountSystem.querySelectorAll('[data-edit]').forEach(input => { accountState.user[input.dataset.edit] = input.value.trim(); }); renderAccountProfile(); showAccountMessage(accountSystem.querySelector('[data-profile-editor]'), 'Datos guardados correctamente.'); });
+		accountSystem.querySelector('#passwordChangeForm').addEventListener('submit', async event => { event.preventDefault(); const form = event.currentTarget; const values = Object.fromEntries(new FormData(form)); if (values.newPassword !== values.confirmation) { showAccountMessage(form, 'La confirmación no coincide con la nueva contraseña.', true); return; } const button = form.querySelector('button[type="submit"]'); button.disabled = true; try { const response = await fetch('/api/auth/change-password', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values) }); const result = await readApiResponse(response); if (!response.ok) throw new Error(result.error); form.reset(); showAccountMessage(form, 'Contraseña actualizada correctamente.'); } catch (error) { showAccountMessage(form, error.message || 'No se pudo cambiar la contraseña.', true); } finally { button.disabled = false; } });
+		profileCropBox.addEventListener('pointerdown', event => { profileCropState.dragging = true; profileCropState.startX = event.clientX; profileCropState.startY = event.clientY; profileCropState.startBoxX = profileCropState.box.x; profileCropState.startBoxY = profileCropState.box.y; profileCropBox.setPointerCapture(event.pointerId); });
+		profileCropBox.addEventListener('pointermove', event => { if (!profileCropState.dragging) return; const box = profileCropState.box; box.x = Math.max(0, Math.min(profileCropState.width - box.w, profileCropState.startBoxX + event.clientX - profileCropState.startX)); box.y = Math.max(0, Math.min(profileCropState.height - box.h, profileCropState.startBoxY + event.clientY - profileCropState.startY)); profileCropBox.style.left = `${profileCropState.offsetX + box.x}px`; profileCropBox.style.top = `${profileCropState.offsetY + box.y}px`; });
+		profileCropBox.addEventListener('pointerup', () => { profileCropState.dragging = false; });
+		accountSystem.querySelector('[data-photo-input]').addEventListener('change', event => { const file = event.target.files[0]; if (!file) return; openProfileCrop(file); event.target.value = ''; });
+		document.querySelector('.checkout').addEventListener('click', completeCheckout);
+		accountSystem.querySelector('[data-theme-select]').addEventListener('change', event => { accountState.theme = event.target.value; applyAccountPreferences(); });
+		accountSystem.querySelector('[data-compact-toggle]').addEventListener('change', event => { accountState.compact = event.target.checked; applyAccountPreferences(); });
+		applyAccountPreferences();
+		fetch('/api/auth/me', { credentials: 'include' }).then(async response => { if (!response.ok) throw new Error('No hay una sesion activa.'); return response.json(); }).then(result => { setAccountUser(result.user); }).catch(() => {});
+	</script>
+	<script>
+		const applyHeroDesign = async () => { try { const response = await fetch('/api/auth/catalog'); if (!response.ok) return; const content = Object.fromEntries((await response.json()).content.map(item => [item.key, item.value])); const hero = document.querySelector('.hero'); const setText = (selector, key) => { if (content[key]) document.querySelector(selector).textContent = content[key]; }; const hexToRgba = (hex, opacity) => { const value = String(hex || '').replace('#', ''); if (!/^[\da-f]{6}$/i.test(value)) return `rgba(228,245,243,${opacity})`; return `rgba(${parseInt(value.slice(0, 2), 16)},${parseInt(value.slice(2, 4), 16)},${parseInt(value.slice(4, 6), 16)},${opacity})`; }; setText('#heroEyebrow', 'hero_eyebrow'); setText('#heroTitle', 'hero_title'); setText('#heroText', 'hero_text'); setText('#heroButtonText', 'hero_button_text'); if (content.hero_button_link) document.querySelector('#heroButton').href = content.hero_button_link; if (content.hero_image_position) hero.style.setProperty('--hero-image-position', content.hero_image_position); if (content.hero_height) hero.style.setProperty('--hero-height', `${Math.max(280, Math.min(700, Number(content.hero_height) || 370))}px`); if (content.hero_content_width) hero.style.setProperty('--hero-content-width', `${Math.max(320, Math.min(900, Number(content.hero_content_width) || 510))}px`); if (content.hero_text_color) hero.style.setProperty('--hero-text-color', content.hero_text_color); if (content.primary_color) { hero.style.setProperty('--blue', content.primary_color); document.documentElement.style.setProperty('--blue', content.primary_color); } if (content.hero_overlay_opacity || content.primary_color) hero.style.setProperty('--hero-overlay', hexToRgba(content.hero_overlay_color || '#e4f5f3', Math.max(0, Math.min(1, Number(content.hero_overlay_opacity || 96) / 100)))); } catch (error) { console.warn('Diseño del hero no disponible.'); } };
+		applyHeroDesign();
+	</script>
+</body>
+</html>
