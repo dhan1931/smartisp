@@ -20,10 +20,40 @@
     .hidden { display: none !important; } .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; } .wide { grid-column: 1 / -1; }
     .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 24px; } .actions { display: flex; gap: 8px; flex-wrap: wrap; }
     .design-preview { margin: 20px 0; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: #d7eeeb; box-shadow: 0 10px 24px rgba(16,44,61,.1); } .design-preview-hero { min-height: 250px; padding: 34px clamp(20px, 6vw, 58px); color: var(--preview-text, #102c3d); background-color: var(--preview-bg, #cdeee9); background-image: linear-gradient(90deg, var(--preview-overlay, rgba(228,245,243,.96)) 0%, var(--preview-overlay, rgba(228,245,243,.82)) 42%, rgba(228,245,243,0) 84%), var(--preview-image); background-position: center; background-size: cover; display: flex; align-items: center; } .design-preview-copy { max-width: var(--preview-width, 510px); } .design-preview-eyebrow { margin-bottom: 10px; color: var(--preview-accent, #087ea4); font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; } .design-preview h4 { margin: 0 0 10px; font-size: clamp(26px, 4vw, 43px); line-height: .98; } .design-preview p { max-width: 390px; margin: 0 0 18px; color: color-mix(in srgb, var(--preview-text, #102c3d) 72%, transparent); line-height: 1.5; } .design-preview-button { display: inline-flex; padding: 10px 14px; color: white; border-radius: 6px; background: var(--preview-accent, #087ea4); font-size: 12px; font-weight: 700; } .design-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; } .design-controls .full { grid-column: 1 / -1; } .color-field { display: flex; align-items: center; gap: 10px; } .color-field input[type="color"] { width: 48px; height: 38px; padding: 3px; margin: 7px 0 0; } .range-value { color: var(--blue); font-weight: 700; }
-    .product-row { display: grid; grid-template-columns: minmax(0, 1fr) 120px 110px 110px; gap: 10px; align-items: end; padding: 20px 0; border-top: 1px solid var(--line); } .product-row:first-child { border-top: 0; }
-    .product-row label { margin: 0; } .product-row .description { grid-column: 1 / -1; } .product-row .image { grid-column: 1 / -1; } .product-row .row-actions { display: flex; gap: 5px; grid-column: 1 / -1; } .image-editor { display: grid; grid-template-columns: minmax(150px, 230px) 1fr; gap: 16px; align-items: center; padding: 14px; border: 1px dashed #b9d9d8; border-radius: 10px; background: #f7fcfc; } .image-preview { display: grid; place-items: center; min-height: 130px; overflow: hidden; border-radius: 8px; background: #e4f1f1; } .image-preview img { display: block; width: 100%; height: 150px; object-fit: contain; } .image-preview.is-empty::after { content: 'Sin imagen'; color: var(--muted); font-size: 12px; } .image-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; } .image-tools small { display: block; width: 100%; color: var(--muted); } .image-tools input[type="file"] { display: none; }
+    /* Product Grid & Compact Cards */
+    #productsList { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; margin-top: 14px; }
+    .product-card { background: white; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; cursor: pointer; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; box-shadow: 0 3px 10px rgba(16,44,61,.04); position: relative; }
+    .product-card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(16,44,61,.12); border-color: var(--blue); }
+    .product-card-thumb { width: 100%; aspect-ratio: 1; display: grid; place-items: center; background: #fafdfd; padding: 12px; position: relative; border-bottom: 1px solid #edf4f5; overflow: hidden; }
+    .product-card-thumb img { width: 100%; height: 100%; object-fit: contain; image-rendering: -webkit-optimize-contrast; transition: transform .3s ease; }
+    .product-card:hover .product-card-thumb img { transform: scale(1.06); }
+    .product-card-no-img { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--muted); font-size: 11px; }
+    .product-card-no-img span { font-size: 30px; }
+    .product-card-badge { position: absolute; top: 8px; left: 8px; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; z-index: 2; pointer-events: none; }
+    .badge-hidden { background: #fee2e2; color: #991b1b; }
+    .product-card-body { padding: 12px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
+    .product-card-meta { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+    .product-card-cat { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .product-card-sku { font-size: 10px; background: #eef5f6; color: var(--ink); padding: 2px 6px; border-radius: 4px; font-family: monospace; white-space: nowrap; }
+    .product-card-title { margin: 2px 0 0; font-size: 13px; font-weight: 700; line-height: 1.35; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 35px; }
+    .product-card-price { font-size: 15px; font-weight: 800; color: var(--blue); margin-top: auto; padding-top: 4px; }
+    .product-card-price .price-quote { font-size: 11px; color: var(--muted); font-style: italic; font-weight: normal; }
+    .product-card-actions { display: flex; gap: 6px; padding: 10px 12px; background: #fbfdfe; border-top: 1px solid #edf4f5; }
+    .product-card-actions button { padding: 7px 10px; font-size: 12px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+    .product-card-actions .btn-edit { flex: 1; background: #eaf6f9; color: var(--blue); border: 1px solid #cce8ee; }
+    .product-card-actions .btn-edit:hover { background: #d7eef3; }
+    .product-card-actions .btn-delete { background: #fff1f1; color: var(--danger); border: 1px solid #f9d0d0; }
+    .product-card-actions .btn-delete:hover { background: #fee2e2; }
+    .product-edit-dialog { width: min(840px, 95vw); max-height: 94vh; }
+    .image-editor { display: grid; grid-template-columns: minmax(140px, 200px) 1fr; gap: 16px; align-items: center; padding: 14px; border: 1px dashed #b9d9d8; border-radius: 10px; background: #f7fcfc; }
+    .image-preview { display: grid; place-items: center; min-height: 130px; overflow: hidden; border-radius: 8px; background: #e4f1f1; }
+    .image-preview img { display: block; width: 100%; height: 150px; object-fit: contain; }
+    .image-preview.is-empty::after { content: 'Sin imagen'; color: var(--muted); font-size: 12px; }
+    .image-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .image-tools small { display: block; width: 100%; color: var(--muted); }
+    .image-tools input[type="file"] { display: none; }
     @keyframes save-confirm { 0% { opacity: 0; transform: translateY(-8px) scale(.98); } 55% { transform: translateY(0) scale(1.02); } 100% { opacity: 1; transform: translateY(0) scale(1); } } @keyframes rise-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .panel { animation: rise-in .45s ease both; } @media (max-width: 720px) { .grid, .product-row { grid-template-columns: 1fr; } .wide, .product-row .description, .product-row .image { grid-column: auto; } .top, .toolbar, .section-heading { align-items: flex-start; flex-direction: column; } } @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+    .panel { animation: rise-in .45s ease both; } @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } #productsList { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); } .top, .toolbar, .section-heading { align-items: flex-start; flex-direction: column; } } @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
     .import-dialog { width: min(880px, 95vw); max-height: 92vh; }
     .import-dropzone { border: 2px dashed #087ea4; border-radius: 12px; padding: 34px 20px; text-align: center; background: #f0f9fb; cursor: pointer; transition: background .2s, border-color .2s; margin-top: 14px; }
     .import-dropzone:hover, .import-dropzone.dragover { background: #e0f4f7; border-color: #075d7d; }
@@ -60,18 +90,31 @@
         <section class="panel"><div class="section-heading"><h3>Apariencia y contenido</h3><button id="resetContentButton" class="button secondary" type="button">Restaurar predeterminado</button></div><form id="contentForm"><label>Nombre de marca<input name="brand_name" placeholder="SmartISP"></label><label>Texto del logo<input name="logo_text" placeholder="smartisp"></label><div class="design-preview"><div class="design-preview-hero"><div class="design-preview-copy"><div class="design-preview-eyebrow" data-preview="hero_eyebrow"></div><h4 data-preview="hero_title"></h4><p data-preview="hero_text"></p><span class="design-preview-button" data-preview="hero_button_text"></span></div></div></div><div class="design-controls"><label class="full">Mensaje superior<input name="hero_eyebrow" placeholder="Infraestructura para proveedores de internet"></label><label class="full">Titulo principal<input name="hero_title" placeholder="Conecta mas. Opera mejor."></label><label class="full">Descripcion principal<textarea name="hero_text"></textarea></label><label>Texto del boton<input name="hero_button_text" placeholder="Explorar soluciones"></label><label>Enlace del boton<input name="hero_button_link" placeholder="#catalogo"></label><label>Imagen del banner<input name="hero_image_file" type="file" accept="image/*"><input name="hero_image" type="hidden"></label><label>Posicion de imagen<select name="hero_image_position"><option value="center">Centro</option><option value="left">Izquierda</option><option value="right">Derecha</option></select></label><label>Altura del banner<select name="hero_height"><option value="335">Compacto</option><option value="370">Estándar</option><option value="440">Amplio</option><option value="520">Alto</option></select></label><label>Ancho del contenido<select name="hero_content_width"><option value="400">Estrecho</option><option value="510">Estándar</option><option value="620">Amplio</option><option value="760">Muy amplio</option></select></label><label class="color-field">Color de acento<input name="primary_color" type="color" value="#087ea4"></label><label class="color-field">Color del texto<input name="hero_text_color" type="color" value="#102c3d"></label><label class="full">Opacidad de la capa <span class="range-value" data-range-value="hero_overlay_opacity">96%</span><input name="hero_overlay_opacity" type="range" min="0" max="100" value="96"></label></div><label>Texto del pie de pagina<textarea name="footer_text"></textarea></label><div class="form-actions"><button class="button" type="submit">Guardar apariencia</button><button id="clearContentButton" class="button secondary" type="button">Limpiar campos</button></div><div id="contentMessage" class="message"></div></form></section>
         <section class="panel"><div class="section-heading"><h3>Visibilidad de secciones</h3><button id="resetVisibilityButton" class="button secondary" type="button">Restaurar predeterminado</button></div><form id="visibilityForm"><label>Catalogo visible<select name="catalog_visible"><option value="true">Si</option><option value="false">No</option></select></label><label>Banner visible<select name="hero_visible"><option value="true">Si</option><option value="false">No</option></select></label><label>Beneficios visibles<select name="benefits_visible"><option value="true">Si</option><option value="false">No</option></select></label><button class="button" type="submit">Guardar visibilidad</button><div id="visibilityMessage" class="message"></div></form></section>
         <section class="panel wide">
-          <div class="toolbar">
+          <div class="toolbar" style="margin-bottom:16px;">
             <div>
-              <h3 style="margin:0;">Catalogo de productos</h3>
-              <span style="color:var(--muted);font-size:12px;">Gestiona individualmente o importa tu inventario masivamente</span>
+              <h3 style="margin:0;">Catálogo de productos</h3>
+              <span style="color:var(--muted);font-size:12px;">Vista compacta en cuadrícula · Clic en cualquier producto para editar</span>
             </div>
             <div class="actions">
               <button id="openImportModalButton" class="button" type="button" style="background:#11815d;display:inline-flex;align-items:center;gap:6px;">
                 <span>📥 Importar Excel / CSV</span>
               </button>
-              <button id="newProductButton" class="button secondary" type="button">+ Nuevo producto</button>
+              <button id="newProductButton" class="button" type="button" style="background:var(--blue);display:inline-flex;align-items:center;gap:6px;">
+                <span>+ Nuevo producto</span>
+              </button>
             </div>
           </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px;flex-wrap:wrap;background:#f8fafb;padding:10px 14px;border-radius:10px;border:1px solid var(--line);">
+            <div style="flex:1;max-width:380px;position:relative;">
+              <input id="productSearchInput" type="search" placeholder="🔍 Buscar por nombre, SKU o categoría..." style="margin:0;padding:8px 12px 8px 32px;font-size:13px;border-radius:6px;">
+              <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none;">🔍</span>
+            </div>
+            <div id="productsCountBadge" style="font-size:13px;color:var(--muted);font-weight:700;">
+              Cargando productos...
+            </div>
+          </div>
+
           <div id="productsList"></div>
           <div id="productMessage" class="message"></div>
         </section>
@@ -202,6 +245,86 @@
       </div>
     </section>
   </div>
+  <div id="productEditModal" class="crop-modal" hidden>
+    <section class="crop-dialog product-edit-dialog" role="dialog" aria-modal="true" aria-labelledby="productModalTitle">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:1px solid var(--line);padding-bottom:12px;">
+        <div>
+          <h2 id="productModalTitle" style="margin:0;font-size:20px;">Editar Producto</h2>
+          <span style="color:var(--muted);font-size:12px;">Modifica los detalles, precio, visibilidad o imagen del producto</span>
+        </div>
+        <button id="closeProductModalButton" type="button" class="button secondary" style="padding:4px 11px;font-size:15px;line-height:1;">✕</button>
+      </div>
+
+      <form id="productModalForm">
+        <input type="hidden" name="id" value="">
+        
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
+          <label style="grid-column:1/-1;margin:0;">
+            Nombre del Producto *
+            <input name="name" required placeholder="Ej. Switch Cisco Catalyst 2960 24 Puertos">
+          </label>
+
+          <label style="margin:0;">
+            Precio ($) *
+            <input name="price" type="number" min="0" step="0.01" value="0" required placeholder="0 (Pendiente de cotización)">
+          </label>
+
+          <label style="margin:0;">
+            Categoría
+            <input name="category" placeholder="Ej. Switches, Fibra óptica, Routers...">
+          </label>
+
+          <label style="margin:0;">
+            SKU / Código
+            <input name="sku" placeholder="Ej. CISCO-2960-24P">
+          </label>
+
+          <label style="margin:0;">
+            Visible en la tienda
+            <select name="visible">
+              <option value="true">Sí (Visible en catálogo)</option>
+              <option value="false">No (Oculto)</option>
+            </select>
+          </label>
+
+          <label class="description" style="grid-column:1/-1;margin:0;">
+            Descripción detallada
+            <textarea name="description" placeholder="Especificaciones técnicas, puertos, rendimiento..." style="min-height:75px;"></textarea>
+          </label>
+
+          <label class="description" style="grid-column:1/-1;margin:0;">
+            Enlace externo (opcional)
+            <input name="externalUrl" type="url" placeholder="https://fabricante.com/producto">
+          </label>
+        </div>
+
+        <div style="margin-top:16px;">
+          <span style="display:block;margin-bottom:8px;color:var(--muted);font-size:13px;font-weight:700;">Imagen del producto</span>
+          <div class="image-editor">
+            <div class="image-preview is-empty">
+              <img data-image-preview src="" alt="Vista previa del producto" hidden>
+            </div>
+            <div class="image-tools">
+              <small>Sube una foto desde tu equipo, recórtala o búscala directamente en internet con un clic.</small>
+              <input name="imageFile" type="file" accept="image/*">
+              <input name="imageUrl" type="hidden" value="">
+              <button class="button secondary" data-change-image type="button">📁 Subir archivo</button>
+              <button class="button secondary" data-search-web-image type="button" style="background:#eaf6f9;color:var(--blue);font-weight:700;">🌐 Buscar en internet</button>
+              <button class="button secondary" data-edit-image type="button" disabled>✂️ Editar recorte</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="crop-actions" style="margin-top:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+          <button id="modalDeleteProductButton" class="button danger" type="button">🗑️ Eliminar Producto</button>
+          <div style="display:flex;gap:8px;margin-left:auto;">
+            <button id="cancelProductModalButton" class="button secondary" type="button">Cancelar</button>
+            <button id="saveProductModalButton" class="button" type="submit">💾 Guardar Cambios</button>
+          </div>
+        </div>
+      </form>
+    </section>
+  </div>
   <script>
     const $ = selector => document.querySelector(selector);
     const DEFAULT_CONTENT = { brand_name: '', logo_text: '', hero_eyebrow: 'Infraestructura para proveedores de internet', hero_title: 'Conecta más. Opera mejor.', hero_text: 'Equipamiento confiable para redes, servidores y equipos de trabajo que mantienen tu servicio siempre en línea.', hero_image: '', hero_button_text: 'Explorar soluciones', hero_button_link: '#catalogo', hero_image_position: 'center', hero_height: '370', hero_content_width: '510', hero_text_color: '#102c3d', hero_overlay_opacity: '96', primary_color: '#087ea4', footer_text: '' };
@@ -224,11 +347,257 @@
     const api = async (action, options = {}) => { const response = await fetch(`/api/auth/${action}`, { credentials: 'include', headers: { 'Content-Type': 'application/json' }, ...options }); const text = await response.text(); let result = {}; try { result = text ? JSON.parse(text) : {}; } catch { result = { error: text || `Respuesta invalida (${response.status})` }; } if (!response.ok) throw new Error(result.error || 'No se pudo completar la operacion.'); return result; };
     const updateDesignPreview = () => { const form = $('#contentForm'); const values = formValues(form); const preview = $('.design-preview-hero'); preview.style.setProperty('--preview-image', values.hero_image ? `url("${values.hero_image}")` : 'none'); preview.style.setProperty('--preview-accent', values.primary_color || '#087ea4'); preview.style.setProperty('--preview-text', values.hero_text_color || '#102c3d'); preview.style.setProperty('--preview-width', `${values.hero_content_width || 510}px`); preview.style.setProperty('--preview-overlay', `rgba(228,245,243,${Number(values.hero_overlay_opacity || 0) / 100})`); preview.style.minHeight = `${values.hero_height || 370}px`; preview.style.backgroundPosition = values.hero_image_position || 'center'; form.querySelectorAll('[data-preview]').forEach(element => { element.textContent = values[element.dataset.preview] || ''; }); form.querySelectorAll('[data-range-value]').forEach(element => { element.textContent = `${values[element.dataset.rangeValue] || 0}%`; }); };
     const loadContent = async () => { const result = await api('admin-content'); const values = { ...DEFAULT_CONTENT, ...Object.fromEntries(result.content.map(item => [item.key, item.value])) }; document.querySelectorAll('#contentForm [name]').forEach(input => { if (input.type !== 'file' && values[input.name] !== undefined) input.value = values[input.name]; }); document.querySelectorAll('#visibilityForm [name]').forEach(input => { if (values[input.name] !== undefined) input.value = values[input.name]; }); updateDesignPreview(); };
-    const productFields = product => `<form class="product-row" data-product-id="${product.id || ''}"><label>Nombre<input name="name" value="${escapeHtml(product.name || '')}" required></label><label>Precio<input name="price" type="number" min="0" step="0.01" value="${product.price || 0}" required></label><label>Categoria<input name="category" value="${escapeHtml(product.category || '')}"></label><label>SKU<input name="sku" value="${escapeHtml(product.sku || '')}"></label><label>Visible<select name="visible"><option value="true" ${product.visible !== false ? 'selected' : ''}>Si</option><option value="false" ${product.visible === false ? 'selected' : ''}>No</option></select></label><label class="description">Descripcion<textarea name="description">${escapeHtml(product.description || '')}</textarea></label><label class="description">Enlace externo<input name="externalUrl" type="url" value="${escapeHtml(product.externalUrl || '')}" placeholder="https://store.intcomex.com/"></label><div class="image"><span>Imagen del producto</span><div class="image-editor"><div class="image-preview ${product.imageUrl ? '' : 'is-empty'}"><img data-image-preview src="${escapeHtml(product.imageUrl || '')}" alt="Vista previa de ${escapeHtml(product.name || 'producto')}" ${product.imageUrl ? '' : 'hidden'}></div><div class="image-tools"><small>Sube una imagen nueva o ajusta la que ya tienes.</small><input name="imageFile" type="file" accept="image/*"><input name="imageUrl" type="hidden" value="${escapeHtml(product.imageUrl || '')}"><button class="button secondary" data-change-image type="button">Cambiar imagen</button><button class="button secondary" data-search-web-image type="button" style="background:#eaf6f9;color:var(--blue);font-weight:700;">🌐 Buscar en internet</button><button class="button secondary" data-edit-image type="button" ${product.imageUrl ? '' : 'disabled'}>Editar recorte</button></div></div></div><div class="row-actions"><button class="button" type="submit">Guardar</button><button class="button danger" data-delete type="button">Eliminar</button></div></form>`;
     const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
-    const bindProductForm = form => { form.addEventListener('submit', async event => { event.preventDefault(); try { const values = await productValues(form); values.id = form.dataset.productId; values.price = Number(values.price); values.visible = values.visible === 'true'; await api('admin-products', { method: 'POST', body: JSON.stringify(values) }); showMessage($('#productMessage'), 'Producto guardado correctamente.'); await loadProducts(); } catch (error) { showMessage($('#productMessage'), error.message, true); } }); const fileInput = form.querySelector('[name="imageFile"]'); const changeButton = form.querySelector('[data-change-image]'); const searchWebButton = form.querySelector('[data-search-web-image]'); const editButton = form.querySelector('[data-edit-image]'); const preview = form.querySelector('[data-image-preview]'); const previewBox = form.querySelector('.image-preview'); changeButton.addEventListener('click', () => fileInput.click()); if (searchWebButton) { searchWebButton.addEventListener('click', () => { const productName = form.querySelector('[name="name"]').value.trim(); openWebImageSearchModal(productName, form); }); } editButton.addEventListener('click', async () => { try { await openCropFromSource(form.querySelector('[name="imageUrl"]').value, fileInput, form.querySelector('[name="imageUrl"]')); } catch (error) { showMessage($('#productMessage'), 'No se pudo abrir la imagen para editar.', true); } }); fileInput.addEventListener('change', () => { editButton.disabled = !fileInput.files[0] && !form.querySelector('[name="imageUrl"]').value; }); form.addEventListener('image-applied', () => { preview.src = form.querySelector('[name="imageUrl"]').value; preview.hidden = false; previewBox.classList.remove('is-empty'); editButton.disabled = false; }); form.querySelector('[data-delete]').addEventListener('click', async () => { if (!form.dataset.productId) return form.remove(); try { await api(`admin-products?id=${encodeURIComponent(form.dataset.productId)}`, { method: 'DELETE' }); showMessage($('#productMessage'), 'Producto eliminado.'); await loadProducts(); } catch (error) { showMessage($('#productMessage'), error.message, true); } }); };
-    const loadProducts = async () => { const result = await api('admin-products'); $('#productsList').innerHTML = result.products.map(productFields).join('') || '<p>No hay productos guardados aun.</p>'; document.querySelectorAll('.product-row').forEach(bindProductForm); };
-    const openPanel = async user => { $('#loginPanel').classList.add('hidden'); $('#adminPanel').classList.remove('hidden'); $('#adminIdentity').textContent = `${user.name} ${user.surname || ''} - ${user.email}`; await loadContent(); await loadProducts(); };
+
+    let allProducts = [];
+
+    const renderProductCard = product => {
+      const isHidden = product.visible === false;
+      const priceNum = Number(product.price) || 0;
+      const priceDisplay = priceNum > 0 ? `$${priceNum.toLocaleString('es-CL')}` : '<span class="price-quote">Cotización ($0)</span>';
+      const imgTag = product.imageUrl
+        ? `<img src="${escapeHtml(product.imageUrl)}" alt="${escapeHtml(product.name || '')}" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\\'product-card-no-img\\\'><span>📦</span><small>Foto no disponible</small></div>';">`
+        : `<div class="product-card-no-img"><span>📦</span><small>Sin foto</small></div>`;
+
+      return `
+        <div class="product-card" data-product-id="${escapeHtml(product.id || '')}" title="Haz clic para editar las características de este producto">
+          <div class="product-card-thumb">
+            ${isHidden ? '<span class="product-card-badge badge-hidden">Oculto</span>' : ''}
+            ${imgTag}
+          </div>
+          <div class="product-card-body">
+            <div class="product-card-meta">
+              <span class="product-card-cat" title="${escapeHtml(product.category || 'General')}">${escapeHtml(product.category || 'General')}</span>
+              ${product.sku ? `<code class="product-card-sku">${escapeHtml(product.sku)}</code>` : ''}
+            </div>
+            <h4 class="product-card-title" title="${escapeHtml(product.name || '')}">${escapeHtml(product.name || 'Sin nombre')}</h4>
+            <div class="product-card-price">${priceDisplay}</div>
+          </div>
+          <div class="product-card-actions">
+            <button type="button" class="button secondary btn-edit" title="Editar este producto">✏️ Editar</button>
+            <button type="button" class="button danger btn-delete" title="Eliminar este producto">🗑️</button>
+          </div>
+        </div>
+      `;
+    };
+
+    const renderProductGrid = (items = allProducts) => {
+      const container = $('#productsList');
+      const countBadge = $('#productsCountBadge');
+      
+      if (countBadge) {
+        if (items.length === allProducts.length) {
+          countBadge.textContent = `${allProducts.length} producto${allProducts.length === 1 ? '' : 's'}`;
+        } else {
+          countBadge.textContent = `Mostrando ${items.length} de ${allProducts.length} productos`;
+        }
+      }
+
+      if (!items || !items.length) {
+        container.innerHTML = allProducts.length
+          ? '<p style="grid-column:1/-1;text-align:center;padding:40px 10px;color:var(--muted);">No se encontraron productos que coincidan con la búsqueda.</p>'
+          : '<p style="grid-column:1/-1;text-align:center;padding:40px 10px;color:var(--muted);">No hay productos guardados aún. Haz clic en <strong>+ Nuevo producto</strong> o importa desde Excel.</p>';
+        return;
+      }
+
+      container.innerHTML = items.map(renderProductCard).join('');
+
+      container.querySelectorAll('.product-card').forEach(card => {
+        const productId = card.dataset.productId;
+        const product = allProducts.find(p => String(p.id) === String(productId));
+
+        card.addEventListener('click', () => {
+          if (product) openProductEditModal(product);
+        });
+
+        const editBtn = card.querySelector('.btn-edit');
+        if (editBtn) {
+          editBtn.addEventListener('click', event => {
+            event.stopPropagation();
+            if (product) openProductEditModal(product);
+          });
+        }
+
+        const deleteBtn = card.querySelector('.btn-delete');
+        if (deleteBtn) {
+          deleteBtn.addEventListener('click', async event => {
+            event.stopPropagation();
+            if (!confirm(`¿Seguro que deseas eliminar "${product?.name || 'este producto'}"?`)) return;
+            try {
+              await api(`admin-products?id=${encodeURIComponent(productId)}`, { method: 'DELETE' });
+              showMessage($('#productMessage'), 'Producto eliminado.');
+              await loadProducts();
+            } catch (error) {
+              showMessage($('#productMessage'), error.message, true);
+            }
+          });
+        }
+      });
+    };
+
+    const openProductEditModal = (product = {}) => {
+      const form = $('#productModalForm');
+      form.reset();
+      form.dataset.productId = product.id || '';
+      form.querySelector('[name="id"]').value = product.id || '';
+      form.querySelector('[name="name"]').value = product.name || '';
+      form.querySelector('[name="price"]').value = product.price !== undefined ? product.price : 0;
+      form.querySelector('[name="category"]').value = product.category || '';
+      form.querySelector('[name="sku"]').value = product.sku || '';
+      form.querySelector('[name="visible"]').value = product.visible !== false ? 'true' : 'false';
+      form.querySelector('[name="description"]').value = product.description || '';
+      form.querySelector('[name="externalUrl"]').value = product.externalUrl || '';
+
+      const urlInput = form.querySelector('[name="imageUrl"]');
+      urlInput.value = product.imageUrl || '';
+
+      const preview = form.querySelector('[data-image-preview]');
+      const previewBox = form.querySelector('.image-preview');
+      const editImageBtn = form.querySelector('[data-edit-image]');
+
+      if (product.imageUrl) {
+        preview.src = product.imageUrl;
+        preview.hidden = false;
+        previewBox.classList.remove('is-empty');
+        editImageBtn.disabled = false;
+      } else {
+        preview.src = '';
+        preview.hidden = true;
+        previewBox.classList.add('is-empty');
+        editImageBtn.disabled = true;
+      }
+
+      const deleteBtn = $('#modalDeleteProductButton');
+      if (product.id) {
+        $('#productModalTitle').textContent = 'Editar Producto';
+        deleteBtn.style.display = 'inline-block';
+      } else {
+        $('#productModalTitle').textContent = 'Nuevo Producto';
+        deleteBtn.style.display = 'none';
+      }
+
+      $('#productEditModal').hidden = false;
+    };
+
+    const closeProductEditModal = () => {
+      $('#productEditModal').hidden = true;
+    };
+
+    let productModalInitialized = false;
+    const initProductModal = () => {
+      if (productModalInitialized) return;
+      productModalInitialized = true;
+      const form = $('#productModalForm');
+      const fileInput = form.querySelector('[name="imageFile"]');
+      const changeButton = form.querySelector('[data-change-image]');
+      const searchWebButton = form.querySelector('[data-search-web-image]');
+      const editButton = form.querySelector('[data-edit-image]');
+      const preview = form.querySelector('[data-image-preview]');
+      const previewBox = form.querySelector('.image-preview');
+      const urlInput = form.querySelector('[name="imageUrl"]');
+
+      changeButton.addEventListener('click', () => fileInput.click());
+
+      fileInput.addEventListener('change', () => {
+        if (fileInput.files[0]) {
+          openCropEditor(fileInput.files[0], fileInput, urlInput);
+        }
+      });
+
+      searchWebButton.addEventListener('click', () => {
+        const productName = form.querySelector('[name="name"]').value.trim();
+        openWebImageSearchModal(productName, form);
+      });
+
+      editButton.addEventListener('click', async () => {
+        if (!urlInput.value) return;
+        try {
+          await openCropFromSource(urlInput.value, fileInput, urlInput);
+        } catch (error) {
+          showMessage($('#productMessage'), 'No se pudo abrir la imagen para recortar.', true);
+        }
+      });
+
+      form.addEventListener('image-applied', () => {
+        preview.src = urlInput.value;
+        preview.hidden = false;
+        previewBox.classList.remove('is-empty');
+        editButton.disabled = false;
+      });
+
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        const saveBtn = $('#saveProductModalButton');
+        saveBtn.disabled = true;
+        try {
+          const values = await productValues(form);
+          values.id = form.dataset.productId || crypto.randomUUID();
+          values.price = Number(values.price) || 0;
+          values.visible = values.visible === 'true';
+          await api('admin-products', { method: 'POST', body: JSON.stringify(values) });
+          showMessage($('#productMessage'), 'Producto guardado correctamente.');
+          closeProductEditModal();
+          await loadProducts();
+        } catch (error) {
+          alert('Error al guardar producto: ' + error.message);
+        } finally {
+          saveBtn.disabled = false;
+        }
+      });
+
+      $('#modalDeleteProductButton').addEventListener('click', async () => {
+        const id = form.dataset.productId;
+        if (!id) return closeProductEditModal();
+        if (!confirm('¿Seguro que deseas eliminar este producto?')) return;
+        try {
+          await api(`admin-products?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+          showMessage($('#productMessage'), 'Producto eliminado.');
+          closeProductEditModal();
+          await loadProducts();
+        } catch (error) {
+          alert('Error al eliminar producto: ' + error.message);
+        }
+      });
+
+      $('#closeProductModalButton').addEventListener('click', closeProductEditModal);
+      $('#cancelProductModalButton').addEventListener('click', closeProductEditModal);
+
+      $('#productSearchInput')?.addEventListener('input', event => {
+        const query = event.target.value.toLowerCase().trim();
+        if (!query) {
+          renderProductGrid(allProducts);
+          return;
+        }
+        const filtered = allProducts.filter(p => {
+          const name = (p.name || '').toLowerCase();
+          const sku = (p.sku || '').toLowerCase();
+          const cat = (p.category || '').toLowerCase();
+          const desc = (p.description || '').toLowerCase();
+          return name.includes(query) || sku.includes(query) || cat.includes(query) || desc.includes(query);
+        });
+        renderProductGrid(filtered);
+      });
+    };
+
+    const loadProducts = async () => {
+      initProductModal();
+      const result = await api('admin-products');
+      allProducts = result.products || [];
+      const searchVal = $('#productSearchInput')?.value.toLowerCase().trim();
+      if (searchVal) {
+        const filtered = allProducts.filter(p => {
+          const name = (p.name || '').toLowerCase();
+          const sku = (p.sku || '').toLowerCase();
+          const cat = (p.category || '').toLowerCase();
+          return name.includes(searchVal) || sku.includes(searchVal) || cat.includes(searchVal);
+        });
+        renderProductGrid(filtered);
+      } else {
+        renderProductGrid(allProducts);
+      }
+    };
+
+    const openPanel = async user => { $('#loginPanel').classList.add('hidden'); $('#adminPanel').classList.remove('hidden'); $('#adminIdentity').textContent = `${user.name} ${user.surname || ''} - ${user.email}`; initProductModal(); await loadContent(); await loadProducts(); };
     $('#loginForm').addEventListener('submit', async event => { event.preventDefault(); try { const values = Object.fromEntries(new FormData(event.currentTarget)); const remember = values.remember === 'on'; const result = await api('login', { method: 'POST', body: JSON.stringify(values) }); if (result.user.role !== 'admin') throw new Error('Esta cuenta no tiene permisos de administrador.'); (remember ? localStorage : sessionStorage).setItem('smartisp.accountUser', JSON.stringify(result.user)); if (remember) localStorage.setItem('smartisp.accountRemembered', 'true'); else localStorage.removeItem('smartisp.accountRemembered'); await openPanel(result.user); } catch (error) { showMessage($('#loginMessage'), error.message, true); } });
     $('#contentForm').addEventListener('submit', async event => { event.preventDefault(); try { await saveForm(event.currentTarget, $('#contentMessage'), 'Apariencia guardada correctamente.'); } catch (error) { showMessage($('#contentMessage'), error.message, true); } });
     $('#contentForm').addEventListener('input', updateDesignPreview);
@@ -245,7 +614,7 @@
     $('#cropBox').addEventListener('pointerup', () => { cropState.dragging = false; });
     $('#cancelCropButton').addEventListener('click', () => closeCropEditor(true));
     $('#applyCropButton').addEventListener('click', applyCrop);
-    $('#newProductButton').addEventListener('click', () => { $('#productsList').insertAdjacentHTML('afterbegin', productFields({})); const form = $('#productsList .product-row'); bindProductForm(form); form.scrollIntoView({ behavior: 'smooth' }); });
+    $('#newProductButton').addEventListener('click', () => openProductEditModal({}));
 
     // ==========================================
     // IMPORTADOR DE EXCEL / CSV
