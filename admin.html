@@ -41,6 +41,12 @@
     .preview-table th, .preview-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
     .preview-table tr:hover { background: #f9fcfd; }
     .thumb-preview { width: 34px; height: 34px; object-fit: contain; border-radius: 4px; background: #eef5f6; display: block; }
+    .image-search-card { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: white; cursor: pointer; transition: transform .2s, border-color .2s, box-shadow .2s; display: flex; flex-direction: column; text-align: left; }
+    .image-search-card:hover { border-color: var(--blue); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(8,126,164,.15); }
+    .image-search-card img { width: 100%; height: 110px; object-fit: contain; background: #fafdfd; padding: 6px; }
+    .image-search-card span { font-size: 11px; padding: 6px 8px; color: var(--muted); text-overflow: ellipsis; white-space: nowrap; overflow: hidden; border-top: 1px solid var(--line); }
+    .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(8,126,164,.2); border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
@@ -137,6 +143,16 @@
           </table>
         </div>
 
+        <div style="margin:12px 0 6px;padding:10px 14px;background:#eef8f8;border-radius:8px;border:1px solid #c9e8e3;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--ink);cursor:pointer;margin:0;">
+            <input type="checkbox" id="autoFetchMissingImages" checked style="width:18px;height:18px;margin:0;accent-color:var(--blue);">
+            <span>🌐 Buscar fotos en internet automáticamente para productos sin imagen</span>
+          </label>
+          <small style="display:block;color:var(--muted);margin-top:4px;margin-left:26px;">
+            Si alguna fila de tu archivo no tiene foto, buscaremos una imagen nítida en internet según el nombre del producto.
+          </small>
+        </div>
+
         <div id="importProgressContainer" class="hidden" style="margin-top:16px;">
           <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;font-weight:600;">
             <span id="importProgressLabel" style="color:var(--ink);">Subiendo productos...</span>
@@ -155,6 +171,34 @@
             <span>🚀 Confirmar y Cargar a la Tienda</span>
           </button>
         </div>
+      </div>
+    </section>
+  </div>
+  <div id="imageSearchModal" class="crop-modal" hidden>
+    <section class="crop-dialog" style="max-width:760px;width:95vw;" role="dialog" aria-modal="true" aria-labelledby="imageSearchTitle">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h2 id="imageSearchTitle" style="margin:0;font-size:19px;">Buscar Imagen en Internet</h2>
+        <button id="closeImageSearchModalButton" type="button" class="button secondary" style="padding:4px 11px;font-size:15px;line-height:1;">✕</button>
+      </div>
+      <p class="crop-help" style="margin-bottom:14px;">
+        Encuentra fotos de alta calidad para este producto. Haz clic en la imagen que deseas asignar.
+      </p>
+
+      <form id="imageSearchForm" style="display:flex;gap:8px;margin-bottom:16px;">
+        <input id="imageSearchInput" type="text" placeholder="Escribe el nombre o modelo del producto..." style="margin-top:0;" required>
+        <button class="button" type="submit" style="white-space:nowrap;">🔍 Buscar</button>
+      </form>
+
+      <div id="imageSearchStatus" style="display:none;align-items:center;justify-content:center;gap:8px;padding:24px;color:var(--muted);font-size:13px;">
+        <div class="spinner"></div>
+        <span>Buscando imágenes en internet...</span>
+      </div>
+
+      <div id="imageSearchResultsGrid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));gap:12px;max-height:380px;overflow-y:auto;padding:4px;">
+      </div>
+
+      <div class="crop-actions" style="margin-top:18px;">
+        <button id="cancelImageSearchButton" class="button secondary" type="button">Cancelar</button>
       </div>
     </section>
   </div>
@@ -180,9 +224,9 @@
     const api = async (action, options = {}) => { const response = await fetch(`/api/auth/${action}`, { credentials: 'include', headers: { 'Content-Type': 'application/json' }, ...options }); const text = await response.text(); let result = {}; try { result = text ? JSON.parse(text) : {}; } catch { result = { error: text || `Respuesta invalida (${response.status})` }; } if (!response.ok) throw new Error(result.error || 'No se pudo completar la operacion.'); return result; };
     const updateDesignPreview = () => { const form = $('#contentForm'); const values = formValues(form); const preview = $('.design-preview-hero'); preview.style.setProperty('--preview-image', values.hero_image ? `url("${values.hero_image}")` : 'none'); preview.style.setProperty('--preview-accent', values.primary_color || '#087ea4'); preview.style.setProperty('--preview-text', values.hero_text_color || '#102c3d'); preview.style.setProperty('--preview-width', `${values.hero_content_width || 510}px`); preview.style.setProperty('--preview-overlay', `rgba(228,245,243,${Number(values.hero_overlay_opacity || 0) / 100})`); preview.style.minHeight = `${values.hero_height || 370}px`; preview.style.backgroundPosition = values.hero_image_position || 'center'; form.querySelectorAll('[data-preview]').forEach(element => { element.textContent = values[element.dataset.preview] || ''; }); form.querySelectorAll('[data-range-value]').forEach(element => { element.textContent = `${values[element.dataset.rangeValue] || 0}%`; }); };
     const loadContent = async () => { const result = await api('admin-content'); const values = { ...DEFAULT_CONTENT, ...Object.fromEntries(result.content.map(item => [item.key, item.value])) }; document.querySelectorAll('#contentForm [name]').forEach(input => { if (input.type !== 'file' && values[input.name] !== undefined) input.value = values[input.name]; }); document.querySelectorAll('#visibilityForm [name]').forEach(input => { if (values[input.name] !== undefined) input.value = values[input.name]; }); updateDesignPreview(); };
-    const productFields = product => `<form class="product-row" data-product-id="${product.id || ''}"><label>Nombre<input name="name" value="${escapeHtml(product.name || '')}" required></label><label>Precio<input name="price" type="number" min="0" step="0.01" value="${product.price || 0}" required></label><label>Categoria<input name="category" value="${escapeHtml(product.category || '')}"></label><label>SKU<input name="sku" value="${escapeHtml(product.sku || '')}"></label><label>Visible<select name="visible"><option value="true" ${product.visible !== false ? 'selected' : ''}>Si</option><option value="false" ${product.visible === false ? 'selected' : ''}>No</option></select></label><label class="description">Descripcion<textarea name="description">${escapeHtml(product.description || '')}</textarea></label><label class="description">Enlace externo<input name="externalUrl" type="url" value="${escapeHtml(product.externalUrl || '')}" placeholder="https://store.intcomex.com/"></label><div class="image"><span>Imagen del producto</span><div class="image-editor"><div class="image-preview ${product.imageUrl ? '' : 'is-empty'}"><img data-image-preview src="${escapeHtml(product.imageUrl || '')}" alt="Vista previa de ${escapeHtml(product.name || 'producto')}" ${product.imageUrl ? '' : 'hidden'}></div><div class="image-tools"><small>Sube una imagen nueva o ajusta la que ya tienes.</small><input name="imageFile" type="file" accept="image/*"><input name="imageUrl" type="hidden" value="${escapeHtml(product.imageUrl || '')}"><button class="button secondary" data-change-image type="button">Cambiar imagen</button><button class="button secondary" data-edit-image type="button" ${product.imageUrl ? '' : 'disabled'}>Editar recorte</button></div></div></div><div class="row-actions"><button class="button" type="submit">Guardar</button><button class="button danger" data-delete type="button">Eliminar</button></div></form>`;
+    const productFields = product => `<form class="product-row" data-product-id="${product.id || ''}"><label>Nombre<input name="name" value="${escapeHtml(product.name || '')}" required></label><label>Precio<input name="price" type="number" min="0" step="0.01" value="${product.price || 0}" required></label><label>Categoria<input name="category" value="${escapeHtml(product.category || '')}"></label><label>SKU<input name="sku" value="${escapeHtml(product.sku || '')}"></label><label>Visible<select name="visible"><option value="true" ${product.visible !== false ? 'selected' : ''}>Si</option><option value="false" ${product.visible === false ? 'selected' : ''}>No</option></select></label><label class="description">Descripcion<textarea name="description">${escapeHtml(product.description || '')}</textarea></label><label class="description">Enlace externo<input name="externalUrl" type="url" value="${escapeHtml(product.externalUrl || '')}" placeholder="https://store.intcomex.com/"></label><div class="image"><span>Imagen del producto</span><div class="image-editor"><div class="image-preview ${product.imageUrl ? '' : 'is-empty'}"><img data-image-preview src="${escapeHtml(product.imageUrl || '')}" alt="Vista previa de ${escapeHtml(product.name || 'producto')}" ${product.imageUrl ? '' : 'hidden'}></div><div class="image-tools"><small>Sube una imagen nueva o ajusta la que ya tienes.</small><input name="imageFile" type="file" accept="image/*"><input name="imageUrl" type="hidden" value="${escapeHtml(product.imageUrl || '')}"><button class="button secondary" data-change-image type="button">Cambiar imagen</button><button class="button secondary" data-search-web-image type="button" style="background:#eaf6f9;color:var(--blue);font-weight:700;">🌐 Buscar en internet</button><button class="button secondary" data-edit-image type="button" ${product.imageUrl ? '' : 'disabled'}>Editar recorte</button></div></div></div><div class="row-actions"><button class="button" type="submit">Guardar</button><button class="button danger" data-delete type="button">Eliminar</button></div></form>`;
     const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
-    const bindProductForm = form => { form.addEventListener('submit', async event => { event.preventDefault(); try { const values = await productValues(form); values.id = form.dataset.productId; values.price = Number(values.price); values.visible = values.visible === 'true'; await api('admin-products', { method: 'POST', body: JSON.stringify(values) }); showMessage($('#productMessage'), 'Producto guardado correctamente.'); await loadProducts(); } catch (error) { showMessage($('#productMessage'), error.message, true); } }); const fileInput = form.querySelector('[name="imageFile"]'); const changeButton = form.querySelector('[data-change-image]'); const editButton = form.querySelector('[data-edit-image]'); const preview = form.querySelector('[data-image-preview]'); const previewBox = form.querySelector('.image-preview'); changeButton.addEventListener('click', () => fileInput.click()); editButton.addEventListener('click', async () => { try { await openCropFromSource(form.querySelector('[name="imageUrl"]').value, fileInput, form.querySelector('[name="imageUrl"]')); } catch (error) { showMessage($('#productMessage'), 'No se pudo abrir la imagen para editar.', true); } }); fileInput.addEventListener('change', () => { editButton.disabled = !fileInput.files[0] && !form.querySelector('[name="imageUrl"]').value; }); form.addEventListener('image-applied', () => { preview.src = form.querySelector('[name="imageUrl"]').value; preview.hidden = false; previewBox.classList.remove('is-empty'); editButton.disabled = false; }); form.querySelector('[data-delete]').addEventListener('click', async () => { if (!form.dataset.productId) return form.remove(); try { await api(`admin-products?id=${encodeURIComponent(form.dataset.productId)}`, { method: 'DELETE' }); showMessage($('#productMessage'), 'Producto eliminado.'); await loadProducts(); } catch (error) { showMessage($('#productMessage'), error.message, true); } }); };
+    const bindProductForm = form => { form.addEventListener('submit', async event => { event.preventDefault(); try { const values = await productValues(form); values.id = form.dataset.productId; values.price = Number(values.price); values.visible = values.visible === 'true'; await api('admin-products', { method: 'POST', body: JSON.stringify(values) }); showMessage($('#productMessage'), 'Producto guardado correctamente.'); await loadProducts(); } catch (error) { showMessage($('#productMessage'), error.message, true); } }); const fileInput = form.querySelector('[name="imageFile"]'); const changeButton = form.querySelector('[data-change-image]'); const searchWebButton = form.querySelector('[data-search-web-image]'); const editButton = form.querySelector('[data-edit-image]'); const preview = form.querySelector('[data-image-preview]'); const previewBox = form.querySelector('.image-preview'); changeButton.addEventListener('click', () => fileInput.click()); if (searchWebButton) { searchWebButton.addEventListener('click', () => { const productName = form.querySelector('[name="name"]').value.trim(); openWebImageSearchModal(productName, form); }); } editButton.addEventListener('click', async () => { try { await openCropFromSource(form.querySelector('[name="imageUrl"]').value, fileInput, form.querySelector('[name="imageUrl"]')); } catch (error) { showMessage($('#productMessage'), 'No se pudo abrir la imagen para editar.', true); } }); fileInput.addEventListener('change', () => { editButton.disabled = !fileInput.files[0] && !form.querySelector('[name="imageUrl"]').value; }); form.addEventListener('image-applied', () => { preview.src = form.querySelector('[name="imageUrl"]').value; preview.hidden = false; previewBox.classList.remove('is-empty'); editButton.disabled = false; }); form.querySelector('[data-delete]').addEventListener('click', async () => { if (!form.dataset.productId) return form.remove(); try { await api(`admin-products?id=${encodeURIComponent(form.dataset.productId)}`, { method: 'DELETE' }); showMessage($('#productMessage'), 'Producto eliminado.'); await loadProducts(); } catch (error) { showMessage($('#productMessage'), error.message, true); } }); };
     const loadProducts = async () => { const result = await api('admin-products'); $('#productsList').innerHTML = result.products.map(productFields).join('') || '<p>No hay productos guardados aun.</p>'; document.querySelectorAll('.product-row').forEach(bindProductForm); };
     const openPanel = async user => { $('#loginPanel').classList.add('hidden'); $('#adminPanel').classList.remove('hidden'); $('#adminIdentity').textContent = `${user.name} ${user.surname || ''} - ${user.email}`; await loadContent(); await loadProducts(); };
     $('#loginForm').addEventListener('submit', async event => { event.preventDefault(); try { const values = Object.fromEntries(new FormData(event.currentTarget)); const remember = values.remember === 'on'; const result = await api('login', { method: 'POST', body: JSON.stringify(values) }); if (result.user.role !== 'admin') throw new Error('Esta cuenta no tiene permisos de administrador.'); (remember ? localStorage : sessionStorage).setItem('smartisp.accountUser', JSON.stringify(result.user)); if (remember) localStorage.setItem('smartisp.accountRemembered', 'true'); else localStorage.removeItem('smartisp.accountRemembered'); await openPanel(result.user); } catch (error) { showMessage($('#loginMessage'), error.message, true); } });
@@ -393,13 +437,36 @@
       const total = parsedImportProducts.length;
       let totalImported = 0;
 
+      const autoFetch = $('#autoFetchMissingImages')?.checked;
+
       try {
+        if (autoFetch) {
+          const withoutImage = parsedImportProducts.filter(p => !p.imageUrl);
+          if (withoutImage.length > 0) {
+            for (let i = 0; i < withoutImage.length; i++) {
+              const p = withoutImage[i];
+              progressLabel.textContent = `Buscando foto en internet (${i + 1}/${withoutImage.length}): ${p.name.slice(0, 26)}...`;
+              const pct = Math.round(((i + 1) / withoutImage.length) * 35);
+              progressBar.style.width = `${pct}%`;
+              progressPercent.textContent = `${pct}%`;
+              try {
+                const res = await api(`search-product-image?q=${encodeURIComponent(p.name)}&limit=1`);
+                if (res.images && res.images.length > 0 && res.images[0].url) {
+                  p.imageUrl = res.images[0].url;
+                }
+              } catch (err) {
+                console.warn('No se pudo autocompletar foto para:', p.name);
+              }
+            }
+          }
+        }
+
         for (let i = 0; i < total; i += batchSize) {
           const batch = parsedImportProducts.slice(i, i + batchSize);
           const currentBatchEnd = Math.min(i + batch.length, total);
 
           progressLabel.textContent = `Guardando productos ${i + 1} a ${currentBatchEnd} de ${total}...`;
-          const pct = Math.round((currentBatchEnd / total) * 100);
+          const pct = Math.min(100, Math.round(35 + (currentBatchEnd / total) * 65));
           progressBar.style.width = `${pct}%`;
           progressPercent.textContent = `${pct}%`;
 
@@ -427,6 +494,79 @@
         showMessage($('#importModalMessage'), 'Error durante la importación: ' + err.message, true);
       }
     };
+
+    // ==========================================
+    // BUSCADOR VISUAL DE IMÁGENES EN INTERNET
+    // ==========================================
+    let activeProductFormForImageSearch = null;
+
+    const openWebImageSearchModal = (initialQuery, form) => {
+      activeProductFormForImageSearch = form;
+      const input = $('#imageSearchInput');
+      input.value = initialQuery || '';
+      $('#imageSearchResultsGrid').innerHTML = '';
+      $('#imageSearchStatus').style.display = 'none';
+      $('#imageSearchModal').hidden = false;
+      if (initialQuery) executeImageSearch(initialQuery);
+    };
+
+    const closeWebImageSearchModal = () => {
+      $('#imageSearchModal').hidden = true;
+      activeProductFormForImageSearch = null;
+    };
+
+    const executeImageSearch = async query => {
+      const status = $('#imageSearchStatus');
+      const grid = $('#imageSearchResultsGrid');
+      status.style.display = 'flex';
+      grid.innerHTML = '';
+      try {
+        const res = await api(`search-product-image?q=${encodeURIComponent(query)}&limit=12`);
+        status.style.display = 'none';
+        if (!res.images || !res.images.length) {
+          grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;color:var(--muted);padding:24px;">No encontramos fotos para "${escapeHtml(query)}". Prueba buscando con otra palabra o marca.</p>`;
+          return;
+        }
+        grid.innerHTML = res.images.map(img => `
+          <div class="image-search-card" data-img-url="${escapeHtml(img.url)}" title="Clic para elegir esta foto">
+            <img src="${escapeHtml(img.thumbnail || img.url)}" alt="${escapeHtml(img.title)}" loading="lazy" onerror="this.parentElement.remove()">
+            <span>${escapeHtml(img.title || 'Foto')}</span>
+          </div>
+        `).join('');
+
+        grid.querySelectorAll('.image-search-card').forEach(card => {
+          card.addEventListener('click', () => {
+            const url = card.dataset.imgUrl;
+            if (activeProductFormForImageSearch && url) {
+              const urlInput = activeProductFormForImageSearch.querySelector('[name="imageUrl"]');
+              const preview = activeProductFormForImageSearch.querySelector('[data-image-preview]');
+              const previewBox = activeProductFormForImageSearch.querySelector('.image-preview');
+              const editButton = activeProductFormForImageSearch.querySelector('[data-edit-image]');
+              if (urlInput) urlInput.value = url;
+              if (preview) {
+                preview.src = url;
+                preview.hidden = false;
+              }
+              if (previewBox) previewBox.classList.remove('is-empty');
+              if (editButton) editButton.disabled = false;
+              showMessage($('#productMessage'), 'Foto asignada desde internet. Haz clic en "Guardar" para confirmar los cambios.');
+              closeWebImageSearchModal();
+            }
+          });
+        });
+      } catch (err) {
+        status.style.display = 'none';
+        grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;color:var(--danger);padding:20px;">Error al buscar imágenes: ${escapeHtml(err.message)}</p>`;
+      }
+    };
+
+    $('#closeImageSearchModalButton').addEventListener('click', closeWebImageSearchModal);
+    $('#cancelImageSearchButton').addEventListener('click', closeWebImageSearchModal);
+    $('#imageSearchForm').addEventListener('submit', event => {
+      event.preventDefault();
+      const q = $('#imageSearchInput').value.trim();
+      if (q) executeImageSearch(q);
+    });
 
     $('#openImportModalButton').addEventListener('click', openImportModal);
     $('#closeImportModalButton').addEventListener('click', closeImportModal);

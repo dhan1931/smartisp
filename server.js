@@ -416,6 +416,63 @@ app.get('/api/auth/catalog', async (req, res) => {
   });
 });
 
+const searchWebImages = async (query, limit = 8) => {
+  const cleanQuery = String(query || '').trim();
+  if (!cleanQuery) return [];
+  try {
+    const res1 = await fetch('https://duckduckgo.com/?q=' + encodeURIComponent(cleanQuery) + '&iax=images&ia=images', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+    const html = await res1.text();
+    const match = /vqd=([0-9-]+)/.exec(html);
+    if (match && match[1]) {
+      const res2 = await fetch('https://duckduckgo.com/i.js?l=es-es&o=json&q=' + encodeURIComponent(cleanQuery) + '&vqd=' + match[1], {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+      });
+      const data = await res2.json();
+      if (data.results && Array.isArray(data.results)) {
+        return data.results
+          .filter(r => r.image && /^https?:\/\//i.test(r.image))
+          .slice(0, limit)
+          .map(r => ({
+            url: r.image.replace(/^http:\/\//i, 'https://'),
+            thumbnail: (r.thumbnail || r.image).replace(/^http:\/\//i, 'https://'),
+            title: r.title || cleanQuery
+          }));
+      }
+    }
+  } catch (err) {
+    console.warn('Error buscando imagen en DDG:', err.message);
+  }
+
+  try {
+    const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&generator=search&gsrsearch=${encodeURIComponent(cleanQuery)}&gsrlimit=${limit}&piprop=thumbnail|original&pithumbsize=600`;
+    const wikiRes = await fetch(wikiUrl);
+    const wikiData = await wikiRes.json();
+    const pages = Object.values(wikiData?.query?.pages || {});
+    const images = pages
+      .map(p => p.original?.source || p.thumbnail?.source)
+      .filter(Boolean)
+      .map(url => ({ url, thumbnail: url, title: cleanQuery }));
+    if (images.length) return images;
+  } catch (err) {
+    console.warn('Error buscando imagen en Wikimedia:', err.message);
+  }
+
+  return [];
+};
+
+app.get('/api/auth/search-product-image', async (req, res) => {
+  const query = String(req.query?.q || '').trim();
+  const limit = Math.min(20, Math.max(1, Number(req.query?.limit || 8)));
+  const images = await searchWebImages(query, limit);
+  return res.json({ images });
+});
+
 await initializeDatabase();
 app.listen(port, () => {
   console.log(`NexoTech disponible en http://localhost:${port}`);

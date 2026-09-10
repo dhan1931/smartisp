@@ -89,6 +89,56 @@ const hashResetToken = token => crypto.createHash('sha256').update(token).digest
 const appUrl = req => String(process.env.APP_URL || `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host || 'localhost'}`).replace(/\/$/, '');
 const sendResetEmail = async (email, resetUrl) => { if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) throw new Error('El servicio de correo no está configurado.'); const response = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: process.env.EMAIL_FROM, to: [email], subject: 'Restablece tu contraseña de SmartISP', html: `<p>Recibimos una solicitud para cambiar tu contraseña.</p><p><a href="${resetUrl}">Cambiar contraseña</a></p><p>Este enlace caduca en 1 hora y solo puede utilizarse una vez.</p>` }) }); if (!response.ok) throw new Error('No se pudo enviar el correo de recuperación.'); };
 
+const searchWebImages = async (query, limit = 8) => {
+  const cleanQuery = String(query || '').trim();
+  if (!cleanQuery) return [];
+  try {
+    const res1 = await fetch('https://duckduckgo.com/?q=' + encodeURIComponent(cleanQuery) + '&iax=images&ia=images', {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+    const html = await res1.text();
+    const match = /vqd=([0-9-]+)/.exec(html);
+    if (match && match[1]) {
+      const res2 = await fetch('https://duckduckgo.com/i.js?l=es-es&o=json&q=' + encodeURIComponent(cleanQuery) + '&vqd=' + match[1], {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+      });
+      const data = await res2.json();
+      if (data.results && Array.isArray(data.results)) {
+        return data.results
+          .filter(r => r.image && /^https?:\/\//i.test(r.image))
+          .slice(0, limit)
+          .map(r => ({
+            url: r.image.replace(/^http:\/\//i, 'https://'),
+            thumbnail: (r.thumbnail || r.image).replace(/^http:\/\//i, 'https://'),
+            title: r.title || cleanQuery
+          }));
+      }
+    }
+  } catch (err) {
+    console.warn('Error buscando imagen en DDG:', err.message);
+  }
+
+  try {
+    const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&generator=search&gsrsearch=${encodeURIComponent(cleanQuery)}&gsrlimit=${limit}&piprop=thumbnail|original&pithumbsize=600`;
+    const wikiRes = await fetch(wikiUrl);
+    const wikiData = await wikiRes.json();
+    const pages = Object.values(wikiData?.query?.pages || {});
+    const images = pages
+      .map(p => p.original?.source || p.thumbnail?.source)
+      .filter(Boolean)
+      .map(url => ({ url, thumbnail: url, title: cleanQuery }));
+    if (images.length) return images;
+  } catch (err) {
+    console.warn('Error buscando imagen en Wikimedia:', err.message);
+  }
+
+  return [];
+};
+
 const getAuthenticatedUser = async (req, database) => {
   const userId = getSessionUserId(req);
   if (!userId) return null;
@@ -439,6 +489,13 @@ export default async function handler(req, res) {
         database.query('SELECT content_key AS "key", content_value AS value FROM site_content')
       ]);
       return res.status(200).json({ products: products.rows, content: content.rows });
+    }
+
+    if (action === 'search-product-image' && req.method === 'GET') {
+      const query = String(req.query?.q || '').trim();
+      const limit = Math.min(20, Math.max(1, Number(req.query?.limit || 8)));
+      const images = await searchWebImages(query, limit);
+      return res.status(200).json({ images });
     }
 
     if (action === 'logout' && req.method === 'POST') {
