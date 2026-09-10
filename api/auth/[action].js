@@ -305,12 +305,16 @@ export default async function handler(req, res) {
         price NUMERIC(12, 2) NOT NULL DEFAULT 0,
         category TEXT NOT NULL DEFAULT '',
         image_url TEXT NOT NULL DEFAULT '',
+        external_url TEXT NOT NULL DEFAULT '',
+        sku TEXT NOT NULL DEFAULT '',
         visible BOOLEAN NOT NULL DEFAULT TRUE,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )`);
+      );
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS external_url TEXT NOT NULL DEFAULT '';
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS sku TEXT NOT NULL DEFAULT ''`);
       if (req.method === 'GET') {
-        const result = await database.query('SELECT id, name, description, price, category, image_url AS "imageUrl", visible FROM products ORDER BY created_at DESC');
+        const result = await database.query('SELECT id, name, description, price, category, image_url AS "imageUrl", external_url AS "externalUrl", sku, visible FROM products ORDER BY created_at DESC');
         return res.status(200).json({ products: result.rows });
       }
       if (req.method === 'DELETE') {
@@ -320,12 +324,74 @@ export default async function handler(req, res) {
       }
       const product = bodyOf(req);
       const id = String(product.id || crypto.randomUUID());
-      await database.query(`INSERT INTO products (id, name, description, price, category, image_url, visible, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+      await database.query(`INSERT INTO products (id, name, description, price, category, image_url, external_url, sku, visible, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
         ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description, price = EXCLUDED.price,
-        category = EXCLUDED.category, image_url = EXCLUDED.image_url, visible = EXCLUDED.visible, updated_at = NOW()`,
-        [id, String(product.name || '').trim(), String(product.description || '').trim(), Number(product.price || 0), String(product.category || '').trim(), String(product.imageUrl || '').trim(), product.visible !== false]);
+        category = EXCLUDED.category, image_url = EXCLUDED.image_url, external_url = EXCLUDED.external_url, sku = EXCLUDED.sku,
+        visible = EXCLUDED.visible, updated_at = NOW()`,
+        [id, String(product.name || '').trim(), String(product.description || '').trim(), Number(product.price || 0), String(product.category || '').trim(), String(product.imageUrl || '').trim(), String(product.externalUrl || '').trim(), String(product.sku || '').trim(), product.visible !== false]);
       return res.status(200).json({ ok: true, id });
+    }
+
+    if (action === 'admin-products-bulk' && req.method === 'POST') {
+      if (!await requireAdmin(req, res, database)) return;
+      await database.query(`CREATE TABLE IF NOT EXISTS products (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        price NUMERIC(12, 2) NOT NULL DEFAULT 0,
+        category TEXT NOT NULL DEFAULT '',
+        image_url TEXT NOT NULL DEFAULT '',
+        external_url TEXT NOT NULL DEFAULT '',
+        sku TEXT NOT NULL DEFAULT '',
+        visible BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS external_url TEXT NOT NULL DEFAULT '';
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS sku TEXT NOT NULL DEFAULT '';`);
+
+      const body = bodyOf(req);
+      const items = Array.isArray(body.products) ? body.products : [];
+      if (!items.length) return res.status(400).json({ error: 'No se recibieron productos para importar.' });
+
+      let count = 0;
+      await database.query('BEGIN');
+      try {
+        for (const item of items) {
+          const name = String(item.name || '').trim();
+          if (!name) continue;
+          const sku = String(item.sku || '').trim();
+          const id = String(item.id || (sku ? `sku:${sku.toUpperCase()}` : crypto.randomUUID()));
+          const description = String(item.description || '').trim();
+          const parsedPrice = Number(item.price);
+          const price = !isNaN(parsedPrice) && parsedPrice > 0 ? parsedPrice : 0;
+          const category = String(item.category || 'General').trim();
+          const imageUrl = String(item.imageUrl || item.image_url || '').trim();
+          const externalUrl = String(item.externalUrl || item.external_url || '').trim();
+          const visible = item.visible !== false;
+
+          await database.query(`INSERT INTO products (id, name, description, price, category, image_url, external_url, sku, visible, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+            ON CONFLICT (id) DO UPDATE SET
+              name = EXCLUDED.name,
+              description = CASE WHEN EXCLUDED.description <> '' THEN EXCLUDED.description ELSE products.description END,
+              price = EXCLUDED.price,
+              category = CASE WHEN EXCLUDED.category <> '' THEN EXCLUDED.category ELSE products.category END,
+              image_url = CASE WHEN EXCLUDED.image_url <> '' THEN EXCLUDED.image_url ELSE products.image_url END,
+              external_url = CASE WHEN EXCLUDED.external_url <> '' THEN EXCLUDED.external_url ELSE products.external_url END,
+              sku = CASE WHEN EXCLUDED.sku <> '' THEN EXCLUDED.sku ELSE products.sku END,
+              visible = EXCLUDED.visible,
+              updated_at = NOW()`,
+            [id, name, description, price, category, imageUrl, externalUrl, sku, visible]);
+          count++;
+        }
+        await database.query('COMMIT');
+      } catch (err) {
+        await database.query('ROLLBACK');
+        throw err;
+      }
+      return res.status(200).json({ ok: true, count });
     }
 
     if (action === 'admin-content' && (req.method === 'GET' || req.method === 'POST')) {
@@ -355,17 +421,21 @@ export default async function handler(req, res) {
         price NUMERIC(12, 2) NOT NULL DEFAULT 0,
         category TEXT NOT NULL DEFAULT '',
         image_url TEXT NOT NULL DEFAULT '',
+        external_url TEXT NOT NULL DEFAULT '',
+        sku TEXT NOT NULL DEFAULT '',
         visible BOOLEAN NOT NULL DEFAULT TRUE,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )`);
+      );
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS external_url TEXT NOT NULL DEFAULT '';
+      ALTER TABLE products ADD COLUMN IF NOT EXISTS sku TEXT NOT NULL DEFAULT ''`);
       await database.query(`CREATE TABLE IF NOT EXISTS site_content (
         content_key TEXT PRIMARY KEY,
         content_value TEXT NOT NULL DEFAULT '',
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )`);
       const [products, content] = await Promise.all([
-        database.query('SELECT id, name, description, price, category, image_url AS "imageUrl" FROM products WHERE visible = TRUE ORDER BY created_at DESC'),
+        database.query('SELECT id, name, description, price, category, image_url AS "imageUrl", external_url AS "externalUrl", sku FROM products WHERE visible = TRUE ORDER BY created_at DESC'),
         database.query('SELECT content_key AS "key", content_value AS value FROM site_content')
       ]);
       return res.status(200).json({ products: products.rows, content: content.rows });

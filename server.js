@@ -23,12 +23,20 @@ const demoUser = {
   passwordHash: demoPasswordHash,
   name: 'Medardo',
   surname: 'Demo',
-  phone: '+593 999 000 000'
+  phone: '+593 999 000 000',
+  role: 'admin'
 };
 
 if (!pool) users.set(demoUser.email, demoUser);
 
-const publicUser = user => ({ email: user.email, name: user.name, surname: user.surname || '', phone: user.phone || '' });
+const publicUser = user => ({
+  id: user.id,
+  email: user.email,
+  name: user.name,
+  surname: user.surname || '',
+  phone: user.phone || '',
+  role: user.role || (user.email === demoUser.email || (process.env.ADMIN_EMAIL && user.email === process.env.ADMIN_EMAIL.toLowerCase()) ? 'admin' : 'customer')
+});
 const findUserByEmail = async email => {
   if (!pool) return users.get(email);
   const result = await pool.query('SELECT id, email, password_hash AS "passwordHash", name, surname, phone FROM users WHERE email = $1 LIMIT 1', [email]);
@@ -201,6 +209,211 @@ app.post('/api/auth/customer-orders', async (req, res) => {
 
 app.post('/api/auth/logout', (req, res) => {
   req.session.destroy(() => res.json({ ok: true }));
+});
+
+const inMemoryProducts = new Map();
+const inMemoryContent = new Map();
+
+const requireAdminUser = async (req, res) => {
+  const user = await findUserById(req.session.userId);
+  if (!user) {
+    res.status(401).json({ error: 'Debes iniciar sesión.' });
+    return null;
+  }
+  const role = user.role || (user.email === demoUser.email || (process.env.ADMIN_EMAIL && user.email === process.env.ADMIN_EMAIL.toLowerCase()) ? 'admin' : 'customer');
+  if (role !== 'admin') {
+    res.status(403).json({ error: 'No tienes permisos de administrador.' });
+    return null;
+  }
+  return user;
+};
+
+const ensureProductsTable = async () => {
+  if (!pool) return;
+  await pool.query(`CREATE TABLE IF NOT EXISTS products (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    price NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    category TEXT NOT NULL DEFAULT '',
+    image_url TEXT NOT NULL DEFAULT '',
+    external_url TEXT NOT NULL DEFAULT '',
+    sku TEXT NOT NULL DEFAULT '',
+    visible BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS external_url TEXT NOT NULL DEFAULT '';
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS sku TEXT NOT NULL DEFAULT '';`);
+};
+
+app.get('/api/auth/admin-products', async (req, res) => {
+  if (!await requireAdminUser(req, res)) return;
+  if (pool) {
+    await ensureProductsTable();
+    const result = await pool.query('SELECT id, name, description, price, category, image_url AS "imageUrl", external_url AS "externalUrl", sku, visible FROM products ORDER BY created_at DESC');
+    return res.json({ products: result.rows });
+  }
+  return res.json({ products: [...inMemoryProducts.values()] });
+});
+
+app.post('/api/auth/admin-products', async (req, res) => {
+  if (!await requireAdminUser(req, res)) return;
+  const product = req.body || {};
+  const id = String(product.id || crypto.randomUUID());
+  const name = String(product.name || '').trim();
+  const description = String(product.description || '').trim();
+  const price = Number(product.price || 0);
+  const category = String(product.category || '').trim();
+  const imageUrl = String(product.imageUrl || product.image_url || '').trim();
+  const externalUrl = String(product.externalUrl || product.external_url || '').trim();
+  const sku = String(product.sku || '').trim();
+  const visible = product.visible !== false;
+
+  if (pool) {
+    await ensureProductsTable();
+    await pool.query(`INSERT INTO products (id, name, description, price, category, image_url, external_url, sku, visible, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+      ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description, price = EXCLUDED.price,
+      category = EXCLUDED.category, image_url = EXCLUDED.image_url, external_url = EXCLUDED.external_url, sku = EXCLUDED.sku,
+      visible = EXCLUDED.visible, updated_at = NOW()`,
+      [id, name, description, price, category, imageUrl, externalUrl, sku, visible]);
+    return res.json({ ok: true, id });
+  }
+
+  inMemoryProducts.set(id, { id, name, description, price, category, imageUrl, externalUrl, sku, visible });
+  return res.json({ ok: true, id });
+});
+
+app.delete('/api/auth/admin-products', async (req, res) => {
+  if (!await requireAdminUser(req, res)) return;
+  const id = String(req.query?.id || '');
+  if (pool) {
+    await ensureProductsTable();
+    await pool.query('DELETE FROM products WHERE id = $1', [id]);
+  } else {
+    inMemoryProducts.delete(id);
+  }
+  return res.json({ ok: true });
+});
+
+app.post('/api/auth/admin-products-bulk', async (req, res) => {
+  if (!await requireAdminUser(req, res)) return;
+  const items = Array.isArray(req.body.products) ? req.body.products : [];
+  if (!items.length) return res.status(400).json({ error: 'No se recibieron productos para importar.' });
+
+  let count = 0;
+  if (pool) {
+    await ensureProductsTable();
+    await pool.query('BEGIN');
+    try {
+      for (const item of items) {
+        const name = String(item.name || '').trim();
+        if (!name) continue;
+        const sku = String(item.sku || '').trim();
+        const id = String(item.id || (sku ? `sku:${sku.toUpperCase()}` : crypto.randomUUID()));
+        const description = String(item.description || '').trim();
+        const parsedPrice = Number(item.price);
+        const price = !isNaN(parsedPrice) && parsedPrice > 0 ? parsedPrice : 0;
+        const category = String(item.category || 'General').trim();
+        const imageUrl = String(item.imageUrl || item.image_url || '').trim();
+        const externalUrl = String(item.externalUrl || item.external_url || '').trim();
+        const visible = item.visible !== false;
+
+        await pool.query(`INSERT INTO products (id, name, description, price, category, image_url, external_url, sku, visible, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+          ON CONFLICT (id) DO UPDATE SET
+            name = EXCLUDED.name,
+            description = CASE WHEN EXCLUDED.description <> '' THEN EXCLUDED.description ELSE products.description END,
+            price = EXCLUDED.price,
+            category = CASE WHEN EXCLUDED.category <> '' THEN EXCLUDED.category ELSE products.category END,
+            image_url = CASE WHEN EXCLUDED.image_url <> '' THEN EXCLUDED.image_url ELSE products.image_url END,
+            external_url = CASE WHEN EXCLUDED.external_url <> '' THEN EXCLUDED.external_url ELSE products.external_url END,
+            sku = CASE WHEN EXCLUDED.sku <> '' THEN EXCLUDED.sku ELSE products.sku END,
+            visible = EXCLUDED.visible,
+            updated_at = NOW()`,
+          [id, name, description, price, category, imageUrl, externalUrl, sku, visible]);
+        count++;
+      }
+      await pool.query('COMMIT');
+    } catch (err) {
+      await pool.query('ROLLBACK');
+      throw err;
+    }
+  } else {
+    for (const item of items) {
+      const name = String(item.name || '').trim();
+      if (!name) continue;
+      const sku = String(item.sku || '').trim();
+      const id = String(item.id || (sku ? `sku:${sku.toUpperCase()}` : crypto.randomUUID()));
+      const description = String(item.description || '').trim();
+      const parsedPrice = Number(item.price);
+      const price = !isNaN(parsedPrice) && parsedPrice > 0 ? parsedPrice : 0;
+      const category = String(item.category || 'General').trim();
+      const imageUrl = String(item.imageUrl || item.image_url || '').trim();
+      const externalUrl = String(item.externalUrl || item.external_url || '').trim();
+      const visible = item.visible !== false;
+
+      const existing = inMemoryProducts.get(id) || {};
+      inMemoryProducts.set(id, {
+        id,
+        name,
+        description: description || existing.description || '',
+        price,
+        category: category || existing.category || 'General',
+        imageUrl: imageUrl || existing.imageUrl || '',
+        externalUrl: externalUrl || existing.externalUrl || '',
+        sku: sku || existing.sku || '',
+        visible
+      });
+      count++;
+    }
+  }
+
+  return res.json({ ok: true, count });
+});
+
+app.get('/api/auth/admin-content', async (req, res) => {
+  if (!await requireAdminUser(req, res)) return;
+  if (pool) {
+    await pool.query(`CREATE TABLE IF NOT EXISTS site_content (
+      content_key TEXT PRIMARY KEY,
+      content_value TEXT NOT NULL DEFAULT '',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    const result = await pool.query('SELECT content_key AS "key", content_value AS value FROM site_content ORDER BY content_key');
+    return res.json({ content: result.rows });
+  }
+  return res.json({ content: [...inMemoryContent.entries()].map(([key, value]) => ({ key, value })) });
+});
+
+app.post('/api/auth/admin-content', async (req, res) => {
+  if (!await requireAdminUser(req, res)) return;
+  const content = req.body || {};
+  if (pool) {
+    for (const [key, value] of Object.entries(content)) {
+      await pool.query(`INSERT INTO site_content (content_key, content_value, updated_at) VALUES ($1, $2, NOW())
+        ON CONFLICT (content_key) DO UPDATE SET content_value = EXCLUDED.content_value, updated_at = NOW()`, [String(key), String(value ?? '')]);
+    }
+  } else {
+    for (const [key, value] of Object.entries(content)) inMemoryContent.set(key, String(value ?? ''));
+  }
+  return res.json({ ok: true });
+});
+
+app.get('/api/auth/catalog', async (req, res) => {
+  if (pool) {
+    await ensureProductsTable();
+    const [products, content] = await Promise.all([
+      pool.query('SELECT id, name, description, price, category, image_url AS "imageUrl", external_url AS "externalUrl", sku FROM products WHERE visible = TRUE ORDER BY created_at DESC'),
+      pool.query('SELECT content_key AS "key", content_value AS value FROM site_content')
+    ]);
+    return res.json({ products: products.rows, content: content.rows });
+  }
+  return res.json({
+    products: [...inMemoryProducts.values()].filter(p => p.visible !== false),
+    content: [...inMemoryContent.entries()].map(([key, value]) => ({ key, value }))
+  });
 });
 
 await initializeDatabase();

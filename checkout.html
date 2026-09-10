@@ -75,6 +75,7 @@
     const grouped = [...new Map(cart.map(item => [productKey(item), item])).values()].map(item => ({ ...item, quantity: cart.filter(entry => productKey(entry) === productKey(item)).length }));
     const items = document.querySelector('#items');
     const total = grouped.reduce((sum, item) => sum + Number(item.price || 0) * item.quantity, 0);
+    const hasPendingPrice = grouped.some(item => Number(item.price || 0) <= 0);
     items.innerHTML = grouped.length ? grouped.map(item => `<div class="cart-line"><div><strong>${item.name}</strong><small>Cantidad: ${item.quantity}</small></div><strong>${money(Number(item.price || 0) * item.quantity)}</strong></div>`).join('') : '<div class="empty">Tu carrito está vacío.</div>';
     document.querySelector('#total').textContent = money(total);
     const form = document.querySelector('#checkoutForm');
@@ -85,6 +86,7 @@
     form.addEventListener('submit', async event => {
       event.preventDefault();
       if (!grouped.length) return showMessage('Tu carrito está vacío.', true);
+      if (hasPendingPrice) return showMessage('Este carrito contiene productos pendientes de cotización. Solicita el precio antes de confirmar el pedido.', true);
       button.disabled = true;
       button.textContent = 'Creando pedido...';
       try {

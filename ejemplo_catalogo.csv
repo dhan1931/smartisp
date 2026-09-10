@@ -1,0 +1,6 @@
+﻿Categoría,SKU / Código,Nombre del Producto,Precio,URL de la Imagen,Descripción
+Laptops,NT-LAP-01,Dell XPS 13 Plus,1299,https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=700&q=80,Ultrabook potente con procesador de última generación
+Redes,NT-NET-02,Router WiFi 6 AX3000,74.99,https://images.unsplash.com/photo-1647427060118-4911c9821b82?auto=format&fit=crop&w=700&q=80,Router de alta velocidad con 4 puertos Gigabit y protocolo WPA3
+Servidores,NT-SRV-03,Servidor PowerEdge T150,,https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=700&q=80,Servidor torre ideal para centralizar datos en pequeñas empresas
+Accesorios,NT-ACC-04,Cable UTP Cat 6 Bobina 305m,0,https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=700&q=80,Bobina de cable de red 100% cobre para cableado estructurado
+Componentes,NT-CMP-05,Switch Administrable 24 Puertos PoE+,,https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=700&q=80,Switch capa 2/3 para distribución de red empresarial

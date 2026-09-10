@@ -24,7 +24,25 @@
     .product-row label { margin: 0; } .product-row .description { grid-column: 1 / -1; } .product-row .image { grid-column: 1 / -1; } .product-row .row-actions { display: flex; gap: 5px; grid-column: 1 / -1; } .image-editor { display: grid; grid-template-columns: minmax(150px, 230px) 1fr; gap: 16px; align-items: center; padding: 14px; border: 1px dashed #b9d9d8; border-radius: 10px; background: #f7fcfc; } .image-preview { display: grid; place-items: center; min-height: 130px; overflow: hidden; border-radius: 8px; background: #e4f1f1; } .image-preview img { display: block; width: 100%; height: 150px; object-fit: contain; } .image-preview.is-empty::after { content: 'Sin imagen'; color: var(--muted); font-size: 12px; } .image-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; } .image-tools small { display: block; width: 100%; color: var(--muted); } .image-tools input[type="file"] { display: none; }
     @keyframes save-confirm { 0% { opacity: 0; transform: translateY(-8px) scale(.98); } 55% { transform: translateY(0) scale(1.02); } 100% { opacity: 1; transform: translateY(0) scale(1); } } @keyframes rise-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .panel { animation: rise-in .45s ease both; } @media (max-width: 720px) { .grid, .product-row { grid-template-columns: 1fr; } .wide, .product-row .description, .product-row .image { grid-column: auto; } .top, .toolbar, .section-heading { align-items: flex-start; flex-direction: column; } } @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+    .import-dialog { width: min(880px, 95vw); max-height: 92vh; }
+    .import-dropzone { border: 2px dashed #087ea4; border-radius: 12px; padding: 34px 20px; text-align: center; background: #f0f9fb; cursor: pointer; transition: background .2s, border-color .2s; margin-top: 14px; }
+    .import-dropzone:hover, .import-dropzone.dragover { background: #e0f4f7; border-color: #075d7d; }
+    .import-dropzone .dropzone-icon { font-size: 38px; margin-bottom: 8px; }
+    .import-dropzone strong { display: block; font-size: 15px; color: var(--ink); margin-bottom: 4px; }
+    .import-dropzone span { display: block; font-size: 12px; color: var(--muted); }
+    .import-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 16px 0; }
+    .stat-card { background: #f8fafb; border: 1px solid var(--line); border-radius: 8px; padding: 12px; text-align: center; }
+    .stat-card .stat-num { display: block; font-size: 22px; font-weight: 700; color: var(--blue); }
+    .stat-card .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+    .mapping-chip { display: inline-flex; align-items: center; gap: 5px; background: white; border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; font-size: 11px; }
+    .mapping-chip.found { border-color: #a3e0cb; background: #f0faf6; color: var(--success); font-weight: 600; }
+    .mapping-chip.missing { border-color: #f7c5c5; background: #fff5f5; color: var(--danger); }
+    .preview-table { width: 100%; border-collapse: collapse; font-size: 12px; background: white; }
+    .preview-table th, .preview-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    .preview-table tr:hover { background: #f9fcfd; }
+    .thumb-preview { width: 34px; height: 34px; object-fit: contain; border-radius: 4px; background: #eef5f6; display: block; }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
   <header class="top"><div><h1>SmartISP Administracion</h1><span>Gestiona tu tienda sin editar el codigo</span></div><div style="display:flex;gap:8px;"><a class="button secondary" href="/">Ver presentación</a><a class="button secondary" href="/tienda.html">Ver tienda</a></div></header>
@@ -35,11 +53,111 @@
       <div class="grid">
         <section class="panel"><div class="section-heading"><h3>Apariencia y contenido</h3><button id="resetContentButton" class="button secondary" type="button">Restaurar predeterminado</button></div><form id="contentForm"><label>Nombre de marca<input name="brand_name" placeholder="SmartISP"></label><label>Texto del logo<input name="logo_text" placeholder="smartisp"></label><div class="design-preview"><div class="design-preview-hero"><div class="design-preview-copy"><div class="design-preview-eyebrow" data-preview="hero_eyebrow"></div><h4 data-preview="hero_title"></h4><p data-preview="hero_text"></p><span class="design-preview-button" data-preview="hero_button_text"></span></div></div></div><div class="design-controls"><label class="full">Mensaje superior<input name="hero_eyebrow" placeholder="Infraestructura para proveedores de internet"></label><label class="full">Titulo principal<input name="hero_title" placeholder="Conecta mas. Opera mejor."></label><label class="full">Descripcion principal<textarea name="hero_text"></textarea></label><label>Texto del boton<input name="hero_button_text" placeholder="Explorar soluciones"></label><label>Enlace del boton<input name="hero_button_link" placeholder="#catalogo"></label><label>Imagen del banner<input name="hero_image_file" type="file" accept="image/*"><input name="hero_image" type="hidden"></label><label>Posicion de imagen<select name="hero_image_position"><option value="center">Centro</option><option value="left">Izquierda</option><option value="right">Derecha</option></select></label><label>Altura del banner<select name="hero_height"><option value="335">Compacto</option><option value="370">Estándar</option><option value="440">Amplio</option><option value="520">Alto</option></select></label><label>Ancho del contenido<select name="hero_content_width"><option value="400">Estrecho</option><option value="510">Estándar</option><option value="620">Amplio</option><option value="760">Muy amplio</option></select></label><label class="color-field">Color de acento<input name="primary_color" type="color" value="#087ea4"></label><label class="color-field">Color del texto<input name="hero_text_color" type="color" value="#102c3d"></label><label class="full">Opacidad de la capa <span class="range-value" data-range-value="hero_overlay_opacity">96%</span><input name="hero_overlay_opacity" type="range" min="0" max="100" value="96"></label></div><label>Texto del pie de pagina<textarea name="footer_text"></textarea></label><div class="form-actions"><button class="button" type="submit">Guardar apariencia</button><button id="clearContentButton" class="button secondary" type="button">Limpiar campos</button></div><div id="contentMessage" class="message"></div></form></section>
         <section class="panel"><div class="section-heading"><h3>Visibilidad de secciones</h3><button id="resetVisibilityButton" class="button secondary" type="button">Restaurar predeterminado</button></div><form id="visibilityForm"><label>Catalogo visible<select name="catalog_visible"><option value="true">Si</option><option value="false">No</option></select></label><label>Banner visible<select name="hero_visible"><option value="true">Si</option><option value="false">No</option></select></label><label>Beneficios visibles<select name="benefits_visible"><option value="true">Si</option><option value="false">No</option></select></label><button class="button" type="submit">Guardar visibilidad</button><div id="visibilityMessage" class="message"></div></form></section>
-        <section class="panel wide"><div class="toolbar"><h3>Catalogo de productos</h3><button id="newProductButton" class="button secondary" type="button">Nuevo producto</button></div><div id="productsList"></div><div id="productMessage" class="message"></div></section>
+        <section class="panel wide">
+          <div class="toolbar">
+            <div>
+              <h3 style="margin:0;">Catalogo de productos</h3>
+              <span style="color:var(--muted);font-size:12px;">Gestiona individualmente o importa tu inventario masivamente</span>
+            </div>
+            <div class="actions">
+              <button id="openImportModalButton" class="button" type="button" style="background:#11815d;display:inline-flex;align-items:center;gap:6px;">
+                <span>📥 Importar Excel / CSV</span>
+              </button>
+              <button id="newProductButton" class="button secondary" type="button">+ Nuevo producto</button>
+            </div>
+          </div>
+          <div id="productsList"></div>
+          <div id="productMessage" class="message"></div>
+        </section>
       </div>
     </section>
   </main>
   <div id="cropModal" class="crop-modal" hidden><section class="crop-dialog" role="dialog" aria-modal="true" aria-labelledby="cropTitle"><h2 id="cropTitle">Ajustar imagen</h2><p class="crop-help">La imagen aparece completa. Arrastra el recuadro o sus esquinas y laterales para elegir libremente el encuadre.</p><div id="cropStage" class="crop-stage"><canvas id="cropCanvas"></canvas><div id="cropBox" class="crop-box"><i class="crop-handle" data-resize="nw"></i><i class="crop-handle" data-resize="n"></i><i class="crop-handle" data-resize="ne"></i><i class="crop-handle" data-resize="w"></i><i class="crop-handle" data-resize="e"></i><i class="crop-handle" data-resize="sw"></i><i class="crop-handle" data-resize="s"></i><i class="crop-handle" data-resize="se"></i></div></div><div class="crop-options"><label>Formato<select id="cropAspect"><option value="free">Recorte libre</option><option value="original">Formato original</option><option value="product">Producto · cuadrado</option><option value="hero">Banner · panoramico</option></select></label></div><div class="crop-actions"><button id="cancelCropButton" class="button secondary" type="button">Cancelar</button><button id="applyCropButton" class="button" type="button">Aplicar recorte</button></div></section></div>
+  <div id="importModal" class="crop-modal" hidden>
+    <section class="crop-dialog import-dialog" role="dialog" aria-modal="true" aria-labelledby="importTitle">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <h2 id="importTitle" style="margin:0;font-size:20px;">Importar Catálogo desde Excel / CSV</h2>
+        <button id="closeImportModalButton" type="button" class="button secondary" style="padding:4px 11px;font-size:15px;line-height:1;">✕</button>
+      </div>
+      <p class="crop-help" style="margin-bottom:12px;">
+        Sube tu archivo <strong>.xlsx</strong>, <strong>.xls</strong> o <strong>.csv</strong>. Se importarán las columnas:
+        <span style="color:var(--blue);font-weight:600;">Categoría, SKU / Código, Nombre del Producto, Precio, URL de la Imagen y Descripción</span>.
+        Si algún precio no está especificado, se guardará en <strong>0</strong> (marcado en la tienda como <em>Pendiente de cotización</em>).
+      </p>
+
+      <div id="importDropzone" class="import-dropzone">
+        <input type="file" id="importFileInput" accept=".xlsx, .xls, .csv" style="display:none;">
+        <div class="dropzone-icon">📊</div>
+        <strong>Haz clic para buscar o arrastra tu archivo Excel aquí</strong>
+        <span>Soporta .xlsx, .xls y .csv</span>
+      </div>
+
+      <div id="importPreviewSection" class="hidden">
+        <div class="import-stats">
+          <div class="stat-card">
+            <span class="stat-num" id="statTotalRows">0</span>
+            <span class="stat-label">Filas leídas</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-num" id="statValidProducts">0</span>
+            <span class="stat-label">Productos válidos</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-num" id="statWithImage">0</span>
+            <span class="stat-label">Con imagen</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-num" id="statPendingPrice">0</span>
+            <span class="stat-label">Precio $0 (Cotización)</span>
+          </div>
+        </div>
+
+        <div style="background:#f0f8fa;border:1px solid var(--line);border-radius:8px;padding:12px;margin:12px 0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <strong style="font-size:13px;color:var(--ink);">Mapeo de columnas detectadas:</strong>
+            <small style="color:var(--muted)">Detectadas automáticamente</small>
+          </div>
+          <div id="mappingChipsContainer" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+        </div>
+
+        <h4 style="margin:14px 0 8px;font-size:14px;">Vista previa de los primeros productos:</h4>
+        <div style="overflow-x:auto;max-height:220px;border:1px solid var(--line);border-radius:8px;">
+          <table class="preview-table">
+            <thead>
+              <tr style="background:#eef5f7;color:var(--ink);">
+                <th style="width:40px;">Foto</th>
+                <th>SKU</th>
+                <th>Nombre del Producto</th>
+                <th>Categoría</th>
+                <th>Precio</th>
+                <th>Descripción</th>
+              </tr>
+            </thead>
+            <tbody id="previewTableBody"></tbody>
+          </table>
+        </div>
+
+        <div id="importProgressContainer" class="hidden" style="margin-top:16px;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;font-weight:600;">
+            <span id="importProgressLabel" style="color:var(--ink);">Subiendo productos...</span>
+            <span id="importProgressPercent" style="color:var(--blue);">0%</span>
+          </div>
+          <div style="background:#dcebf0;border-radius:6px;height:10px;overflow:hidden;">
+            <div id="importProgressBar" style="width:0%;height:100%;background:var(--success);transition:width .25s ease;"></div>
+          </div>
+        </div>
+
+        <div id="importModalMessage" class="message"></div>
+
+        <div class="crop-actions" style="margin-top:16px;display:flex;justify-content:space-between;align-items:center;">
+          <button id="cancelImportButton" class="button secondary" type="button">Elegir otro archivo</button>
+          <button id="startImportButton" class="button" type="button" style="background:var(--success);display:flex;align-items:center;gap:6px;">
+            <span>🚀 Confirmar y Cargar a la Tienda</span>
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
   <script>
     const $ = selector => document.querySelector(selector);
     const DEFAULT_CONTENT = { brand_name: '', logo_text: '', hero_eyebrow: 'Infraestructura para proveedores de internet', hero_title: 'Conecta más. Opera mejor.', hero_text: 'Equipamiento confiable para redes, servidores y equipos de trabajo que mantienen tu servicio siempre en línea.', hero_image: '', hero_button_text: 'Explorar soluciones', hero_button_link: '#catalogo', hero_image_position: 'center', hero_height: '370', hero_content_width: '510', hero_text_color: '#102c3d', hero_overlay_opacity: '96', primary_color: '#087ea4', footer_text: '' };
@@ -62,7 +180,7 @@
     const api = async (action, options = {}) => { const response = await fetch(`/api/auth/${action}`, { credentials: 'include', headers: { 'Content-Type': 'application/json' }, ...options }); const text = await response.text(); let result = {}; try { result = text ? JSON.parse(text) : {}; } catch { result = { error: text || `Respuesta invalida (${response.status})` }; } if (!response.ok) throw new Error(result.error || 'No se pudo completar la operacion.'); return result; };
     const updateDesignPreview = () => { const form = $('#contentForm'); const values = formValues(form); const preview = $('.design-preview-hero'); preview.style.setProperty('--preview-image', values.hero_image ? `url("${values.hero_image}")` : 'none'); preview.style.setProperty('--preview-accent', values.primary_color || '#087ea4'); preview.style.setProperty('--preview-text', values.hero_text_color || '#102c3d'); preview.style.setProperty('--preview-width', `${values.hero_content_width || 510}px`); preview.style.setProperty('--preview-overlay', `rgba(228,245,243,${Number(values.hero_overlay_opacity || 0) / 100})`); preview.style.minHeight = `${values.hero_height || 370}px`; preview.style.backgroundPosition = values.hero_image_position || 'center'; form.querySelectorAll('[data-preview]').forEach(element => { element.textContent = values[element.dataset.preview] || ''; }); form.querySelectorAll('[data-range-value]').forEach(element => { element.textContent = `${values[element.dataset.rangeValue] || 0}%`; }); };
     const loadContent = async () => { const result = await api('admin-content'); const values = { ...DEFAULT_CONTENT, ...Object.fromEntries(result.content.map(item => [item.key, item.value])) }; document.querySelectorAll('#contentForm [name]').forEach(input => { if (input.type !== 'file' && values[input.name] !== undefined) input.value = values[input.name]; }); document.querySelectorAll('#visibilityForm [name]').forEach(input => { if (values[input.name] !== undefined) input.value = values[input.name]; }); updateDesignPreview(); };
-    const productFields = product => `<form class="product-row" data-product-id="${product.id || ''}"><label>Nombre<input name="name" value="${escapeHtml(product.name || '')}" required></label><label>Precio<input name="price" type="number" min="0" step="0.01" value="${product.price || 0}" required></label><label>Categoria<input name="category" value="${escapeHtml(product.category || '')}"></label><label>Visible<select name="visible"><option value="true" ${product.visible !== false ? 'selected' : ''}>Si</option><option value="false" ${product.visible === false ? 'selected' : ''}>No</option></select></label><label class="description">Descripcion<textarea name="description">${escapeHtml(product.description || '')}</textarea></label><div class="image"><span>Imagen del producto</span><div class="image-editor"><div class="image-preview ${product.imageUrl ? '' : 'is-empty'}"><img data-image-preview src="${escapeHtml(product.imageUrl || '')}" alt="Vista previa de ${escapeHtml(product.name || 'producto')}" ${product.imageUrl ? '' : 'hidden'}></div><div class="image-tools"><small>Sube una imagen nueva o ajusta la que ya tienes.</small><input name="imageFile" type="file" accept="image/*"><input name="imageUrl" type="hidden" value="${escapeHtml(product.imageUrl || '')}"><button class="button secondary" data-change-image type="button">Cambiar imagen</button><button class="button secondary" data-edit-image type="button" ${product.imageUrl ? '' : 'disabled'}>Editar recorte</button></div></div></div><div class="row-actions"><button class="button" type="submit">Guardar</button><button class="button danger" data-delete type="button">Eliminar</button></div></form>`;
+    const productFields = product => `<form class="product-row" data-product-id="${product.id || ''}"><label>Nombre<input name="name" value="${escapeHtml(product.name || '')}" required></label><label>Precio<input name="price" type="number" min="0" step="0.01" value="${product.price || 0}" required></label><label>Categoria<input name="category" value="${escapeHtml(product.category || '')}"></label><label>SKU<input name="sku" value="${escapeHtml(product.sku || '')}"></label><label>Visible<select name="visible"><option value="true" ${product.visible !== false ? 'selected' : ''}>Si</option><option value="false" ${product.visible === false ? 'selected' : ''}>No</option></select></label><label class="description">Descripcion<textarea name="description">${escapeHtml(product.description || '')}</textarea></label><label class="description">Enlace externo<input name="externalUrl" type="url" value="${escapeHtml(product.externalUrl || '')}" placeholder="https://store.intcomex.com/"></label><div class="image"><span>Imagen del producto</span><div class="image-editor"><div class="image-preview ${product.imageUrl ? '' : 'is-empty'}"><img data-image-preview src="${escapeHtml(product.imageUrl || '')}" alt="Vista previa de ${escapeHtml(product.name || 'producto')}" ${product.imageUrl ? '' : 'hidden'}></div><div class="image-tools"><small>Sube una imagen nueva o ajusta la que ya tienes.</small><input name="imageFile" type="file" accept="image/*"><input name="imageUrl" type="hidden" value="${escapeHtml(product.imageUrl || '')}"><button class="button secondary" data-change-image type="button">Cambiar imagen</button><button class="button secondary" data-edit-image type="button" ${product.imageUrl ? '' : 'disabled'}>Editar recorte</button></div></div></div><div class="row-actions"><button class="button" type="submit">Guardar</button><button class="button danger" data-delete type="button">Eliminar</button></div></form>`;
     const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
     const bindProductForm = form => { form.addEventListener('submit', async event => { event.preventDefault(); try { const values = await productValues(form); values.id = form.dataset.productId; values.price = Number(values.price); values.visible = values.visible === 'true'; await api('admin-products', { method: 'POST', body: JSON.stringify(values) }); showMessage($('#productMessage'), 'Producto guardado correctamente.'); await loadProducts(); } catch (error) { showMessage($('#productMessage'), error.message, true); } }); const fileInput = form.querySelector('[name="imageFile"]'); const changeButton = form.querySelector('[data-change-image]'); const editButton = form.querySelector('[data-edit-image]'); const preview = form.querySelector('[data-image-preview]'); const previewBox = form.querySelector('.image-preview'); changeButton.addEventListener('click', () => fileInput.click()); editButton.addEventListener('click', async () => { try { await openCropFromSource(form.querySelector('[name="imageUrl"]').value, fileInput, form.querySelector('[name="imageUrl"]')); } catch (error) { showMessage($('#productMessage'), 'No se pudo abrir la imagen para editar.', true); } }); fileInput.addEventListener('change', () => { editButton.disabled = !fileInput.files[0] && !form.querySelector('[name="imageUrl"]').value; }); form.addEventListener('image-applied', () => { preview.src = form.querySelector('[name="imageUrl"]').value; preview.hidden = false; previewBox.classList.remove('is-empty'); editButton.disabled = false; }); form.querySelector('[data-delete]').addEventListener('click', async () => { if (!form.dataset.productId) return form.remove(); try { await api(`admin-products?id=${encodeURIComponent(form.dataset.productId)}`, { method: 'DELETE' }); showMessage($('#productMessage'), 'Producto eliminado.'); await loadProducts(); } catch (error) { showMessage($('#productMessage'), error.message, true); } }); };
     const loadProducts = async () => { const result = await api('admin-products'); $('#productsList').innerHTML = result.products.map(productFields).join('') || '<p>No hay productos guardados aun.</p>'; document.querySelectorAll('.product-row').forEach(bindProductForm); };
@@ -84,6 +202,258 @@
     $('#cancelCropButton').addEventListener('click', () => closeCropEditor(true));
     $('#applyCropButton').addEventListener('click', applyCrop);
     $('#newProductButton').addEventListener('click', () => { $('#productsList').insertAdjacentHTML('afterbegin', productFields({})); const form = $('#productsList .product-row'); bindProductForm(form); form.scrollIntoView({ behavior: 'smooth' }); });
+
+    // ==========================================
+    // IMPORTADOR DE EXCEL / CSV
+    // ==========================================
+    let parsedImportProducts = [];
+
+    const normalizeHeader = str => String(str || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '');
+
+    const detectColumn = (headers, regexList) => {
+      for (const regex of regexList) {
+        const found = headers.find(h => regex.test(normalizeHeader(h)));
+        if (found) return found;
+      }
+      return null;
+    };
+
+    const openImportModal = () => {
+      parsedImportProducts = [];
+      $('#importFileInput').value = '';
+      $('#importPreviewSection').classList.add('hidden');
+      $('#importDropzone').classList.remove('hidden');
+      $('#importProgressContainer').classList.add('hidden');
+      $('#importModalMessage').classList.remove('show');
+      $('#importModal').hidden = false;
+    };
+
+    const closeImportModal = () => {
+      $('#importModal').hidden = true;
+      parsedImportProducts = [];
+    };
+
+    const parseExcelFile = async file => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          try {
+            if (typeof XLSX === 'undefined') {
+              throw new Error('La librería SheetJS no está lista. Verifica tu conexión.');
+            }
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            if (!workbook.SheetNames || !workbook.SheetNames.length) throw new Error('El archivo no contiene hojas con datos.');
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
+            if (!rows.length) throw new Error('El archivo no contiene filas o está vacío.');
+            resolve(rows);
+          } catch (err) {
+            reject(err);
+          }
+        };
+        reader.onerror = () => reject(new Error('No se pudo leer el archivo seleccionado.'));
+        reader.readAsArrayBuffer(file);
+      });
+    };
+
+    const processImportFile = async file => {
+      if (!file) return;
+      try {
+        const rows = await parseExcelFile(file);
+        const headers = Object.keys(rows[0] || {});
+
+        const map = {
+          name: detectColumn(headers, [/^nombredelproducto$/, /^nombreproducto$/, /^nombre$/, /^producto$/, /^productname$/, /^title$/]),
+          sku: detectColumn(headers, [/^skucodigo$/, /^sku$/, /^codigo$/, /^cod$/, /^code$/, /^id$/]),
+          category: detectColumn(headers, [/^categoria$/, /^category$/, /^rubro$/, /^seccion$/, /^departamento$/]),
+          price: detectColumn(headers, [/^precio$/, /^price$/, /^costo$/, /^valor$/, /^pvp$/]),
+          imageUrl: detectColumn(headers, [/^urldelaimagen$/, /^urlimagen$/, /^imagen$/, /^image$/, /^foto$/, /^urlfoto$/, /^fotourl$/]),
+          description: detectColumn(headers, [/^descripcion$/, /^description$/, /^detalle$/, /^especificaciones$/])
+        };
+
+        const fieldsInfo = [
+          { key: 'name', label: 'Nombre del Producto', required: true },
+          { key: 'sku', label: 'SKU / Código', required: false },
+          { key: 'category', label: 'Categoría', required: false },
+          { key: 'price', label: 'Precio', required: false },
+          { key: 'imageUrl', label: 'URL de la Imagen', required: false },
+          { key: 'description', label: 'Descripción', required: false }
+        ];
+
+        $('#mappingChipsContainer').innerHTML = fieldsInfo.map(f => {
+          const col = map[f.key];
+          if (col) {
+            return `<span class="mapping-chip found">✓ <strong>${f.label}</strong>: "${escapeHtml(col)}"</span>`;
+          }
+          return `<span class="mapping-chip missing">${f.required ? '✗' : '○'} <strong>${f.label}</strong>: (${f.key === 'price' ? 'Predeterminado: $0' : 'No encontrada'})</span>`;
+        }).join('');
+
+        if (!map.name) {
+          throw new Error('No se detectó la columna del Nombre del Producto en tu Excel. Asegúrate de incluir una columna llamada "Nombre del Producto" o "Nombre".');
+        }
+
+        let withPrice = 0;
+        let withImage = 0;
+        let pendingPrice = 0;
+        parsedImportProducts = [];
+
+        for (const row of rows) {
+          const name = String(map.name ? row[map.name] : '').trim();
+          if (!name) continue;
+
+          const rawSku = String(map.sku ? row[map.sku] : '').trim();
+          const sku = rawSku.toUpperCase() === 'N/D' ? '' : rawSku;
+          const category = String(map.category ? row[map.category] : '').trim() || 'General';
+          const description = String(map.description ? row[map.description] : '').trim();
+          const imageUrl = String(map.imageUrl ? row[map.imageUrl] : '').trim();
+
+          let price = 0;
+          if (map.price && row[map.price] !== undefined && row[map.price] !== '') {
+            const cleanStr = String(row[map.price]).replace(/[^0-9.,]/g, '').replace(',', '.');
+            const parsed = parseFloat(cleanStr);
+            if (!isNaN(parsed) && parsed > 0) {
+              price = parsed;
+              withPrice++;
+            } else {
+              pendingPrice++;
+            }
+          } else {
+            pendingPrice++;
+          }
+
+          if (imageUrl) withImage++;
+
+          const id = sku ? `sku:${sku.toUpperCase()}` : crypto.randomUUID();
+          parsedImportProducts.push({
+            id,
+            sku,
+            name,
+            category,
+            price,
+            description,
+            imageUrl,
+            visible: true
+          });
+        }
+
+        if (!parsedImportProducts.length) {
+          throw new Error('No se encontraron productos con nombre válido en el archivo.');
+        }
+
+        $('#statTotalRows').textContent = rows.length;
+        $('#statValidProducts').textContent = parsedImportProducts.length;
+        $('#statWithImage').textContent = withImage;
+        $('#statPendingPrice').textContent = pendingPrice;
+
+        const previewRows = parsedImportProducts.slice(0, 6);
+        $('#previewTableBody').innerHTML = previewRows.map(p => `
+          <tr>
+            <td>
+              ${p.imageUrl ? `<img src="${escapeHtml(p.imageUrl)}" alt="" class="thumb-preview" onerror="this.style.display='none'">` : '<span style="color:var(--muted);font-size:10px;">Sin foto</span>'}
+            </td>
+            <td><code style="font-size:11px;">${escapeHtml(p.sku || '-')}</code></td>
+            <td><strong>${escapeHtml(p.name)}</strong></td>
+            <td><span class="mapping-chip" style="font-size:10px;padding:2px 6px;">${escapeHtml(p.category)}</span></td>
+            <td>${p.price > 0 ? '$' + p.price.toLocaleString('es-CL') : '<span style="color:var(--muted);font-style:italic;">$0 (Cotización)</span>'}</td>
+            <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);">${escapeHtml(p.description || '-')}</td>
+          </tr>
+        `).join('');
+
+        $('#importDropzone').classList.add('hidden');
+        $('#importPreviewSection').classList.remove('hidden');
+        $('#importProgressContainer').classList.add('hidden');
+        $('#importModalMessage').classList.remove('show');
+
+      } catch (err) {
+        $('#importDropzone').classList.remove('hidden');
+        $('#importPreviewSection').classList.add('hidden');
+        showMessage($('#productMessage'), err.message, true);
+        alert('Aviso al procesar archivo: ' + err.message);
+      }
+    };
+
+    const startBulkImport = async () => {
+      if (!parsedImportProducts.length) return;
+      const startButton = $('#startImportButton');
+      const cancelButton = $('#cancelImportButton');
+      startButton.disabled = true;
+      cancelButton.disabled = true;
+
+      $('#importProgressContainer').classList.remove('hidden');
+      const progressBar = $('#importProgressBar');
+      const progressLabel = $('#importProgressLabel');
+      const progressPercent = $('#importProgressPercent');
+
+      const batchSize = 100;
+      const total = parsedImportProducts.length;
+      let totalImported = 0;
+
+      try {
+        for (let i = 0; i < total; i += batchSize) {
+          const batch = parsedImportProducts.slice(i, i + batchSize);
+          const currentBatchEnd = Math.min(i + batch.length, total);
+
+          progressLabel.textContent = `Guardando productos ${i + 1} a ${currentBatchEnd} de ${total}...`;
+          const pct = Math.round((currentBatchEnd / total) * 100);
+          progressBar.style.width = `${pct}%`;
+          progressPercent.textContent = `${pct}%`;
+
+          await api('admin-products-bulk', {
+            method: 'POST',
+            body: JSON.stringify({ products: batch })
+          });
+
+          totalImported += batch.length;
+        }
+
+        showMessage($('#importModalMessage'), `¡Importación completada! Se guardaron ${totalImported} productos.`);
+        showMessage($('#productMessage'), `¡Se han cargado ${totalImported} productos desde tu archivo Excel!`);
+        await loadProducts();
+
+        setTimeout(() => {
+          closeImportModal();
+          startButton.disabled = false;
+          cancelButton.disabled = false;
+        }, 1500);
+
+      } catch (err) {
+        startButton.disabled = false;
+        cancelButton.disabled = false;
+        showMessage($('#importModalMessage'), 'Error durante la importación: ' + err.message, true);
+      }
+    };
+
+    $('#openImportModalButton').addEventListener('click', openImportModal);
+    $('#closeImportModalButton').addEventListener('click', closeImportModal);
+    $('#cancelImportButton').addEventListener('click', openImportModal);
+    $('#importDropzone').addEventListener('click', () => $('#importFileInput').click());
+    $('#importFileInput').addEventListener('change', event => processImportFile(event.target.files[0]));
+
+    const dropzone = $('#importDropzone');
+    ['dragenter', 'dragover'].forEach(name => {
+      dropzone.addEventListener(name, event => {
+        event.preventDefault();
+        dropzone.classList.add('dragover');
+      });
+    });
+    ['dragleave', 'drop'].forEach(name => {
+      dropzone.addEventListener(name, event => {
+        event.preventDefault();
+        dropzone.classList.remove('dragover');
+      });
+    });
+    dropzone.addEventListener('drop', event => {
+      const file = event.dataTransfer?.files?.[0];
+      if (file) processImportFile(file);
+    });
+
+    $('#startImportButton').addEventListener('click', startBulkImport);
+
     $('#logoutButton').addEventListener('click', async () => { await api('logout', { method: 'POST' }); localStorage.removeItem('smartisp.accountUser'); localStorage.removeItem('smartisp.accountRemembered'); sessionStorage.removeItem('smartisp.accountUser'); location.reload(); });
     const savedAccount = (() => { try { const stored = sessionStorage.getItem('smartisp.accountUser') || (localStorage.getItem('smartisp.accountRemembered') === 'true' ? localStorage.getItem('smartisp.accountUser') : null); return JSON.parse(stored || 'null'); } catch { return null; } })();
     if (savedAccount?.role === 'admin') {
