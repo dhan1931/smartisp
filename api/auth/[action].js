@@ -498,6 +498,31 @@ export default async function handler(req, res) {
       return res.status(200).json({ images });
     }
 
+    if (action === 'proxy-image' && req.method === 'GET') {
+      const targetUrl = String(req.query?.url || '').trim();
+      if (!targetUrl || !/^https?:\/\//i.test(targetUrl)) {
+        return res.status(400).json({ error: 'URL de imagen no válida.' });
+      }
+      try {
+        const response = await fetch(targetUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          }
+        });
+        if (!response.ok) {
+          return res.status(response.status).json({ error: 'No se pudo descargar la imagen remota.' });
+        }
+        const contentType = response.headers.get('content-type') || 'image/jpeg';
+        const buffer = Buffer.from(await response.arrayBuffer());
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        return res.send(buffer);
+      } catch (err) {
+        return res.status(500).json({ error: 'Error al obtener la imagen: ' + err.message });
+      }
+    }
+
     if (action === 'logout' && req.method === 'POST') {
       clearSessionCookie(res);
       return res.status(200).json({ ok: true });

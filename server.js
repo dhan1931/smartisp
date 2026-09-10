@@ -473,6 +473,31 @@ app.get('/api/auth/search-product-image', async (req, res) => {
   return res.json({ images });
 });
 
+app.get('/api/auth/proxy-image', async (req, res) => {
+  const targetUrl = String(req.query?.url || '').trim();
+  if (!targetUrl || !/^https?:\/\//i.test(targetUrl)) {
+    return res.status(400).json({ error: 'URL de imagen no válida.' });
+  }
+  try {
+    const response = await fetch(targetUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+    if (!response.ok) {
+      return res.status(response.status).json({ error: 'No se pudo descargar la imagen remota.' });
+    }
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    const buffer = Buffer.from(await response.arrayBuffer());
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    return res.send(buffer);
+  } catch (err) {
+    return res.status(500).json({ error: 'Error al obtener la imagen: ' + err.message });
+  }
+});
+
 await initializeDatabase();
 app.listen(port, () => {
   console.log(`NexoTech disponible en http://localhost:${port}`);

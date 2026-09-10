@@ -125,7 +125,6 @@
       </div>
     </section>
   </main>
-  <div id="cropModal" class="crop-modal" hidden><section class="crop-dialog" role="dialog" aria-modal="true" aria-labelledby="cropTitle"><h2 id="cropTitle">Ajustar imagen</h2><p class="crop-help">La imagen aparece completa. Arrastra el recuadro o sus esquinas y laterales para elegir libremente el encuadre.</p><div id="cropStage" class="crop-stage"><canvas id="cropCanvas"></canvas><div id="cropBox" class="crop-box"><i class="crop-handle" data-resize="nw"></i><i class="crop-handle" data-resize="n"></i><i class="crop-handle" data-resize="ne"></i><i class="crop-handle" data-resize="w"></i><i class="crop-handle" data-resize="e"></i><i class="crop-handle" data-resize="sw"></i><i class="crop-handle" data-resize="s"></i><i class="crop-handle" data-resize="se"></i></div></div><div class="crop-options"><label>Formato<select id="cropAspect"><option value="free">Recorte libre</option><option value="original">Formato original</option><option value="product">Producto · cuadrado</option><option value="hero">Banner · panoramico</option></select></label></div><div class="crop-actions"><button id="cancelCropButton" class="button secondary" type="button">Cancelar</button><button id="applyCropButton" class="button" type="button">Aplicar recorte</button></div></section></div>
   <div id="importModal" class="crop-modal" hidden>
     <section class="crop-dialog import-dialog" role="dialog" aria-modal="true" aria-labelledby="importTitle">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
@@ -329,6 +328,42 @@
       </form>
     </section>
   </div>
+  <div id="cropModal" class="crop-modal" hidden>
+    <section class="crop-dialog" role="dialog" aria-modal="true" aria-labelledby="cropTitle">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <h2 id="cropTitle" style="margin:0;">Ajustar y Recortar Imagen</h2>
+        <button type="button" class="button secondary" onclick="$('#cancelCropButton').click()" style="padding:4px 11px;font-size:15px;line-height:1;">✕</button>
+      </div>
+      <p class="crop-help">La imagen aparece completa. Arrastra el recuadro blanco o sus esquinas y laterales para elegir el encuadre deseado.</p>
+      <div id="cropStage" class="crop-stage">
+        <canvas id="cropCanvas"></canvas>
+        <div id="cropBox" class="crop-box">
+          <i class="crop-handle" data-resize="nw"></i>
+          <i class="crop-handle" data-resize="n"></i>
+          <i class="crop-handle" data-resize="ne"></i>
+          <i class="crop-handle" data-resize="w"></i>
+          <i class="crop-handle" data-resize="e"></i>
+          <i class="crop-handle" data-resize="sw"></i>
+          <i class="crop-handle" data-resize="s"></i>
+          <i class="crop-handle" data-resize="se"></i>
+        </div>
+      </div>
+      <div class="crop-options">
+        <label>Formato
+          <select id="cropAspect">
+            <option value="free">Recorte libre</option>
+            <option value="original">Formato original</option>
+            <option value="product" selected>Producto · cuadrado (1:1)</option>
+            <option value="hero">Banner · panorámico</option>
+          </select>
+        </label>
+      </div>
+      <div class="crop-actions">
+        <button id="cancelCropButton" class="button secondary" type="button">Cancelar</button>
+        <button id="applyCropButton" class="button" type="button">✂️ Aplicar recorte</button>
+      </div>
+    </section>
+  </div>
   <script>
     const $ = selector => document.querySelector(selector);
     const DEFAULT_CONTENT = { brand_name: '', logo_text: '', hero_eyebrow: 'Infraestructura para proveedores de internet', hero_title: 'Conecta más. Opera mejor.', hero_text: 'Equipamiento confiable para redes, servidores y equipos de trabajo que mantienen tu servicio siempre en línea.', hero_image: '', hero_button_text: 'Explorar soluciones', hero_button_link: '#catalogo', hero_image_position: 'center', hero_height: '370', hero_content_width: '510', hero_text_color: '#102c3d', hero_overlay_opacity: '96', primary_color: '#087ea4', footer_text: '' };
@@ -340,13 +375,72 @@
     const cropRatio = () => { const value = $('#cropAspect').value; if (value === 'product') return 1; if (value === 'hero') return 16 / 6; return cropState.image.width / cropState.image.height; };
     const updateCropBox = () => { const stage = $('#cropStage'); const value = $('#cropAspect').value; const ratio = cropRatio(); let width = cropState.canvasWidth * .86; let height = value === 'free' ? cropState.canvasHeight * .86 : width / ratio; if (height > cropState.canvasHeight * .86) { height = cropState.canvasHeight * .86; if (value !== 'free') width = height * ratio; } cropState.box = { x: (cropState.canvasWidth - width) / 2, y: (cropState.canvasHeight - height) / 2, w: width, h: height }; cropState.offsetX = (stage.clientWidth - cropState.canvasWidth) / 2; cropState.offsetY = (stage.clientHeight - cropState.canvasHeight) / 2; $('#cropBox').style.cssText = `left:${cropState.offsetX + cropState.box.x}px;top:${cropState.offsetY + cropState.box.y}px;width:${width}px;height:${height}px`; };
     const openCropEditor = (file, fileInput, outputInput) => { if (!file.type.startsWith('image/')) throw new Error('Selecciona un archivo de imagen valido.'); if (file.size > MAX_IMAGE_SIZE) throw new Error('La imagen no puede superar 3 MB.'); const image = new Image(); image.onload = () => { cropState.image = image; cropState.fileInput = fileInput; cropState.outputInput = outputInput; cropState.canvas = $('#cropCanvas'); const scale = Math.min(720 / image.width, 500 / image.height, 1); cropState.canvasWidth = Math.round(image.width * scale); cropState.canvasHeight = Math.round(image.height * scale); cropState.canvas.width = cropState.canvasWidth; cropState.canvas.height = cropState.canvasHeight; cropState.canvas.style.width = `${cropState.canvasWidth}px`; cropState.canvas.style.height = `${cropState.canvasHeight}px`; cropState.canvas.getContext('2d').drawImage(image, 0, 0, cropState.canvasWidth, cropState.canvasHeight); $('#cropModal').hidden = false; requestAnimationFrame(updateCropBox); }; image.src = URL.createObjectURL(file); };
-    const openCropFromSource = async (source, fileInput, outputInput) => { const response = await fetch(source); const blob = await response.blob(); openCropEditor(new File([blob], 'imagen-producto.jpg', { type: blob.type || 'image/jpeg' }), fileInput, outputInput); };
+    const openCropFromSource = async (source, fileInput, outputInput) => {
+      if (!source) throw new Error('No hay imagen para recortar.');
+      let blob;
+      if (source.startsWith('data:')) {
+        const parts = source.split(',');
+        const mimeMatch = parts[0].match(/:(.*?);/);
+        const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+        const bstr = atob(parts[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) u8arr[n] = bstr.charCodeAt(n);
+        blob = new Blob([u8arr], { type: mime });
+      } else {
+        const proxyUrl = `/api/auth/proxy-image?url=${encodeURIComponent(source)}`;
+        let response;
+        try {
+          response = await fetch(proxyUrl);
+        } catch (e) {
+          response = null;
+        }
+        if (!response || !response.ok) {
+          response = await fetch(source);
+        }
+        if (!response.ok) throw new Error('No se pudo descargar la imagen para recortar.');
+        blob = await response.blob();
+      }
+      openCropEditor(new File([blob], 'imagen-producto.jpg', { type: blob.type || 'image/jpeg' }), fileInput, outputInput);
+    };
     const closeCropEditor = clearFile => { if (clearFile && cropState.fileInput) cropState.fileInput.value = ''; $('#cropModal').hidden = true; cropState.image = null; cropState.fileInput = null; cropState.outputInput = null; };
-    const applyCrop = async () => { const { image, box, canvasWidth, canvasHeight, outputInput } = cropState; if (!image || !box) return; const sourceScale = image.width / canvasWidth; const output = document.createElement('canvas'); const sourceWidth = Math.round(box.w * sourceScale); const sourceHeight = Math.round(box.h * sourceScale); const outputScale = Math.min(1, 1600 / Math.max(sourceWidth, sourceHeight)); output.width = Math.max(1, Math.round(sourceWidth * outputScale)); output.height = Math.max(1, Math.round(sourceHeight * outputScale)); output.getContext('2d').drawImage(image, Math.round(box.x * sourceScale), Math.round(box.y * sourceScale), sourceWidth, sourceHeight, 0, 0, output.width, output.height); outputInput.value = output.toDataURL('image/jpeg', .88); const form = outputInput.closest('form'); form?.dispatchEvent(new Event('image-applied')); closeCropEditor(true); };
+    const applyCrop = async () => {
+      const { image, box, canvasWidth, canvasHeight, outputInput, fileInput } = cropState;
+      if (!image || !box) return;
+      const sourceScale = image.width / canvasWidth;
+      const output = document.createElement('canvas');
+      const sourceWidth = Math.round(box.w * sourceScale);
+      const sourceHeight = Math.round(box.h * sourceScale);
+      const outputScale = Math.min(1, 1600 / Math.max(sourceWidth, sourceHeight));
+      output.width = Math.max(1, Math.round(sourceWidth * outputScale));
+      output.height = Math.max(1, Math.round(sourceHeight * outputScale));
+      output.getContext('2d').drawImage(image, Math.round(box.x * sourceScale), Math.round(box.y * sourceScale), sourceWidth, sourceHeight, 0, 0, output.width, output.height);
+      const croppedDataUrl = output.toDataURL('image/jpeg', .88);
+      outputInput.value = croppedDataUrl;
+      const form = outputInput.closest('form');
+      if (fileInput) fileInput.value = '';
+      if (form) {
+        const fi = form.querySelector('input[name="imageFile"]');
+        if (fi) fi.value = '';
+        form.dispatchEvent(new Event('image-applied'));
+      }
+      closeCropEditor(true);
+    };
     const formValues = form => Object.fromEntries(new FormData(form));
     const fillForm = (form, values) => form.querySelectorAll('[name]').forEach(input => { if (input.type !== 'file') input.value = values[input.name] ?? ''; });
     const valuesWithImage = async form => { const values = formValues(form); const fileInput = form.querySelector('input[name="hero_image_file"]'); if (fileInput?.files[0]) values.hero_image = await fileToDataUrl(fileInput.files[0]); delete values.hero_image_file; return values; };
-    const productValues = async form => { const values = formValues(form); const fileInput = form.querySelector('input[name="imageFile"]'); if (fileInput?.files[0]) values.imageUrl = await fileToDataUrl(fileInput.files[0]); delete values.imageFile; return values; };
+    const productValues = async form => {
+      const values = formValues(form);
+      const fileInput = form.querySelector('input[name="imageFile"]');
+      const urlInput = form.querySelector('input[name="imageUrl"]');
+      if (urlInput?.value) {
+        values.imageUrl = urlInput.value;
+      } else if (fileInput?.files[0]) {
+        values.imageUrl = await fileToDataUrl(fileInput.files[0]);
+      }
+      delete values.imageFile;
+      return values;
+    };
     const saveForm = async (form, message, successText) => { await api('admin-content', { method: 'POST', body: JSON.stringify(await valuesWithImage(form)) }); showMessage(message, successText); };
     const api = async (action, options = {}) => { const response = await fetch(`/api/auth/${action}`, { credentials: 'include', headers: { 'Content-Type': 'application/json' }, ...options }); const text = await response.text(); let result = {}; try { result = text ? JSON.parse(text) : {}; } catch { result = { error: text || `Respuesta invalida (${response.status})` }; } if (!response.ok) throw new Error(result.error || 'No se pudo completar la operacion.'); return result; };
     const updateDesignPreview = () => { const form = $('#contentForm'); const values = formValues(form); const preview = $('.design-preview-hero'); preview.style.setProperty('--preview-image', values.hero_image ? `url("${values.hero_image}")` : 'none'); preview.style.setProperty('--preview-accent', values.primary_color || '#087ea4'); preview.style.setProperty('--preview-text', values.hero_text_color || '#102c3d'); preview.style.setProperty('--preview-width', `${values.hero_content_width || 510}px`); preview.style.setProperty('--preview-overlay', `rgba(228,245,243,${Number(values.hero_overlay_opacity || 0) / 100})`); preview.style.minHeight = `${values.hero_height || 370}px`; preview.style.backgroundPosition = values.hero_image_position || 'center'; form.querySelectorAll('[data-preview]').forEach(element => { element.textContent = values[element.dataset.preview] || ''; }); form.querySelectorAll('[data-range-value]').forEach(element => { element.textContent = `${values[element.dataset.rangeValue] || 0}%`; }); };
@@ -515,10 +609,16 @@
 
       editButton.addEventListener('click', async () => {
         if (!urlInput.value) return;
+        const originalText = editButton.textContent;
+        editButton.disabled = true;
+        editButton.textContent = '⏳ Cargando...';
         try {
           await openCropFromSource(urlInput.value, fileInput, urlInput);
         } catch (error) {
-          showMessage($('#productMessage'), 'No se pudo abrir la imagen para recortar.', true);
+          alert('No se pudo abrir la imagen para recortar: ' + error.message);
+        } finally {
+          editButton.disabled = false;
+          editButton.textContent = originalText;
         }
       });
 
