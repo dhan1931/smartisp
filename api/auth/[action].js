@@ -640,7 +640,16 @@ export default async function handler(req, res) {
       }
 
       // 2. Send alert email to admin with phone
-      const adminRecipient = process.env.ADMIN_EMAIL || process.env.COMPANY_EMAIL || 'ventas@smartisp.com';
+      let adminRecipient = '';
+      try {
+        const contentRes = await database.query("SELECT content_value FROM site_content WHERE content_key = 'admin_email' LIMIT 1");
+        if (contentRes.rows[0]?.content_value) {
+          adminRecipient = String(contentRes.rows[0].content_value).trim();
+        }
+      } catch (err) {}
+      if (!adminRecipient) {
+        adminRecipient = process.env.ADMIN_EMAIL || process.env.COMPANY_EMAIL || 'ventas@smartisp.com';
+      }
       const adminHtml = buildAdminAlertEmail({
         orderId,
         customerName,

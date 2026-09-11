@@ -588,7 +588,20 @@ app.post('/api/auth/customer-orders', async (req, res) => {
   }
 
   // 2. Send Notification Email to Admin / Company with User's Phone (Requirement 4)
-  const adminRecipient = process.env.ADMIN_EMAIL || process.env.COMPANY_EMAIL || (demoUser ? demoUser.email : 'ventas@smartisp.com');
+  let adminRecipient = '';
+  if (pool) {
+    try {
+      const contentRes = await pool.query("SELECT content_value FROM site_content WHERE content_key = 'admin_email' LIMIT 1");
+      if (contentRes.rows[0]?.content_value) {
+        adminRecipient = String(contentRes.rows[0].content_value).trim();
+      }
+    } catch (err) {}
+  } else if (inMemoryContent.has('admin_email')) {
+    adminRecipient = String(inMemoryContent.get('admin_email') || '').trim();
+  }
+  if (!adminRecipient) {
+    adminRecipient = process.env.ADMIN_EMAIL || process.env.COMPANY_EMAIL || (demoUser ? demoUser.email : 'ventas@smartisp.com');
+  }
   const adminHtml = buildAdminAlertEmail({
     orderId,
     customerName,
