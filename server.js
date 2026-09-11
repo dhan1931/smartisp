@@ -467,11 +467,26 @@ app.post('/api/auth/update-profile', async (req, res) => {
   const name = String(req.body.name || user.name).trim();
   const surname = String(req.body.surname || user.surname || '').trim();
   const phone = String(req.body.phone || user.phone || '').trim();
+  const email = req.body.email ? String(req.body.email).trim().toLowerCase() : user.email;
+
+  if (email && email !== user.email) {
+    const existing = await findUserByEmail(email);
+    if (existing && existing.id !== user.id) {
+      return res.status(409).json({ error: 'Ese correo ya está registrado por otro usuario.' });
+    }
+    const oldEmail = user.email;
+    user.email = email;
+    if (!pool) {
+      users.delete(oldEmail);
+      users.set(email, user);
+    }
+  }
+
   user.name = name;
   user.surname = surname;
   user.phone = phone;
   if (pool) {
-    await pool.query('UPDATE users SET name = $1, surname = $2, phone = $3 WHERE id = $4', [name, surname, phone, user.id]);
+    await pool.query('UPDATE users SET name = $1, surname = $2, phone = $3, email = $4 WHERE id = $5', [name, surname, phone, user.email, user.id]);
   }
   return res.json({ ok: true, user: publicUser(user) });
 });
@@ -491,10 +506,18 @@ app.post('/api/auth/customer-orders', async (req, res) => {
     return res.status(400).json({ error: 'El carrito está vacío.' });
   }
 
-  // Determine customer contact info (prioritizing registered user profile phone)
+  // Determine customer contact info
   let customerName = String(shipping.name || '').trim();
   let customerEmail = String(shipping.email || '').trim().toLowerCase();
   let customerPhone = '';
+
+  // If user not in session, check if shipping email belongs to an existing registered user profile
+  if (!user && customerEmail) {
+    user = await findUserByEmail(customerEmail);
+  }
+
+  // Extract email configured in the user profile
+  const profileEmail = user?.email ? String(user.email).trim().toLowerCase() : '';
 
   if (user) {
     if (shipping.phone && String(shipping.phone).trim()) {
@@ -507,7 +530,7 @@ app.post('/api/auth/customer-orders', async (req, res) => {
       customerPhone = user.phone || '';
     }
     if (!customerName) customerName = [user.name, user.surname].filter(Boolean).join(' ');
-    if (!customerEmail) customerEmail = user.email;
+    if (!customerEmail) customerEmail = profileEmail;
   } else {
     customerPhone = String(shipping.phone || '').trim();
     if (!customerEmail && shipping.email) customerEmail = shipping.email;
@@ -534,6 +557,7 @@ app.post('/api/auth/customer-orders', async (req, res) => {
     userId: user ? user.id : 'guest',
     customerName,
     customerEmail,
+    profileEmail,
     customerPhone,
     shipping,
     items,
@@ -568,8 +592,12 @@ app.post('/api/auth/customer-orders', async (req, res) => {
     }
   }
 
-  // 1. Send Receipt Email to Customer (Requirement 3)
-  if (customerEmail) {
+  // 1. Send Receipt Email to Customer AND to User Profile Email (TAMBIÉN al correo del perfil)
+  const customerRecipients = new Set();
+  if (customerEmail && customerEmail.includes('@')) customerRecipients.add(customerEmail);
+  if (profileEmail && profileEmail.includes('@')) customerRecipients.add(profileEmail);
+
+  if (customerRecipients.size > 0) {
     const customerHtml = buildCustomerReceiptEmail({
       orderId,
       customerName,
@@ -579,12 +607,18 @@ app.post('/api/auth/customer-orders', async (req, res) => {
       total,
       shipping
     });
-    sendEmail({
-      to: customerEmail,
-      subject: `🧾 Comprobante de Compra #${orderId} - SmartISP`,
-      html: customerHtml,
-      text: `¡Hola ${customerName}! Tu pedido #${orderId} por un total de ${moneyFormat(total)} ha sido recibido. Uno de nuestros asesores se contactará a tu celular (${customerPhone}) para coordinar pago y entrega.`
-    }).catch(err => console.warn('Error al despachar correo al cliente:', err.message));
+
+    for (const recipient of customerRecipients) {
+      const isProfile = Boolean(profileEmail && recipient === profileEmail);
+      sendEmail({
+        to: recipient,
+        subject: `🧾 Comprobante de Compra #${orderId} - SmartISP`,
+        html: customerHtml,
+        text: `¡Hola ${customerName}! Tu pedido #${orderId} por un total de ${moneyFormat(total)} ha sido recibido. Uno de nuestros asesores se contactará a tu celular (${customerPhone}) para coordinar pago y entrega.`
+      }).then(() => {
+        console.log(`📨 Comprobante despachado con éxito a: ${recipient} ${isProfile ? '(correo agregado en perfil de usuario)' : ''}`);
+      }).catch(err => console.warn(`Error al despachar correo al cliente (${recipient}):`, err.message));
+    }
   }
 
   // 2. Send Notification Email to Admin / Company with User's Phone (Requirement 4)

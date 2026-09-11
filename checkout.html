@@ -819,7 +819,7 @@
         form.elements.phone.value = activeUser.phone || '';
 
         profileNotice.classList.remove('guest');
-        profileStatusText.innerHTML = `Sesión activa como <strong>${fullName || activeUser.email}</strong> · Celular de tu perfil: <strong>${activeUser.phone || 'Pendiente de registrar'}</strong>`;
+        profileStatusText.innerHTML = `Sesión activa como <strong>${fullName || activeUser.email}</strong> · Correo de tu perfil: <strong>${activeUser.email}</strong> · Celular: <strong>${activeUser.phone || 'Pendiente de registrar'}</strong>`;
         profileBadge.innerHTML = `<i data-lucide="check" width="12"></i> Usuario Registrado`;
         lucide.createIcons();
       })
@@ -878,7 +878,13 @@
         // Render Success View
         const orderIdDisplay = String(result.id || result.shortId || Date.now()).slice(0, 8).toUpperCase();
         document.querySelector('#confirmedOrderId').textContent = '#' + orderIdDisplay;
-        document.querySelector('#confirmedEmailText').textContent = values.email;
+        const profileEmail = activeUser?.email ? String(activeUser.email).trim().toLowerCase() : '';
+        const shippingEmail = String(values.email).trim().toLowerCase();
+        let confirmedEmailNotice = values.email;
+        if (profileEmail && profileEmail !== shippingEmail) {
+          confirmedEmailNotice = `${values.email} y a ${profileEmail} (correo de tu perfil)`;
+        }
+        document.querySelector('#confirmedEmailText').textContent = confirmedEmailNotice;
         document.querySelector('#confirmedPhoneText').textContent = values.phone;
 
         const tbody = document.querySelector('#successItemsBody');

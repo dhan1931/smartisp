@@ -557,7 +557,17 @@ export default async function handler(req, res) {
       const name = String(body.name || '').trim();
       const surname = String(body.surname || '').trim();
       const phone = String(body.phone || '').trim();
-      await database.query('UPDATE users SET name = $1, surname = $2, phone = $3 WHERE id = $4', [name, surname, phone, userId]);
+      const email = body.email ? String(body.email).trim().toLowerCase() : '';
+
+      if (email) {
+        const existing = await database.query('SELECT id FROM users WHERE email = $1 AND id <> $2 LIMIT 1', [email, userId]);
+        if (existing.rows[0]) {
+          return res.status(409).json({ error: 'Ese correo ya está registrado por otro usuario.' });
+        }
+        await database.query('UPDATE users SET name = $1, surname = $2, phone = $3, email = $4 WHERE id = $5', [name, surname, phone, email, userId]);
+      } else {
+        await database.query('UPDATE users SET name = $1, surname = $2, phone = $3 WHERE id = $4', [name, surname, phone, userId]);
+      }
       const result = await database.query('SELECT id, email, name, surname, phone, role FROM users WHERE id = $1 LIMIT 1', [userId]);
       return res.status(200).json({ ok: true, user: publicUser(result.rows[0]) });
     }
@@ -588,11 +598,13 @@ export default async function handler(req, res) {
       let customerPhone = shippingDetails.phone;
       let customerName = shippingDetails.name;
       let customerEmail = shippingDetails.email;
+      let profileEmail = '';
 
       if (userId) {
         const userRes = await database.query('SELECT id, name, surname, email, phone FROM users WHERE id = $1 LIMIT 1', [userId]);
         if (userRes.rows[0]) {
           const user = userRes.rows[0];
+          profileEmail = user.email ? String(user.email).trim().toLowerCase() : '';
           if (shippingDetails.phone && shippingDetails.phone !== user.phone) {
             await database.query('UPDATE users SET phone = $1 WHERE id = $2', [shippingDetails.phone, userId]);
             customerPhone = shippingDetails.phone;
@@ -600,7 +612,14 @@ export default async function handler(req, res) {
             customerPhone = user.phone || shippingDetails.phone;
           }
           if (!customerName) customerName = [user.name, user.surname].filter(Boolean).join(' ');
-          if (!customerEmail) customerEmail = user.email;
+          if (!customerEmail) customerEmail = profileEmail;
+        }
+      } else if (shippingDetails.email) {
+        // Look up if shipping email belongs to a registered customer
+        const userRes = await database.query('SELECT id, name, surname, email, phone FROM users WHERE email = $1 LIMIT 1', [shippingDetails.email.toLowerCase()]);
+        if (userRes.rows[0]) {
+          profileEmail = userRes.rows[0].email ? String(userRes.rows[0].email).trim().toLowerCase() : '';
+          if (!customerPhone) customerPhone = userRes.rows[0].phone || shippingDetails.phone;
         }
       }
 
@@ -620,8 +639,12 @@ export default async function handler(req, res) {
 
       await database.query('INSERT INTO orders (id, user_id, total, status, items, shipping, payment_status) VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7)', [orderId, userId || 'guest', total, 'received', JSON.stringify({ subtotal, total, items }), JSON.stringify(shippingDetails), 'pending']);
 
-      // 1. Send receipt email to customer
-      if (customerEmail) {
+      // 1. Send receipt email to customer AND to user profile email (TAMBIÉN al correo del perfil)
+      const customerRecipients = new Set();
+      if (customerEmail && customerEmail.includes('@')) customerRecipients.add(customerEmail);
+      if (profileEmail && profileEmail.includes('@')) customerRecipients.add(profileEmail);
+
+      if (customerRecipients.size > 0) {
         const customerHtml = buildCustomerReceiptEmail({
           orderId,
           customerName,
@@ -631,12 +654,15 @@ export default async function handler(req, res) {
           total,
           shipping: shippingDetails
         });
-        sendEmailNotification({
-          to: customerEmail,
-          subject: `🧾 Comprobante de Compra #${orderId} - SmartISP`,
-          html: customerHtml,
-          text: `¡Hola ${customerName}! Tu pedido #${orderId} por un total de ${moneyFormat(total)} ha sido recibido. Uno de nuestros asesores se contactará a tu celular (${customerPhone}) para coordinar pago y entrega.`
-        }).catch(err => console.warn('Error al despachar correo al cliente:', err.message));
+
+        for (const recipient of customerRecipients) {
+          sendEmailNotification({
+            to: recipient,
+            subject: `🧾 Comprobante de Compra #${orderId} - SmartISP`,
+            html: customerHtml,
+            text: `¡Hola ${customerName}! Tu pedido #${orderId} por un total de ${moneyFormat(total)} ha sido recibido. Uno de nuestros asesores se contactará a tu celular (${customerPhone}) para coordinar pago y entrega.`
+          }).catch(err => console.warn(`Error al despachar correo a ${recipient}:`, err.message));
+        }
       }
 
       // 2. Send alert email to admin with phone
