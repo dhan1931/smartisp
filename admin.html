@@ -87,7 +87,21 @@
 <body>
   <header class="top"><div><h1>SmartISP Administracion</h1><span>Gestiona tu tienda sin editar el codigo</span></div><div style="display:flex;gap:8px;"><a class="button secondary" href="/">Ver presentación</a><a class="button secondary" href="/tienda.html">Ver tienda</a></div></header>
   <main class="shell">
-    <section id="loginPanel" class="login hidden"><h2>Acceso de administrador</h2><p>Usa la cuenta autorizada por el propietario del proyecto.</p><form id="loginForm"><label>Correo<input name="email" type="email" required autocomplete="email"></label><label>Contrasena<input name="password" type="password" required autocomplete="current-password"></label><label class="remember-option"><input name="remember" type="checkbox"> Recordarme en este dispositivo</label><button class="button" type="submit">Entrar</button><div id="loginMessage" class="message"></div></form></section>
+    <section id="loginPanel" class="login hidden">
+      <h2>Acceso de administrador</h2>
+      <p>Usa la cuenta autorizada por el propietario del proyecto.</p>
+      <div style="background:#eaf7f5;border:1px solid #b2dfdb;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12.5px;color:#004d40;line-height:1.45;">
+        <strong>Credenciales de Administrador:</strong><br>
+        Correo: <code>medardo@gmail.com</code> | Contraseña: <code>pepe1234</code>
+      </div>
+      <form id="loginForm">
+        <label>Correo<input name="email" type="email" value="medardo@gmail.com" required autocomplete="email"></label>
+        <label>Contraseña<input name="password" type="password" value="pepe1234" required autocomplete="current-password"></label>
+        <label class="remember-option"><input name="remember" type="checkbox" checked> Recordarme en este dispositivo</label>
+        <button class="button" type="submit">Entrar al Panel</button>
+        <div id="loginMessage" class="message"></div>
+      </form>
+    </section>
     <section id="adminPanel" class="hidden">
       <div class="toolbar"><div><h2>Panel de control</h2><span id="adminIdentity"></span></div><button id="logoutButton" class="button danger">Cerrar sesion</button></div>
       <div class="grid">
