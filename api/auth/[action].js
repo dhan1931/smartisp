@@ -92,65 +92,124 @@ const sendResetEmail = async (email, resetUrl) => { if (!process.env.RESEND_API_
 
 const moneyFormat = value => '$' + Number(value || 0).toLocaleString('es-CL');
 
-const getEmailTransporter = () => {
-  if (process.env.SMTP_HOST && process.env.SMTP_USER) {
-    return nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: process.env.SMTP_SECURE === 'true' || Number(process.env.SMTP_PORT) === 465,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
+const getEmailConfig = async (database = null) => {
+  const dbValues = {};
+  if (database) {
+    try {
+      const res = await database.query(
+        "SELECT content_key AS key, content_value AS value FROM site_content WHERE content_key LIKE 'smtp_%' OR content_key IN ('admin_email', 'resend_api_key', 'email_from')"
+      );
+      for (const row of res.rows) {
+        dbValues[row.key] = row.value;
       }
-    });
+    } catch (e) {}
   }
-  return null;
+
+  const provider = dbValues.smtp_provider || 'gmail';
+  let host = dbValues.smtp_host || process.env.SMTP_HOST;
+  let port = dbValues.smtp_port || process.env.SMTP_PORT;
+  let user = dbValues.smtp_user || process.env.SMTP_USER;
+  let pass = dbValues.smtp_pass || process.env.SMTP_PASS;
+  let secure = dbValues.smtp_secure !== undefined
+    ? (dbValues.smtp_secure === 'true' || dbValues.smtp_secure === true)
+    : (process.env.SMTP_SECURE === 'true' || Number(port || process.env.SMTP_PORT) === 465);
+  let from = dbValues.smtp_from || process.env.SMTP_FROM || process.env.EMAIL_FROM;
+  let adminEmail = dbValues.admin_email || process.env.ADMIN_EMAIL;
+  let resendApiKey = dbValues.resend_api_key || process.env.RESEND_API_KEY;
+
+  if (provider === 'gmail') {
+    host = 'smtp.gmail.com';
+    port = 465;
+    secure = true;
+  }
+
+  if (!from && user) {
+    from = `SmartISP <${user}>`;
+  } else if (!from) {
+    from = 'SmartISP <ventas@smartisp.com>';
+  }
+
+  return {
+    provider,
+    host: host || (provider === 'gmail' ? 'smtp.gmail.com' : ''),
+    port: Number(port || (provider === 'gmail' ? 465 : 587)),
+    secure,
+    user: user ? String(user).trim() : '',
+    pass: pass ? String(pass).replace(/\s+/g, '') : '',
+    from,
+    adminEmail,
+    resendApiKey
+  };
 };
 
-const sendEmailNotification = async ({ to, subject, html, text }) => {
-  const from = process.env.EMAIL_FROM || process.env.SMTP_FROM || process.env.SMTP_USER || 'SmartISP <ventas@smartisp.com>';
-  if (process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
+const sendEmailNotification = async ({ to, subject, html, text, database = null }) => {
+  const cfg = await getEmailConfig(database);
+
+  // 1. Resend
+  if (cfg.resendApiKey && cfg.from) {
     try {
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          Authorization: `Bearer ${cfg.resendApiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          from: process.env.EMAIL_FROM,
+          from: cfg.from,
           to: Array.isArray(to) ? to : [to],
           subject,
           html
         })
       });
-      if (response.ok) return { success: true, provider: 'resend' };
+      if (response.ok) {
+        const data = await response.json().catch(() => ({}));
+        console.log(`✅ [RESEND] Correo despachado exitosamente a: ${to} (ID: ${data.id || 'ok'})`);
+        return { success: true, provider: 'resend', id: data.id };
+      } else {
+        const errText = await response.text();
+        console.warn('Fallo al enviar correo mediante Resend:', errText);
+      }
     } catch (err) {
       console.warn('Fallo al enviar correo mediante Resend:', err.message);
     }
   }
 
-  const transporter = getEmailTransporter();
-  if (transporter) {
+  // 2. SMTP Nodemailer (Gmail o Custom)
+  if (cfg.host && cfg.user && cfg.pass) {
     try {
-      await transporter.sendMail({
-        from,
+      const transporter = nodemailer.createTransport({
+        host: cfg.host,
+        port: cfg.port,
+        secure: cfg.secure,
+        auth: {
+          user: cfg.user,
+          pass: cfg.pass
+        }
+      });
+      const info = await transporter.sendMail({
+        from: cfg.from,
         to,
         subject,
         html,
         text
       });
-      return { success: true, provider: 'smtp' };
+      console.log(`✅ [SMTP ${cfg.host}] Correo despachado exitosamente a: ${to} - ID: ${info.messageId}`);
+      return { success: true, provider: 'smtp', messageId: info.messageId };
     } catch (err) {
-      console.warn('Fallo al enviar correo mediante SMTP:', err.message);
+      console.error(`❌ Error enviando correo vía SMTP a ${to}:`, err.message);
+      throw err;
     }
   }
 
+  // 3. Fallback: Log in console cleanly (mock)
   console.log('\n====================================================');
-  console.log(`📨 [SIMULACIÓN CORREO ELECTRÓNICO]`);
+  console.log(`📨 [SIMULACIÓN CORREO ELECTRÓNICO - NO ENVIADO A LA BANDEJA REAL]`);
+  console.log(`ℹ️ Para que los correos lleguen de verdad a la bandeja de entrada,`);
+  console.log(`   configura tus credenciales de Gmail o SMTP en el panel de administrador.`);
   console.log(`Destinatario: ${to}`);
-  console.log(`De: ${from}`);
+  console.log(`De: ${cfg.from}`);
   console.log(`Asunto: ${subject}`);
+  console.log(`Fecha: ${new Date().toLocaleString('es-CL')}`);
   console.log('----------------------------------------------------');
   console.log(text || html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 450) + '...');
   console.log('====================================================\n');
@@ -660,7 +719,8 @@ export default async function handler(req, res) {
             to: recipient,
             subject: `🧾 Comprobante de Compra #${orderId} - SmartISP`,
             html: customerHtml,
-            text: `¡Hola ${customerName}! Tu pedido #${orderId} por un total de ${moneyFormat(total)} ha sido recibido. Uno de nuestros asesores se contactará a tu celular (${customerPhone}) para coordinar pago y entrega.`
+            text: `¡Hola ${customerName}! Tu pedido #${orderId} por un total de ${moneyFormat(total)} ha sido recibido. Uno de nuestros asesores se contactará a tu celular (${customerPhone}) para coordinar pago y entrega.`,
+            database
           }).catch(err => console.warn(`Error al despachar correo a ${recipient}:`, err.message));
         }
       }
@@ -690,7 +750,8 @@ export default async function handler(req, res) {
         to: adminRecipient,
         subject: `🚨 NUEVO PEDIDO #${orderId} - Asesoría Requerida: ${customerName}`,
         html: adminHtml,
-        text: `NUEVO PEDIDO #${orderId}: Cliente ${customerName}, Celular de contacto: ${customerPhone}, Correo: ${customerEmail}, Total: ${moneyFormat(total)}. Un asesor debe contactarlo a la brevedad.`
+        text: `NUEVO PEDIDO #${orderId}: Cliente ${customerName}, Celular de contacto: ${customerPhone}, Correo: ${customerEmail}, Total: ${moneyFormat(total)}. Un asesor debe contactarlo a la brevedad.`,
+        database
       }).catch(err => console.warn('Error al despachar correo al administrador:', err.message));
 
       return res.status(201).json({ id: orderId, shortId, subtotal, total, status: 'received' });
@@ -811,6 +872,77 @@ export default async function handler(req, res) {
           ON CONFLICT (content_key) DO UPDATE SET content_value = EXCLUDED.content_value, updated_at = NOW()`, [String(key), String(value ?? '')]);
       }
       return res.status(200).json({ ok: true });
+    }
+
+    if (action === 'test-email' && req.method === 'POST') {
+      if (!await requireAdmin(req, res, database)) return;
+      const body = bodyOf(req);
+      const targetEmail = String(body.to || '').trim();
+      const cfg = await getEmailConfig(database);
+      const recipient = targetEmail || cfg.adminEmail || process.env.ADMIN_EMAIL || '';
+
+      if (!recipient || !recipient.includes('@')) {
+        return res.status(400).json({ error: 'Debes ingresar un correo de destino válido para la prueba.' });
+      }
+
+      if (!cfg.user && !cfg.resendApiKey) {
+        return res.status(400).json({
+          error: 'No has configurado credenciales emisoras. Ingresa tu correo de Gmail y Contraseña de Aplicación en el panel y pulsa "Guardar".'
+        });
+      }
+
+      try {
+        const result = await sendEmailNotification({
+          to: recipient,
+          subject: '🧪 Prueba Exitosa de Correo - SmartISP',
+          html: `
+            <div style="font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 24px; max-width: 580px; margin: 0 auto; background: #ffffff; border: 1px solid #d8e5e7; border-radius: 12px; color: #163342;">
+              <div style="background: #102c3d; padding: 18px 24px; border-radius: 8px; margin-bottom: 20px;">
+                <span style="font-size: 22px; font-weight: bold; color: #ffffff;">smart<span style="color:#087ea4">isp</span><span style="color:#f5a524">.</span></span>
+              </div>
+              <h2 style="color: #087ea4; margin: 0 0 12px; font-size: 20px;">✅ ¡Conexión de Correo Exitosa!</h2>
+              <p style="font-size: 14.5px; line-height: 1.5; color: #334155; margin: 0 0 18px;">
+                Este es un correo real de prueba despachado directamente desde el servidor de <strong>SmartISP</strong>.
+              </p>
+              <div style="background: #eaf7f5; border-left: 4px solid #087ea4; padding: 14px 18px; border-radius: 6px; margin-bottom: 20px; font-size: 13.5px; color: #102c3d; line-height: 1.6;">
+                <div><b>Proveedor emisor:</b> ${cfg.provider === 'gmail' ? 'Gmail SMTP (smtp.gmail.com)' : (cfg.provider === 'resend' ? 'Resend API' : `SMTP Personalizado (${cfg.host})`)}</div>
+                <div><b>Cuenta remitente:</b> ${cfg.from}</div>
+                <div><b>Destinatario verificado:</b> ${recipient}</div>
+                <div><b>Fecha y hora:</b> ${new Date().toLocaleString('es-CL')}</div>
+              </div>
+              <p style="font-size: 13.5px; color: #475569; line-height: 1.5; margin: 0 0 16px;">
+                ¡Tu tienda está 100% lista! A partir de ahora, cuando cualquier cliente complete una compra, recibirá su comprobante oficial en su correo y el administrador recibirá la notificación con el número de celular del cliente.
+              </p>
+              <div style="border-top: 1px solid #e2e8f0; padding-top: 14px; font-size: 12px; color: #94a3b8; text-align: center;">
+                SmartISP eCommerce Engine · Notificación de sistema
+              </div>
+            </div>
+          `,
+          text: `Conexión Exitosa de SmartISP. El servicio de correo está funcionando correctamente hacia ${recipient}.`,
+          database
+        });
+
+        if (result.provider === 'mock') {
+          return res.status(400).json({
+            error: 'El servidor está en modo simulación (mock). Configura tus credenciales reales de Gmail o SMTP para enviar correos.'
+          });
+        }
+
+        return res.status(200).json({
+          ok: true,
+          provider: result.provider,
+          recipient,
+          message: `¡Correo de prueba enviado con éxito a ${recipient}! Revisa tu bandeja de entrada o spam.`
+        });
+      } catch (err) {
+        let msg = err.message || 'Error desconocido al enviar correo';
+        if (msg.includes('Username and Password not accepted') || msg.includes('Invalid login') || msg.includes('BadCredentials')) {
+          msg = 'Google rechazó la contraseña. Recuerda generar y usar una "Contraseña de aplicación" de 16 letras en myaccount.google.com/apppasswords (no uses tu contraseña normal de Google).';
+        } else if (msg.includes('ETIMEDOUT') || msg.includes('ECONNREFUSED')) {
+          msg = `No se pudo conectar al servidor de correo (${cfg.host}:${cfg.port}). Verifica el host y el puerto.`;
+        }
+        return res.status(500).json({ error: msg });
+      }
     }
 
     if (action === 'catalog' && req.method === 'GET') {

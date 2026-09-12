@@ -31,6 +31,40 @@ if (fs.existsSync(envPath)) {
   }
 }
 
+const saveEnvVariables = (updates = {}) => {
+  try {
+    let lines = [];
+    if (fs.existsSync(envPath)) {
+      lines = fs.readFileSync(envPath, 'utf8').split('\n');
+    }
+    const updatedKeys = new Set();
+    const newLines = lines.map(line => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) return line;
+      const eqIdx = line.indexOf('=');
+      if (eqIdx !== -1) {
+        const key = line.slice(0, eqIdx).trim();
+        if (updates[key] !== undefined) {
+          updatedKeys.add(key);
+          return `${key}="${String(updates[key]).replace(/"/g, '\\"')}"`;
+        }
+      }
+      return line;
+    });
+
+    for (const [key, val] of Object.entries(updates)) {
+      if (!updatedKeys.has(key) && val !== undefined) {
+        newLines.push(`${key}="${String(val).replace(/"/g, '\\"')}"`);
+      }
+      process.env[key] = String(val);
+    }
+
+    fs.writeFileSync(envPath, newLines.join('\n'), 'utf8');
+  } catch (err) {
+    console.warn('No se pudo actualizar el archivo .env:', err.message);
+  }
+};
+
 const app = express();
 const port = process.env.PORT || 3000;
 const users = new Map();
@@ -216,68 +250,128 @@ app.delete('/api/auth/customer-wishlist', async (req, res) => {
 
 const moneyFormat = value => '$' + Number(value || 0).toLocaleString('es-CL');
 
-const getEmailTransporter = () => {
-  if (process.env.SMTP_HOST && process.env.SMTP_USER) {
-    return nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: process.env.SMTP_SECURE === 'true' || Number(process.env.SMTP_PORT) === 465,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
+const getEmailConfig = async () => {
+  const dbValues = {};
+  if (pool) {
+    try {
+      const res = await pool.query(
+        "SELECT content_key AS key, content_value AS value FROM site_content WHERE content_key LIKE 'smtp_%' OR content_key IN ('admin_email', 'resend_api_key', 'email_from')"
+      );
+      for (const row of res.rows) {
+        dbValues[row.key] = row.value;
       }
-    });
+    } catch (e) {}
+  } else {
+    for (const [k, v] of inMemoryContent.entries()) {
+      if (k.startsWith('smtp_') || k === 'admin_email' || k === 'resend_api_key' || k === 'email_from') {
+        dbValues[k] = v;
+      }
+    }
   }
-  return null;
+
+  const provider = dbValues.smtp_provider || 'gmail';
+  let host = dbValues.smtp_host || process.env.SMTP_HOST;
+  let port = dbValues.smtp_port || process.env.SMTP_PORT;
+  let user = dbValues.smtp_user || process.env.SMTP_USER;
+  let pass = dbValues.smtp_pass || process.env.SMTP_PASS;
+  let secure = dbValues.smtp_secure !== undefined
+    ? (dbValues.smtp_secure === 'true' || dbValues.smtp_secure === true)
+    : (process.env.SMTP_SECURE === 'true' || Number(port || process.env.SMTP_PORT) === 465);
+  let from = dbValues.smtp_from || process.env.SMTP_FROM || process.env.EMAIL_FROM;
+  let adminEmail = dbValues.admin_email || process.env.ADMIN_EMAIL;
+  let resendApiKey = dbValues.resend_api_key || process.env.RESEND_API_KEY;
+
+  if (provider === 'gmail') {
+    host = 'smtp.gmail.com';
+    port = 465;
+    secure = true;
+  }
+
+  if (!from && user) {
+    from = `SmartISP <${user}>`;
+  } else if (!from) {
+    from = 'SmartISP <ventas@smartisp.com>';
+  }
+
+  return {
+    provider,
+    host: host || (provider === 'gmail' ? 'smtp.gmail.com' : ''),
+    port: Number(port || (provider === 'gmail' ? 465 : 587)),
+    secure,
+    user: user ? String(user).trim() : '',
+    pass: pass ? String(pass).replace(/\s+/g, '') : '',
+    from,
+    adminEmail,
+    resendApiKey
+  };
 };
 
 const sendEmail = async ({ to, subject, html, text }) => {
-  const from = process.env.EMAIL_FROM || process.env.SMTP_FROM || process.env.SMTP_USER || 'SmartISP <ventas@smartisp.com>';
+  const cfg = await getEmailConfig();
 
   // 1. Resend
-  if (process.env.RESEND_API_KEY && process.env.EMAIL_FROM) {
+  if (cfg.resendApiKey && cfg.from) {
     try {
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          Authorization: `Bearer ${cfg.resendApiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          from: process.env.EMAIL_FROM,
+          from: cfg.from,
           to: Array.isArray(to) ? to : [to],
           subject,
           html
         })
       });
-      if (response.ok) return { success: true, provider: 'resend' };
+      if (response.ok) {
+        const resData = await response.json().catch(() => ({}));
+        console.log(`✅ [RESEND] Correo despachado exitosamente a: ${to} (ID: ${resData.id || 'ok'})`);
+        return { success: true, provider: 'resend', id: resData.id };
+      } else {
+        const errorText = await response.text();
+        console.warn('Fallo al enviar correo mediante Resend:', errorText);
+      }
     } catch (err) {
       console.warn('Fallo al enviar correo mediante Resend:', err.message);
     }
   }
 
-  // 2. SMTP Nodemailer
-  const transporter = getEmailTransporter();
-  if (transporter) {
+  // 2. SMTP Nodemailer (Gmail o Custom)
+  if (cfg.host && cfg.user && cfg.pass) {
     try {
-      await transporter.sendMail({
-        from,
+      const transporter = nodemailer.createTransport({
+        host: cfg.host,
+        port: cfg.port,
+        secure: cfg.secure,
+        auth: {
+          user: cfg.user,
+          pass: cfg.pass
+        }
+      });
+      const info = await transporter.sendMail({
+        from: cfg.from,
         to,
         subject,
         html,
         text
       });
-      return { success: true, provider: 'smtp' };
+      console.log(`✅ [SMTP ${cfg.host}] Correo despachado exitosamente a: ${to} - ID: ${info.messageId}`);
+      return { success: true, provider: 'smtp', messageId: info.messageId };
     } catch (err) {
-      console.warn('Fallo al enviar correo mediante SMTP:', err.message);
+      console.error(`❌ Error enviando correo vía SMTP a ${to}:`, err.message);
+      throw err;
     }
   }
 
-  // 3. Fallback: Log in console cleanly
+  // 3. Fallback: Log in console cleanly (mock)
   console.log('\n====================================================');
-  console.log(`📨 [SIMULACIÓN CORREO ELECTRÓNICO]`);
+  console.log(`📨 [SIMULACIÓN CORREO ELECTRÓNICO - NO ENVIADO A LA BANDEJA REAL]`);
+  console.log(`ℹ️ Para que los correos lleguen de verdad a la bandeja de entrada,`);
+  console.log(`   configura tus credenciales de Gmail o SMTP en el panel de administrador.`);
   console.log(`Destinatario: ${to}`);
-  console.log(`De: ${from}`);
+  console.log(`De: ${cfg.from}`);
   console.log(`Asunto: ${subject}`);
   console.log(`Fecha: ${new Date().toLocaleString('es-CL')}`);
   console.log('----------------------------------------------------');
@@ -847,7 +941,93 @@ app.post('/api/auth/admin-content', async (req, res) => {
   } else {
     for (const [key, value] of Object.entries(content)) inMemoryContent.set(key, String(value ?? ''));
   }
+
+  // Persist email & admin settings to .env file for durability across restarts
+  const envUpdates = {};
+  if (content.admin_email !== undefined) envUpdates.ADMIN_EMAIL = content.admin_email;
+  if (content.smtp_user !== undefined) envUpdates.SMTP_USER = content.smtp_user;
+  if (content.smtp_pass !== undefined) envUpdates.SMTP_PASS = content.smtp_pass;
+  if (content.smtp_host !== undefined) envUpdates.SMTP_HOST = content.smtp_host;
+  if (content.smtp_port !== undefined) envUpdates.SMTP_PORT = content.smtp_port;
+  if (content.smtp_secure !== undefined) envUpdates.SMTP_SECURE = content.smtp_secure;
+  if (content.smtp_from !== undefined) envUpdates.SMTP_FROM = content.smtp_from;
+  if (content.resend_api_key !== undefined) envUpdates.RESEND_API_KEY = content.resend_api_key;
+  if (content.email_from !== undefined) envUpdates.EMAIL_FROM = content.email_from;
+
+  if (Object.keys(envUpdates).length > 0) {
+    saveEnvVariables(envUpdates);
+  }
+
   return res.json({ ok: true });
+});
+
+app.post('/api/auth/test-email', async (req, res) => {
+  if (!await requireAdminUser(req, res)) return;
+  const targetEmail = String(req.body.to || '').trim();
+  const cfg = await getEmailConfig();
+  const recipient = targetEmail || cfg.adminEmail || process.env.ADMIN_EMAIL || (demoUser ? demoUser.email : '');
+
+  if (!recipient || !recipient.includes('@')) {
+    return res.status(400).json({ error: 'Debes ingresar un correo de destino válido para la prueba.' });
+  }
+
+  if (!cfg.user && !cfg.resendApiKey) {
+    return res.status(400).json({
+      error: 'No has configurado credenciales emisoras. Ingresa tu correo de Gmail y Contraseña de Aplicación en el panel y pulsa "Guardar".'
+    });
+  }
+
+  try {
+    const result = await sendEmail({
+      to: recipient,
+      subject: '🧪 Prueba Exitosa de Correo - SmartISP',
+      html: `
+        <div style="font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 24px; max-width: 580px; margin: 0 auto; background: #ffffff; border: 1px solid #d8e5e7; border-radius: 12px; color: #163342;">
+          <div style="background: #102c3d; padding: 18px 24px; border-radius: 8px; margin-bottom: 20px;">
+            <span style="font-size: 22px; font-weight: bold; color: #ffffff;">smart<span style="color:#087ea4">isp</span><span style="color:#f5a524">.</span></span>
+          </div>
+          <h2 style="color: #087ea4; margin: 0 0 12px; font-size: 20px;">✅ ¡Conexión de Correo Exitosa!</h2>
+          <p style="font-size: 14.5px; line-height: 1.5; color: #334155; margin: 0 0 18px;">
+            Este es un correo real de prueba despachado directamente desde el servidor de <strong>SmartISP</strong>.
+          </p>
+          <div style="background: #eaf7f5; border-left: 4px solid #087ea4; padding: 14px 18px; border-radius: 6px; margin-bottom: 20px; font-size: 13.5px; color: #102c3d; line-height: 1.6;">
+            <div><b>Proveedor emisor:</b> ${cfg.provider === 'gmail' ? 'Gmail SMTP (smtp.gmail.com)' : (cfg.provider === 'resend' ? 'Resend API' : `SMTP Personalizado (${cfg.host})`)}</div>
+            <div><b>Cuenta remitente:</b> ${cfg.from}</div>
+            <div><b>Destinatario verificado:</b> ${recipient}</div>
+            <div><b>Fecha y hora:</b> ${new Date().toLocaleString('es-CL')}</div>
+          </div>
+          <p style="font-size: 13.5px; color: #475569; line-height: 1.5; margin: 0 0 16px;">
+            ¡Tu tienda está 100% lista! A partir de ahora, cuando cualquier cliente complete una compra, recibirá su comprobante oficial en su correo y el administrador recibirá la notificación con el número de celular del cliente.
+          </p>
+          <div style="border-top: 1px solid #e2e8f0; padding-top: 14px; font-size: 12px; color: #94a3b8; text-align: center;">
+            SmartISP eCommerce Engine · Notificación de sistema
+          </div>
+        </div>
+      `,
+      text: `Conexión Exitosa de SmartISP. El servicio de correo está funcionando correctamente hacia ${recipient}.`
+    });
+
+    if (result.provider === 'mock') {
+      return res.status(400).json({
+        error: 'El servidor está en modo simulación (mock). Configura tus credenciales reales de Gmail o SMTP para enviar correos.'
+      });
+    }
+
+    return res.json({
+      ok: true,
+      provider: result.provider,
+      recipient,
+      message: `¡Correo de prueba enviado con éxito a ${recipient}! Revisa tu bandeja de entrada o spam.`
+    });
+  } catch (err) {
+    let msg = err.message || 'Error desconocido al enviar correo';
+    if (msg.includes('Username and Password not accepted') || msg.includes('Invalid login') || msg.includes('BadCredentials')) {
+      msg = 'Google rechazó la contraseña. Recuerda generar y usar una "Contraseña de aplicación" de 16 letras en myaccount.google.com/apppasswords (no uses tu contraseña normal de Google).';
+    } else if (msg.includes('ETIMEDOUT') || msg.includes('ECONNREFUSED')) {
+      msg = `No se pudo conectar al servidor de correo (${cfg.host}:${cfg.port}). Verifica el host y el puerto.`;
+    }
+    return res.status(500).json({ error: msg });
+  }
 });
 
 app.get('/api/auth/catalog', async (req, res) => {

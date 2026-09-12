@@ -93,18 +93,113 @@
       <div class="grid">
         <section class="panel"><div class="section-heading"><h3>Apariencia y contenido</h3><button id="resetContentButton" class="button secondary" type="button">Restaurar predeterminado</button></div><form id="contentForm"><label>Nombre de marca<input name="brand_name" placeholder="SmartISP"></label><label>Texto del logo<input name="logo_text" placeholder="smartisp"></label><div class="design-preview"><div class="design-preview-hero"><div class="design-preview-copy"><div class="design-preview-eyebrow" data-preview="hero_eyebrow"></div><h4 data-preview="hero_title"></h4><p data-preview="hero_text"></p><span class="design-preview-button" data-preview="hero_button_text"></span></div></div></div><div class="design-controls"><label class="full">Mensaje superior<input name="hero_eyebrow" placeholder="Infraestructura para proveedores de internet"></label><label class="full">Titulo principal<input name="hero_title" placeholder="Conecta mas. Opera mejor."></label><label class="full">Descripcion principal<textarea name="hero_text"></textarea></label><label>Texto del boton<input name="hero_button_text" placeholder="Explorar soluciones"></label><label>Enlace del boton<input name="hero_button_link" placeholder="#catalogo"></label><label>Imagen del banner<input name="hero_image_file" type="file" accept="image/*"><input name="hero_image" type="hidden"></label><label>Posicion de imagen<select name="hero_image_position"><option value="center">Centro</option><option value="left">Izquierda</option><option value="right">Derecha</option></select></label><label>Altura del banner<select name="hero_height"><option value="335">Compacto</option><option value="370">Estándar</option><option value="440">Amplio</option><option value="520">Alto</option></select></label><label>Ancho del contenido<select name="hero_content_width"><option value="400">Estrecho</option><option value="510">Estándar</option><option value="620">Amplio</option><option value="760">Muy amplio</option></select></label><label class="color-field">Color de acento<input name="primary_color" type="color" value="#087ea4"></label><label class="color-field">Color del texto<input name="hero_text_color" type="color" value="#102c3d"></label><label class="full">Opacidad de la capa <span class="range-value" data-range-value="hero_overlay_opacity">96%</span><input name="hero_overlay_opacity" type="range" min="0" max="100" value="96"></label></div><label>Texto del pie de pagina<textarea name="footer_text"></textarea></label><div class="form-actions"><button class="button" type="submit">Guardar apariencia</button><button id="clearContentButton" class="button secondary" type="button">Limpiar campos</button></div><div id="contentMessage" class="message"></div></form></section>
         <section class="panel"><div class="section-heading"><h3>Visibilidad de secciones</h3><button id="resetVisibilityButton" class="button secondary" type="button">Restaurar predeterminado</button></div><form id="visibilityForm"><label>Catalogo visible<select name="catalog_visible"><option value="true">Si</option><option value="false">No</option></select></label><label>Banner visible<select name="hero_visible"><option value="true">Si</option><option value="false">No</option></select></label><label>Beneficios visibles<select name="benefits_visible"><option value="true">Si</option><option value="false">No</option></select></label><button class="button" type="submit">Guardar visibilidad</button><div id="visibilityMessage" class="message"></div></form></section>
-        <section class="panel">
+        <section class="panel wide">
           <div class="section-heading">
-            <h3>Notificaciones y Pedidos</h3>
+            <div>
+              <h3 style="margin:0;">Notificaciones y Envío de Correos Reales (Gmail / SMTP)</h3>
+              <span style="color:var(--muted);font-size:12px;">Despacha comprobantes que llegan de verdad al correo del cliente y alertas con su número de celular al administrador.</span>
+            </div>
+            <div class="actions">
+              <button id="testEmailButton" class="button secondary" type="button" style="background:#f0fdf4;border:1px solid #86efac;color:#166534;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
+                <span>🧪 Probar Envío de Correo Real</span>
+              </button>
+            </div>
           </div>
-          <form id="notificationsForm">
-            <label>Correo del Administrador para Recibir Pedidos
-              <input name="admin_email" type="email" placeholder="admin@smartisp.com" required>
-            </label>
-            <p style="font-size:12px;color:var(--muted);margin-top:-4px;margin-bottom:14px;line-height:1.45;">
-              Cada vez que un cliente confirma su compra en el checkout, le llegará a este correo el comprobante del pedido con el <strong>número de celular del cliente y acceso directo a WhatsApp y llamada</strong> para coordinar la atención y entrega.
-            </p>
-            <button class="button" type="submit">Guardar correo de notificación</button>
+          <form id="notificationsForm" style="margin-top:16px;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;margin-bottom:14px;">
+              <div>
+                <label style="font-weight:700;">1. Correo del Administrador (Para recibir compras y celular del cliente)
+                  <input name="admin_email" type="email" placeholder="admin@smartisp.com" required>
+                </label>
+                <small style="color:var(--muted);display:block;margin-top:4px;font-size:12px;line-height:1.45;">
+                  A este correo te llegará la alerta inmediata con el <strong>número de celular del cliente, botón directo de WhatsApp y llamada</strong> para coordinar la atención y el pago.
+                </small>
+              </div>
+
+              <div>
+                <label style="font-weight:700;">2. Proveedor para Enviar Correos Reales por Internet
+                  <select name="smtp_provider" id="smtpProviderSelect">
+                    <option value="gmail" selected>Gmail (Recomendado - Gratuito con Contraseña de Aplicación)</option>
+                    <option value="custom">Servidor SMTP Personalizado (Outlook, Yahoo, cPanel, etc.)</option>
+                    <option value="resend">Resend API (Producción / Vercel)</option>
+                  </select>
+                </label>
+                <small style="color:var(--muted);display:block;margin-top:4px;font-size:12px;line-height:1.45;">
+                  Garantiza que los correos salgan del servidor y lleguen a la bandeja de entrada real de cualquier usuario.
+                </small>
+              </div>
+            </div>
+
+            <!-- Panel de Configuración para Gmail -->
+            <div id="gmailConfigSection" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:16px;margin-bottom:16px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                <span style="font-size:20px;">✉️</span>
+                <strong style="color:#0369a1;font-size:14px;">Configuración Rápida de Gmail</strong>
+              </div>
+              <p style="font-size:12.5px;color:#0c4a6e;line-height:1.5;margin:0 0 12px;">
+                Para despachar correos desde tu cuenta @gmail.com, Google requiere una <strong>Contraseña de Aplicación de 16 letras</strong> (no tu contraseña personal):
+                <br>1. Ve a tu cuenta de Google &gt; <a href="https://myaccount.google.com/security" target="_blank" style="color:#0284c7;font-weight:700;text-decoration:underline;">Seguridad</a> (activa verificación en 2 pasos si no está activa).
+                <br>2. Entra directo a <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:#0284c7;font-weight:700;text-decoration:underline;">Contraseñas de aplicaciones</a>.
+                <br>3. En 'Nombre de la app', escribe <em>SmartISP</em> y pulsa <strong>Crear</strong>.
+                <br>4. Copia el código de 16 letras generado y pégalo abajo:
+              </p>
+
+              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:14px;">
+                <label>Tu Cuenta de Gmail Emisora
+                  <input name="smtp_user" id="gmailUser" type="email" placeholder="tu_tienda@gmail.com">
+                </label>
+                <label>Contraseña de Aplicación de Google (16 caracteres)
+                  <div style="position:relative;">
+                    <input name="smtp_pass" id="gmailPass" type="password" placeholder="abcd efgh ijkl mnop" autocomplete="new-password">
+                    <button type="button" id="toggleGmailPass" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;font-size:14px;color:var(--muted);" title="Ver u ocultar contraseña">👁️</button>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Panel de Configuración para SMTP Personalizado -->
+            <div id="customSmtpSection" class="hidden" style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:16px;margin-bottom:16px;">
+              <strong style="color:#1e293b;font-size:14px;display:block;margin-bottom:12px;">⚙️ Servidor SMTP Personalizado</strong>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:12px;">
+                <label>Servidor Host SMTP
+                  <input name="smtp_host" placeholder="smtp.ejemplo.com">
+                </label>
+                <label>Puerto
+                  <input name="smtp_port" type="number" placeholder="465 o 587">
+                </label>
+                <label>Usuario SMTP
+                  <input name="smtp_custom_user" placeholder="usuario@ejemplo.com">
+                </label>
+                <label>Contraseña SMTP
+                  <input name="smtp_custom_pass" type="password" placeholder="••••••••">
+                </label>
+                <label>Nombre y Correo Remitente
+                  <input name="smtp_from" placeholder="SmartISP Ventas &lt;ventas@ejemplo.com&gt;">
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;margin-top:28px;cursor:pointer;">
+                  <input name="smtp_secure" type="checkbox" value="true" style="width:auto;margin:0;">
+                  <span>Usar SSL/TLS Seguro (Puerto 465)</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Panel de Configuración para Resend -->
+            <div id="resendSection" class="hidden" style="background:#fdf2f8;border:1px solid #fbcfe8;border-radius:10px;padding:16px;margin-bottom:16px;">
+              <strong style="color:#9d174d;font-size:14px;display:block;margin-bottom:12px;">🚀 Integración con Resend API</strong>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:14px;">
+                <label>API Key de Resend
+                  <input name="resend_api_key" placeholder="re_123456789...">
+                </label>
+                <label>Correo Remitente Autorizado
+                  <input name="email_from" placeholder="SmartISP &lt;onboarding@resend.dev&gt;">
+                </label>
+              </div>
+            </div>
+
+            <div class="form-actions" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+              <button class="button" type="submit" style="background:var(--blue);">💾 Guardar Configuración de Correo</button>
+              <span style="font-size:12px;color:var(--muted);">Se aplicará de inmediato a las compras en tienda y a las pruebas.</span>
+            </div>
             <div id="notificationsMessage" class="message"></div>
           </form>
         </section>
@@ -381,7 +476,33 @@
   </div>
   <script>
     const $ = selector => document.querySelector(selector);
-    const DEFAULT_CONTENT = { brand_name: '', logo_text: '', hero_eyebrow: 'Infraestructura para proveedores de internet', hero_title: 'Conecta más. Opera mejor.', hero_text: 'Equipamiento confiable para redes, servidores y equipos de trabajo que mantienen tu servicio siempre en línea.', hero_image: '', hero_button_text: 'Explorar soluciones', hero_button_link: '#catalogo', hero_image_position: 'center', hero_height: '370', hero_content_width: '510', hero_text_color: '#102c3d', hero_overlay_opacity: '96', primary_color: '#087ea4', footer_text: '', admin_email: '' };
+    const DEFAULT_CONTENT = {
+      brand_name: '',
+      logo_text: '',
+      hero_eyebrow: 'Infraestructura para proveedores de internet',
+      hero_title: 'Conecta más. Opera mejor.',
+      hero_text: 'Equipamiento confiable para redes, servidores y equipos de trabajo que mantienen tu servicio siempre en línea.',
+      hero_image: '',
+      hero_button_text: 'Explorar soluciones',
+      hero_button_link: '#catalogo',
+      hero_image_position: 'center',
+      hero_height: '370',
+      hero_content_width: '510',
+      hero_text_color: '#102c3d',
+      hero_overlay_opacity: '96',
+      primary_color: '#087ea4',
+      footer_text: '',
+      admin_email: '',
+      smtp_provider: 'gmail',
+      smtp_host: 'smtp.gmail.com',
+      smtp_port: '465',
+      smtp_user: '',
+      smtp_pass: '',
+      smtp_secure: 'true',
+      smtp_from: '',
+      resend_api_key: '',
+      email_from: ''
+    };
     const MAX_IMAGE_SIZE = 3 * 1024 * 1024;
     const cropState = { image: null, fileInput: null, outputInput: null, canvas: null, box: null, canvasWidth: 0, canvasHeight: 0, offsetX: 0, offsetY: 0, dragging: false, startX: 0, startY: 0, startBoxX: 0, startBoxY: 0 };
     const DEFAULT_VISIBILITY = { catalog_visible: 'true', hero_visible: 'true', benefits_visible: 'true' };
@@ -459,7 +580,56 @@
     const saveForm = async (form, message, successText) => { await api('admin-content', { method: 'POST', body: JSON.stringify(await valuesWithImage(form)) }); showMessage(message, successText); };
     const api = async (action, options = {}) => { const response = await fetch(`/api/auth/${action}`, { credentials: 'include', headers: { 'Content-Type': 'application/json' }, ...options }); const text = await response.text(); let result = {}; try { result = text ? JSON.parse(text) : {}; } catch { result = { error: text || `Respuesta invalida (${response.status})` }; } if (!response.ok) throw new Error(result.error || 'No se pudo completar la operacion.'); return result; };
     const updateDesignPreview = () => { const form = $('#contentForm'); const values = formValues(form); const preview = $('.design-preview-hero'); preview.style.setProperty('--preview-image', values.hero_image ? `url("${values.hero_image}")` : 'none'); preview.style.setProperty('--preview-accent', values.primary_color || '#087ea4'); preview.style.setProperty('--preview-text', values.hero_text_color || '#102c3d'); preview.style.setProperty('--preview-width', `${values.hero_content_width || 510}px`); preview.style.setProperty('--preview-overlay', `rgba(228,245,243,${Number(values.hero_overlay_opacity || 0) / 100})`); preview.style.minHeight = `${values.hero_height || 370}px`; preview.style.backgroundPosition = values.hero_image_position || 'center'; form.querySelectorAll('[data-preview]').forEach(element => { element.textContent = values[element.dataset.preview] || ''; }); form.querySelectorAll('[data-range-value]').forEach(element => { element.textContent = `${values[element.dataset.rangeValue] || 0}%`; }); };
-    const loadContent = async () => { const result = await api('admin-content'); const values = { ...DEFAULT_CONTENT, ...Object.fromEntries(result.content.map(item => [item.key, item.value])) }; document.querySelectorAll('#contentForm [name]').forEach(input => { if (input.type !== 'file' && values[input.name] !== undefined) input.value = values[input.name]; }); document.querySelectorAll('#visibilityForm [name]').forEach(input => { if (values[input.name] !== undefined) input.value = values[input.name]; }); document.querySelectorAll('#notificationsForm [name]').forEach(input => { if (values[input.name] !== undefined) input.value = values[input.name]; }); updateDesignPreview(); };
+    
+    const updateProviderPanels = provider => {
+      const p = provider || 'gmail';
+      const g = $('#gmailConfigSection');
+      const c = $('#customSmtpSection');
+      const r = $('#resendSection');
+      if (g) g.classList.toggle('hidden', p !== 'gmail');
+      if (c) c.classList.toggle('hidden', p !== 'custom');
+      if (r) r.classList.toggle('hidden', p !== 'resend');
+    };
+
+    const loadContent = async () => {
+      const result = await api('admin-content');
+      const values = { ...DEFAULT_CONTENT, ...Object.fromEntries(result.content.map(item => [item.key, item.value])) };
+      document.querySelectorAll('#contentForm [name]').forEach(input => { if (input.type !== 'file' && values[input.name] !== undefined) input.value = values[input.name]; });
+      document.querySelectorAll('#visibilityForm [name]').forEach(input => { if (values[input.name] !== undefined) input.value = values[input.name]; });
+      
+      const notifForm = $('#notificationsForm');
+      if (notifForm) {
+        if (values.admin_email !== undefined) notifForm.querySelector('[name="admin_email"]').value = values.admin_email;
+        const prov = values.smtp_provider || 'gmail';
+        const sel = notifForm.querySelector('#smtpProviderSelect');
+        if (sel) sel.value = prov;
+        updateProviderPanels(prov);
+
+        const gUser = notifForm.querySelector('#gmailUser');
+        const gPass = notifForm.querySelector('#gmailPass');
+        if (gUser) gUser.value = values.smtp_user || '';
+        if (gPass) gPass.value = values.smtp_pass || '';
+
+        const sHost = notifForm.querySelector('[name="smtp_host"]');
+        const sPort = notifForm.querySelector('[name="smtp_port"]');
+        const sUser = notifForm.querySelector('[name="smtp_custom_user"]');
+        const sPass = notifForm.querySelector('[name="smtp_custom_pass"]');
+        const sFrom = notifForm.querySelector('[name="smtp_from"]');
+        const sSec = notifForm.querySelector('[name="smtp_secure"]');
+        if (sHost) sHost.value = values.smtp_host || '';
+        if (sPort) sPort.value = values.smtp_port || '465';
+        if (sUser) sUser.value = values.smtp_user || '';
+        if (sPass) sPass.value = values.smtp_pass || '';
+        if (sFrom) sFrom.value = values.smtp_from || '';
+        if (sSec) sSec.checked = values.smtp_secure === 'true';
+
+        const rKey = notifForm.querySelector('[name="resend_api_key"]');
+        const eFrom = notifForm.querySelector('[name="email_from"]');
+        if (rKey) rKey.value = values.resend_api_key || '';
+        if (eFrom) eFrom.value = values.email_from || '';
+      }
+      updateDesignPreview();
+    };
     const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
 
     let allProducts = [];
@@ -723,7 +893,83 @@
     $('#contentForm').addEventListener('change', updateDesignPreview);
     $('#contentForm').addEventListener('image-applied', updateDesignPreview);
     $('#visibilityForm').addEventListener('submit', async event => { event.preventDefault(); try { await saveForm(event.currentTarget, $('#visibilityMessage'), 'Visibilidad guardada correctamente.'); } catch (error) { showMessage($('#visibilityMessage'), error.message, true); } });
-    $('#notificationsForm').addEventListener('submit', async event => { event.preventDefault(); try { await saveForm(event.currentTarget, $('#notificationsMessage'), 'Correo de notificaciones guardado correctamente.'); } catch (error) { showMessage($('#notificationsMessage'), error.message, true); } });
+    $('#smtpProviderSelect')?.addEventListener('change', event => {
+      updateProviderPanels(event.target.value);
+    });
+
+    $('#toggleGmailPass')?.addEventListener('click', () => {
+      const input = $('#gmailPass');
+      if (!input) return;
+      const isPass = input.type === 'password';
+      input.type = isPass ? 'text' : 'password';
+      $('#toggleGmailPass').textContent = isPass ? '🔒' : '👁️';
+    });
+
+    $('#notificationsForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const provider = $('#smtpProviderSelect')?.value || 'gmail';
+      const raw = Object.fromEntries(new FormData(form));
+      const payload = {
+        admin_email: String(raw.admin_email || '').trim(),
+        smtp_provider: provider
+      };
+
+      if (provider === 'gmail') {
+        payload.smtp_user = String($('#gmailUser')?.value || '').trim();
+        payload.smtp_pass = String($('#gmailPass')?.value || '').trim();
+        payload.smtp_host = 'smtp.gmail.com';
+        payload.smtp_port = '465';
+        payload.smtp_secure = 'true';
+        payload.smtp_from = payload.smtp_user ? `SmartISP <${payload.smtp_user}>` : '';
+      } else if (provider === 'custom') {
+        payload.smtp_host = String(raw.smtp_host || '').trim();
+        payload.smtp_port = String(raw.smtp_port || '465').trim();
+        payload.smtp_user = String(raw.smtp_custom_user || '').trim();
+        payload.smtp_pass = String(raw.smtp_custom_pass || '').trim();
+        payload.smtp_secure = form.querySelector('[name="smtp_secure"]')?.checked ? 'true' : 'false';
+        payload.smtp_from = String(raw.smtp_from || '').trim();
+      } else if (provider === 'resend') {
+        payload.resend_api_key = String(raw.resend_api_key || '').trim();
+        payload.email_from = String(raw.email_from || '').trim();
+      }
+
+      try {
+        await api('admin-content', { method: 'POST', body: JSON.stringify(payload) });
+        showMessage($('#notificationsMessage'), 'Configuración de correo guardada correctamente.');
+      } catch (error) {
+        showMessage($('#notificationsMessage'), error.message, true);
+      }
+    });
+
+    $('#testEmailButton')?.addEventListener('click', async () => {
+      const form = $('#notificationsForm');
+      const adminEmail = form.querySelector('[name="admin_email"]')?.value.trim();
+      if (!adminEmail || !adminEmail.includes('@')) {
+        showMessage($('#notificationsMessage'), 'Ingresa primero un correo de administrador válido arriba.', true);
+        form.querySelector('[name="admin_email"]')?.focus();
+        return;
+      }
+
+      const btn = $('#testEmailButton');
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Enviando correo real de prueba...</span>';
+      showMessage($('#notificationsMessage'), `Conectando con el servidor de correo y despachando a ${adminEmail}...`);
+
+      try {
+        const result = await api('test-email', {
+          method: 'POST',
+          body: JSON.stringify({ to: adminEmail })
+        });
+        showMessage($('#notificationsMessage'), result.message || `¡Correo de prueba enviado exitosamente a ${adminEmail}! Revisa tu bandeja de entrada o spam.`);
+      } catch (error) {
+        showMessage($('#notificationsMessage'), error.message || 'Error al enviar correo de prueba.', true);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }
+    });
     $('#resetContentButton').addEventListener('click', async () => { const form = $('#contentForm'); fillForm(form, DEFAULT_CONTENT); updateDesignPreview(); try { await saveForm(form, $('#contentMessage'), 'Apariencia restaurada al predeterminado.'); } catch (error) { showMessage($('#contentMessage'), error.message, true); } });
     $('#resetVisibilityButton').addEventListener('click', async () => { const form = $('#visibilityForm'); fillForm(form, DEFAULT_VISIBILITY); try { await saveForm(form, $('#visibilityMessage'), 'Visibilidad restaurada al predeterminado.'); } catch (error) { showMessage($('#visibilityMessage'), error.message, true); } });
     $('#clearContentButton').addEventListener('click', () => { fillForm($('#contentForm'), DEFAULT_CONTENT); updateDesignPreview(); showMessage($('#contentMessage'), 'Campos restablecidos. Guarda para aplicar los cambios.'); });
