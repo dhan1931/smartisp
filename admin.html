@@ -256,20 +256,29 @@
         <button id="closeImportModalButton" type="button" class="button secondary" style="padding:4px 11px;font-size:15px;line-height:1;">✕</button>
       </div>
       <p class="crop-help" style="margin-bottom:12px;">
-        Sube tu archivo <strong>.xlsx</strong>, <strong>.xls</strong> o <strong>.csv</strong>. Se importarán las columnas:
+        Sube uno o varios archivos <strong>.xlsx</strong>, <strong>.xls</strong> o <strong>.csv</strong> al mismo tiempo. Se importarán las columnas:
         <span style="color:var(--blue);font-weight:600;">Categoría, SKU / Código, Nombre del Producto, Precio, URL de la Imagen y Descripción</span>.
-        Si algún precio no está especificado, se guardará en <strong>0</strong> (marcado en la tienda como <em>Pendiente de cotización</em>).
+        Si subes múltiples archivos con productos repetidos, se fusionarán automáticamente conservando las fotos y datos únicos.
       </p>
 
       <div id="importDropzone" class="import-dropzone">
-        <input type="file" id="importFileInput" accept=".xlsx, .xls, .csv" style="display:none;">
+        <input type="file" id="importFileInput" accept=".xlsx, .xls, .csv" multiple style="display:none;">
         <div class="dropzone-icon">📊</div>
-        <strong>Haz clic para buscar o arrastra tu archivo Excel aquí</strong>
-        <span>Soporta .xlsx, .xls y .csv</span>
+        <strong>Haz clic para buscar o arrastra tus archivos Excel / CSV aquí</strong>
+        <span>Puedes seleccionar o soltar múltiples archivos simultáneamente</span>
       </div>
 
       <div id="importPreviewSection" class="hidden">
+        <div id="importedFilesSection" style="margin-bottom:12px;">
+          <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px;">Archivos procesados:</div>
+          <div id="importedFilesChips" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+        </div>
+
         <div class="import-stats">
+          <div class="stat-card">
+            <span class="stat-num" id="statTotalFiles">0</span>
+            <span class="stat-label">Archivos</span>
+          </div>
           <div class="stat-card">
             <span class="stat-num" id="statTotalRows">0</span>
             <span class="stat-label">Filas leídas</span>
@@ -340,7 +349,7 @@
         <div id="importModalMessage" class="message"></div>
 
         <div class="crop-actions" style="margin-top:16px;display:flex;justify-content:space-between;align-items:center;">
-          <button id="cancelImportButton" class="button secondary" type="button">Elegir otro archivo</button>
+          <button id="cancelImportButton" class="button secondary" type="button">Elegir otros archivos</button>
           <button id="startImportButton" class="button" type="button" style="background:var(--success);display:flex;align-items:center;gap:6px;">
             <span>🚀 Confirmar y Cargar a la Tienda</span>
           </button>
@@ -1086,20 +1095,118 @@
       });
     };
 
-    const processImportFile = async file => {
-      if (!file) return;
-      try {
-        const rows = await parseExcelFile(file);
-        const headers = Object.keys(rows[0] || {});
+    const processImportFiles = async fileInputList => {
+      if (!fileInputList) return;
+      const files = Array.from(fileInputList.length !== undefined ? fileInputList : [fileInputList]).filter(Boolean);
+      if (!files.length) return;
 
-        const map = {
-          name: detectColumn(headers, [/^nombredelproducto$/, /^nombreproducto$/, /^nombre$/, /^producto$/, /^productname$/, /^title$/]),
-          sku: detectColumn(headers, [/^skucodigo$/, /^sku$/, /^codigo$/, /^cod$/, /^code$/, /^id$/]),
-          category: detectColumn(headers, [/^categoria$/, /^category$/, /^rubro$/, /^seccion$/, /^departamento$/]),
-          price: detectColumn(headers, [/^precio$/, /^price$/, /^costo$/, /^valor$/, /^pvp$/]),
-          imageUrl: detectColumn(headers, [/^urldelaimagen$/, /^urlimagen$/, /^imagen$/, /^image$/, /^foto$/, /^urlfoto$/, /^fotourl$/]),
-          description: detectColumn(headers, [/^descripcion$/, /^description$/, /^detalle$/, /^especificaciones$/])
-        };
+      try {
+        const filesSummary = [];
+        const uniqueMap = new Map();
+        let totalRowsRead = 0;
+        let duplicatesCount = 0;
+        let lastDetectedMap = null;
+
+        for (const file of files) {
+          const rows = await parseExcelFile(file);
+          if (!rows || !rows.length) continue;
+
+          const headers = Object.keys(rows[0] || {});
+          const map = {
+            name: detectColumn(headers, [/^nombredelproducto$/, /^nombreproducto$/, /^nombre$/, /^producto$/, /^productname$/, /^title$/]),
+            sku: detectColumn(headers, [/^skucodigo$/, /^sku$/, /^codigo$/, /^cod$/, /^code$/, /^id$/]),
+            category: detectColumn(headers, [/^categoria$/, /^category$/, /^rubro$/, /^seccion$/, /^departamento$/]),
+            price: detectColumn(headers, [/^precio$/, /^price$/, /^costo$/, /^valor$/, /^pvp$/]),
+            imageUrl: detectColumn(headers, [/^urldelaimagen$/, /^urlimagen$/, /^imagen$/, /^image$/, /^foto$/, /^urlfoto$/, /^fotourl$/]),
+            description: detectColumn(headers, [/^descripcion$/, /^description$/, /^detalle$/, /^especificaciones$/])
+          };
+
+          if (!map.name) {
+            console.warn(`El archivo "${file.name}" no tiene columna de nombre identificable.`);
+            continue;
+          }
+
+          lastDetectedMap = map;
+          let fileValidCount = 0;
+
+          for (const row of rows) {
+            const name = String(map.name ? row[map.name] : '').trim();
+            if (!name) continue;
+
+            totalRowsRead++;
+            fileValidCount++;
+
+            const rawSku = String(map.sku ? row[map.sku] : '').trim();
+            const sku = rawSku.toUpperCase() === 'N/D' ? '' : rawSku;
+            const category = String(map.category ? row[map.category] : '').trim() || 'General';
+            const description = String(map.description ? row[map.description] : '').trim();
+            const imageUrl = String(map.imageUrl ? row[map.imageUrl] : '').trim();
+
+            let price = 0;
+            if (map.price && row[map.price] !== undefined && row[map.price] !== '') {
+              const cleanStr = String(row[map.price]).replace(/[^0-9.,]/g, '').replace(',', '.');
+              const parsed = parseFloat(cleanStr);
+              if (!isNaN(parsed) && parsed > 0) {
+                price = parsed;
+              }
+            }
+
+            const candidate = {
+              id: sku ? `sku:${sku.toUpperCase()}` : crypto.randomUUID(),
+              sku,
+              name,
+              category,
+              price,
+              description,
+              imageUrl,
+              visible: true,
+              sourceFile: file.name
+            };
+
+            if (uniqueMap.has(name)) {
+              duplicatesCount++;
+              const existing = uniqueMap.get(name);
+              // REGLA: Si dos productos repetidos vienen, uno con imagen y el otro sin imagen,
+              // darle prioridad al que tiene imagen y agregar ese.
+              if (!existing.imageUrl && candidate.imageUrl) {
+                existing.imageUrl = candidate.imageUrl;
+              }
+              if ((!existing.price || existing.price <= 0) && candidate.price > 0) {
+                existing.price = candidate.price;
+              }
+              if (!existing.description && candidate.description) {
+                existing.description = candidate.description;
+              }
+              if (!existing.sku && candidate.sku) {
+                existing.sku = candidate.sku;
+              }
+            } else {
+              uniqueMap.set(name, candidate);
+            }
+          }
+
+          filesSummary.push({ name: file.name, rows: rows.length, valid: fileValidCount });
+        }
+
+        if (!filesSummary.length) {
+          throw new Error('No se detectaron columnas de producto válidas en los archivos seleccionados.');
+        }
+
+        parsedImportProducts = Array.from(uniqueMap.values());
+
+        if (!parsedImportProducts.length) {
+          throw new Error('No se encontraron productos con nombre válido en los archivos.');
+        }
+
+        // Renderizar chips de archivos procesados
+        const chipsContainer = $('#importedFilesChips');
+        if (chipsContainer) {
+          chipsContainer.innerHTML = filesSummary.map(f =>
+            `<span class="mapping-chip found" style="font-size:11px;display:inline-flex;align-items:center;gap:4px;">
+              📄 <strong>${escapeHtml(f.name)}</strong> (${f.valid} productos)
+            </span>`
+          ).join('');
+        }
 
         const fieldsInfo = [
           { key: 'name', label: 'Nombre del Producto', required: true },
@@ -1110,77 +1217,14 @@
           { key: 'description', label: 'Descripción', required: false }
         ];
 
-        $('#mappingChipsContainer').innerHTML = fieldsInfo.map(f => {
-          const col = map[f.key];
-          if (col) {
-            return `<span class="mapping-chip found">✓ <strong>${f.label}</strong>: "${escapeHtml(col)}"</span>`;
-          }
-          return `<span class="mapping-chip missing">${f.required ? '✗' : '○'} <strong>${f.label}</strong>: (${f.key === 'price' ? 'Predeterminado: $0' : 'No encontrada'})</span>`;
-        }).join('');
-
-        if (!map.name) {
-          throw new Error('No se detectó la columna del Nombre del Producto en tu Excel. Asegúrate de incluir una columna llamada "Nombre del Producto" o "Nombre".');
-        }
-
-        let duplicatesCount = 0;
-        const uniqueMap = new Map();
-
-        for (const row of rows) {
-          const name = String(map.name ? row[map.name] : '').trim();
-          if (!name) continue;
-
-          const rawSku = String(map.sku ? row[map.sku] : '').trim();
-          const sku = rawSku.toUpperCase() === 'N/D' ? '' : rawSku;
-          const category = String(map.category ? row[map.category] : '').trim() || 'General';
-          const description = String(map.description ? row[map.description] : '').trim();
-          const imageUrl = String(map.imageUrl ? row[map.imageUrl] : '').trim();
-
-          let price = 0;
-          if (map.price && row[map.price] !== undefined && row[map.price] !== '') {
-            const cleanStr = String(row[map.price]).replace(/[^0-9.,]/g, '').replace(',', '.');
-            const parsed = parseFloat(cleanStr);
-            if (!isNaN(parsed) && parsed > 0) {
-              price = parsed;
+        if (lastDetectedMap) {
+          $('#mappingChipsContainer').innerHTML = fieldsInfo.map(f => {
+            const col = lastDetectedMap[f.key];
+            if (col) {
+              return `<span class="mapping-chip found">✓ <strong>${f.label}</strong>: "${escapeHtml(col)}"</span>`;
             }
-          }
-
-          const candidate = {
-            id: sku ? `sku:${sku.toUpperCase()}` : crypto.randomUUID(),
-            sku,
-            name,
-            category,
-            price,
-            description,
-            imageUrl,
-            visible: true
-          };
-
-          if (uniqueMap.has(name)) {
-            duplicatesCount++;
-            const existing = uniqueMap.get(name);
-            // REGLA: Si dos productos repetidos vienen, uno con imagen y el otro sin imagen,
-            // darle prioridad al que tiene imagen y agregar ese.
-            if (!existing.imageUrl && candidate.imageUrl) {
-              existing.imageUrl = candidate.imageUrl;
-            }
-            if ((!existing.price || existing.price <= 0) && candidate.price > 0) {
-              existing.price = candidate.price;
-            }
-            if (!existing.description && candidate.description) {
-              existing.description = candidate.description;
-            }
-            if (!existing.sku && candidate.sku) {
-              existing.sku = candidate.sku;
-            }
-          } else {
-            uniqueMap.set(name, candidate);
-          }
-        }
-
-        parsedImportProducts = Array.from(uniqueMap.values());
-
-        if (!parsedImportProducts.length) {
-          throw new Error('No se encontraron productos con nombre válido en el archivo.');
+            return `<span class="mapping-chip missing">${f.required ? '✗' : '○'} <strong>${f.label}</strong>: (${f.key === 'price' ? 'Predeterminado: $0' : 'No encontrada'})</span>`;
+          }).join('');
         }
 
         let withPrice = 0;
@@ -1193,7 +1237,8 @@
           if (p.imageUrl) withImage++;
         }
 
-        $('#statTotalRows').textContent = rows.length;
+        if ($('#statTotalFiles')) $('#statTotalFiles').textContent = filesSummary.length;
+        $('#statTotalRows').textContent = totalRowsRead;
         $('#statValidProducts').textContent = parsedImportProducts.length;
         $('#statDuplicates').textContent = duplicatesCount;
         $('#statWithImage').textContent = withImage;
@@ -1222,9 +1267,11 @@
         $('#importDropzone').classList.remove('hidden');
         $('#importPreviewSection').classList.add('hidden');
         showMessage($('#productMessage'), err.message, true);
-        alert('Aviso al procesar archivo: ' + err.message);
+        alert('Aviso al procesar archivo(s): ' + err.message);
       }
     };
+
+    const processImportFile = file => processImportFiles([file]);
 
     const startBulkImport = async () => {
       if (!parsedImportProducts.length) return;
@@ -1377,7 +1424,9 @@
     $('#closeImportModalButton').addEventListener('click', closeImportModal);
     $('#cancelImportButton').addEventListener('click', openImportModal);
     $('#importDropzone').addEventListener('click', () => $('#importFileInput').click());
-    $('#importFileInput').addEventListener('change', event => processImportFile(event.target.files[0]));
+    $('#importFileInput').addEventListener('change', event => {
+      if (event.target.files && event.target.files.length) processImportFiles(event.target.files);
+    });
 
     const dropzone = $('#importDropzone');
     ['dragenter', 'dragover'].forEach(name => {
@@ -1393,8 +1442,8 @@
       });
     });
     dropzone.addEventListener('drop', event => {
-      const file = event.dataTransfer?.files?.[0];
-      if (file) processImportFile(file);
+      const files = event.dataTransfer?.files;
+      if (files && files.length) processImportFiles(files);
     });
 
     $('#startImportButton').addEventListener('click', startBulkImport);
