@@ -276,7 +276,11 @@
           </div>
           <div class="stat-card">
             <span class="stat-num" id="statValidProducts">0</span>
-            <span class="stat-label">Productos válidos</span>
+            <span class="stat-label">Productos únicos</span>
+          </div>
+          <div class="stat-card" style="background:#fff7ed;border-color:#fed7aa;">
+            <span class="stat-num" id="statDuplicates" style="color:#c2410c;">0</span>
+            <span class="stat-label" style="color:#9a3412;">Duplicados omitidos</span>
           </div>
           <div class="stat-card">
             <span class="stat-num" id="statWithImage">0</span>
@@ -1118,10 +1122,8 @@
           throw new Error('No se detectó la columna del Nombre del Producto en tu Excel. Asegúrate de incluir una columna llamada "Nombre del Producto" o "Nombre".');
         }
 
-        let withPrice = 0;
-        let withImage = 0;
-        let pendingPrice = 0;
-        parsedImportProducts = [];
+        let duplicatesCount = 0;
+        const uniqueMap = new Map();
 
         for (const row of rows) {
           const name = String(map.name ? row[map.name] : '').trim();
@@ -1139,19 +1141,11 @@
             const parsed = parseFloat(cleanStr);
             if (!isNaN(parsed) && parsed > 0) {
               price = parsed;
-              withPrice++;
-            } else {
-              pendingPrice++;
             }
-          } else {
-            pendingPrice++;
           }
 
-          if (imageUrl) withImage++;
-
-          const id = sku ? `sku:${sku.toUpperCase()}` : crypto.randomUUID();
-          parsedImportProducts.push({
-            id,
+          const candidate = {
+            id: sku ? `sku:${sku.toUpperCase()}` : crypto.randomUUID(),
             sku,
             name,
             category,
@@ -1159,15 +1153,49 @@
             description,
             imageUrl,
             visible: true
-          });
+          };
+
+          if (uniqueMap.has(name)) {
+            duplicatesCount++;
+            const existing = uniqueMap.get(name);
+            // REGLA: Si dos productos repetidos vienen, uno con imagen y el otro sin imagen,
+            // darle prioridad al que tiene imagen y agregar ese.
+            if (!existing.imageUrl && candidate.imageUrl) {
+              existing.imageUrl = candidate.imageUrl;
+            }
+            if ((!existing.price || existing.price <= 0) && candidate.price > 0) {
+              existing.price = candidate.price;
+            }
+            if (!existing.description && candidate.description) {
+              existing.description = candidate.description;
+            }
+            if (!existing.sku && candidate.sku) {
+              existing.sku = candidate.sku;
+            }
+          } else {
+            uniqueMap.set(name, candidate);
+          }
         }
+
+        parsedImportProducts = Array.from(uniqueMap.values());
 
         if (!parsedImportProducts.length) {
           throw new Error('No se encontraron productos con nombre válido en el archivo.');
         }
 
+        let withPrice = 0;
+        let withImage = 0;
+        let pendingPrice = 0;
+
+        for (const p of parsedImportProducts) {
+          if (p.price > 0) withPrice++;
+          else pendingPrice++;
+          if (p.imageUrl) withImage++;
+        }
+
         $('#statTotalRows').textContent = rows.length;
         $('#statValidProducts').textContent = parsedImportProducts.length;
+        $('#statDuplicates').textContent = duplicatesCount;
         $('#statWithImage').textContent = withImage;
         $('#statPendingPrice').textContent = pendingPrice;
 
@@ -1222,12 +1250,12 @@
           if (withoutImage.length > 0) {
             for (let i = 0; i < withoutImage.length; i++) {
               const p = withoutImage[i];
-              progressLabel.textContent = `Buscando foto en internet (${i + 1}/${withoutImage.length}): ${p.name.slice(0, 26)}...`;
-              const pct = Math.round(((i + 1) / withoutImage.length) * 35);
+              progressLabel.textContent = `Búsqueda profunda de imagen (${i + 1}/${withoutImage.length}): ${p.name.slice(0, 32)}...`;
+              const pct = Math.round(((i + 1) / withoutImage.length) * 40);
               progressBar.style.width = `${pct}%`;
               progressPercent.textContent = `${pct}%`;
               try {
-                const res = await api(`search-product-image?q=${encodeURIComponent(p.name)}&limit=1`);
+                const res = await api(`search-product-image?q=${encodeURIComponent(p.name)}&category=${encodeURIComponent(p.category || '')}&limit=1`);
                 if (res.images && res.images.length > 0 && res.images[0].url) {
                   p.imageUrl = res.images[0].url;
                 }

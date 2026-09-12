@@ -856,10 +856,42 @@ app.delete('/api/auth/admin-products', async (req, res) => {
 
 app.post('/api/auth/admin-products-bulk', async (req, res) => {
   if (!await requireAdminUser(req, res)) return;
-  const items = Array.isArray(req.body.products) ? req.body.products : [];
-  if (!items.length) return res.status(400).json({ error: 'No se recibieron productos para importar.' });
+  const rawItems = Array.isArray(req.body.products) ? req.body.products : [];
+  if (!rawItems.length) return res.status(400).json({ error: 'No se recibieron productos para importar.' });
 
+  // Deduplicación estricta por nombre exacto en el lote, priorizando productos con imagen
+  const uniqueBatchMap = new Map();
+  for (const raw of rawItems) {
+    const name = String(raw.name || '').trim();
+    if (!name) continue;
+    const img = String(raw.imageUrl || raw.image_url || '').trim();
+    if (uniqueBatchMap.has(name)) {
+      const existing = uniqueBatchMap.get(name);
+      // REGLA: Si dos productos repetidos vienen, uno con imagen y el otro sin imagen, prioridad al que tiene imagen
+      if (!existing.imageUrl && img) {
+        existing.imageUrl = img;
+      }
+      if ((!existing.price || Number(existing.price) <= 0) && Number(raw.price) > 0) {
+        existing.price = Number(raw.price);
+      }
+      if (!existing.description && raw.description) {
+        existing.description = String(raw.description).trim();
+      }
+      if (!existing.sku && raw.sku) {
+        existing.sku = String(raw.sku).trim();
+      }
+    } else {
+      uniqueBatchMap.set(name, {
+        ...raw,
+        name,
+        imageUrl: img
+      });
+    }
+  }
+
+  const items = Array.from(uniqueBatchMap.values());
   let count = 0;
+
   if (pool) {
     await ensureProductsTable();
     await pool.query('BEGIN');
@@ -867,13 +899,35 @@ app.post('/api/auth/admin-products-bulk', async (req, res) => {
       for (const item of items) {
         const name = String(item.name || '').trim();
         if (!name) continue;
-        const sku = String(item.sku || '').trim();
-        const id = String(item.id || (sku ? `sku:${sku.toUpperCase()}` : crypto.randomUUID()));
-        const description = String(item.description || '').trim();
+
+        // Comprobar si ya existe un producto con el mismo nombre idéntico en base de datos
+        const existingRow = await pool.query('SELECT id, image_url, description, price, sku FROM products WHERE name = $1 LIMIT 1', [name]);
+        let id = '';
+        let imageUrl = String(item.imageUrl || item.image_url || '').trim();
+        let description = String(item.description || '').trim();
         const parsedPrice = Number(item.price);
-        const price = !isNaN(parsedPrice) && parsedPrice > 0 ? parsedPrice : 0;
+        let price = !isNaN(parsedPrice) && parsedPrice > 0 ? parsedPrice : 0;
+        let sku = String(item.sku || '').trim();
+
+        if (existingRow.rows && existingRow.rows.length > 0) {
+          id = existingRow.rows[0].id;
+          if (!imageUrl && existingRow.rows[0].image_url) {
+            imageUrl = existingRow.rows[0].image_url;
+          }
+          if (!price && existingRow.rows[0].price) {
+            price = Number(existingRow.rows[0].price);
+          }
+          if (!description && existingRow.rows[0].description) {
+            description = existingRow.rows[0].description;
+          }
+          if (!sku && existingRow.rows[0].sku) {
+            sku = existingRow.rows[0].sku;
+          }
+        } else {
+          id = String(item.id || (sku ? `sku:${sku.toUpperCase()}` : crypto.randomUUID()));
+        }
+
         const category = String(item.category || 'General').trim();
-        const imageUrl = String(item.imageUrl || item.image_url || '').trim();
         const externalUrl = String(item.externalUrl || item.external_url || '').trim();
         const visible = item.visible !== false;
 
@@ -901,28 +955,47 @@ app.post('/api/auth/admin-products-bulk', async (req, res) => {
     for (const item of items) {
       const name = String(item.name || '').trim();
       if (!name) continue;
-      const sku = String(item.sku || '').trim();
-      const id = String(item.id || (sku ? `sku:${sku.toUpperCase()}` : crypto.randomUUID()));
+
+      // Buscar si ya existe un producto con el nombre idéntico en memoria
+      const existingByName = [...inMemoryProducts.values()].find(p => p.name === name);
+      let id = existingByName ? existingByName.id : String(item.id || (item.sku ? `sku:${String(item.sku).toUpperCase()}` : crypto.randomUUID()));
+      let imageUrl = String(item.imageUrl || item.image_url || '').trim();
       const description = String(item.description || '').trim();
       const parsedPrice = Number(item.price);
       const price = !isNaN(parsedPrice) && parsedPrice > 0 ? parsedPrice : 0;
       const category = String(item.category || 'General').trim();
-      const imageUrl = String(item.imageUrl || item.image_url || '').trim();
       const externalUrl = String(item.externalUrl || item.external_url || '').trim();
+      const sku = String(item.sku || '').trim();
       const visible = item.visible !== false;
 
-      const existing = inMemoryProducts.get(id) || {};
-      inMemoryProducts.set(id, {
-        id,
-        name,
-        description: description || existing.description || '',
-        price,
-        category: category || existing.category || 'General',
-        imageUrl: imageUrl || existing.imageUrl || '',
-        externalUrl: externalUrl || existing.externalUrl || '',
-        sku: sku || existing.sku || '',
-        visible
-      });
+      if (existingByName) {
+        if (!imageUrl && existingByName.imageUrl) {
+          imageUrl = existingByName.imageUrl;
+        }
+        inMemoryProducts.set(id, {
+          id,
+          name,
+          description: description || existingByName.description || '',
+          price: price > 0 ? price : (existingByName.price || 0),
+          category: category || existingByName.category || 'General',
+          imageUrl: imageUrl || existingByName.imageUrl || '',
+          externalUrl: externalUrl || existingByName.externalUrl || '',
+          sku: sku || existingByName.sku || '',
+          visible
+        });
+      } else {
+        inMemoryProducts.set(id, {
+          id,
+          name,
+          description,
+          price,
+          category,
+          imageUrl,
+          externalUrl,
+          sku,
+          visible
+        });
+      }
       count++;
     }
   }
@@ -1070,60 +1143,183 @@ app.get('/api/auth/catalog', async (req, res) => {
   });
 });
 
-const searchWebImages = async (query, limit = 8) => {
-  const cleanQuery = String(query || '').trim();
-  if (!cleanQuery) return [];
-  try {
-    const res1 = await fetch('https://duckduckgo.com/?q=' + encodeURIComponent(cleanQuery) + '&iax=images&ia=images', {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+const CATEGORY_DEFAULT_IMAGES = {
+  switch: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=800&q=80',
+  router: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=800&q=80',
+  fibra: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=800&q=80',
+  cable: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=800&q=80',
+  servidor: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80',
+  server: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80',
+  red: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=800&q=80',
+  antena: 'https://images.unsplash.com/photo-1516245834210-c4c142787335?auto=format&fit=crop&w=800&q=80',
+  herramienta: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80',
+  conector: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=800&q=80',
+  default: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=800&q=80'
+};
+
+const getCategoryFallbackImage = (category = '', query = '') => {
+  const combined = (category + ' ' + query).toLowerCase();
+  for (const [key, url] of Object.entries(CATEGORY_DEFAULT_IMAGES)) {
+    if (key !== 'default' && combined.includes(key)) {
+      return url;
+    }
+  }
+  return CATEGORY_DEFAULT_IMAGES.default;
+};
+
+const searchWebImages = async (query, limit = 8, category = '') => {
+  const rawQuery = String(query || '').trim();
+  if (!rawQuery) return [];
+
+  // Variaciones de búsqueda inteligentes desde la más específica a la más general
+  const variations = [];
+
+  // 1. Consulta limpia
+  const clean = rawQuery
+    .replace(/["'(){}[\]<>*+?^$|\\]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  variations.push(clean);
+
+  // 2. Extraer Marca + Modelo / SKU si está presente
+  const brandMatch = rawQuery.match(/\b(Cisco|Mikrotik|Ubiquiti|TP-Link|Huawei|D-Link|Tenda|ZTE|Nexxt|Panduit|Belden|Siemon|Furukawa|Hikvision|Dahua|Intel|AMD|Dell|HP|Lenovo|Grandstream|Fanvil|Yealink)\b/i);
+  const modelMatch = rawQuery.match(/\b([A-Z0-9]{2,}-[A-Z0-9-]{2,}|[A-Z]{2,}\d{2,}[A-Z0-9-]*)\b/i);
+  if (brandMatch && modelMatch) {
+    variations.push(`${brandMatch[1]} ${modelMatch[1]}`);
+  } else if (modelMatch) {
+    variations.push(modelMatch[1]);
+  }
+
+  // 3. Primeras 4-5 palabras clave principales
+  const words = clean.split(' ').filter(w => w.length > 1);
+  if (words.length > 4) {
+    variations.push(words.slice(0, 4).join(' '));
+  }
+  if (words.length > 2 && words.length <= 4) {
+    variations.push(words.slice(0, 3).join(' '));
+  }
+
+  // 4. Búsqueda sin medidas secundarias ni números de unidades
+  const noUnits = clean
+    .replace(/\b\d+(\.\d+)?(m|mts|metros|cm|mm|mbps|gbps|g|kg|v|w|a|mah|puertos|port|unidades|unid|pcs|x)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (noUnits && noUnits !== clean && noUnits.length > 4) {
+    variations.push(noUnits.split(' ').slice(0, 4).join(' '));
+  }
+
+  // 5. Categoría + Marca/Modelo
+  if (category && category.toLowerCase() !== 'general') {
+    variations.push(`${category} ${brandMatch ? brandMatch[1] : ''} ${modelMatch ? modelMatch[1] : ''}`.trim());
+  }
+
+  const uniqueQueries = [...new Set(variations.filter(Boolean))];
+  const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+  for (const q of uniqueQueries) {
+    // A. DuckDuckGo Image Search
+    try {
+      const res1 = await fetch('https://duckduckgo.com/?q=' + encodeURIComponent(q) + '&iax=images&ia=images', {
+        headers: { 'User-Agent': userAgent }
+      });
+      const html = await res1.text();
+      const match = /vqd=([0-9-]+)/.exec(html) || /vqd=(["'])(.*?)\1/.exec(html);
+      const vqd = match ? (match[2] || match[1]) : null;
+      if (vqd) {
+        const res2 = await fetch('https://duckduckgo.com/i.js?l=es-es&o=json&q=' + encodeURIComponent(q) + '&vqd=' + vqd, {
+          headers: { 'User-Agent': userAgent }
+        });
+        const data = await res2.json();
+        if (data.results && Array.isArray(data.results) && data.results.length > 0) {
+          const valid = data.results
+            .filter(r => r.image && /^https?:\/\//i.test(r.image))
+            .slice(0, limit)
+            .map(r => ({
+              url: r.image.replace(/^http:\/\//i, 'https://'),
+              thumbnail: (r.thumbnail || r.image).replace(/^http:\/\//i, 'https://'),
+              title: r.title || rawQuery
+            }));
+          if (valid.length > 0) return valid;
+        }
       }
-    });
-    const html = await res1.text();
-    const match = /vqd=([0-9-]+)/.exec(html);
-    if (match && match[1]) {
-      const res2 = await fetch('https://duckduckgo.com/i.js?l=es-es&o=json&q=' + encodeURIComponent(cleanQuery) + '&vqd=' + match[1], {
+    } catch (err) {}
+
+    // B. Bing Images Scraper (alta resolución)
+    try {
+      const bingUrl = 'https://www.bing.com/images/search?q=' + encodeURIComponent(q) + '&first=1&scenario=ImageBasicHover';
+      const bingRes = await fetch(bingUrl, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          'User-Agent': userAgent,
+          'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8'
         }
       });
-      const data = await res2.json();
-      if (data.results && Array.isArray(data.results)) {
-        return data.results
-          .filter(r => r.image && /^https?:\/\//i.test(r.image))
-          .slice(0, limit)
-          .map(r => ({
-            url: r.image.replace(/^http:\/\//i, 'https://'),
-            thumbnail: (r.thumbnail || r.image).replace(/^http:\/\//i, 'https://'),
-            title: r.title || cleanQuery
-          }));
+      const bingHtml = await bingRes.text();
+      const regex = /murl&quot;:&quot;(https?:\/\/[^&]+)&quot;/g;
+      let m;
+      const bingImages = [];
+      while ((m = regex.exec(bingHtml)) !== null && bingImages.length < limit) {
+        bingImages.push({
+          url: m[1].replace(/^http:\/\//i, 'https://'),
+          thumbnail: m[1].replace(/^http:\/\//i, 'https://'),
+          title: rawQuery
+        });
       }
-    }
-  } catch (err) {
-    console.warn('Error buscando imagen en DDG:', err.message);
+      if (bingImages.length > 0) return bingImages;
+    } catch (err) {}
+
+    // C. Google Images Scraper
+    try {
+      const gUrl = 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(q) + '&hl=es';
+      const gRes = await fetch(gUrl, {
+        headers: {
+          'User-Agent': userAgent,
+          'Accept-Language': 'es-ES,es;q=0.9'
+        }
+      });
+      const gHtml = await gRes.text();
+      const gRegex = /\["(https?:\/\/[^"]+\.(?:jpg|jpeg|png|webp))",\d+,\d+\]/gi;
+      let gm;
+      const gImages = [];
+      while ((gm = gRegex.exec(gHtml)) !== null && gImages.length < limit) {
+        if (!gm[1].includes('gstatic.com') && !gm[1].includes('google.com')) {
+          gImages.push({
+            url: gm[1].replace(/^http:\/\//i, 'https://'),
+            thumbnail: gm[1].replace(/^http:\/\//i, 'https://'),
+            title: rawQuery
+          });
+        }
+      }
+      if (gImages.length > 0) return gImages;
+    } catch (err) {}
+
+    // D. Wikimedia Commons
+    try {
+      const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrlimit=${limit}&piprop=thumbnail|original&pithumbsize=600`;
+      const wikiRes = await fetch(wikiUrl);
+      const wikiData = await wikiRes.json();
+      const pages = Object.values(wikiData?.query?.pages || {});
+      const wikiImages = pages
+        .map(p => p.original?.source || p.thumbnail?.source)
+        .filter(Boolean)
+        .map(url => ({ url, thumbnail: url, title: rawQuery }));
+      if (wikiImages.length > 0) return wikiImages.slice(0, limit);
+    } catch (err) {}
   }
 
-  try {
-    const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&generator=search&gsrsearch=${encodeURIComponent(cleanQuery)}&gsrlimit=${limit}&piprop=thumbnail|original&pithumbsize=600`;
-    const wikiRes = await fetch(wikiUrl);
-    const wikiData = await wikiRes.json();
-    const pages = Object.values(wikiData?.query?.pages || {});
-    const images = pages
-      .map(p => p.original?.source || p.thumbnail?.source)
-      .filter(Boolean)
-      .map(url => ({ url, thumbnail: url, title: cleanQuery }));
-    if (images.length) return images;
-  } catch (err) {
-    console.warn('Error buscando imagen en Wikimedia:', err.message);
-  }
-
-  return [];
+  // E. Fallback Temático Garantizado: asegura que ningún producto quede sin imagen
+  const fallbackUrl = getCategoryFallbackImage(category, rawQuery);
+  return [{
+    url: fallbackUrl,
+    thumbnail: fallbackUrl,
+    title: rawQuery
+  }];
 };
 
 app.get('/api/auth/search-product-image', async (req, res) => {
   const query = String(req.query?.q || '').trim();
+  const category = String(req.query?.category || '').trim();
   const limit = Math.min(20, Math.max(1, Number(req.query?.limit || 8)));
-  const images = await searchWebImages(query, limit);
+  const images = await searchWebImages(query, limit, category);
   return res.json({ images });
 });
 
