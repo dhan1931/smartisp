@@ -1167,159 +1167,215 @@ const getCategoryFallbackImage = (category = '', query = '') => {
   return CATEGORY_DEFAULT_IMAGES.default;
 };
 
-const searchWebImages = async (query, limit = 8, category = '') => {
+const cleanAmazonImageUrl = url => {
+  if (!url) return '';
+  return url
+    .replace(/^http:\/\//i, 'https://')
+    .replace(/\._[A-Z0-9,._-]+(?=\.[a-z]+$)/i, '');
+};
+
+const isAmazonUrl = url => {
+  return /media-amazon\.com|images-amazon\.com|ssl-images-amazon\.com/i.test(url);
+};
+
+const searchWebImages = async (query, limit = 12, category = '', store = 'all') => {
   const rawQuery = String(query || '').trim();
   if (!rawQuery) return [];
 
-  // Variaciones de búsqueda inteligentes desde la más específica a la más general
-  const variations = [];
+  const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36';
 
-  // 1. Consulta limpia
+  // 1. Limpieza rigurosa de texto
   const clean = rawQuery
     .replace(/["'(){}[\]<>*+?^$|\\]/g, ' ')
+    .replace(/\b(envio gratis|garantia|oferta|nuevo|en caja|original|remate|promo|unidades|unid|pcs|kit)\b/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-  variations.push(clean);
 
-  // 2. Extraer Marca + Modelo / SKU si está presente
+  // 2. Extraer marca y modelo / SKU
   const brandMatch = rawQuery.match(/\b(Cisco|Mikrotik|Ubiquiti|TP-Link|Huawei|D-Link|Tenda|ZTE|Nexxt|Panduit|Belden|Siemon|Furukawa|Hikvision|Dahua|Intel|AMD|Dell|HP|Lenovo|Grandstream|Fanvil|Yealink)\b/i);
   const modelMatch = rawQuery.match(/\b([A-Z0-9]{2,}-[A-Z0-9-]{2,}|[A-Z]{2,}\d{2,}[A-Z0-9-]*)\b/i);
-  if (brandMatch && modelMatch) {
-    variations.push(`${brandMatch[1]} ${modelMatch[1]}`);
-  } else if (modelMatch) {
-    variations.push(modelMatch[1]);
-  }
 
-  // 3. Primeras 4-5 palabras clave principales
   const words = clean.split(' ').filter(w => w.length > 1);
-  if (words.length > 4) {
-    variations.push(words.slice(0, 4).join(' '));
-  }
-  if (words.length > 2 && words.length <= 4) {
-    variations.push(words.slice(0, 3).join(' '));
-  }
+  const coreTitle = words.slice(0, 4).join(' ');
 
-  // 4. Búsqueda sin medidas secundarias ni números de unidades
-  const noUnits = clean
-    .replace(/\b\d+(\.\d+)?(m|mts|metros|cm|mm|mbps|gbps|g|kg|v|w|a|mah|puertos|port|unidades|unid|pcs|x)\b/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  if (noUnits && noUnits !== clean && noUnits.length > 4) {
-    variations.push(noUnits.split(' ').slice(0, 4).join(' '));
-  }
+  // Variaciones de búsqueda inteligentes para tiendas
+  const amazonQueries = [];
+  if (brandMatch && modelMatch) amazonQueries.push(`${brandMatch[1]} ${modelMatch[1]}`);
+  if (modelMatch) amazonQueries.push(modelMatch[1]);
+  amazonQueries.push(coreTitle);
+  if (clean !== coreTitle) amazonQueries.push(clean);
 
-  // 5. Categoría + Marca/Modelo
-  if (category && category.toLowerCase() !== 'general') {
-    variations.push(`${category} ${brandMatch ? brandMatch[1] : ''} ${modelMatch ? modelMatch[1] : ''}`.trim());
-  }
+  const collectedImages = [];
+  const seenUrls = new Set();
 
-  const uniqueQueries = [...new Set(variations.filter(Boolean))];
-  const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+  const addImage = (url, thumb, title, src = 'web', storeName = 'Web') => {
+    if (!url || !/^https?:\/\//i.test(url)) return;
+    const finalUrl = isAmazonUrl(url) ? cleanAmazonImageUrl(url) : url.replace(/^http:\/\//i, 'https://');
+    const finalThumb = thumb ? (isAmazonUrl(thumb) ? cleanAmazonImageUrl(thumb) : thumb.replace(/^http:\/\//i, 'https://')) : finalUrl;
+    if (finalUrl.includes('transparent-pixel') || finalUrl.includes('nav-sprite')) return;
+    if (seenUrls.has(finalUrl)) return;
+    seenUrls.add(finalUrl);
+    collectedImages.push({
+      url: finalUrl,
+      thumbnail: finalThumb,
+      title: title || rawQuery,
+      source: src,
+      store: storeName
+    });
+  };
 
-  for (const q of uniqueQueries) {
-    // A. DuckDuckGo Image Search
-    try {
-      const res1 = await fetch('https://duckduckgo.com/?q=' + encodeURIComponent(q) + '&iax=images&ia=images', {
-        headers: { 'User-Agent': userAgent }
-      });
-      const html = await res1.text();
-      const match = /vqd=([0-9-]+)/.exec(html) || /vqd=(["'])(.*?)\1/.exec(html);
-      const vqd = match ? (match[2] || match[1]) : null;
-      if (vqd) {
-        const res2 = await fetch('https://duckduckgo.com/i.js?l=es-es&o=json&q=' + encodeURIComponent(q) + '&vqd=' + vqd, {
-          headers: { 'User-Agent': userAgent }
+  // PASO 1: Scraper Directo en Amazon
+  if (store === 'all' || store === 'amazon') {
+    for (const q of amazonQueries.slice(0, 2)) {
+      try {
+        const amazonUrl = 'https://www.amazon.com/s?k=' + encodeURIComponent(q);
+        const aRes = await fetch(amazonUrl, {
+          headers: {
+            'User-Agent': userAgent,
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'es-US,es;q=0.9,en-US;q=0.8,en;q=0.7'
+          }
         });
-        const data = await res2.json();
-        if (data.results && Array.isArray(data.results) && data.results.length > 0) {
-          const valid = data.results
-            .filter(r => r.image && /^https?:\/\//i.test(r.image))
-            .slice(0, limit)
-            .map(r => ({
-              url: r.image.replace(/^http:\/\//i, 'https://'),
-              thumbnail: (r.thumbnail || r.image).replace(/^http:\/\//i, 'https://'),
-              title: r.title || rawQuery
-            }));
-          if (valid.length > 0) return valid;
+        if (aRes.ok) {
+          const html = await aRes.text();
+          const regex = /https:\/\/m\.media-amazon\.com\/images\/I\/[A-Za-z0-9%_-]+\.(?:jpg|png)/gi;
+          const matches = html.match(regex) || [];
+          for (const m of matches) {
+            addImage(m, m, `Amazon: ${q}`, 'amazon', 'Amazon');
+            if (collectedImages.length >= limit) break;
+          }
         }
-      }
-    } catch (err) {}
+      } catch (e) {}
+      if (collectedImages.length >= limit) break;
+    }
+  }
 
-    // B. Bing Images Scraper (alta resolución)
+  // PASO 2: Bing Images Scraper (con enfoque en Amazon y tiendas oficiales)
+  const bingQueries = [];
+  if (store === 'amazon') {
+    for (const q of amazonQueries.slice(0, 2)) bingQueries.push(`amazon ${q}`);
+  } else {
+    for (const q of amazonQueries.slice(0, 2)) bingQueries.push(`amazon ${q}`);
+    bingQueries.push(clean);
+  }
+
+  for (const bq of bingQueries) {
+    if (collectedImages.length >= limit) break;
     try {
-      const bingUrl = 'https://www.bing.com/images/search?q=' + encodeURIComponent(q) + '&first=1&scenario=ImageBasicHover';
+      const bingUrl = 'https://www.bing.com/images/search?q=' + encodeURIComponent(bq) + '&first=1&scenario=ImageBasicHover';
       const bingRes = await fetch(bingUrl, {
         headers: {
           'User-Agent': userAgent,
           'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8'
         }
       });
-      const bingHtml = await bingRes.text();
-      const regex = /murl&quot;:&quot;(https?:\/\/[^&]+)&quot;/g;
-      let m;
-      const bingImages = [];
-      while ((m = regex.exec(bingHtml)) !== null && bingImages.length < limit) {
-        bingImages.push({
-          url: m[1].replace(/^http:\/\//i, 'https://'),
-          thumbnail: m[1].replace(/^http:\/\//i, 'https://'),
-          title: rawQuery
-        });
+      if (bingRes.ok) {
+        const bingHtml = await bingRes.text();
+        const regex = /murl&quot;:&quot;(https?:\/\/[^&]+)&quot;/g;
+        let m;
+        while ((m = regex.exec(bingHtml)) !== null && collectedImages.length < limit) {
+          const imgUrl = m[1];
+          const isAmz = isAmazonUrl(imgUrl);
+          if (store === 'amazon' && !isAmz) continue;
+          addImage(imgUrl, imgUrl, isAmz ? `Amazon: ${rawQuery}` : rawQuery, isAmz ? 'amazon' : 'bing', isAmz ? 'Amazon' : 'Web');
+        }
       }
-      if (bingImages.length > 0) return bingImages;
-    } catch (err) {}
+    } catch (e) {}
+  }
 
-    // C. Google Images Scraper
+  // PASO 3: Google Images Scraper
+  if (collectedImages.length < limit && store !== 'amazon') {
     try {
-      const gUrl = 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(q) + '&hl=es';
+      const gUrl = 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(`amazon ${clean}`) + '&hl=es';
       const gRes = await fetch(gUrl, {
         headers: {
           'User-Agent': userAgent,
           'Accept-Language': 'es-ES,es;q=0.9'
         }
       });
-      const gHtml = await gRes.text();
-      const gRegex = /\["(https?:\/\/[^"]+\.(?:jpg|jpeg|png|webp))",\d+,\d+\]/gi;
-      let gm;
-      const gImages = [];
-      while ((gm = gRegex.exec(gHtml)) !== null && gImages.length < limit) {
-        if (!gm[1].includes('gstatic.com') && !gm[1].includes('google.com')) {
-          gImages.push({
-            url: gm[1].replace(/^http:\/\//i, 'https://'),
-            thumbnail: gm[1].replace(/^http:\/\//i, 'https://'),
-            title: rawQuery
-          });
+      if (gRes.ok) {
+        const gHtml = await gRes.text();
+        const gRegex = /\["(https?:\/\/[^"]+\.(?:jpg|jpeg|png|webp))",\d+,\d+\]/gi;
+        let gm;
+        while ((gm = gRegex.exec(gHtml)) !== null && collectedImages.length < limit) {
+          if (!gm[1].includes('gstatic.com') && !gm[1].includes('google.com')) {
+            const isAmz = isAmazonUrl(gm[1]);
+            addImage(gm[1], gm[1], isAmz ? `Amazon: ${rawQuery}` : rawQuery, isAmz ? 'amazon' : 'google', isAmz ? 'Amazon' : 'Web');
+          }
         }
       }
-      if (gImages.length > 0) return gImages;
-    } catch (err) {}
+    } catch (e) {}
+  }
 
-    // D. Wikimedia Commons
+  // PASO 4: DuckDuckGo Scraper
+  if (collectedImages.length < limit && store !== 'amazon') {
     try {
-      const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrlimit=${limit}&piprop=thumbnail|original&pithumbsize=600`;
+      const res1 = await fetch('https://duckduckgo.com/?q=' + encodeURIComponent(clean) + '&iax=images&ia=images', {
+        headers: { 'User-Agent': userAgent }
+      });
+      const html = await res1.text();
+      const match = /vqd=([0-9-]+)/.exec(html) || /vqd=(["'])(.*?)\1/.exec(html);
+      const vqd = match ? (match[2] || match[1]) : null;
+      if (vqd) {
+        const res2 = await fetch('https://duckduckgo.com/i.js?l=es-es&o=json&q=' + encodeURIComponent(clean) + '&vqd=' + vqd, {
+          headers: { 'User-Agent': userAgent }
+        });
+        const data = await res2.json();
+        if (data.results && Array.isArray(data.results)) {
+          for (const r of data.results) {
+            if (r.image && /^https?:\/\//i.test(r.image)) {
+              const isAmz = isAmazonUrl(r.image);
+              addImage(r.image, r.thumbnail || r.image, r.title || rawQuery, isAmz ? 'amazon' : 'duckduckgo', isAmz ? 'Amazon' : 'Web');
+              if (collectedImages.length >= limit) break;
+            }
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  // PASO 5: Wikimedia Commons (Infraestructura de redes)
+  if (collectedImages.length < limit && store !== 'amazon') {
+    try {
+      const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&generator=search&gsrsearch=${encodeURIComponent(coreTitle)}&gsrlimit=6&piprop=thumbnail|original&pithumbsize=600`;
       const wikiRes = await fetch(wikiUrl);
       const wikiData = await wikiRes.json();
       const pages = Object.values(wikiData?.query?.pages || {});
-      const wikiImages = pages
-        .map(p => p.original?.source || p.thumbnail?.source)
-        .filter(Boolean)
-        .map(url => ({ url, thumbnail: url, title: rawQuery }));
-      if (wikiImages.length > 0) return wikiImages.slice(0, limit);
-    } catch (err) {}
+      for (const p of pages) {
+        const url = p.original?.source || p.thumbnail?.source;
+        if (url) addImage(url, url, rawQuery, 'wiki', 'Wiki');
+        if (collectedImages.length >= limit) break;
+      }
+    } catch (e) {}
   }
 
-  // E. Fallback Temático Garantizado: asegura que ningún producto quede sin imagen
+  // Si encontramos imágenes, priorizamos Amazon y devolvemos la lista
+  if (collectedImages.length > 0) {
+    collectedImages.sort((a, b) => {
+      if (a.store === 'Amazon' && b.store !== 'Amazon') return -1;
+      if (b.store === 'Amazon' && a.store !== 'Amazon') return 1;
+      return 0;
+    });
+    return collectedImages.slice(0, limit);
+  }
+
+  // Fallback Temático Garantizado
   const fallbackUrl = getCategoryFallbackImage(category, rawQuery);
   return [{
     url: fallbackUrl,
     thumbnail: fallbackUrl,
-    title: rawQuery
+    title: rawQuery,
+    source: 'fallback',
+    store: 'Catálogo'
   }];
 };
 
 app.get('/api/auth/search-product-image', async (req, res) => {
   const query = String(req.query?.q || '').trim();
   const category = String(req.query?.category || '').trim();
-  const limit = Math.min(20, Math.max(1, Number(req.query?.limit || 8)));
-  const images = await searchWebImages(query, limit, category);
+  const store = String(req.query?.store || 'all').trim().toLowerCase();
+  const limit = Math.min(24, Math.max(1, Number(req.query?.limit || 12)));
+  const images = await searchWebImages(query, limit, category, store);
   return res.json({ images });
 });
 

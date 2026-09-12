@@ -75,10 +75,27 @@
     .preview-table th, .preview-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
     .preview-table tr:hover { background: #f9fcfd; }
     .thumb-preview { width: 34px; height: 34px; object-fit: contain; border-radius: 4px; background: #eef5f6; display: block; }
-    .image-search-card { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: white; cursor: pointer; transition: transform .2s, border-color .2s, box-shadow .2s; display: flex; flex-direction: column; text-align: left; }
+    .image-search-card { position: relative; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: white; cursor: pointer; transition: transform .2s, border-color .2s, box-shadow .2s; display: flex; flex-direction: column; text-align: left; }
     .image-search-card:hover { border-color: var(--blue); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(8,126,164,.15); }
-    .image-search-card img { width: 100%; height: 110px; object-fit: contain; background: #fafdfd; padding: 6px; }
+    .image-search-card img { width: 100%; height: 115px; object-fit: contain; background: #fafdfd; padding: 6px; }
     .image-search-card span { font-size: 11px; padding: 6px 8px; color: var(--muted); text-overflow: ellipsis; white-space: nowrap; overflow: hidden; border-top: 1px solid var(--line); }
+    .store-badge { position: absolute; top: 6px; left: 6px; font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 4px; z-index: 2; letter-spacing: .02em; pointer-events: none; }
+    .store-badge.amazon { background: #131921; color: #ff9900; border: 1px solid rgba(255,153,0,.45); }
+    .store-badge.web { background: #087ea4; color: #ffffff; }
+    .store-filter-btn.active { background: var(--blue) !important; color: #ffffff !important; border-color: var(--blue) !important; }
+    .store-filter-btn[data-store="amazon"].active { background: #ea580c !important; color: #ffffff !important; border-color: #ea580c !important; }
+    .product-filter-tabs { display: inline-flex; background: #eef3f5; padding: 4px; border-radius: 24px; gap: 4px; }
+    .filter-tab { border: none; background: transparent; padding: 6px 13px; border-radius: 20px; font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all .2s ease; }
+    .filter-tab:hover { color: var(--ink); background: rgba(255,255,255,.6); }
+    .filter-tab.active { background: #ffffff; color: var(--blue); box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+    .filter-tab.tab-alert { color: #c2410c; }
+    .filter-tab.tab-alert.active { background: #ea580c; color: #ffffff; }
+    .tab-count { font-size: 11px; padding: 2px 7px; border-radius: 12px; background: #e2e8f0; color: #475569; font-weight: 700; }
+    .filter-tab.active .tab-count { background: #e0f2fe; color: var(--blue); }
+    .filter-tab.tab-alert.active .tab-count { background: rgba(255,255,255,.25); color: #ffffff; }
+    .filter-tab.tab-alert:not(.active) .tab-count { background: #ffedd5; color: #c2410c; }
+    .btn-quick-photo { background: #087ea4 !important; color: #ffffff !important; padding: 5px 9px !important; font-size: 11px !important; font-weight: 700 !important; border-radius: 6px !important; border: 0 !important; }
+    .btn-quick-photo:hover { background: #075d7d !important; }
     .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(8,126,164,.2); border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
   </style>
@@ -234,13 +251,39 @@
           </div>
 
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px;flex-wrap:wrap;background:#f8fafb;padding:10px 14px;border-radius:10px;border:1px solid var(--line);">
-            <div style="flex:1;max-width:380px;position:relative;">
-              <input id="productSearchInput" type="search" placeholder="🔍 Buscar por nombre, SKU o categoría..." style="margin:0;padding:8px 12px 8px 32px;font-size:13px;border-radius:6px;">
+            <div class="product-filter-tabs">
+              <button type="button" class="filter-tab active" data-filter="all" id="filterTabAll">
+                Todos <span class="tab-count" id="countAllProducts">0</span>
+              </button>
+              <button type="button" class="filter-tab" data-filter="with-image" id="filterTabWithImage">
+                🖼️ Con imagen <span class="tab-count" id="countWithImage">0</span>
+              </button>
+              <button type="button" class="filter-tab tab-alert" data-filter="without-image" id="filterTabWithoutImage">
+                ⚠️ Sin imagen <span class="tab-count count-alert" id="countWithoutImage">0</span>
+              </button>
+            </div>
+
+            <div style="flex:1;max-width:320px;position:relative;margin-left:auto;">
+              <input id="productSearchInput" type="search" placeholder="🔍 Buscar nombre, SKU o categoría..." style="margin:0;padding:7px 12px 7px 32px;font-size:13px;border-radius:6px;">
               <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none;">🔍</span>
             </div>
             <div id="productsCountBadge" style="font-size:13px;color:var(--muted);font-weight:700;">
               Cargando productos...
             </div>
+          </div>
+
+          <!-- Banner de acción cuando hay productos sin imagen -->
+          <div id="missingImagesBanner" class="hidden" style="margin-bottom:14px;background:#fffaf0;border:1px solid #fed7aa;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:24px;">🛒</span>
+              <div>
+                <strong style="color:#c2410c;font-size:13px;display:block;">Productos pendientes de fotografía</strong>
+                <span style="color:#9a3412;font-size:12px;">Puedes asignar fotos una por una con "🛒 Asignar foto" o usar el autocompletado en lote desde Amazon.</span>
+              </div>
+            </div>
+            <button id="batchAutoFetchButton" type="button" class="button" style="background:#ea580c;font-size:12px;padding:7px 14px;display:inline-flex;align-items:center;gap:6px;font-weight:700;">
+              <span>⚡ Auto-buscar fotos en Amazon para todos</span>
+            </button>
           </div>
 
           <div id="productsList"></div>
@@ -358,26 +401,41 @@
     </section>
   </div>
   <div id="imageSearchModal" class="crop-modal" hidden>
-    <section class="crop-dialog" style="max-width:760px;width:95vw;" role="dialog" aria-modal="true" aria-labelledby="imageSearchTitle">
+    <section class="crop-dialog" style="max-width:780px;width:95vw;" role="dialog" aria-modal="true" aria-labelledby="imageSearchTitle">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <h2 id="imageSearchTitle" style="margin:0;font-size:19px;">Buscar Imagen en Internet</h2>
+        <div>
+          <h2 id="imageSearchTitle" style="margin:0;font-size:19px;">Buscar Imagen en Internet y Amazon</h2>
+          <span id="imageSearchProductLabel" style="font-size:12px;color:var(--muted);">Encuentra fotos nítidas para tu catálogo de productos</span>
+        </div>
         <button id="closeImageSearchModalButton" type="button" class="button secondary" style="padding:4px 11px;font-size:15px;line-height:1;">✕</button>
       </div>
-      <p class="crop-help" style="margin-bottom:14px;">
-        Encuentra fotos de alta calidad para este producto. Haz clic en la imagen que deseas asignar.
+      <p class="crop-help" style="margin-bottom:12px;">
+        Busca en <strong>Amazon</strong> y tiendas web. Haz clic en la foto que desees para asignarla de inmediato.
       </p>
 
-      <form id="imageSearchForm" style="display:flex;gap:8px;margin-bottom:16px;">
+      <form id="imageSearchForm" style="display:flex;gap:8px;margin-bottom:12px;">
         <input id="imageSearchInput" type="text" placeholder="Escribe el nombre o modelo del producto..." style="margin-top:0;" required>
-        <button class="button" type="submit" style="white-space:nowrap;">🔍 Buscar</button>
+        <button class="button" type="submit" style="white-space:nowrap;background:var(--blue);">🔍 Buscar</button>
       </form>
+
+      <div id="imageSearchStoreFilter" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+        <button type="button" class="button secondary store-filter-btn active" data-store="all" style="padding:5px 12px;font-size:12px;border-radius:20px;">
+          🌐 Todos los resultados
+        </button>
+        <button type="button" class="button secondary store-filter-btn" data-store="amazon" style="padding:5px 12px;font-size:12px;border-radius:20px;border-color:#fed7aa;background:#fff7ed;color:#c2410c;font-weight:700;">
+          🛒 Solo Amazon
+        </button>
+        <button type="button" class="button secondary store-filter-btn" data-store="web" style="padding:5px 12px;font-size:12px;border-radius:20px;">
+          🔍 Google & Web
+        </button>
+      </div>
 
       <div id="imageSearchStatus" style="display:none;align-items:center;justify-content:center;gap:8px;padding:24px;color:var(--muted);font-size:13px;">
         <div class="spinner"></div>
-        <span>Buscando imágenes en internet...</span>
+        <span id="imageSearchStatusText">Buscando imágenes en Amazon e internet...</span>
       </div>
 
-      <div id="imageSearchResultsGrid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));gap:12px;max-height:380px;overflow-y:auto;padding:4px;">
+      <div id="imageSearchResultsGrid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(155px, 1fr));gap:12px;max-height:400px;overflow-y:auto;padding:4px;">
       </div>
 
       <div class="crop-actions" style="margin-top:18px;">
@@ -660,19 +718,64 @@
     const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
 
     let allProducts = [];
+    let currentImageFilter = 'all'; // 'all' | 'with-image' | 'without-image'
+    let activeProductForQuickAssign = null;
+
+    const updateFilterTabsUI = () => {
+      const total = allProducts.length;
+      const withImg = allProducts.filter(p => Boolean(p.imageUrl)).length;
+      const withoutImg = total - withImg;
+
+      if ($('#countAllProducts')) $('#countAllProducts').textContent = total;
+      if ($('#countWithImage')) $('#countWithImage').textContent = withImg;
+      if ($('#countWithoutImage')) $('#countWithoutImage').textContent = withoutImg;
+
+      document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.filter === currentImageFilter);
+      });
+
+      const banner = $('#missingImagesBanner');
+      if (banner) {
+        banner.classList.toggle('hidden', currentImageFilter !== 'without-image' || withoutImg === 0);
+      }
+    };
+
+    const getFilteredProducts = () => {
+      const searchVal = $('#productSearchInput')?.value.toLowerCase().trim() || '';
+      return allProducts.filter(p => {
+        const hasImg = Boolean(p.imageUrl);
+        if (currentImageFilter === 'with-image' && !hasImg) return false;
+        if (currentImageFilter === 'without-image' && hasImg) return false;
+
+        if (!searchVal) return true;
+        const name = (p.name || '').toLowerCase();
+        const sku = (p.sku || '').toLowerCase();
+        const cat = (p.category || '').toLowerCase();
+        const desc = (p.description || '').toLowerCase();
+        return name.includes(searchVal) || sku.includes(searchVal) || cat.includes(searchVal) || desc.includes(searchVal);
+      });
+    };
+
+    const refreshProductList = () => {
+      updateFilterTabsUI();
+      const items = getFilteredProducts();
+      renderProductGrid(items);
+    };
 
     const renderProductCard = product => {
       const isHidden = product.visible === false;
       const priceNum = Number(product.price) || 0;
       const priceDisplay = priceNum > 0 ? `$${priceNum.toLocaleString('es-CL')}` : '<span class="price-quote">Cotización ($0)</span>';
-      const imgTag = product.imageUrl
-        ? `<img src="${escapeHtml(product.imageUrl)}" alt="${escapeHtml(product.name || '')}" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\\'product-card-no-img\\\'><span>📦</span><small>Foto no disponible</small></div>';">`
-        : `<div class="product-card-no-img"><span>📦</span><small>Sin foto</small></div>`;
+      const hasImg = Boolean(product.imageUrl);
+      const imgTag = hasImg
+        ? `<img src="${escapeHtml(product.imageUrl)}" alt="${escapeHtml(product.name || '')}" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\\'product-card-no-img\\\'><span style=\\\'font-size:24px;\\\'>📦</span><small>Foto no disponible</small></div>';">`
+        : `<div class="product-card-no-img"><span style="font-size:28px;">📦</span><small style="color:#c2410c;font-weight:700;">⚠️ Sin foto</small></div>`;
 
       return `
-        <div class="product-card" data-product-id="${escapeHtml(product.id || '')}" title="Haz clic para editar las características de este producto">
+        <div class="product-card ${hasImg ? '' : 'product-card-missing'}" data-product-id="${escapeHtml(product.id || '')}" title="Haz clic para editar las características de este producto">
           <div class="product-card-thumb">
             ${isHidden ? '<span class="product-card-badge badge-hidden">Oculto</span>' : ''}
+            ${!hasImg ? '<span class="product-card-badge" style="background:#ea580c;color:#fff;">Sin foto</span>' : ''}
             ${imgTag}
           </div>
           <div class="product-card-body">
@@ -684,6 +787,7 @@
             <div class="product-card-price">${priceDisplay}</div>
           </div>
           <div class="product-card-actions">
+            ${!hasImg ? `<button type="button" class="button btn-quick-photo" title="Buscar y asignar foto desde Amazon o internet">🛒 Asignar foto</button>` : ''}
             <button type="button" class="button secondary btn-edit" title="Editar este producto">✏️ Editar</button>
             <button type="button" class="button danger btn-delete" title="Eliminar este producto">🗑️</button>
           </div>
@@ -704,9 +808,15 @@
       }
 
       if (!items || !items.length) {
-        container.innerHTML = allProducts.length
-          ? '<p style="grid-column:1/-1;text-align:center;padding:40px 10px;color:var(--muted);">No se encontraron productos que coincidan con la búsqueda.</p>'
-          : '<p style="grid-column:1/-1;text-align:center;padding:40px 10px;color:var(--muted);">No hay productos guardados aún. Haz clic en <strong>+ Nuevo producto</strong> o importa desde Excel.</p>';
+        let emptyMsg = 'No hay productos guardados aún. Haz clic en <strong>+ Nuevo producto</strong> o importa desde Excel.';
+        if (currentImageFilter === 'without-image') {
+          emptyMsg = '🎉 ¡Felicitaciones! No hay productos sin imagen. Todo tu catálogo cuenta con fotografía.';
+        } else if (currentImageFilter === 'with-image') {
+          emptyMsg = 'Aún no hay productos con imagen en tu catálogo.';
+        } else if (allProducts.length) {
+          emptyMsg = 'No se encontraron productos que coincidan con la búsqueda.';
+        }
+        container.innerHTML = `<p style="grid-column:1/-1;text-align:center;padding:40px 10px;color:var(--muted);font-size:13.5px;">${emptyMsg}</p>`;
         return;
       }
 
@@ -719,6 +829,14 @@
         card.addEventListener('click', () => {
           if (product) openProductEditModal(product);
         });
+
+        const quickPhotoBtn = card.querySelector('.btn-quick-photo');
+        if (quickPhotoBtn) {
+          quickPhotoBtn.addEventListener('click', event => {
+            event.stopPropagation();
+            if (product) openQuickImageAssignModal(product);
+          });
+        }
 
         const editBtn = card.querySelector('.btn-edit');
         if (editBtn) {
@@ -743,6 +861,14 @@
           });
         }
       });
+    };
+
+    const openQuickImageAssignModal = product => {
+      activeProductForQuickAssign = product;
+      activeProductFormForImageSearch = null;
+      const label = $('#imageSearchProductLabel');
+      if (label) label.textContent = `Asignando foto para: ${product.name} ${product.sku ? '(' + product.sku + ')' : ''}`;
+      openWebImageSearchModal(product.name + (product.sku ? ' ' + product.sku : ''));
     };
 
     const openProductEditModal = (product = {}) => {
@@ -878,39 +1004,62 @@
       $('#closeProductModalButton').addEventListener('click', closeProductEditModal);
       $('#cancelProductModalButton').addEventListener('click', closeProductEditModal);
 
-      $('#productSearchInput')?.addEventListener('input', event => {
-        const query = event.target.value.toLowerCase().trim();
-        if (!query) {
-          renderProductGrid(allProducts);
-          return;
-        }
-        const filtered = allProducts.filter(p => {
-          const name = (p.name || '').toLowerCase();
-          const sku = (p.sku || '').toLowerCase();
-          const cat = (p.category || '').toLowerCase();
-          const desc = (p.description || '').toLowerCase();
-          return name.includes(query) || sku.includes(query) || cat.includes(query) || desc.includes(query);
-        });
-        renderProductGrid(filtered);
+      $('#productSearchInput')?.addEventListener('input', () => {
+        refreshProductList();
       });
+
+      document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          currentImageFilter = tab.dataset.filter;
+          refreshProductList();
+        });
+      });
+
+      $('#batchAutoFetchButton')?.addEventListener('click', batchAutoFetchPhotos);
+    };
+
+    const batchAutoFetchPhotos = async () => {
+      const missing = allProducts.filter(p => !p.imageUrl);
+      if (!missing.length) {
+        alert('¡Excelente! Todos los productos de tu catálogo ya tienen imagen asignada.');
+        return;
+      }
+      if (!confirm(`¿Deseas buscar automáticamente fotos en Amazon e internet para los ${missing.length} productos sin imagen?\n\nEl motor buscará en Amazon y la web y asignará la mejor foto encontrada a cada producto.`)) {
+        return;
+      }
+
+      const btn = $('#batchAutoFetchButton');
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+
+      let foundCount = 0;
+      for (let i = 0; i < missing.length; i++) {
+        const p = missing[i];
+        btn.innerHTML = `<span>⏳ Buscando en Amazon (${i + 1}/${missing.length}): ${escapeHtml(p.name.slice(0, 22))}...</span>`;
+        try {
+          const res = await api(`search-product-image?q=${encodeURIComponent(p.name + (p.sku ? ' ' + p.sku : ''))}&category=${encodeURIComponent(p.category || '')}&store=amazon&limit=1`);
+          if (res.images && res.images.length && res.images[0].url) {
+            p.imageUrl = res.images[0].url;
+            await api('admin-products', { method: 'POST', body: JSON.stringify(p) });
+            foundCount++;
+            refreshProductList();
+          }
+        } catch (e) {
+          console.warn('Error en búsqueda automática para', p.name, e);
+        }
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+      showMessage($('#productMessage'), `¡Completado! Se asignaron imágenes a ${foundCount} productos desde Amazon y la web.`);
+      await loadProducts();
     };
 
     const loadProducts = async () => {
       initProductModal();
       const result = await api('admin-products');
       allProducts = result.products || [];
-      const searchVal = $('#productSearchInput')?.value.toLowerCase().trim();
-      if (searchVal) {
-        const filtered = allProducts.filter(p => {
-          const name = (p.name || '').toLowerCase();
-          const sku = (p.sku || '').toLowerCase();
-          const cat = (p.category || '').toLowerCase();
-          return name.includes(searchVal) || sku.includes(searchVal) || cat.includes(searchVal);
-        });
-        renderProductGrid(filtered);
-      } else {
-        renderProductGrid(allProducts);
-      }
+      refreshProductList();
     };
 
     const openPanel = async user => { $('#loginPanel').classList.add('hidden'); $('#adminPanel').classList.remove('hidden'); $('#adminIdentity').textContent = `${user.name} ${user.surname || ''} - ${user.email}`; initProductModal(); await loadContent(); await loadProducts(); };
@@ -1348,48 +1497,92 @@
     };
 
     // ==========================================
-    // BUSCADOR VISUAL DE IMÁGENES EN INTERNET
+    // BUSCADOR VISUAL DE IMÁGENES EN INTERNET Y AMAZON
     // ==========================================
     let activeProductFormForImageSearch = null;
+    let currentSearchStore = 'all'; // 'all' | 'amazon' | 'web'
 
-    const openWebImageSearchModal = (initialQuery, form) => {
+    const openWebImageSearchModal = (initialQuery, form = null) => {
       activeProductFormForImageSearch = form;
       const input = $('#imageSearchInput');
       input.value = initialQuery || '';
       $('#imageSearchResultsGrid').innerHTML = '';
       $('#imageSearchStatus').style.display = 'none';
+
+      // Reset store buttons to 'all'
+      currentSearchStore = 'all';
+      document.querySelectorAll('.store-filter-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.store === 'all');
+      });
+
       $('#imageSearchModal').hidden = false;
-      if (initialQuery) executeImageSearch(initialQuery);
+      if (initialQuery) executeImageSearch(initialQuery, currentSearchStore);
     };
 
     const closeWebImageSearchModal = () => {
       $('#imageSearchModal').hidden = true;
       activeProductFormForImageSearch = null;
+      activeProductForQuickAssign = null;
+      const label = $('#imageSearchProductLabel');
+      if (label) label.textContent = 'Encuentra fotos nítidas para tu catálogo de productos';
     };
 
-    const executeImageSearch = async query => {
+    const executeImageSearch = async (query, store = currentSearchStore) => {
       const status = $('#imageSearchStatus');
+      const statusText = $('#imageSearchStatusText');
       const grid = $('#imageSearchResultsGrid');
+
+      if (statusText) {
+        statusText.textContent = store === 'amazon'
+          ? 'Buscando productos y fotografías en Amazon...'
+          : (store === 'web' ? 'Buscando fotografías en Google y la web...' : 'Buscando fotos en Amazon e internet...');
+      }
+
       status.style.display = 'flex';
       grid.innerHTML = '';
+
       try {
-        const res = await api(`search-product-image?q=${encodeURIComponent(query)}&limit=12`);
+        const res = await api(`search-product-image?q=${encodeURIComponent(query)}&store=${encodeURIComponent(store)}&limit=16`);
         status.style.display = 'none';
         if (!res.images || !res.images.length) {
-          grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;color:var(--muted);padding:24px;">No encontramos fotos para "${escapeHtml(query)}". Prueba buscando con otra palabra o marca.</p>`;
+          const storeLabel = store === 'amazon' ? 'en Amazon' : 'en internet';
+          grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;color:var(--muted);padding:24px;">No encontramos fotos ${storeLabel} para "${escapeHtml(query)}". Prueba buscando con el modelo o SKU exacto.</p>`;
           return;
         }
-        grid.innerHTML = res.images.map(img => `
-          <div class="image-search-card" data-img-url="${escapeHtml(img.url)}" title="Clic para elegir esta foto">
-            <img src="${escapeHtml(img.thumbnail || img.url)}" alt="${escapeHtml(img.title)}" loading="lazy" onerror="this.parentElement.remove()">
-            <span>${escapeHtml(img.title || 'Foto')}</span>
-          </div>
-        `).join('');
+
+        grid.innerHTML = res.images.map(img => {
+          const isAmz = img.store === 'Amazon' || (img.url && (img.url.includes('media-amazon.com') || img.url.includes('images-amazon.com')));
+          return `
+            <div class="image-search-card" data-img-url="${escapeHtml(img.url)}" title="Clic para asignar esta foto">
+              <span class="store-badge ${isAmz ? 'amazon' : 'web'}">${isAmz ? '🛒 Amazon' : '🌐 Web'}</span>
+              <img src="${escapeHtml(img.thumbnail || img.url)}" alt="${escapeHtml(img.title)}" loading="lazy" onerror="this.parentElement.remove()">
+              <span>${escapeHtml(img.title || 'Foto')}</span>
+            </div>
+          `;
+        }).join('');
 
         grid.querySelectorAll('.image-search-card').forEach(card => {
-          card.addEventListener('click', () => {
+          card.addEventListener('click', async () => {
             const url = card.dataset.imgUrl;
-            if (activeProductFormForImageSearch && url) {
+            if (!url) return;
+
+            // Caso A: Asignación rápida directa desde una tarjeta del catálogo
+            if (activeProductForQuickAssign) {
+              const target = activeProductForQuickAssign;
+              target.imageUrl = url;
+              try {
+                await api('admin-products', { method: 'POST', body: JSON.stringify(target) });
+                showMessage($('#productMessage'), `¡Foto asignada y guardada para "${target.name}"!`);
+                closeWebImageSearchModal();
+                await loadProducts();
+              } catch (err) {
+                alert('Error al guardar la imagen: ' + err.message);
+              }
+              return;
+            }
+
+            // Caso B: Asignación desde el formulario modal de edición
+            if (activeProductFormForImageSearch) {
               const urlInput = activeProductFormForImageSearch.querySelector('[name="imageUrl"]');
               const preview = activeProductFormForImageSearch.querySelector('[data-image-preview]');
               const previewBox = activeProductFormForImageSearch.querySelector('.image-preview');
@@ -1401,7 +1594,7 @@
               }
               if (previewBox) previewBox.classList.remove('is-empty');
               if (editButton) editButton.disabled = false;
-              showMessage($('#productMessage'), 'Foto asignada desde internet. Haz clic en "Guardar" para confirmar los cambios.');
+              showMessage($('#productMessage'), 'Foto asignada desde internet. Haz clic en "Guardar Cambios" para confirmar.');
               closeWebImageSearchModal();
             }
           });
@@ -1412,12 +1605,22 @@
       }
     };
 
+    document.querySelectorAll('.store-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.store-filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentSearchStore = btn.dataset.store || 'all';
+        const q = $('#imageSearchInput').value.trim();
+        if (q) executeImageSearch(q, currentSearchStore);
+      });
+    });
+
     $('#closeImageSearchModalButton').addEventListener('click', closeWebImageSearchModal);
     $('#cancelImageSearchButton').addEventListener('click', closeWebImageSearchModal);
     $('#imageSearchForm').addEventListener('submit', event => {
       event.preventDefault();
       const q = $('#imageSearchInput').value.trim();
-      if (q) executeImageSearch(q);
+      if (q) executeImageSearch(q, currentSearchStore);
     });
 
     $('#openImportModalButton').addEventListener('click', openImportModal);
