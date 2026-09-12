@@ -142,8 +142,8 @@ const getEmailConfig = async (database = null) => {
   };
 };
 
-const sendEmailNotification = async ({ to, subject, html, text, database = null }) => {
-  const cfg = await getEmailConfig(database);
+const sendEmailNotification = async ({ to, subject, html, text, database = null, config = null }) => {
+  const cfg = config || await getEmailConfig(database);
 
   // 1. Resend
   if (cfg.resendApiKey && cfg.from) {
@@ -175,9 +175,16 @@ const sendEmailNotification = async ({ to, subject, html, text, database = null 
   }
 
   // 2. SMTP Nodemailer (Gmail o Custom)
-  if (cfg.host && cfg.user && cfg.pass) {
+  if ((cfg.user && cfg.pass) || (cfg.host && cfg.user && cfg.pass)) {
     try {
-      const transporter = nodemailer.createTransport({
+      const isGmail = cfg.provider === 'gmail' || (cfg.host && cfg.host.includes('gmail.com')) || (cfg.user && cfg.user.includes('@gmail.com'));
+      const transportOptions = isGmail ? {
+        service: 'gmail',
+        auth: {
+          user: cfg.user,
+          pass: cfg.pass
+        }
+      } : {
         host: cfg.host,
         port: cfg.port,
         secure: cfg.secure,
@@ -185,16 +192,18 @@ const sendEmailNotification = async ({ to, subject, html, text, database = null 
           user: cfg.user,
           pass: cfg.pass
         }
-      });
+      };
+
+      const transporter = nodemailer.createTransport(transportOptions);
       const info = await transporter.sendMail({
-        from: cfg.from,
+        from: cfg.from || (cfg.user ? `SmartISP <${cfg.user}>` : 'SmartISP <ventas@smartisp.com>'),
         to,
         subject,
         html,
         text
       });
-      console.log(`✅ [SMTP ${cfg.host}] Correo despachado exitosamente a: ${to} - ID: ${info.messageId}`);
-      return { success: true, provider: 'smtp', messageId: info.messageId };
+      console.log(`✅ [SMTP ${isGmail ? 'Gmail' : cfg.host}] Correo despachado exitosamente a: ${to} - ID: ${info.messageId}`);
+      return { success: true, provider: isGmail ? 'gmail' : 'smtp', messageId: info.messageId };
     } catch (err) {
       console.error(`❌ Error enviando correo vía SMTP a ${to}:`, err.message);
       throw err;
@@ -879,6 +888,16 @@ export default async function handler(req, res) {
       const body = bodyOf(req);
       const targetEmail = String(body.to || '').trim();
       const cfg = await getEmailConfig(database);
+
+      // Allow immediate testing with credentials passed in request body
+      if (body.smtp_user) cfg.user = String(body.smtp_user).trim();
+      if (body.smtp_pass) cfg.pass = String(body.smtp_pass).replace(/\s+/g, '');
+      if (body.smtp_host) cfg.host = String(body.smtp_host).trim();
+      if (body.smtp_port) cfg.port = Number(body.smtp_port);
+      if (body.resend_api_key) cfg.resendApiKey = String(body.resend_api_key).trim();
+      if (body.smtp_from || body.email_from) cfg.from = String(body.smtp_from || body.email_from).trim();
+      if (!cfg.from && cfg.user) cfg.from = `SmartISP <${cfg.user}>`;
+
       const recipient = targetEmail || cfg.adminEmail || process.env.ADMIN_EMAIL || '';
 
       if (!recipient || !recipient.includes('@')) {
@@ -887,7 +906,7 @@ export default async function handler(req, res) {
 
       if (!cfg.user && !cfg.resendApiKey) {
         return res.status(400).json({
-          error: 'No has configurado credenciales emisoras. Ingresa tu correo de Gmail y Contraseña de Aplicación en el panel y pulsa "Guardar".'
+          error: 'No has ingresado credenciales emisoras. Escribe tu correo de Gmail y Contraseña de Aplicación de 16 letras.'
         });
       }
 
@@ -919,7 +938,8 @@ export default async function handler(req, res) {
             </div>
           `,
           text: `Conexión Exitosa de SmartISP. El servicio de correo está funcionando correctamente hacia ${recipient}.`,
-          database
+          database,
+          config: cfg
         });
 
         if (result.provider === 'mock') {

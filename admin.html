@@ -919,9 +919,9 @@
       $('#toggleGmailPass').textContent = isPass ? '🔒' : '👁️';
     });
 
-    $('#notificationsForm').addEventListener('submit', async event => {
-      event.preventDefault();
-      const form = event.currentTarget;
+    const getNotificationPayload = () => {
+      const form = $('#notificationsForm');
+      if (!form) return {};
       const provider = $('#smtpProviderSelect')?.value || 'gmail';
       const raw = Object.fromEntries(new FormData(form));
       const payload = {
@@ -931,7 +931,7 @@
 
       if (provider === 'gmail') {
         payload.smtp_user = String($('#gmailUser')?.value || '').trim();
-        payload.smtp_pass = String($('#gmailPass')?.value || '').trim();
+        payload.smtp_pass = String($('#gmailPass')?.value || '').replace(/\s+/g, '');
         payload.smtp_host = 'smtp.gmail.com';
         payload.smtp_port = '465';
         payload.smtp_secure = 'true';
@@ -947,6 +947,12 @@
         payload.resend_api_key = String(raw.resend_api_key || '').trim();
         payload.email_from = String(raw.email_from || '').trim();
       }
+      return payload;
+    };
+
+    $('#notificationsForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      const payload = getNotificationPayload();
 
       try {
         await api('admin-content', { method: 'POST', body: JSON.stringify(payload) });
@@ -958,23 +964,45 @@
 
     $('#testEmailButton')?.addEventListener('click', async () => {
       const form = $('#notificationsForm');
-      const adminEmail = form.querySelector('[name="admin_email"]')?.value.trim();
+      const payload = getNotificationPayload();
+      const adminEmail = payload.admin_email;
+
       if (!adminEmail || !adminEmail.includes('@')) {
-        showMessage($('#notificationsMessage'), 'Ingresa primero un correo de administrador válido arriba.', true);
+        showMessage($('#notificationsMessage'), 'Ingresa primero el correo del administrador en el campo 1 de arriba.', true);
         form.querySelector('[name="admin_email"]')?.focus();
         return;
+      }
+
+      if (payload.smtp_provider === 'gmail') {
+        if (!payload.smtp_user) {
+          showMessage($('#notificationsMessage'), 'Para enviar correos por Gmail, debes ingresar tu cuenta @gmail.com en el campo de abajo.', true);
+          $('#gmailUser')?.focus();
+          return;
+        }
+        if (!payload.smtp_pass) {
+          showMessage($('#notificationsMessage'), 'Ingresa la Contraseña de Aplicación de 16 caracteres generada en Google (no tu clave personal de Gmail).', true);
+          $('#gmailPass')?.focus();
+          return;
+        }
       }
 
       const btn = $('#testEmailButton');
       const originalHtml = btn.innerHTML;
       btn.disabled = true;
-      btn.innerHTML = '<span>⏳ Enviando correo real de prueba...</span>';
+      btn.innerHTML = '<span>⏳ Guardando y enviando correo real...</span>';
       showMessage($('#notificationsMessage'), `Conectando con el servidor de correo y despachando a ${adminEmail}...`);
 
       try {
+        // 1. Guardar primero automáticamente
+        await api('admin-content', { method: 'POST', body: JSON.stringify(payload) });
+
+        // 2. Despachar prueba pasando credenciales en el cuerpo
         const result = await api('test-email', {
           method: 'POST',
-          body: JSON.stringify({ to: adminEmail })
+          body: JSON.stringify({
+            to: adminEmail,
+            ...payload
+          })
         });
         showMessage($('#notificationsMessage'), result.message || `¡Correo de prueba enviado exitosamente a ${adminEmail}! Revisa tu bandeja de entrada o spam.`);
       } catch (error) {

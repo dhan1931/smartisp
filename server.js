@@ -119,6 +119,11 @@ const initializeDatabase = async () => {
   await pool.query('INSERT INTO users (id, email, password_hash, name, surname, phone) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (email) DO NOTHING', [demoUser.id, demoUser.email, demoUser.passwordHash, demoUser.name, demoUser.surname, demoUser.phone]);
 };
 
+app.use((req, res, next) => {
+  console.log(`🌐 [${new Date().toLocaleTimeString('es-CL')}] ${req.method} ${req.url}`);
+  next();
+});
+
 app.use(express.json());
 app.use(session({
   name: 'nexotech.sid',
@@ -306,8 +311,8 @@ const getEmailConfig = async () => {
   };
 };
 
-const sendEmail = async ({ to, subject, html, text }) => {
-  const cfg = await getEmailConfig();
+const sendEmail = async ({ to, subject, html, text, config = null }) => {
+  const cfg = config || await getEmailConfig();
 
   // 1. Resend
   if (cfg.resendApiKey && cfg.from) {
@@ -339,9 +344,16 @@ const sendEmail = async ({ to, subject, html, text }) => {
   }
 
   // 2. SMTP Nodemailer (Gmail o Custom)
-  if (cfg.host && cfg.user && cfg.pass) {
+  if ((cfg.user && cfg.pass) || (cfg.host && cfg.user && cfg.pass)) {
     try {
-      const transporter = nodemailer.createTransport({
+      const isGmail = cfg.provider === 'gmail' || (cfg.host && cfg.host.includes('gmail.com')) || (cfg.user && cfg.user.includes('@gmail.com'));
+      const transportOptions = isGmail ? {
+        service: 'gmail',
+        auth: {
+          user: cfg.user,
+          pass: cfg.pass
+        }
+      } : {
         host: cfg.host,
         port: cfg.port,
         secure: cfg.secure,
@@ -349,16 +361,18 @@ const sendEmail = async ({ to, subject, html, text }) => {
           user: cfg.user,
           pass: cfg.pass
         }
-      });
+      };
+
+      const transporter = nodemailer.createTransport(transportOptions);
       const info = await transporter.sendMail({
-        from: cfg.from,
+        from: cfg.from || (cfg.user ? `SmartISP <${cfg.user}>` : 'SmartISP <ventas@smartisp.com>'),
         to,
         subject,
         html,
         text
       });
-      console.log(`✅ [SMTP ${cfg.host}] Correo despachado exitosamente a: ${to} - ID: ${info.messageId}`);
-      return { success: true, provider: 'smtp', messageId: info.messageId };
+      console.log(`✅ [SMTP ${isGmail ? 'Gmail' : cfg.host}] Correo despachado exitosamente a: ${to} - ID: ${info.messageId}`);
+      return { success: true, provider: isGmail ? 'gmail' : 'smtp', messageId: info.messageId };
     } catch (err) {
       console.error(`❌ Error enviando correo vía SMTP a ${to}:`, err.message);
       throw err;
@@ -965,6 +979,16 @@ app.post('/api/auth/test-email', async (req, res) => {
   if (!await requireAdminUser(req, res)) return;
   const targetEmail = String(req.body.to || '').trim();
   const cfg = await getEmailConfig();
+
+  // Allow immediate testing with credentials passed in request body
+  if (req.body.smtp_user) cfg.user = String(req.body.smtp_user).trim();
+  if (req.body.smtp_pass) cfg.pass = String(req.body.smtp_pass).replace(/\s+/g, '');
+  if (req.body.smtp_host) cfg.host = String(req.body.smtp_host).trim();
+  if (req.body.smtp_port) cfg.port = Number(req.body.smtp_port);
+  if (req.body.resend_api_key) cfg.resendApiKey = String(req.body.resend_api_key).trim();
+  if (req.body.smtp_from || req.body.email_from) cfg.from = String(req.body.smtp_from || req.body.email_from).trim();
+  if (!cfg.from && cfg.user) cfg.from = `SmartISP <${cfg.user}>`;
+
   const recipient = targetEmail || cfg.adminEmail || process.env.ADMIN_EMAIL || (demoUser ? demoUser.email : '');
 
   if (!recipient || !recipient.includes('@')) {
@@ -973,7 +997,7 @@ app.post('/api/auth/test-email', async (req, res) => {
 
   if (!cfg.user && !cfg.resendApiKey) {
     return res.status(400).json({
-      error: 'No has configurado credenciales emisoras. Ingresa tu correo de Gmail y Contraseña de Aplicación en el panel y pulsa "Guardar".'
+      error: 'No has ingresado credenciales emisoras. Escribe tu correo de Gmail y Contraseña de Aplicación de 16 letras.'
     });
   }
 
@@ -1004,7 +1028,8 @@ app.post('/api/auth/test-email', async (req, res) => {
           </div>
         </div>
       `,
-      text: `Conexión Exitosa de SmartISP. El servicio de correo está funcionando correctamente hacia ${recipient}.`
+      text: `Conexión Exitosa de SmartISP. El servicio de correo está funcionando correctamente hacia ${recipient}.`,
+      config: cfg
     });
 
     if (result.provider === 'mock') {
