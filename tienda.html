@@ -26,7 +26,6 @@
 		body.dark-mode .hero { background-color: #163b51; }
 		body.dark-mode .hero::after { background: linear-gradient(90deg, rgba(22,59,81,.98) 0%, rgba(22,59,81,.91) 42%, rgba(22,59,81,.1) 78%); }
 		body.dark-mode .hero h1, body.dark-mode .section-heading h2, body.dark-mode .product h3, body.dark-mode .price, body.dark-mode .logo, body.dark-mode .nav-action, body.dark-mode .form-field { color: var(--ink); }
-		body.dark-mode .category-nav { background: var(--white); }
 		* { box-sizing: border-box; }
 		body { margin: 0; background: var(--pale); color: var(--ink); font-family: 'DM Sans', sans-serif; }
 		a { color: inherit; text-decoration: none; }
@@ -49,8 +48,6 @@
 		.cart-count { background: var(--orange); border-radius: 50%; color: #172b3a; font-size: 10px; min-width: 17px; height: 17px; display: grid; place-items: center; position: absolute; top: -7px; left: 17px; }
 		.cart-count.bump { animation: cartBump .45s ease; }
 		@keyframes cartBump { 0% { transform: scale(1); } 45% { transform: scale(1.45); } 100% { transform: scale(1); } }
-		.category-nav { background: var(--white); padding: 0 5vw 14px; display: flex; gap: 25px; font-size: 13px; color: var(--muted); }
-		.category-nav a:first-child { color: var(--blue); font-weight: 700; }
 		.hero { margin: 28px 5vw 0; min-height: 335px; padding: 46px clamp(24px, 7vw, 90px); background: #c9ebfc url('https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1600&q=85') center right/cover; position: relative; overflow: hidden; display: flex; align-items: center; }
 		.hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(223,243,255,.98) 0%, rgba(223,243,255,.91) 42%, rgba(223,243,255,.1) 78%); }
 		.hero-content { max-width: 475px; position: relative; z-index: 1; }
@@ -169,7 +166,7 @@
 		.remove-item:hover { color: #9b3030; }
 		.cart-total { border-top: 1px solid var(--line); padding-top: 18px; display: flex; justify-content: space-between; font-weight: 700; }
 		.checkout { width: 100%; margin-top: 18px; justify-content: center; }
-		@media (max-width: 800px) { .nav { flex-wrap: wrap; gap: 15px; } .search { order: 3; flex-basis: 100%; max-width: none; } .nav-actions { gap: 8px; } .nav-action span { display: none; } .category-nav { overflow-x: auto; white-space: nowrap; } .hero { margin-top: 18px; min-height: 390px; background-position: 68% center; } .hero::after { background: linear-gradient(90deg, rgba(223,243,255,.98), rgba(223,243,255,.7)); } .store-layout { grid-template-columns: 1fr; gap: 16px; } .store-sidebar { position: static; } .sidebar-card { padding: 9px 10px; } .sidebar-header { margin-bottom: 6px; padding-bottom: 6px; } .sidebar-categories { flex-direction: row; overflow-x: auto; gap: 6px; padding-bottom: 4px; scrollbar-width: none; } .sidebar-categories::-webkit-scrollbar { display: none; } .sidebar-cat-btn { flex: 0 0 auto; width: auto; padding: 6px 11px; border: 1px solid var(--line); border-radius: 20px; font-size: 12px; background: #ffffff; } .sidebar-cat-btn.active { border-color: var(--blue); } .products { grid-template-columns: repeat(2, minmax(0, 1fr)); } .benefits { grid-template-columns: 1fr; gap: 18px; } footer { flex-direction: column; } .detail-layout { grid-template-columns: 1fr; gap: 20px; } .detail-copy h2 { font-size: 25px; } }
+		@media (max-width: 800px) { .nav { flex-wrap: wrap; gap: 15px; } .search { order: 3; flex-basis: 100%; max-width: none; } .nav-actions { gap: 8px; } .nav-action span { display: none; } .hero { margin-top: 18px; min-height: 390px; background-position: 68% center; } .hero::after { background: linear-gradient(90deg, rgba(223,243,255,.98), rgba(223,243,255,.7)); } .store-layout { grid-template-columns: 1fr; gap: 16px; } .store-sidebar { position: static; } .sidebar-card { padding: 9px 10px; } .sidebar-header { margin-bottom: 6px; padding-bottom: 6px; } .sidebar-categories { flex-direction: row; overflow-x: auto; gap: 6px; padding-bottom: 4px; scrollbar-width: none; } .sidebar-categories::-webkit-scrollbar { display: none; } .sidebar-cat-btn { flex: 0 0 auto; width: auto; padding: 6px 11px; border: 1px solid var(--line); border-radius: 20px; font-size: 12px; background: #ffffff; } .sidebar-cat-btn.active { border-color: var(--blue); } .products { grid-template-columns: repeat(2, minmax(0, 1fr)); } .benefits { grid-template-columns: 1fr; gap: 18px; } footer { flex-direction: column; } .detail-layout { grid-template-columns: 1fr; gap: 20px; } .detail-copy h2 { font-size: 25px; } }
 		@media (max-width: 430px) { .topbar { display: none; } .nav { padding: 14px 4vw; } .content { padding: 30px 4vw; } .hero { margin-left: 4vw; margin-right: 4vw; padding: 36px 25px; } .section-heading h2 { font-size: 24px; } .section-heading a { font-size: 11px; } .products { gap: 9px; } .product { padding: 8px; } .product h3 { font-size: 13px; } .price { font-size: 17px; } .footer-links { flex-wrap: wrap; gap: 14px; } }
 		/* Smart-ISP visual system */
 		:root { --navy: #102c3d; --blue: #087ea4; --sky: #e4f5f3; --pale: #f3f7f8; --ink: #163342; --muted: #6b7f88; --line: #d8e5e7; --orange: #f5a524; --mint: #d7f0e8; }
@@ -184,9 +181,6 @@
 		.nav-action { color: #102c3d; }
 		.nav-action:hover { color: #087ea4; }
 		.cart-count { background: #f5a524; }
-		.category-nav { padding-top: 1px; padding-bottom: 15px; gap: 28px; }
-		.category-nav a { position: relative; }
-		.category-nav a:first-child::after { content: ''; position: absolute; left: 0; right: 0; bottom: -15px; height: 2px; background: #087ea4; }
 		.hero { margin-top: 30px; min-height: 370px; border-radius: 12px; background-color: #cdeee9; box-shadow: 0 18px 36px rgba(16,44,61,.12); }
 		.hero::after { background: linear-gradient(90deg, rgba(228,245,243,.99) 0%, rgba(228,245,243,.94) 42%, rgba(228,245,243,.12) 82%); }
 		.hero-content { max-width: 510px; }
@@ -322,7 +316,6 @@
 		<form class="search" id="searchForm"><input id="searchInput" type="search" placeholder="¿Qué estás buscando hoy?" aria-label="Buscar productos"><button aria-label="Buscar"><i data-lucide="search" width="18"></i></button></form>
 		<div class="nav-actions"><a class="nav-action" href="index.html" title="Conocer sobre la empresa"><i data-lucide="building-2" width="16"></i><span>Empresa</span></a><button class="nav-action" id="openAccount"><i data-lucide="user" width="16"></i><span id="accountLabel">Mi cuenta</span></button><a class="admin-nav-link" id="adminNavLink" href="/admin.html"><i data-lucide="layout-dashboard" width="16"></i><span>Panel admin</span></a><button class="nav-action cart-button" id="openCart"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="cart-count" id="cartCount">0</b></button></div>
 	</header>
-	<nav class="category-nav" aria-label="Categorías del catálogo"><a href="#catalogo">Todo</a><a href="#catalogo" data-filter="Notebooks">Notebooks</a><a href="#catalogo" data-filter="Redes">Redes</a><a href="#catalogo" data-filter="Servidores">Servidores</a><a href="#catalogo" data-filter="Accesorios">Accesorios</a><a href="#catalogo" data-filter="Monitores">Monitores</a></nav>
 	<main>
 		<section class="hero"><div class="hero-content"><div class="eyebrow" id="heroEyebrow">Infraestructura para proveedores de internet</div><h1 id="heroTitle">Conecta más. Opera mejor.</h1><p id="heroText">Equipamiento confiable para redes, servidores y equipos de trabajo que mantienen tu servicio siempre en línea.</p><a class="primary" id="heroButton" href="#catalogo"><span id="heroButtonText">Explorar soluciones</span> <i data-lucide="arrow-right" width="17"></i></a></div></section>
 		<section class="content" id="catalogo">
@@ -457,7 +450,7 @@
 		};
 		document.addEventListener('click', event => {
 			const filterEl = event.target.closest('[data-filter]');
-			if (filterEl && (filterEl.closest('#catalogo') || filterEl.closest('.category-nav') || filterEl.closest('.store-sidebar'))) {
+			if (filterEl && (filterEl.closest('#catalogo') || filterEl.closest('.store-sidebar'))) {
 				event.preventDefault();
 				setCategoryFilter(filterEl.dataset.filter);
 				const catEl = document.querySelector('#catalogo');
@@ -703,18 +696,6 @@
 						</button>
 					`).join('');
 				}
-
-				const topNav = document.querySelector('.category-nav');
-				if (topNav) {
-					const topItems = [
-						{ filter: 'all', label: 'Todo' },
-						...entries.map(([name]) => ({ filter: name, label: name }))
-					];
-					topNav.innerHTML = topItems.map(item => `
-						<a href="#catalogo" data-filter="${String(item.filter).replace(/"/g, '&quot;')}" class="${selectedFilter === item.filter ? 'active' : ''}">${item.label}</a>
-					`).join('');
-				}
-
 				lucide.createIcons();
 			} catch (err) {
 				console.warn('Error al renderizar categorías en barra lateral:', err);
