@@ -64,16 +64,38 @@
 		.section-heading { display: flex; align-items: end; justify-content: space-between; margin-bottom: 20px; }
 		.section-heading h2 { font-size: 29px; color: var(--navy); }
 		.section-heading a { color: var(--blue); font-size: 13px; font-weight: 700; }
-		.categories { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 45px; }
-		.category { background: white; border: 1px solid var(--line); padding: 19px 16px; min-height: 110px; display: flex; flex-direction: column; justify-content: space-between; transition: .2s; }
-		.category:hover, .category.active { border-color: var(--blue); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(30,103,150,.1); }
-		.category i { color: var(--blue); }
-		.category strong { font-size: 14px; }
-		.category small { color: var(--muted); font-size: 11px; }
-		.toolbar { display: flex; justify-content: space-between; align-items: center; margin: 0 0 18px; }
+		/* Barra lateral compacta y layout de tienda */
+		.store-layout { display: grid; grid-template-columns: 240px 1fr; gap: 26px; align-items: start; }
+		.store-sidebar { position: sticky; top: 80px; z-index: 5; }
+		.sidebar-card { background: #ffffff; border: 1px solid var(--line); border-radius: 10px; padding: 14px 10px; box-shadow: 0 3px 12px rgba(16,44,61,.04); }
+		.sidebar-header { display: flex; align-items: center; justify-content: space-between; padding: 2px 6px 10px; border-bottom: 1px solid #edf4f6; margin-bottom: 7px; }
+		.sidebar-title { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; font-size: 12px; color: var(--navy); text-transform: uppercase; letter-spacing: .06em; }
+		.sidebar-title i { color: var(--blue); }
+		.sidebar-clear-btn { border: none; background: transparent; color: var(--blue); font-size: 11px; font-weight: 600; cursor: pointer; padding: 3px 6px; border-radius: 4px; transition: background .15s ease; }
+		.sidebar-clear-btn:hover { background: #eef6fa; }
+		.sidebar-categories { display: flex; flex-direction: column; gap: 2px; max-height: calc(85vh - 120px); overflow-y: auto; padding-right: 2px; }
+		.sidebar-categories::-webkit-scrollbar { width: 4px; }
+		.sidebar-categories::-webkit-scrollbar-thumb { background: #d0e0e8; border-radius: 4px; }
+		.sidebar-cat-btn { display: flex; align-items: center; width: 100%; padding: 7px 9px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: var(--ink); font-size: 13px; font-family: inherit; text-align: left; cursor: pointer; transition: all .15s ease; gap: 8px; line-height: 1.25; }
+		.sidebar-cat-btn:hover { background: #f3f8fb; color: var(--blue); }
+		.sidebar-cat-btn.active { background: #e8f4fc; color: var(--blue); font-weight: 700; border-color: #bee0f3; }
+		.sidebar-cat-icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; color: var(--muted); flex-shrink: 0; }
+		.sidebar-cat-btn:hover .sidebar-cat-icon, .sidebar-cat-btn.active .sidebar-cat-icon { color: var(--blue); }
+		.sidebar-cat-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+		.sidebar-cat-count { font-size: 11px; color: var(--muted); background: #f0f4f6; padding: 1px 7px; border-radius: 10px; font-weight: 600; flex-shrink: 0; }
+		.sidebar-cat-btn:hover .sidebar-cat-count { background: #e0eff8; color: var(--blue); }
+		.sidebar-cat-btn.active .sidebar-cat-count { background: var(--blue); color: #ffffff; }
+
+		/* Toolbar y productos */
+		.store-main { min-width: 0; }
+		.toolbar { display: flex; justify-content: space-between; align-items: center; margin: 0 0 16px; flex-wrap: wrap; gap: 10px; }
+		.toolbar-info { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+		.active-category-pill { display: inline-flex; align-items: center; gap: 6px; background: #e8f4fc; color: var(--blue); border: 1px solid #c2e2f5; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 20px; }
+		.active-category-pill button { border: none; background: transparent; color: var(--blue); font-size: 14px; line-height: 1; cursor: pointer; padding: 0 2px; font-weight: 700; display: inline-flex; align-items: center; }
+		.active-category-pill button:hover { color: #a53b3b; }
 		.result-count { color: var(--muted); font-size: 13px; }
 		.select { border: 1px solid var(--line); background: white; padding: 10px 13px; color: var(--ink); border-radius: 4px; }
-		.products { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+		.products { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 15px; }
 		.product { background: white; border: 1px solid var(--line); position: relative; padding: 12px; display: flex; flex-direction: column; min-width: 0; border-radius: 10px; transition: transform .25s ease, box-shadow .25s ease; }
 		.product:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(16,44,61,.1); }
 		.product-image { background: #ffffff; aspect-ratio: 1.15; display: grid; place-items: center; overflow: hidden; position: relative; border-radius: 8px; border: 1px solid #ebf2f5; padding: 10px; }
@@ -147,7 +169,7 @@
 		.remove-item:hover { color: #9b3030; }
 		.cart-total { border-top: 1px solid var(--line); padding-top: 18px; display: flex; justify-content: space-between; font-weight: 700; }
 		.checkout { width: 100%; margin-top: 18px; justify-content: center; }
-		@media (max-width: 800px) { .nav { flex-wrap: wrap; gap: 15px; } .search { order: 3; flex-basis: 100%; max-width: none; } .nav-actions { gap: 8px; } .nav-action span { display: none; } .category-nav { overflow-x: auto; white-space: nowrap; } .hero { margin-top: 18px; min-height: 390px; background-position: 68% center; } .hero::after { background: linear-gradient(90deg, rgba(223,243,255,.98), rgba(223,243,255,.7)); } .categories { grid-template-columns: repeat(2, 1fr); } .products { grid-template-columns: repeat(2, minmax(0, 1fr)); } .benefits { grid-template-columns: 1fr; gap: 18px; } footer { flex-direction: column; } .detail-layout { grid-template-columns: 1fr; gap: 20px; } .detail-copy h2 { font-size: 25px; } }
+		@media (max-width: 800px) { .nav { flex-wrap: wrap; gap: 15px; } .search { order: 3; flex-basis: 100%; max-width: none; } .nav-actions { gap: 8px; } .nav-action span { display: none; } .category-nav { overflow-x: auto; white-space: nowrap; } .hero { margin-top: 18px; min-height: 390px; background-position: 68% center; } .hero::after { background: linear-gradient(90deg, rgba(223,243,255,.98), rgba(223,243,255,.7)); } .store-layout { grid-template-columns: 1fr; gap: 16px; } .store-sidebar { position: static; } .sidebar-card { padding: 9px 10px; } .sidebar-header { margin-bottom: 6px; padding-bottom: 6px; } .sidebar-categories { flex-direction: row; overflow-x: auto; gap: 6px; padding-bottom: 4px; scrollbar-width: none; } .sidebar-categories::-webkit-scrollbar { display: none; } .sidebar-cat-btn { flex: 0 0 auto; width: auto; padding: 6px 11px; border: 1px solid var(--line); border-radius: 20px; font-size: 12px; background: #ffffff; } .sidebar-cat-btn.active { border-color: var(--blue); } .products { grid-template-columns: repeat(2, minmax(0, 1fr)); } .benefits { grid-template-columns: 1fr; gap: 18px; } footer { flex-direction: column; } .detail-layout { grid-template-columns: 1fr; gap: 20px; } .detail-copy h2 { font-size: 25px; } }
 		@media (max-width: 430px) { .topbar { display: none; } .nav { padding: 14px 4vw; } .content { padding: 30px 4vw; } .hero { margin-left: 4vw; margin-right: 4vw; padding: 36px 25px; } .section-heading h2 { font-size: 24px; } .section-heading a { font-size: 11px; } .products { gap: 9px; } .product { padding: 8px; } .product h3 { font-size: 13px; } .price { font-size: 17px; } .footer-links { flex-wrap: wrap; gap: 14px; } }
 		/* Smart-ISP visual system */
 		:root { --navy: #102c3d; --blue: #087ea4; --sky: #e4f5f3; --pale: #f3f7f8; --ink: #163342; --muted: #6b7f88; --line: #d8e5e7; --orange: #f5a524; --mint: #d7f0e8; }
@@ -181,11 +203,9 @@
 		.content { padding-top: 48px; }
 		.section-heading { margin-bottom: 22px; }
 		.section-heading h2 { color: #102c3d; font-size: 31px; }
-		.categories { gap: 14px; margin-bottom: 50px; }
-		.category, .product { border-radius: 9px; background: #fff; box-shadow: 0 5px 16px rgba(16,44,61,.04); }
-		.category { min-height: 122px; padding: 20px 17px; }
-		.category:hover, .category.active { border-color: #087ea4; box-shadow: 0 10px 24px rgba(8,126,164,.13); }
-		.category.active { background: #f0faf8; }
+		.product { border-radius: 9px; background: #fff; box-shadow: 0 5px 16px rgba(16,44,61,.04); }
+		.sidebar-cat-btn:hover, .sidebar-cat-btn.active { border-color: #bee0f3; }
+		.sidebar-cat-btn.active { background: #e8f4fc; }
 		.select { border-radius: 7px; background: #fff; }
 		.product { padding: 12px; border-radius: 10px; }
 		.product-image { border-radius: 8px; background: #ffffff; border: 1px solid #edf4f6; }
@@ -290,7 +310,7 @@
 		body[data-account-theme="contrast"] { --blue: #005a70; --line: #a9c4c6; }
 		body[data-account-theme="night"] { --navy: #0d2632; --ink: #183845; --pale: #edf4f5; --line: #b8cdd0; }
 		body.account-compact .product-info { padding-top: 10px; }
-		body.account-compact .categories { margin-bottom: 30px; }
+		body.account-compact .store-layout { gap: 16px; }
 		@media (max-width: 680px) { .account-layout { grid-template-columns: 1fr; } .account-aside { display: none; } .account-main { padding: 28px 23px; } }
 		@media (max-width: 430px) { .account-grid, .profile-actions { grid-template-columns: 1fr; } .account-main h2 { font-size: 26px; } }
 	</style>
@@ -305,11 +325,61 @@
 	<nav class="category-nav" aria-label="Categorías del catálogo"><a href="#catalogo">Todo</a><a href="#catalogo" data-filter="Notebooks">Notebooks</a><a href="#catalogo" data-filter="Redes">Redes</a><a href="#catalogo" data-filter="Servidores">Servidores</a><a href="#catalogo" data-filter="Accesorios">Accesorios</a><a href="#catalogo" data-filter="Monitores">Monitores</a></nav>
 	<main>
 		<section class="hero"><div class="hero-content"><div class="eyebrow" id="heroEyebrow">Infraestructura para proveedores de internet</div><h1 id="heroTitle">Conecta más. Opera mejor.</h1><p id="heroText">Equipamiento confiable para redes, servidores y equipos de trabajo que mantienen tu servicio siempre en línea.</p><a class="primary" id="heroButton" href="#catalogo"><span id="heroButtonText">Explorar soluciones</span> <i data-lucide="arrow-right" width="17"></i></a></div></section>
-		<section class="content">
-			<div class="section-heading"><h2>Compra por categoría</h2><a href="#catalogo">Ver todas <i data-lucide="arrow-up-right" width="14" style="vertical-align:middle"></i></a></div>
-			<div class="categories"><button class="category active" data-filter="all"><i data-lucide="layers" width="22"></i><strong>Todo el catálogo</strong><small>240 productos</small></button><button class="category" data-filter="Notebooks"><i data-lucide="laptop" width="22"></i><strong>Notebooks</strong><small>45 productos</small></button><button class="category" data-filter="Redes"><i data-lucide="network" width="22"></i><strong>Redes</strong><small>38 productos</small></button><button class="category" data-filter="Servidores"><i data-lucide="server" width="22"></i><strong>Servidores</strong><small>22 productos</small></button><button class="category" data-filter="Accesorios"><i data-lucide="cable" width="22"></i><strong>Accesorios</strong><small>86 productos</small></button></div>
-			<div id="catalogo" class="toolbar"><div class="result-count" id="resultCount">Mostrando 4 productos destacados</div><select class="select" id="sortSelect" aria-label="Ordenar productos"><option value="featured">Más relevantes</option><option value="low">Precio: menor a mayor</option><option value="high">Precio: mayor a menor</option></select></div>
-			<div class="products" id="products"></div>
+		<section class="content" id="catalogo">
+			<div class="store-layout">
+				<aside class="store-sidebar" aria-label="Filtrar por categorías">
+					<div class="sidebar-card">
+						<div class="sidebar-header">
+							<div class="sidebar-title"><i data-lucide="layout-grid" width="15"></i><span>Categorías</span></div>
+							<button type="button" class="sidebar-clear-btn" id="clearCategoryFilter" title="Mostrar todas las categorías">Ver todas</button>
+						</div>
+						<div class="sidebar-categories" id="sidebarCategories">
+							<button type="button" class="sidebar-cat-btn active" data-filter="all">
+								<span class="sidebar-cat-icon"><i data-lucide="layers" width="16"></i></span>
+								<span class="sidebar-cat-name">Todo el catálogo</span>
+								<span class="sidebar-cat-count" id="catCountAll">4</span>
+							</button>
+							<button type="button" class="sidebar-cat-btn" data-filter="Notebooks">
+								<span class="sidebar-cat-icon"><i data-lucide="laptop" width="16"></i></span>
+								<span class="sidebar-cat-name">Notebooks</span>
+								<span class="sidebar-cat-count">1</span>
+							</button>
+							<button type="button" class="sidebar-cat-btn" data-filter="Redes">
+								<span class="sidebar-cat-icon"><i data-lucide="network" width="16"></i></span>
+								<span class="sidebar-cat-name">Redes</span>
+								<span class="sidebar-cat-count">1</span>
+							</button>
+							<button type="button" class="sidebar-cat-btn" data-filter="Servidores">
+								<span class="sidebar-cat-icon"><i data-lucide="server" width="16"></i></span>
+								<span class="sidebar-cat-name">Servidores</span>
+								<span class="sidebar-cat-count">1</span>
+							</button>
+							<button type="button" class="sidebar-cat-btn" data-filter="Monitores">
+								<span class="sidebar-cat-icon"><i data-lucide="monitor" width="16"></i></span>
+								<span class="sidebar-cat-name">Monitores</span>
+								<span class="sidebar-cat-count">1</span>
+							</button>
+						</div>
+					</div>
+				</aside>
+				<main class="store-main">
+					<div class="toolbar">
+						<div class="toolbar-info">
+							<div class="result-count" id="resultCount">Mostrando 4 productos destacados</div>
+							<div class="active-category-pill" id="activeCategoryBadge" style="display: none;">
+								<span id="activeCategoryName"></span>
+								<button type="button" id="removeCategoryPill" aria-label="Quitar filtro de categoría" title="Quitar filtro">×</button>
+							</div>
+						</div>
+						<select class="select" id="sortSelect" aria-label="Ordenar productos">
+							<option value="featured">Más relevantes</option>
+							<option value="low">Precio: menor a mayor</option>
+							<option value="high">Precio: mayor a menor</option>
+						</select>
+					</div>
+					<div class="products" id="products"></div>
+				</main>
+			</div>
 		</section>
 		<section class="benefits"><div class="benefit"><i data-lucide="shield-check" width="25"></i><div><strong>Compra segura</strong><span>Protegemos cada transacción</span></div></div><div class="benefit"><i data-lucide="headphones" width="25"></i><div><strong>Asesoría especializada</strong><span>Personas reales, respuestas claras</span></div></div><div class="benefit"><i data-lucide="package-check" width="25"></i><div><strong>Despacho a todo Ecuador</strong><span>Recibe donde estés</span></div></div></section>
 	</main>
@@ -336,16 +406,77 @@
 			if (cat.includes('cable') || cat.includes('accesorio')) return 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=600&q=80';
 			return 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=600&q=80';
 		};
-		const render = () => { const query = document.querySelector('#searchInput').value.toLowerCase(); const sort = document.querySelector('#sortSelect').value; let shown = products.filter(product => (selectedFilter === 'all' || product.category === selectedFilter) && `${product.name} ${product.brand} ${product.category}`.toLowerCase().includes(query)); if (sort === 'low') shown.sort((a,b) => a.price-b.price); if (sort === 'high') shown.sort((a,b) => b.price-a.price); document.querySelector('#resultCount').textContent = `Mostrando ${shown.length} producto${shown.length === 1 ? '' : 's'}${query ? ' encontrados' : ' destacados'}`; document.querySelector('#products').innerHTML = shown.length ? shown.map(product => { const pImg = product.image || fallbackImage(product); const fbImg = fallbackImage(product); return `<article class="product" data-index="${products.indexOf(product)}" tabindex="0" role="group" aria-label="Ver especificaciones de ${product.name}"><div class="product-image">${product.tag ? `<span class="tag">${product.tag}</span>` : ''}<button class="heart" aria-label="Agregar a favoritos"><i data-lucide="heart" width="16"></i></button><img src="${pImg}" alt="${product.name}" loading="lazy" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></div><div class="product-info"><div class="product-brand">${product.brand}</div><h3>${product.name}</h3><div><span class="stars">★★★★★</span><span class="reviews">(${product.reviews})</span></div><div class="price-row"><span class="price">${money(product.price)}</span><button class="add" data-index="${products.indexOf(product)}" aria-label="Agregar ${product.name} al carrito"><i data-lucide="plus" width="18"></i></button></div></div></article>`; }).join('') : '<div class="empty">No encontramos productos con esa búsqueda.</div>'; lucide.createIcons(); document.querySelectorAll('.add').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); cart.push(products[button.dataset.index]); updateCart(); })); document.querySelectorAll('.heart').forEach(button => button.addEventListener('click', event => event.stopPropagation())); document.querySelectorAll('.product').forEach(card => { const open = () => openProduct(products[card.dataset.index]); card.addEventListener('click', event => { if (!event.target.closest('button')) open(); }); card.addEventListener('keydown', event => { if ((event.key === 'Enter' || event.key === ' ') && !event.target.closest('button')) { event.preventDefault(); open(); } }); }); };
+		const render = () => {
+			const query = document.querySelector('#searchInput').value.toLowerCase();
+			const sort = document.querySelector('#sortSelect').value;
+			let shown = products.filter(product => (selectedFilter === 'all' || product.category === selectedFilter) && `${product.name} ${product.brand} ${product.category}`.toLowerCase().includes(query));
+			if (sort === 'low') shown.sort((a,b) => a.price-b.price);
+			if (sort === 'high') shown.sort((a,b) => b.price-a.price);
+
+			const countEl = document.querySelector('#resultCount');
+			if (countEl) {
+				const filterNote = selectedFilter !== 'all' ? ` en ${selectedFilter}` : '';
+				const queryNote = query ? ` para "${query}"` : (selectedFilter === 'all' ? ' destacados' : '');
+				countEl.textContent = `Mostrando ${shown.length} producto${shown.length === 1 ? '' : 's'}${filterNote}${queryNote}`;
+			}
+
+			const badge = document.querySelector('#activeCategoryBadge');
+			const badgeName = document.querySelector('#activeCategoryName');
+			if (badge && badgeName) {
+				if (selectedFilter !== 'all') {
+					badgeName.textContent = selectedFilter;
+					badge.style.display = 'inline-flex';
+				} else {
+					badge.style.display = 'none';
+				}
+			}
+
+			document.querySelector('#products').innerHTML = shown.length ? shown.map(product => {
+				const pImg = product.image || fallbackImage(product);
+				const fbImg = fallbackImage(product);
+				return `<article class="product" data-index="${products.indexOf(product)}" tabindex="0" role="group" aria-label="Ver especificaciones de ${product.name}"><div class="product-image">${product.tag ? `<span class="tag">${product.tag}</span>` : ''}<button class="heart" aria-label="Agregar a favoritos"><i data-lucide="heart" width="16"></i></button><img src="${pImg}" alt="${product.name}" loading="lazy" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></div><div class="product-info"><div class="product-brand">${product.brand}</div><h3>${product.name}</h3><div><span class="stars">★★★★★</span><span class="reviews">(${product.reviews})</span></div><div class="price-row"><span class="price">${money(product.price)}</span><button class="add" data-index="${products.indexOf(product)}" aria-label="Agregar ${product.name} al carrito"><i data-lucide="plus" width="18"></i></button></div></div></article>`;
+			}).join('') : '<div class="empty">No encontramos productos con esa búsqueda.</div>';
+			lucide.createIcons();
+			document.querySelectorAll('.add').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); cart.push(products[button.dataset.index]); updateCart(); }));
+			document.querySelectorAll('.heart').forEach(button => button.addEventListener('click', event => event.stopPropagation()));
+			document.querySelectorAll('.product').forEach(card => {
+				const open = () => openProduct(products[card.dataset.index]);
+				card.addEventListener('click', event => { if (!event.target.closest('button')) open(); });
+				card.addEventListener('keydown', event => { if ((event.key === 'Enter' || event.key === ' ') && !event.target.closest('button')) { event.preventDefault(); open(); } });
+			});
+		};
 		const openProduct = product => { const pImg = product.image || fallbackImage(product); const fbImg = fallbackImage(product); document.querySelector('#productDetail').innerHTML = `<div class="detail-layout"><div class="detail-image"><img src="${pImg}" alt="${product.name}" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></div><div class="detail-copy"><div class="product-brand">${product.brand} · ${product.category}</div><h2 id="detailTitle">${product.name}</h2><div><span class="stars">★★★★★</span><span class="reviews">${product.reviews} opiniones</span></div><span class="price">${money(product.price)}</span><p class="detail-description">${product.description}</p><div class="specs">${product.specs.map(spec => `<div class="spec"><span>${spec[0]}</span><strong>${spec[1]}</strong></div>`).join('')}</div><button class="primary" data-detail-add="${products.indexOf(product)}" style="margin-top:22px">Agregar al carrito <i data-lucide="shopping-cart" width="16"></i></button></div></div>`; document.querySelector('#productModal').classList.add('open'); lucide.createIcons(); document.querySelector('[data-detail-add]').addEventListener('click', () => addToCart(product)); };
 		const addToCart = product => { cart.push(product); updateCart(true); };
 		const updateCart = (animate = true) => { localStorage.setItem('smartisp.cart', JSON.stringify(cart)); const count = document.querySelector('#cartCount'); count.textContent = cart.length; if (animate) { count.classList.remove('bump'); void count.offsetWidth; count.classList.add('bump'); } document.querySelector('#cartItems').innerHTML = cart.length ? cart.map((item, index) => `<div class="cart-item"><img src="${item.image}" alt=""><div class="cart-item-copy"><strong>${item.name}</strong><small>${money(item.price)}</small></div><button class="remove-item" data-remove-index="${index}" aria-label="Eliminar ${item.name} del carrito"><i data-lucide="trash-2" width="16"></i></button></div>`).join('') : 'Tu carrito está vacío.'; document.querySelector('#cartTotal').textContent = money(cart.reduce((total, item) => total + item.price, 0)); lucide.createIcons(); document.querySelectorAll('[data-remove-index]').forEach(button => button.addEventListener('click', () => { cart.splice(Number(button.dataset.removeIndex), 1); updateCart(false); })); };
-		document.querySelectorAll('[data-filter]').forEach(button => button.addEventListener('click', event => { event.preventDefault(); selectedFilter = button.dataset.filter; document.querySelectorAll('.category').forEach(category => category.classList.toggle('active', category.dataset.filter === selectedFilter)); render(); document.querySelector('#catalogo').scrollIntoView({ behavior: 'smooth' }); }));
+		const setCategoryFilter = filter => {
+			selectedFilter = filter || 'all';
+			document.querySelectorAll('[data-filter]').forEach(el => {
+				el.classList.toggle('active', el.dataset.filter === selectedFilter);
+			});
+			render();
+		};
+		document.addEventListener('click', event => {
+			const filterEl = event.target.closest('[data-filter]');
+			if (filterEl && (filterEl.closest('#catalogo') || filterEl.closest('.category-nav') || filterEl.closest('.store-sidebar'))) {
+				event.preventDefault();
+				setCategoryFilter(filterEl.dataset.filter);
+				const catEl = document.querySelector('#catalogo');
+				if (catEl && window.scrollY > catEl.offsetTop + 120) {
+					catEl.scrollIntoView({ behavior: 'smooth' });
+				}
+				return;
+			}
+			if (event.target.closest('#clearCategoryFilter') || event.target.closest('#removeCategoryPill')) {
+				event.preventDefault();
+				setCategoryFilter('all');
+				return;
+			}
+		});
 		document.querySelector('#searchForm').addEventListener('submit', event => { event.preventDefault(); render(); document.querySelector('#catalogo').scrollIntoView({ behavior: 'smooth' }); }); document.querySelector('#searchInput').addEventListener('input', render); document.querySelector('#sortSelect').addEventListener('change', render);
 		document.querySelector('#openCart').addEventListener('click', () => document.querySelector('#drawer').classList.add('open')); document.querySelector('#closeCart').addEventListener('click', () => document.querySelector('#drawer').classList.remove('open')); document.querySelector('#drawer').addEventListener('click', event => { if (event.target.id === 'drawer') event.target.classList.remove('open'); });
 		document.querySelector('#openAccount').addEventListener('click', async () => { document.querySelector('#accountModal').classList.add('open'); document.querySelector('#loginView').hidden = signedIn; document.querySelector('#profileView').hidden = !signedIn; if (!signedIn) { try { const response = await fetch('/api/auth/me'); if (response.ok) { signedIn = true; document.querySelector('#loginView').hidden = true; document.querySelector('#profileView').hidden = false; } } catch (error) { console.warn('Backend no disponible'); } } }); document.querySelectorAll('[data-close-modal]').forEach(button => button.addEventListener('click', () => document.querySelector(`#${button.dataset.closeModal}`).classList.remove('open'))); document.querySelectorAll('.modal').forEach(modal => modal.addEventListener('click', event => { if (event.target === modal) modal.classList.remove('open'); })); document.querySelector('#accountForm').addEventListener('submit', async event => { event.preventDefault(); const email = document.querySelector('#emailInput').value.trim().toLowerCase(); const password = document.querySelector('#passwordInput').value; const message = document.querySelector('#formMessage'); try { const response = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) }); const result = await response.json(); if (!response.ok) throw new Error(result.error); signedIn = true; document.querySelector('#profileEmail').textContent = result.user.email; document.querySelector('#loginView').hidden = true; document.querySelector('#profileView').hidden = false; message.classList.remove('show'); lucide.createIcons(); } catch (error) { message.textContent = error.message || 'No se pudo conectar con el servidor.'; message.style.color = '#a53b3b'; message.style.background = '#fff0f0'; message.classList.add('show'); } }); document.querySelector('#logoutButton').addEventListener('click', async () => { await fetch('/api/auth/logout', { method: 'POST' }); signedIn = false; document.querySelector('#profileView').hidden = true; document.querySelector('#loginView').hidden = false; document.querySelector('#accountForm').reset(); document.querySelector('#formMessage').classList.remove('show'); }); document.querySelector('#darkModeToggle').addEventListener('change', event => document.body.classList.toggle('dark-mode', event.target.checked));
 		document.addEventListener('keydown', event => { if (event.key === 'Escape') document.querySelectorAll('.modal.open, .drawer.open').forEach(element => element.classList.remove('open')); });
-		const applyRemoteSite = async () => { try { const response = await fetch('/api/auth/catalog'); if (!response.ok) return; const remote = await response.json(); if (remote.products.length) { products = remote.products.map(product => ({ ...product, brand: product.category || 'SmartISP', image: product.imageUrl, reviews: 0, tag: '', specs: [] })); render(); } const content = Object.fromEntries(remote.content.map(item => [item.key, item.value])); if (content.hero_title) document.querySelector('.hero h1').textContent = content.hero_title; if (content.hero_text) document.querySelector('.hero p').textContent = content.hero_text; if (content.hero_image) document.querySelector('.hero').style.backgroundImage = `url("${content.hero_image}")`; if (content.primary_color) document.documentElement.style.setProperty('--blue', content.primary_color); if (content.brand_name) document.querySelectorAll('.logo').forEach(logo => { logo.textContent = content.brand_name; }); if (content.footer_text) document.querySelector('footer > div:first-child > div:last-child').textContent = content.footer_text; if (content.catalog_visible === 'false') document.querySelector('#catalogo').hidden = true; if (content.hero_visible === 'false') document.querySelector('.hero').hidden = true; if (content.benefits_visible === 'false') document.querySelector('.benefits').hidden = true; } catch (error) { console.warn('Contenido remoto no disponible.'); } };
+		const applyRemoteSite = async () => { try { const response = await fetch('/api/auth/catalog'); if (!response.ok) return; const remote = await response.json(); if (remote.products.length) { products = remote.products.map(product => ({ ...product, brand: product.category || 'SmartISP', image: product.imageUrl, reviews: 0, tag: '', specs: [] })); render(); if (typeof renderSidebarCategories === 'function') renderSidebarCategories(); } const content = Object.fromEntries(remote.content.map(item => [item.key, item.value])); if (content.hero_title) document.querySelector('.hero h1').textContent = content.hero_title; if (content.hero_text) document.querySelector('.hero p').textContent = content.hero_text; if (content.hero_image) document.querySelector('.hero').style.backgroundImage = `url("${content.hero_image}")`; if (content.primary_color) document.documentElement.style.setProperty('--blue', content.primary_color); if (content.brand_name) document.querySelectorAll('.logo').forEach(logo => { logo.textContent = content.brand_name; }); if (content.footer_text) document.querySelector('footer > div:first-child > div:last-child').textContent = content.footer_text; if (content.catalog_visible === 'false') document.querySelector('#catalogo').hidden = true; if (content.hero_visible === 'false') document.querySelector('.hero').hidden = true; if (content.benefits_visible === 'false') document.querySelector('.benefits').hidden = true; } catch (error) { console.warn('Contenido remoto no disponible.'); } };
 		document.addEventListener('click', event => { const heart = event.target.closest('.heart'); if (!heart) return; const card = heart.closest('.product'); if (!card) return; event.preventDefault(); event.stopImmediatePropagation(); toggleWishlist(products[card.dataset.index], heart); }, true);
 		render(); lucide.createIcons(); applyRemoteSite();
 	</script>
@@ -527,24 +658,70 @@
 		applyHeroDesign();
 	</script>
 	<script>
-		const renderRemoteCategories = async () => {
-			try {
-				const response = await fetch('/api/auth/catalog');
-				if (!response.ok) return;
-				const result = await response.json();
-				const counts = new Map();
-				(result.products || []).forEach(product => counts.set(product.category || 'Otros', (counts.get(product.category || 'Otros') || 0) + 1));
-				const entries = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-				const icons = ['layers', 'network', 'cpu', 'cable', 'monitor', 'hard-drive', 'camera', 'headphones'];
-				const categories = document.querySelector('.categories');
-				categories.innerHTML = [['all', 'Todo el catálogo', result.products.length, 'layers'], ...entries.map(([name, count], index) => [name, name, count, icons[index % icons.length]])].map(([filter, label, count, icon]) => `<button class="category ${filter === 'all' ? 'active' : ''}" data-filter="${String(filter).replace(/"/g, '&quot;')}"><i data-lucide="${icon}" width="22"></i><strong>${label}</strong><small>${count} producto${count === 1 ? '' : 's'}</small></button>`).join('');
-				document.querySelector('.category-nav').innerHTML = [['all', 'Todo'], ...entries.map(([name]) => [name, name])].map(([filter, label]) => `<a href="#catalogo" data-filter="${String(filter).replace(/"/g, '&quot;')}">${label}</a>`).join('');
-				lucide.createIcons();
-			} catch (error) { console.warn('Categorías remotas no disponibles.'); }
+		const categoryIcon = catName => {
+			const c = String(catName || '').toLowerCase();
+			if (c.includes('notebook') || c.includes('laptop') || c.includes('comput')) return 'laptop';
+			if (c.includes('red') || c.includes('router') || c.includes('switch') || c.includes('wifi') || c.includes('mikrotik') || c.includes('cisco')) return 'network';
+			if (c.includes('servidor') || c.includes('server')) return 'server';
+			if (c.includes('fibra') || c.includes('cable') || c.includes('accesorio') || c.includes('conector') || c.includes('patch')) return 'cable';
+			if (c.includes('monitor') || c.includes('pantalla') || c.includes('display')) return 'monitor';
+			if (c.includes('disco') || c.includes('almacen') || c.includes('ssd') || c.includes('hdd') || c.includes('memoria')) return 'hard-drive';
+			if (c.includes('antena') || c.includes('radio') || c.includes('inalam') || c.includes('wireless')) return 'radio';
+			if (c.includes('camara') || c.includes('cámara') || c.includes('cctv') || c.includes('seguridad')) return 'camera';
+			if (c.includes('audio') || c.includes('auricular') || c.includes('headphone') || c.includes('parlante')) return 'headphones';
+			if (c === 'all' || c.includes('todo')) return 'layers';
+			return 'package';
 		};
-		document.querySelector('.categories').addEventListener('click', event => { const button = event.target.closest('[data-filter]'); if (!button) return; selectedFilter = button.dataset.filter; document.querySelectorAll('.category').forEach(category => category.classList.toggle('active', category.dataset.filter === selectedFilter)); render(); });
-		document.querySelector('.category-nav').addEventListener('click', event => { const link = event.target.closest('[data-filter]'); if (!link) return; event.preventDefault(); selectedFilter = link.dataset.filter; document.querySelectorAll('.category').forEach(category => category.classList.toggle('active', category.dataset.filter === selectedFilter)); render(); document.querySelector('#catalogo').scrollIntoView({ behavior: 'smooth' }); });
-		renderRemoteCategories();
+
+		const renderSidebarCategories = () => {
+			try {
+				const counts = new Map();
+				(products || []).forEach(product => {
+					const cat = String(product.category || 'Otros').trim();
+					if (cat) counts.set(cat, (counts.get(cat) || 0) + 1);
+				});
+				const entries = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+				const totalCount = products.length;
+
+				const sidebarContainer = document.querySelector('#sidebarCategories');
+				if (sidebarContainer) {
+					const items = [
+						{ filter: 'all', label: 'Todo el catálogo', count: totalCount, icon: 'layers' },
+						...entries.map(([name, count]) => ({
+							filter: name,
+							label: name,
+							count: count,
+							icon: categoryIcon(name)
+						}))
+					];
+
+					sidebarContainer.innerHTML = items.map(item => `
+						<button type="button" class="sidebar-cat-btn ${selectedFilter === item.filter ? 'active' : ''}" data-filter="${String(item.filter).replace(/"/g, '&quot;')}">
+							<span class="sidebar-cat-icon"><i data-lucide="${item.icon}" width="16"></i></span>
+							<span class="sidebar-cat-name" title="${item.label}">${item.label}</span>
+							<span class="sidebar-cat-count">${item.count}</span>
+						</button>
+					`).join('');
+				}
+
+				const topNav = document.querySelector('.category-nav');
+				if (topNav) {
+					const topItems = [
+						{ filter: 'all', label: 'Todo' },
+						...entries.map(([name]) => ({ filter: name, label: name }))
+					];
+					topNav.innerHTML = topItems.map(item => `
+						<a href="#catalogo" data-filter="${String(item.filter).replace(/"/g, '&quot;')}" class="${selectedFilter === item.filter ? 'active' : ''}">${item.label}</a>
+					`).join('');
+				}
+
+				lucide.createIcons();
+			} catch (err) {
+				console.warn('Error al renderizar categorías en barra lateral:', err);
+			}
+		};
+
+		renderSidebarCategories();
 	</script>
 </body>
 </html>
