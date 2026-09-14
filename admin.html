@@ -132,8 +132,38 @@
       </form>
     </section>
     <section id="adminPanel" class="hidden">
-      <div class="toolbar"><div><h2>Panel de control</h2><span id="adminIdentity"></span></div><button id="logoutButton" class="button danger">Cerrar sesion</button></div>
+      <div class="toolbar">
+        <div><h2>Panel de control</h2><span id="adminIdentity"></span></div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <a href="editor-landing.html" target="_blank" class="button" style="background:#087ea4; color:#fff; text-decoration:none; display:inline-flex; align-items:center; gap:8px; font-weight:700; box-shadow:0 3px 10px rgba(8,126,164,0.25);">
+            <span>🎨 Editar Página de Presentación</span>
+            <span style="font-size:11px; background:rgba(255,255,255,0.22); padding:2px 7px; border-radius:10px;">Abrir ↗</span>
+          </a>
+          <button id="logoutButton" class="button danger">Cerrar sesion</button>
+        </div>
+      </div>
       <div class="grid">
+        <section class="panel wide" style="background: linear-gradient(135deg, #0f2d3f 0%, #163e56 100%); color: #fff; border: 1px solid #20506e; padding: 20px 24px; border-radius: 12px; margin-bottom: 4px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+            <div style="max-width: 650px;">
+              <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(8,126,164,0.4); border:1px solid rgba(128,214,255,0.4); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; color:#80d6ff; margin-bottom:8px;">
+                <span>🌐 PÁGINA PRINCIPAL</span> • Editor Visual Interactivo
+              </div>
+              <h3 style="margin:0 0 6px; font-size:19px; color:#ffffff; font-weight:700; font-family:'Space Grotesk',sans-serif;">
+                Editar Página de Presentación Corporativa
+              </h3>
+              <p style="margin:0; font-size:13px; color:#c7e1f0; line-height:1.5;">
+                Abre una copia interactiva de la página de presentación para editar en vivo textos, imágenes, estadísticas, datos de contacto y un logotipo exclusivo que no afecta a la tienda.
+              </p>
+            </div>
+            <div>
+              <a href="editor-landing.html" target="_blank" class="button" style="background:#087ea4; color:#fff; border:none; padding:12px 20px; font-size:13.5px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:8px; border-radius:8px; box-shadow:0 6px 18px rgba(8,126,164,.45);">
+                <span>✏️ Editar Página de Presentación</span>
+                <span style="font-size:15px;">↗</span>
+              </a>
+            </div>
+          </div>
+        </section>
         <section class="panel"><div class="section-heading"><h3>Apariencia y contenido</h3><button id="resetContentButton" class="button secondary" type="button">Restaurar predeterminado</button></div><form id="contentForm">
           <div class="logo-customizer-card">
             <div class="logo-card-header">

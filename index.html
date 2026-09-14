@@ -1146,36 +1146,36 @@
 	<!-- TOPBAR -->
 	<div class="topbar">
 		<div class="topbar-left">
-			<span><i data-lucide="phone" width="13"></i> PBX: +593 (02) 394-5600</span>
-			<span><i data-lucide="mail" width="13"></i> contacto@smartisp.com</span>
+			<span data-landing-key="topbar_phone"><i data-lucide="phone" width="13"></i> PBX: +593 (02) 394-5600</span>
+			<span data-landing-key="topbar_email"><i data-lucide="mail" width="13"></i> contacto@smartisp.com</span>
 		</div>
 		<div class="topbar-right">
-			<span><i data-lucide="clock" width="13"></i> Atención: Lun a Vie 08:30 a 18:00</span>
+			<span data-landing-key="topbar_hours"><i data-lucide="clock" width="13"></i> Atención: Lun a Vie 08:30 a 18:00</span>
 			<a href="admin.html"><i data-lucide="lock" width="12"></i> Acceso Admin</a>
 		</div>
 	</div>
 
 	<!-- HEADER / NAVBAR -->
 	<header class="navbar">
-		<a class="logo" href="index.html">
-			smart<b>isp</b><span style="color:#f5a524">.</span>
-			<span class="logo-badge">Infraestructura TI</span>
+		<a class="logo landing-logo-container" href="index.html">
+			<span class="landing-logo-view">smart<b>isp</b><span style="color:#f5a524">.</span></span>
+			<span class="logo-badge landing-badge-view">Infraestructura TI</span>
 		</a>
 
 		<nav>
 			<ul class="nav-menu" id="navMenu">
-				<li><a href="#inicio" class="active">Inicio</a></li>
-				<li><a href="#nosotros">Empresa</a></li>
-				<li><a href="#soluciones">Soluciones</a></li>
-				<li><a href="#ventajas">Por Qué Elegirnos</a></li>
-				<li><a href="#contacto">Contacto</a></li>
+				<li><a href="#inicio" class="active" data-landing-key="nav_item_1">Inicio</a></li>
+				<li><a href="#nosotros" data-landing-key="nav_item_2">Empresa</a></li>
+				<li><a href="#soluciones" data-landing-key="nav_item_3">Soluciones</a></li>
+				<li><a href="#ventajas" data-landing-key="nav_item_4">Por Qué Elegirnos</a></li>
+				<li><a href="#contacto" data-landing-key="nav_item_5">Contacto</a></li>
 			</ul>
 		</nav>
 
 		<div class="nav-cta">
 			<a href="tienda.html" class="btn-tienda" title="Acceder a la Tienda Online">
 				<i data-lucide="shopping-cart" width="16"></i>
-				<span>Tienda Online</span>
+				<span data-landing-key="nav_cta_text">Tienda Online</span>
 			</a>
 			<button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Abrir menú">
 				<i data-lucide="menu" width="22"></i>
@@ -1190,61 +1190,61 @@
 				<div class="hero-content">
 					<div class="hero-badge">
 						<i data-lucide="sparkles" width="14"></i>
-						<span>Especialistas en Redes e Infraestructura de Conectividad</span>
+						<span data-landing-key="hero_badge">Especialistas en Redes e Infraestructura de Conectividad</span>
 					</div>
-					<h1>Infraestructura Tecnológica que <span>Impulsa tu Red</span></h1>
-					<p>En SmartISP diseñamos, distribuimos y respaldamos soluciones de hardware, telecomunicaciones y fibra óptica para ISPs, empresas y operadores en todo el país. Garantiza alta disponibilidad y máxima velocidad en cada enlace.</p>
+					<h1 data-landing-key="hero_title">Infraestructura Tecnológica que <span>Impulsa tu Red</span></h1>
+					<p data-landing-key="hero_desc">En SmartISP diseñamos, distribuimos y respaldamos soluciones de hardware, telecomunicaciones y fibra óptica para ISPs, empresas y operadores en todo el país. Garantiza alta disponibilidad y máxima velocidad en cada enlace.</p>
 
 					<div class="hero-actions">
 						<a href="tienda.html" class="btn-primary-large">
 							<i data-lucide="shopping-bag" width="18"></i>
-							<span>Ir a la Tienda Online</span>
+							<span data-landing-key="hero_btn1_text">Ir a la Tienda Online</span>
 						</a>
 						<a href="#nosotros" class="btn-secondary-large">
-							<span>Conocer la Empresa</span>
+							<span data-landing-key="hero_btn2_text">Conocer la Empresa</span>
 							<i data-lucide="arrow-down" width="16"></i>
 						</a>
 					</div>
 
 					<div class="hero-trust">
-						<div class="hero-trust-item"><i data-lucide="shield-check" width="16"></i> Garantía oficial</div>
-						<div class="hero-trust-item"><i data-lucide="truck" width="16"></i> Despacho nacional</div>
-						<div class="hero-trust-item"><i data-lucide="headphones" width="16"></i> Soporte 24/7</div>
+						<div class="hero-trust-item"><i data-lucide="shield-check" width="16"></i> <span data-landing-key="hero_trust_1">Garantía oficial</span></div>
+						<div class="hero-trust-item"><i data-lucide="truck" width="16"></i> <span data-landing-key="hero_trust_2">Despacho nacional</span></div>
+						<div class="hero-trust-item"><i data-lucide="headphones" width="16"></i> <span data-landing-key="hero_trust_3">Soporte 24/7</span></div>
 					</div>
 				</div>
 
 				<div class="hero-card">
 					<div class="hero-card-header">
-						<h3><i data-lucide="server" width="18" style="color:var(--blue)"></i> SmartISP Network Center</h3>
-						<span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#059669"><span class="status-dot"></span> Sistemas Operativos</span>
+						<h3><i data-lucide="server" width="18" style="color:var(--blue)"></i> <span data-landing-key="hero_card_title">SmartISP Network Center</span></h3>
+						<span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#059669"><span class="status-dot"></span> <span data-landing-key="hero_card_status">Sistemas Operativos</span></span>
 					</div>
 
 					<div class="hero-stats-grid">
 						<div class="hero-stat-box">
-							<strong>+500</strong>
-							<span>ISPs & Empresas conectadas</span>
+							<strong data-landing-key="hero_stat1_num">+500</strong>
+							<span data-landing-key="hero_stat1_label">ISPs & Empresas conectadas</span>
 						</div>
 						<div class="hero-stat-box">
-							<strong>99.9%</strong>
-							<span>Disponibilidad en equipamiento</span>
+							<strong data-landing-key="hero_stat2_num">99.9%</strong>
+							<span data-landing-key="hero_stat2_label">Disponibilidad en equipamiento</span>
 						</div>
 						<div class="hero-stat-box">
-							<strong>+1,200</strong>
-							<span>Envíos despachados este mes</span>
+							<strong data-landing-key="hero_stat3_num">+1,200</strong>
+							<span data-landing-key="hero_stat3_label">Envíos despachados este mes</span>
 						</div>
 						<div class="hero-stat-box">
-							<strong>24/7</strong>
-							<span>Asistencia técnica NOC</span>
+							<strong data-landing-key="hero_stat4_num">24/7</strong>
+							<span data-landing-key="hero_stat4_label">Asistencia técnica NOC</span>
 						</div>
 					</div>
 
 					<div class="hero-card-store-banner">
 						<div>
-							<h4>¿Buscas comprar equipamiento?</h4>
-							<p>Accede de inmediato a nuestro catálogo con precios y carrito de compra.</p>
+							<h4 data-landing-key="hero_card_banner_h4">¿Buscas comprar equipamiento?</h4>
+							<p data-landing-key="hero_card_banner_p">Accede de inmediato a nuestro catálogo con precios y carrito de compra.</p>
 						</div>
 						<a href="tienda.html" class="btn-white">
-							<span>Abrir Tienda</span>
+							<span data-landing-key="hero_card_banner_btn">Abrir Tienda</span>
 							<i data-lucide="arrow-right" width="14"></i>
 						</a>
 					</div>
@@ -1256,24 +1256,24 @@
 		<section class="stats-section">
 			<div class="stats-grid">
 				<div class="stat-item">
-					<span class="stat-number">+10 Años</span>
-					<span class="stat-label">Trayectoria y Experiencia</span>
-					<span class="stat-desc">Liderando el mercado de telecomunicaciones y redes</span>
+					<span class="stat-number" data-landing-key="stat1_num">+10 Años</span>
+					<span class="stat-label" data-landing-key="stat1_label">Trayectoria y Experiencia</span>
+					<span class="stat-desc" data-landing-key="stat1_desc">Liderando el mercado de telecomunicaciones y redes</span>
 				</div>
 				<div class="stat-item">
-					<span class="stat-number">+500</span>
-					<span class="stat-label">Proyectos de Red Exitosos</span>
-					<span class="stat-desc">Despliegues de fibra óptica y data centers</span>
+					<span class="stat-number" data-landing-key="stat2_num">+500</span>
+					<span class="stat-label" data-landing-key="stat2_label">Proyectos de Red Exitosos</span>
+					<span class="stat-desc" data-landing-key="stat2_desc">Despliegues de fibra óptica y data centers</span>
 				</div>
 				<div class="stat-item">
-					<span class="stat-number">100%</span>
-					<span class="stat-label">Equipos Homologados</span>
-					<span class="stat-desc">Marcas líderes globales con garantía directa</span>
+					<span class="stat-number" data-landing-key="stat3_num">100%</span>
+					<span class="stat-label" data-landing-key="stat3_label">Equipos Homologados</span>
+					<span class="stat-desc" data-landing-key="stat3_desc">Marcas líderes globales con garantía directa</span>
 				</div>
 				<div class="stat-item">
-					<span class="stat-number">24 / 7</span>
-					<span class="stat-label">Soporte Técnico Especializado</span>
-					<span class="stat-desc">Ingenieros listos para resolver incidencias</span>
+					<span class="stat-number" data-landing-key="stat4_num">24 / 7</span>
+					<span class="stat-label" data-landing-key="stat4_label">Soporte Técnico Especializado</span>
+					<span class="stat-desc" data-landing-key="stat4_desc">Ingenieros listos para resolver incidencias</span>
 				</div>
 			</div>
 		</section>
@@ -1282,27 +1282,27 @@
 		<section class="about-section" id="nosotros">
 			<div class="container">
 				<div class="section-header">
-					<span class="section-kicker">Quiénes Somos</span>
-					<h2>Tu Aliado Estratégico en Telecomunicaciones</h2>
-					<p>Construimos puentes digitales estables, potentes y escalables para que tu negocio nunca se detenga.</p>
+					<span class="section-kicker" data-landing-key="about_kicker">Quiénes Somos</span>
+					<h2 data-landing-key="about_title">Tu Aliado Estratégico en Telecomunicaciones</h2>
+					<p data-landing-key="about_sub">Construimos puentes digitales estables, potentes y escalables para que tu negocio nunca se detenga.</p>
 				</div>
 
 				<div class="about-grid">
 					<div class="about-content">
-						<h3>Más de una década conectando comunidades y empresas</h3>
-						<p>SmartISP nació con el objetivo de dotar a los proveedores de internet (ISPs), integradores de tecnología y empresas de todos los tamaños con hardware robusto, respaldo técnico continuo y asesoramiento de alto nivel.</p>
-						<p>Entendemos que un minuto fuera de línea significa pérdidas y desconexión para miles de usuarios. Por eso seleccionamos cuidadosamente cada componente, switch, servidor y equipo de fibra para asegurar una operación continua y sin fisuras.</p>
+						<h3 data-landing-key="about_h3">Más de una década conectando comunidades y empresas</h3>
+						<p data-landing-key="about_p1">SmartISP nació con el objetivo de dotar a los proveedores de internet (ISPs), integradores de tecnología y empresas de todos los tamaños con hardware robusto, respaldo técnico continuo y asesoramiento de alto nivel.</p>
+						<p data-landing-key="about_p2">Entendemos que un minuto fuera de línea significa pérdidas y desconexión para miles de usuarios. Por eso seleccionamos cuidadosamente cada componente, switch, servidor y equipo de fibra para asegurar una operación continua y sin fisuras.</p>
 
 						<div class="mission-vision-cards">
 							<div class="mv-card">
 								<div class="mv-card-icon"><i data-lucide="target" width="20"></i></div>
-								<h4>Nuestra Misión</h4>
-								<p>Suministrar soluciones de infraestructura de telecomunicaciones con calidad superior, entrega ágil y soporte técnico que garantice el crecimiento sustentable de nuestros clientes.</p>
+								<h4 data-landing-key="mission_h4">Nuestra Misión</h4>
+								<p data-landing-key="mission_p">Suministrar soluciones de infraestructura de telecomunicaciones con calidad superior, entrega ágil y soporte técnico que garantice el crecimiento sustentable de nuestros clientes.</p>
 							</div>
 							<div class="mv-card">
 								<div class="mv-card-icon"><i data-lucide="eye" width="20"></i></div>
-								<h4>Nuestra Visión</h4>
-								<p>Ser el referente indiscutible y primera opción en provisión de hardware e ingeniería de conectividad para proveedores de internet de la región.</p>
+								<h4 data-landing-key="vision_h4">Nuestra Visión</h4>
+								<p data-landing-key="vision_p">Ser el referente indiscutible y primera opción en provisión de hardware e ingeniería de conectividad para proveedores de internet de la región.</p>
 							</div>
 						</div>
 					</div>
@@ -1310,23 +1310,23 @@
 					<div class="about-visual">
 						<div class="value-box">
 							<i data-lucide="award" width="28"></i>
-							<h5>Calidad Certificada</h5>
-							<p>Trabajamos exclusivamente con fabricantes de prestigio global y estándares internacionales de telecomunicación.</p>
+							<h5 data-landing-key="value1_h5">Calidad Certificada</h5>
+							<p data-landing-key="value1_p">Trabajamos exclusivamente con fabricantes de prestigio global y estándares internacionales de telecomunicación.</p>
 						</div>
 						<div class="value-box">
 							<i data-lucide="zap" width="28"></i>
-							<h5>Respuesta Inmediata</h5>
-							<p>Contamos con inventario en bodega listo para entrega rápida y minimización de tiempos de parada.</p>
+							<h5 data-landing-key="value2_h5">Respuesta Inmediata</h5>
+							<p data-landing-key="value2_p">Contamos con inventario en bodega listo para entrega rápida y minimización de tiempos de parada.</p>
 						</div>
 						<div class="value-box">
 							<i data-lucide="users" width="28"></i>
-							<h5>Ingeniería Humana</h5>
-							<p>Asesoría personalizada brindada por ingenieros con experiencia en campo y despliegues reales.</p>
+							<h5 data-landing-key="value3_h5">Ingeniería Humana</h5>
+							<p data-landing-key="value3_p">Asesoría personalizada brindada por ingenieros con experiencia en campo y despliegues reales.</p>
 						</div>
 						<div class="value-box">
 							<i data-lucide="shield-alert" width="28"></i>
-							<h5>Continuidad de Servicio</h5>
-							<p>Equipamiento con tolerancia a fallas, redundancia y alta eficiencia energética para operaciones críticas.</p>
+							<h5 data-landing-key="value4_h5">Continuidad de Servicio</h5>
+							<p data-landing-key="value4_p">Equipamiento con tolerancia a fallas, redundancia y alta eficiencia energética para operaciones críticas.</p>
 						</div>
 					</div>
 				</div>
@@ -1337,9 +1337,9 @@
 		<section class="solutions-section" id="soluciones">
 			<div class="container">
 				<div class="section-header">
-					<span class="section-kicker">Líneas de Soluciones</span>
-					<h2>Equipamiento Integral para Proveedores e Industrias</h2>
-					<p>Todo lo que tu arquitectura de red necesita, desde el nodo central hasta la última milla.</p>
+					<span class="section-kicker" data-landing-key="sol_kicker">Líneas de Soluciones</span>
+					<h2 data-landing-key="sol_title">Equipamiento Integral para Proveedores e Industrias</h2>
+					<p data-landing-key="sol_sub">Todo lo que tu arquitectura de red necesita, desde el nodo central hasta la última milla.</p>
 				</div>
 
 				<div class="solutions-grid">
@@ -1347,16 +1347,16 @@
 					<div class="solution-card">
 						<div>
 							<div class="solution-icon-wrap"><i data-lucide="network" width="26"></i></div>
-							<h3>Fibra Óptica & FTTH</h3>
-							<p>Soluciones completas para despliegue de redes GPON y XGS-PON de alta velocidad para abonados residenciales y corporativos.</p>
+							<h3 data-landing-key="sol1_h3">Fibra Óptica & FTTH</h3>
+							<p data-landing-key="sol1_p">Soluciones completas para despliegue de redes GPON y XGS-PON de alta velocidad para abonados residenciales y corporativos.</p>
 							<ul>
-								<li><i data-lucide="check-circle-2" width="14"></i> OLTs y ONUs certificadas</li>
-								<li><i data-lucide="check-circle-2" width="14"></i> Cable óptico ADSS y Drop</li>
-								<li><i data-lucide="check-circle-2" width="14"></i> Splitters y cajas de empalme NAP</li>
+								<li><i data-lucide="check-circle-2" width="14"></i> <span data-landing-key="sol1_li1">OLTs y ONUs certificadas</span></li>
+								<li><i data-lucide="check-circle-2" width="14"></i> <span data-landing-key="sol1_li2">Cable óptico ADSS y Drop</span></li>
+								<li><i data-lucide="check-circle-2" width="14"></i> <span data-landing-key="sol1_li3">Splitters y cajas de empalme NAP</span></li>
 							</ul>
 						</div>
 						<a href="tienda.html" class="btn-solution-link">
-							<span>Ver en la Tienda</span>
+							<span data-landing-key="sol1_btn">Ver en la Tienda</span>
 							<i data-lucide="arrow-up-right" width="14"></i>
 						</a>
 					</div>
@@ -1365,12 +1365,12 @@
 					<div class="solution-card">
 						<div>
 							<div class="solution-icon-wrap"><i data-lucide="server" width="26"></i></div>
-							<h3>Servidores & Data Center</h3>
-							<p>Potencia de cómputo, almacenamiento masivo y alta tolerancia a fallos para alojar servicios críticos y plataformas de gestión.</p>
+							<h3 data-landing-key="sol2_h3">Servidores & Data Center</h3>
+							<p data-landing-key="sol2_p">Potencia de cómputo, almacenamiento masivo y alta tolerancia a fallos para alojar servicios críticos y plataformas de gestión.</p>
 							<ul>
-								<li><i data-lucide="check-circle-2" width="14"></i> Servidores Dell y HP ProLiant</li>
-								<li><i data-lucide="check-circle-2" width="14"></i> Gabinetes y racks certificados</li>
-								<li><i data-lucide="check-circle-2" width="14"></i> Sistemas de respaldo eléctrico UPS</li>
+								<li><i data-lucide="check-circle-2" width="14"></i> <span data-landing-key="sol2_li1">Servidores Dell y HP ProLiant</span></li>
+								<li><i data-lucide="check-circle-2" width="14"></i> <span data-landing-key="sol2_li2">Gabinetes y racks certificados</span></li>
+								<li><i data-lucide="check-circle-2" width="14"></i> <span data-landing-key="sol2_li3">Sistemas de respaldo eléctrico UPS</span></li>
 							</ul>
 						</div>
 						<a href="tienda.html" class="btn-solution-link">
@@ -1383,12 +1383,12 @@
 					<div class="solution-card">
 						<div>
 							<div class="solution-icon-wrap"><i data-lucide="radio" width="26"></i></div>
-							<h3>Conectividad & Radioenlaces</h3>
-							<p>Equipos de enrutamiento avanzado, balanceo de carga y transmisión inalámbrica punto a punto para cobertura de largo alcance.</p>
+							<h3 data-landing-key="sol3_h3">Conectividad & Radioenlaces</h3>
+							<p data-landing-key="sol3_p">Equipos de enrutamiento avanzado, balanceo de carga y transmisión inalámbrica punto a punto para cobertura de largo alcance.</p>
 							<ul>
-								<li><i data-lucide="check-circle-2" width="14"></i> Routers MikroTik y TP-Link</li>
-								<li><i data-lucide="check-circle-2" width="14"></i> Antenas y radioenlaces Ubiquiti</li>
-								<li><i data-lucide="check-circle-2" width="14"></i> Switches Gigabit y PoE gestionables</li>
+								<li><i data-lucide="check-circle-2" width="14"></i> <span data-landing-key="sol3_li1">Routers MikroTik y TP-Link</span></li>
+								<li><i data-lucide="check-circle-2" width="14"></i> <span data-landing-key="sol3_li2">Antenas y radioenlaces Ubiquiti</span></li>
+								<li><i data-lucide="check-circle-2" width="14"></i> <span data-landing-key="sol3_li3">Switches Gigabit y PoE gestionables</span></li>
 							</ul>
 						</div>
 						<a href="tienda.html" class="btn-solution-link">
@@ -1401,12 +1401,12 @@
 					<div class="solution-card">
 						<div>
 							<div class="solution-icon-wrap"><i data-lucide="laptop" width="26"></i></div>
-							<h3>Equipamiento TI Corporativo</h3>
-							<p>Laptops profesionales, estaciones de trabajo y monitores de alto rendimiento diseñados para equipos técnicos y administrativos.</p>
+							<h3 data-landing-key="sol4_h3">Equipamiento TI Corporativo</h3>
+							<p data-landing-key="sol4_p">Laptops profesionales, estaciones de trabajo y monitores de alto rendimiento diseñados para equipos técnicos y administrativos.</p>
 							<ul>
-								<li><i data-lucide="check-circle-2" width="14"></i> Laptops MacBook, Dell y Lenovo</li>
-								<li><i data-lucide="check-circle-2" width="14"></i> Monitores UltraWide de trabajo</li>
-								<li><i data-lucide="check-circle-2" width="14"></i> Accesorios de conectividad</li>
+								<li><i data-lucide="check-circle-2" width="14"></i> <span data-landing-key="sol4_li1">Laptops MacBook, Dell y Lenovo</span></li>
+								<li><i data-lucide="check-circle-2" width="14"></i> <span data-landing-key="sol4_li2">Monitores UltraWide de trabajo</span></li>
+								<li><i data-lucide="check-circle-2" width="14"></i> <span data-landing-key="sol4_li3">Accesorios de conectividad</span></li>
 							</ul>
 						</div>
 						<a href="tienda.html" class="btn-solution-link">
@@ -1422,34 +1422,34 @@
 		<section class="advantages-section" id="ventajas">
 			<div class="container">
 				<div class="section-header">
-					<span class="section-kicker">Propuesta de Valor</span>
-					<h2>¿Por Qué Trabajar con SmartISP?</h2>
-					<p>Combinamos infraestructura de primer orden con un equipo apasionado por resolver tus desafíos técnicos.</p>
+					<span class="section-kicker" data-landing-key="adv_kicker">Propuesta de Valor</span>
+					<h2 data-landing-key="adv_title">¿Por Qué Trabajar con SmartISP?</h2>
+					<p data-landing-key="adv_sub">Combinamos infraestructura de primer orden con un equipo apasionado por resolver tus desafíos técnicos.</p>
 				</div>
 
 				<div class="advantages-grid">
 					<div class="advantage-card">
 						<div class="advantage-icon"><i data-lucide="shield-check" width="28"></i></div>
-						<h4>Garantía Directa</h4>
-						<p>Todos nuestros productos cuentan con garantía respaldada por los fabricantes y reemplazo inmediato ante fallas.</p>
+						<h4 data-landing-key="adv1_h4">Garantía Directa</h4>
+						<p data-landing-key="adv1_p">Todos nuestros productos cuentan con garantía respaldada por los fabricantes y reemplazo inmediato ante fallas.</p>
 					</div>
 
 					<div class="advantage-card">
 						<div class="advantage-icon"><i data-lucide="truck" width="28"></i></div>
-						<h4>Despacho a Nivel Nacional</h4>
-						<p>Entregas seguras y rápidas a cualquier provincia del país con seguimiento en tiempo real de tu encomienda.</p>
+						<h4 data-landing-key="adv2_h4">Despacho a Nivel Nacional</h4>
+						<p data-landing-key="adv2_p">Entregas seguras y rápidas a cualquier provincia del país con seguimiento en tiempo real de tu encomienda.</p>
 					</div>
 
 					<div class="advantage-card">
 						<div class="advantage-icon"><i data-lucide="cpu" width="28"></i></div>
-						<h4>Asesoría de Ingenieros</h4>
-						<p>No solo vendemos cajas: te ayudamos a dimensionar tu red para optimizar tu inversión y prevenir cuellos de botella.</p>
+						<h4 data-landing-key="adv3_h4">Asesoría de Ingenieros</h4>
+						<p data-landing-key="adv3_p">No solo vendemos cajas: te ayudamos a dimensionar tu red para optimizar tu inversión y prevenir cuellos de botella.</p>
 					</div>
 
 					<div class="advantage-card">
 						<div class="advantage-icon"><i data-lucide="credit-card" width="28"></i></div>
-						<h4>Compra en Línea Segura</h4>
-						<p>Nuestra tienda virtual te permite consultar stock, cotizar en el momento y pagar con métodos de pago protegidos.</p>
+						<h4 data-landing-key="adv4_h4">Compra en Línea Segura</h4>
+						<p data-landing-key="adv4_p">Nuestra tienda virtual te permite consultar stock, cotizar en el momento y pagar con métodos de pago protegidos.</p>
 					</div>
 				</div>
 			</div>
@@ -1459,14 +1459,14 @@
 		<section class="tienda-cta-section">
 			<div class="tienda-cta-container">
 				<div class="tienda-cta-content">
-					<span class="eyebrow">Catálogo en Línea Disponible</span>
-					<h2>¿Listo para adquirir equipamiento de inmediato?</h2>
-					<p>Ingresa a nuestra tienda online oficial con más de 200 productos en catálogo, carrito de compras, opciones de filtrado y precios actualizados.</p>
+					<span class="eyebrow" data-landing-key="cta_eyebrow">Catálogo en Línea Disponible</span>
+					<h2 data-landing-key="cta_title">¿Listo para adquirir equipamiento de inmediato?</h2>
+					<p data-landing-key="cta_desc">Ingresa a nuestra tienda online oficial con más de 200 productos en catálogo, carrito de compras, opciones de filtrado y precios actualizados.</p>
 				</div>
 				<div>
 					<a href="tienda.html" class="btn-shop-giant">
 						<i data-lucide="shopping-cart" width="22"></i>
-						<span>Ir a la Tienda Online</span>
+						<span data-landing-key="cta_btn">Ir a la Tienda Online</span>
 						<i data-lucide="arrow-right" width="20"></i>
 					</a>
 				</div>
@@ -1477,9 +1477,9 @@
 		<section class="contact-section" id="contacto">
 			<div class="container">
 				<div class="section-header">
-					<span class="section-kicker">Canales de Atención</span>
-					<h2>Ponte en Contacto con SmartISP</h2>
-					<p>Estamos disponibles para resolver consultas comerciales, requerimientos de proyectos y asistencia técnica.</p>
+					<span class="section-kicker" data-landing-key="contact_kicker">Canales de Atención</span>
+					<h2 data-landing-key="contact_title">Ponte en Contacto con SmartISP</h2>
+					<p data-landing-key="contact_sub">Estamos disponibles para resolver consultas comerciales, requerimientos de proyectos y asistencia técnica.</p>
 				</div>
 
 				<div class="contact-grid">
@@ -1488,49 +1488,49 @@
 						<div class="contact-card">
 							<div class="contact-icon"><i data-lucide="map-pin" width="22"></i></div>
 							<div class="contact-details">
-								<strong>Oficinas Principales</strong>
-								<p>Av. República del Salvador 1084 y Naciones Unidas, Edificio Titanium, Piso 7, Quito - Ecuador.</p>
+								<strong data-landing-key="contact_office_title">Oficinas Principales</strong>
+								<p data-landing-key="contact_office_address">Av. República del Salvador 1084 y Naciones Unidas, Edificio Titanium, Piso 7, Quito - Ecuador.</p>
 							</div>
 						</div>
 
 						<div class="contact-card">
 							<div class="contact-icon"><i data-lucide="phone-call" width="22"></i></div>
 							<div class="contact-details">
-								<strong>Teléfonos de Atención</strong>
-								<p>PBX: <a href="tel:+59323945600">+593 (02) 394-5600</a></p>
-								<p>Ventas Móvil: <a href="tel:+593999000000">+593 99 900 0000</a></p>
+								<strong data-landing-key="contact_phone_title">Teléfonos de Atención</strong>
+								<p>PBX: <a href="tel:+59323945600" data-landing-key="contact_phone1">+593 (02) 394-5600</a></p>
+								<p>Ventas Móvil: <a href="tel:+593999000000" data-landing-key="contact_phone2">+593 99 900 0000</a></p>
 							</div>
 						</div>
 
 						<div class="contact-card">
 							<div class="contact-icon"><i data-lucide="mail" width="22"></i></div>
 							<div class="contact-details">
-								<strong>Correos Institucionales</strong>
-								<p>Ventas: <a href="mailto:ventas@smartisp.com">ventas@smartisp.com</a></p>
-								<p>Soporte Técnico: <a href="mailto:soporte@smartisp.com">soporte@smartisp.com</a></p>
+								<strong data-landing-key="contact_email_title">Correos Institucionales</strong>
+								<p>Ventas: <a href="mailto:ventas@smartisp.com" data-landing-key="contact_email1">ventas@smartisp.com</a></p>
+								<p>Soporte Técnico: <a href="mailto:soporte@smartisp.com" data-landing-key="contact_email2">soporte@smartisp.com</a></p>
 							</div>
 						</div>
 
 						<div class="contact-card">
 							<div class="contact-icon"><i data-lucide="clock" width="22"></i></div>
 							<div class="contact-details">
-								<strong>Horarios de Atención</strong>
-								<p>Lunes a Viernes: 08:30 a 18:00 (Presencial & Ventas)</p>
-								<p>Guardia NOC / Emergencias: 24 horas, 365 días</p>
+								<strong data-landing-key="contact_hours_title">Horarios de Atención</strong>
+								<p data-landing-key="contact_hours1">Lunes a Viernes: 08:30 a 18:00 (Presencial & Ventas)</p>
+								<p data-landing-key="contact_hours2">Guardia NOC / Emergencias: 24 horas, 365 días</p>
 							</div>
 						</div>
 
 						<!-- WhatsApp Quick Chat -->
 						<a href="https://wa.me/593999000000?text=Hola%20SmartISP,%20deseo%20m%C3%A1s%20informaci%C3%B3n%20sobre%20sus%20soluciones%20y%20equipos" target="_blank" rel="noopener" class="btn-whatsapp-direct">
 							<i data-lucide="message-circle" width="18"></i>
-							<span>Escribir por WhatsApp al Asesor Comercial</span>
+							<span data-landing-key="contact_whatsapp_text">Escribir por WhatsApp al Asesor Comercial</span>
 						</a>
 					</div>
 
 					<!-- Contact Form -->
 					<div class="contact-form-panel">
-						<h3>Envíanos un Mensaje</h3>
-						<p>Completa el siguiente formulario y un especialista se contactará contigo a la brevedad.</p>
+						<h3 data-landing-key="contact_form_title">Envíanos un Mensaje</h3>
+						<p data-landing-key="contact_form_desc">Completa el siguiente formulario y un especialista se contactará contigo a la brevedad.</p>
 
 						<form id="contactForm">
 							<div class="form-grid-2">
@@ -1575,7 +1575,7 @@
 
 							<button type="submit" class="btn-submit-contact" id="submitContactBtn">
 								<i data-lucide="send" width="16"></i>
-								<span>Enviar Mensaje</span>
+								<span data-landing-key="contact_form_btn">Enviar Mensaje</span>
 							</button>
 
 							<div class="form-alert" id="contactAlert">
@@ -1593,10 +1593,10 @@
 	<footer>
 		<div class="footer-top">
 			<div class="footer-brand">
-				<a class="logo" href="index.html">
-					smart<b>isp</b><span style="color:#f5a524">.</span>
+				<a class="logo landing-footer-logo-container" href="index.html">
+					<span class="landing-footer-logo-view">smart<b>isp</b><span style="color:#f5a524">.</span></span>
 				</a>
-				<p>Infraestructura tecnológica, fibra óptica y equipamiento informático para proveedores de internet y redes empresariales en constante crecimiento.</p>
+				<p data-landing-key="footer_desc">Infraestructura tecnológica, fibra óptica y equipamiento informático para proveedores de internet y redes empresariales en constante crecimiento.</p>
 				<div style="display:flex;gap:12px;color:#90abbd;">
 					<a href="#" aria-label="LinkedIn"><i data-lucide="linkedin" width="18"></i></a>
 					<a href="#" aria-label="Facebook"><i data-lucide="facebook" width="18"></i></a>
@@ -1638,8 +1638,8 @@
 		</div>
 
 		<div class="footer-bottom">
-			<div>© 2026 SmartISP - Todos los derechos reservados.</div>
-			<div>Equipamiento tecnológico e infraestructura que conecta.</div>
+			<div data-landing-key="footer_copy1">© 2026 SmartISP - Todos los derechos reservados.</div>
+			<div data-landing-key="footer_copy2">Equipamiento tecnológico e infraestructura que conecta.</div>
 		</div>
 	</footer>
 
@@ -1710,42 +1710,72 @@
 			});
 		}
 
-		// Sincronizar logotipo dinámico desde el catálogo
+		// Sincronizar contenido dinámico y logotipo exclusivo de la página de presentación
 		(async () => {
 			try {
-				const res = await fetch('/api/auth/catalog');
+				const res = await fetch('/api/auth/landing-content');
 				if (!res.ok) return;
 				const data = await res.json();
 				const content = Object.fromEntries((data.content || []).map(i => [i.key, i.value]));
-				const mode = content.logo_type || (content.logo_image ? 'image' : 'text');
-				const brand = content.brand_name || 'SmartISP';
-				const height = parseInt(content.logo_height, 10) || 38;
 
-				if (mode === 'image' && content.logo_image) {
-					const navLogo = document.querySelector('.navbar .logo');
-					if (navLogo) {
-						navLogo.innerHTML = `<img src="${content.logo_image}" alt="${brand}" style="height:${height}px; max-height:55px; width:auto; object-fit:contain; vertical-align:middle; display:inline-block;"><span class="logo-badge" style="margin-left:8px;">Infraestructura TI</span>`;
+				// 1. Aplicar logotipo exclusivo de la presentación (no afecta la tienda)
+				const logoMode = content.landing_logo_type || (content.landing_logo_image ? 'image' : 'text');
+				const logoImg = content.landing_logo_image || '';
+				const logoHeight = parseInt(content.landing_logo_height, 10) || 38;
+				const logoText = (content.landing_logo_text || '').trim();
+				const logoBadge = (content.landing_logo_badge || '').trim();
+
+				const navLogoWrap = document.querySelector('.navbar .landing-logo-container');
+				const footLogoWrap = document.querySelector('.footer-brand .landing-footer-logo-container');
+
+				if (logoMode === 'image' && logoImg) {
+					if (navLogoWrap) {
+						navLogoWrap.innerHTML = `<img src="${logoImg}" alt="Logo" style="height:${logoHeight}px; max-height:58px; width:auto; object-fit:contain; vertical-align:middle; display:inline-block;">${logoBadge ? `<span class="logo-badge" style="margin-left:8px;">${logoBadge}</span>` : ''}`;
 					}
-					const footLogo = document.querySelector('.footer-brand .logo');
-					if (footLogo) {
-						footLogo.innerHTML = `<img src="${content.logo_image}" alt="${brand}" style="height:${height}px; max-height:55px; width:auto; object-fit:contain; vertical-align:middle; display:inline-block;">`;
+					if (footLogoWrap) {
+						footLogoWrap.innerHTML = `<img src="${logoImg}" alt="Logo" style="height:${logoHeight}px; max-height:58px; width:auto; object-fit:contain; vertical-align:middle; display:inline-block;">`;
 					}
-				} else if (content.logo_text) {
-					const text = content.logo_text.trim();
-					const mid = Math.ceil(text.length / 2);
-					const part1 = text.slice(0, mid);
-					const part2 = text.slice(mid);
+				} else if (logoText) {
+					const mid = Math.ceil(logoText.length / 2);
+					const part1 = logoText.slice(0, mid);
+					const part2 = logoText.slice(mid);
 					const formatted = `${part1}<b style="color:var(--blue, #087ea4);">${part2}</b><span style="color:#f5a524;">.</span>`;
-					const navLogo = document.querySelector('.navbar .logo');
-					if (navLogo) {
-						navLogo.innerHTML = `${formatted} <span class="logo-badge">Infraestructura TI</span>`;
+					if (navLogoWrap) {
+						navLogoWrap.innerHTML = `${formatted} ${logoBadge ? `<span class="logo-badge">${logoBadge}</span>` : ''}`;
 					}
-					const footLogo = document.querySelector('.footer-brand .logo');
-					if (footLogo) {
-						footLogo.innerHTML = formatted;
+					if (footLogoWrap) {
+						footLogoWrap.innerHTML = formatted;
 					}
+				} else if (logoBadge) {
+					const badgeEl = document.querySelector('.navbar .landing-badge-view');
+					if (badgeEl) badgeEl.textContent = logoBadge;
 				}
-			} catch (e) {}
+
+				// 2. Aplicar textos dinámicos
+				document.querySelectorAll('[data-landing-key]').forEach(el => {
+					const k = el.dataset.landingKey;
+					if (content[k] !== undefined && content[k] !== '') {
+						// Preserve span formatting if key is hero_title
+						if (k === 'hero_title' && content[k].includes('<span')) {
+							el.innerHTML = content[k];
+						} else {
+							// If element has lucide child icon or link inside, preserve structure
+							const icon = el.querySelector('i[data-lucide]');
+							if (icon) {
+								el.childNodes.forEach(node => {
+									if (node.nodeType === Node.TEXT_NODE) {
+										node.textContent = ' ' + content[k].trim();
+									}
+								});
+							} else {
+								el.textContent = content[k];
+							}
+						}
+					}
+				});
+			} catch (e) {
+				console.warn('Error loading landing content:', e);
+			}
 		})();
 	</script>
 </body>
