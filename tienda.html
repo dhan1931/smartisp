@@ -34,8 +34,9 @@
 		.topbar { background: var(--navy); color: #d9efff; font-size: 12px; letter-spacing: .02em; padding: 9px 5vw; display: flex; justify-content: space-between; }
 		.topbar span { display: flex; align-items: center; gap: 7px; }
 		.nav { background: var(--white); border-bottom: 1px solid var(--line); padding: 18px 5vw; display: flex; align-items: center; gap: 28px; position: sticky; top: 0; z-index: 5; }
-		.logo { font-family: 'Space Grotesk', sans-serif; font-size: 23px; font-weight: 700; color: var(--navy); white-space: nowrap; letter-spacing: -.06em; }
+		.logo { font-family: 'Space Grotesk', sans-serif; font-size: 23px; font-weight: 700; color: var(--navy); white-space: nowrap; letter-spacing: -.06em; display: inline-flex; align-items: center; text-decoration: none; }
 		.logo b { color: var(--blue); }
+		.logo img { display: block; object-fit: contain; width: auto; max-width: 100%; }
 		.search { display: flex; flex: 1; max-width: 640px; background: var(--pale); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
 		.search input { width: 100%; border: 0; outline: 0; padding: 12px 15px; background: transparent; color: var(--ink); }
 		.search button { background: var(--blue); border: 0; color: var(--white); width: 48px; display: grid; place-items: center; }
@@ -468,8 +469,52 @@
 		document.querySelector('#searchForm').addEventListener('submit', event => { event.preventDefault(); render(); document.querySelector('#catalogo').scrollIntoView({ behavior: 'smooth' }); }); document.querySelector('#searchInput').addEventListener('input', render); document.querySelector('#sortSelect').addEventListener('change', render);
 		document.querySelector('#openCart').addEventListener('click', () => document.querySelector('#drawer').classList.add('open')); document.querySelector('#closeCart').addEventListener('click', () => document.querySelector('#drawer').classList.remove('open')); document.querySelector('#drawer').addEventListener('click', event => { if (event.target.id === 'drawer') event.target.classList.remove('open'); });
 		document.querySelector('#openAccount').addEventListener('click', async () => { document.querySelector('#accountModal').classList.add('open'); document.querySelector('#loginView').hidden = signedIn; document.querySelector('#profileView').hidden = !signedIn; if (!signedIn) { try { const response = await fetch('/api/auth/me'); if (response.ok) { signedIn = true; document.querySelector('#loginView').hidden = true; document.querySelector('#profileView').hidden = false; } } catch (error) { console.warn('Backend no disponible'); } } }); document.querySelectorAll('[data-close-modal]').forEach(button => button.addEventListener('click', () => document.querySelector(`#${button.dataset.closeModal}`).classList.remove('open'))); document.querySelectorAll('.modal').forEach(modal => modal.addEventListener('click', event => { if (event.target === modal) modal.classList.remove('open'); })); document.querySelector('#accountForm').addEventListener('submit', async event => { event.preventDefault(); const email = document.querySelector('#emailInput').value.trim().toLowerCase(); const password = document.querySelector('#passwordInput').value; const message = document.querySelector('#formMessage'); try { const response = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) }); const result = await response.json(); if (!response.ok) throw new Error(result.error); signedIn = true; document.querySelector('#profileEmail').textContent = result.user.email; document.querySelector('#loginView').hidden = true; document.querySelector('#profileView').hidden = false; message.classList.remove('show'); lucide.createIcons(); } catch (error) { message.textContent = error.message || 'No se pudo conectar con el servidor.'; message.style.color = '#a53b3b'; message.style.background = '#fff0f0'; message.classList.add('show'); } }); document.querySelector('#logoutButton').addEventListener('click', async () => { await fetch('/api/auth/logout', { method: 'POST' }); signedIn = false; document.querySelector('#profileView').hidden = true; document.querySelector('#loginView').hidden = false; document.querySelector('#accountForm').reset(); document.querySelector('#formMessage').classList.remove('show'); }); document.querySelector('#darkModeToggle').addEventListener('change', event => document.body.classList.toggle('dark-mode', event.target.checked));
-		document.addEventListener('keydown', event => { if (event.key === 'Escape') document.querySelectorAll('.modal.open, .drawer.open').forEach(element => element.classList.remove('open')); });
-		const applyRemoteSite = async () => { try { const response = await fetch('/api/auth/catalog'); if (!response.ok) return; const remote = await response.json(); if (remote.products.length) { products = remote.products.map(product => ({ ...product, brand: product.category || 'SmartISP', image: product.imageUrl, reviews: 0, tag: '', specs: [] })); render(); if (typeof renderSidebarCategories === 'function') renderSidebarCategories(); } const content = Object.fromEntries(remote.content.map(item => [item.key, item.value])); if (content.hero_title) document.querySelector('.hero h1').textContent = content.hero_title; if (content.hero_text) document.querySelector('.hero p').textContent = content.hero_text; if (content.hero_image) document.querySelector('.hero').style.backgroundImage = `url("${content.hero_image}")`; if (content.primary_color) document.documentElement.style.setProperty('--blue', content.primary_color); if (content.brand_name) document.querySelectorAll('.logo').forEach(logo => { logo.textContent = content.brand_name; }); if (content.footer_text) document.querySelector('footer > div:first-child > div:last-child').textContent = content.footer_text; if (content.catalog_visible === 'false') document.querySelector('#catalogo').hidden = true; if (content.hero_visible === 'false') document.querySelector('.hero').hidden = true; if (content.benefits_visible === 'false') document.querySelector('.benefits').hidden = true; } catch (error) { console.warn('Contenido remoto no disponible.'); } };
+		const applySiteLogo = content => {
+			const logoElements = document.querySelectorAll('.logo');
+			if (!logoElements.length) return;
+			const mode = content.logo_type || (content.logo_image ? 'image' : 'text');
+			const brand = content.brand_name || 'SmartISP';
+			const height = parseInt(content.logo_height, 10) || 38;
+
+			logoElements.forEach(logo => {
+				if (mode === 'image' && content.logo_image) {
+					logo.innerHTML = `<img src="${content.logo_image}" alt="${brand}" style="height:${height}px; max-height:60px; width:auto; object-fit:contain; vertical-align:middle; display:inline-block;">`;
+				} else if (content.logo_text) {
+					const text = content.logo_text.trim();
+					const mid = Math.ceil(text.length / 2);
+					const part1 = text.slice(0, mid);
+					const part2 = text.slice(mid);
+					logo.innerHTML = `${part1}<b style="color:var(--blue, #087ea4);">${part2}</b><span style="color:#f5a524;">.</span>`;
+				} else if (content.brand_name) {
+					logo.textContent = content.brand_name;
+				}
+			});
+		};
+
+		const applyRemoteSite = async () => {
+			try {
+				const response = await fetch('/api/auth/catalog');
+				if (!response.ok) return;
+				const remote = await response.json();
+				if (remote.products.length) {
+					products = remote.products.map(product => ({ ...product, brand: product.category || 'SmartISP', image: product.imageUrl, reviews: 0, tag: '', specs: [] }));
+					render();
+					if (typeof renderSidebarCategories === 'function') renderSidebarCategories();
+				}
+				const content = Object.fromEntries(remote.content.map(item => [item.key, item.value]));
+				applySiteLogo(content);
+				if (content.hero_title) document.querySelector('.hero h1').textContent = content.hero_title;
+				if (content.hero_text) document.querySelector('.hero p').textContent = content.hero_text;
+				if (content.hero_image) document.querySelector('.hero').style.backgroundImage = `url("${content.hero_image}")`;
+				if (content.primary_color) document.documentElement.style.setProperty('--blue', content.primary_color);
+				if (content.footer_text) document.querySelector('footer > div:first-child > div:last-child').textContent = content.footer_text;
+				if (content.catalog_visible === 'false') document.querySelector('#catalogo').hidden = true;
+				if (content.hero_visible === 'false') document.querySelector('.hero').hidden = true;
+				if (content.benefits_visible === 'false') document.querySelector('.benefits').hidden = true;
+			} catch (error) {
+				console.warn('Contenido remoto no disponible.');
+			}
+		};
 		document.addEventListener('click', event => { const heart = event.target.closest('.heart'); if (!heart) return; const card = heart.closest('.product'); if (!card) return; event.preventDefault(); event.stopImmediatePropagation(); toggleWishlist(products[card.dataset.index], heart); }, true);
 		render(); lucide.createIcons(); applyRemoteSite();
 	</script>
