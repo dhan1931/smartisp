@@ -9,6 +9,7 @@ export default defineConfig({
         tienda: 'tienda.html',
         checkout: 'checkout.html',
         admin: 'admin.html',
+        editorLanding: 'editor-landing.html',
         resetPassword: 'reset-password.html'
       }
     }

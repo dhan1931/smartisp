@@ -1092,7 +1092,7 @@ app.post('/api/auth/landing-content', async (req, res) => {
   return res.json({ ok: true, message: 'Página de presentación guardada correctamente.' });
 });
 
-app.post('/api/auth/landing-content/reset', async (req, res) => {
+app.post(['/api/auth/landing-content/reset', '/api/auth/landing-content-reset'], async (req, res) => {
   if (!await requireAdminUser(req, res)) return;
   if (pool) {
     try {

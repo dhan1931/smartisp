@@ -1114,6 +1114,36 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
+    if (action === 'landing-content' && (req.method === 'GET' || req.method === 'POST')) {
+      await database.query(`CREATE TABLE IF NOT EXISTS landing_content (
+        content_key TEXT PRIMARY KEY,
+        content_value TEXT NOT NULL DEFAULT '',
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )`);
+      if (req.method === 'GET') {
+        const result = await database.query('SELECT content_key AS "key", content_value AS value FROM landing_content ORDER BY content_key');
+        return res.status(200).json({ content: result.rows });
+      }
+      if (!await requireAdmin(req, res, database)) return;
+      const content = bodyOf(req);
+      for (const [key, value] of Object.entries(content)) {
+        await database.query(`INSERT INTO landing_content (content_key, content_value, updated_at) VALUES ($1, $2, NOW())
+          ON CONFLICT (content_key) DO UPDATE SET content_value = EXCLUDED.content_value, updated_at = NOW()`, [String(key), String(value ?? '')]);
+      }
+      return res.status(200).json({ ok: true, message: 'Página de presentación guardada correctamente.' });
+    }
+
+    if ((action === 'landing-content-reset' || action === 'landing-content/reset') && req.method === 'POST') {
+      if (!await requireAdmin(req, res, database)) return;
+      await database.query(`CREATE TABLE IF NOT EXISTS landing_content (
+        content_key TEXT PRIMARY KEY,
+        content_value TEXT NOT NULL DEFAULT '',
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )`);
+      await database.query('TRUNCATE TABLE landing_content');
+      return res.status(200).json({ ok: true, message: 'Página de presentación restablecida.' });
+    }
+
     if (action === 'test-email' && req.method === 'POST') {
       if (!await requireAdmin(req, res, database)) return;
       const body = bodyOf(req);
