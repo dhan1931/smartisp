@@ -2656,7 +2656,20 @@
 			showToast('📋 Cuadro duplicado');
 		};
 
+		const floatingBarHtml = `<div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>`;
+
+		const attachFloatingBarIfNeeded = box => {
+			if (!box) return;
+			if (!box.querySelector('.card-action-floating-bar')) {
+				box.insertAdjacentHTML('afterbegin', floatingBarHtml);
+			}
+			box.classList.add('selectable-box');
+			box.dataset.deletableBox = 'true';
+		};
+
 		const bindBoxEvents = box => {
+			if (!box) return;
+			attachFloatingBarIfNeeded(box);
 			if (box._boxBound) return;
 			box._boxBound = true;
 
@@ -2707,7 +2720,6 @@
 		// =========================================================================
 		// ADD NEW CARDS ("➕ AGREGAR CUADRO")
 		// =========================================================================
-		const floatingBarHtml = `<div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (Supr)">🗑️ Eliminar (Supr)</button></div>`;
 
 		document.querySelector('#addSolutionCardBtn')?.addEventListener('click', () => {
 			const id = Date.now().toString().slice(-4);
@@ -3001,7 +3013,21 @@
 					if (!htmlContent) return;
 					const container = document.querySelector(selector);
 					if (!container) return;
-					container.innerHTML = htmlContent + `<div class="add-card-slot"><button type="button" class="btn-add-grid-item" id="${addBtnId}"><i data-lucide="plus-circle" width="18"></i> <span>${addBtnText}</span></button></div>`;
+					container.innerHTML = htmlContent;
+					// Remove any lingering floating bars or slots
+					container.querySelectorAll('.card-action-floating-bar, .add-card-slot, .card-action-btn').forEach(el => el.remove());
+					// Add the add button slot at the end
+					container.insertAdjacentHTML('beforeend', `<div class="add-card-slot"><button type="button" class="btn-add-grid-item" id="${addBtnId}"><i data-lucide="plus-circle" width="18"></i> <span>${addBtnText}</span></button></div>`);
+					// Re-arm each card for editor interactivity
+					container.querySelectorAll('.solution-card, .advantage-card, .value-box, .stat-item').forEach(card => {
+						card.querySelectorAll('h3, h4, p, span, strong, a').forEach(textEl => {
+							if (textEl.dataset.landingKey || textEl.classList.contains('stat-number') || textEl.classList.contains('stat-label') || textEl.classList.contains('stat-desc')) {
+								textEl.contentEditable = 'true';
+								textEl.spellcheck = false;
+							}
+						});
+						bindBoxEvents(card);
+					});
 				};
 
 				if (content.solutions_grid_html) restoreGrid('.solutions-grid', content.solutions_grid_html, 'addSolutionCardBtn', '➕ Agregar Nueva Línea de Solución');
@@ -3049,10 +3075,16 @@
 			const container = document.querySelector(selector);
 			if (!container) return '';
 			const clone = container.cloneNode(true);
-			// Remove add-card-slot before saving
-			clone.querySelectorAll('.add-card-slot').forEach(s => s.remove());
-			// Remove selected classes and format bar artifacts
+			// 1. Remover barras flotantes, botones, slots y toolbars del editor
+			clone.querySelectorAll('.add-card-slot, .card-action-floating-bar, .card-action-btn, .editor-inline-toolbar, .editor-top-bar').forEach(s => s.remove());
+			// 2. Remover clases de selección y foco del editor
 			clone.querySelectorAll('.is-card-selected').forEach(c => c.classList.remove('is-card-selected'));
+			clone.querySelectorAll('.selectable-box').forEach(c => c.classList.remove('selectable-box'));
+			clone.querySelectorAll('.active-editable-focus').forEach(c => c.classList.remove('active-editable-focus'));
+			// 3. Remover atributos de edición
+			clone.querySelectorAll('[data-deletable-box]').forEach(c => c.removeAttribute('data-deletable-box'));
+			clone.querySelectorAll('[contenteditable]').forEach(c => c.removeAttribute('contenteditable'));
+			clone.querySelectorAll('[spellcheck]').forEach(c => c.removeAttribute('spellcheck'));
 			return clone.innerHTML.trim();
 		};
 

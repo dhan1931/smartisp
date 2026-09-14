@@ -1139,6 +1139,27 @@
 				text-align: center;
 			}
 		}
+
+		/* Ocultar permanentemente cualquier barra, botón o control del editor visual en la vista pública */
+		.card-action-floating-bar,
+		.add-card-slot,
+		.card-action-btn,
+		.editor-inline-toolbar,
+		.editor-top-bar,
+		.is-card-selected::after {
+			display: none !important;
+			visibility: hidden !important;
+			opacity: 0 !important;
+			pointer-events: none !important;
+			position: absolute !important;
+			top: -9999px !important;
+			left: -9999px !important;
+			width: 0 !important;
+			height: 0 !important;
+			margin: 0 !important;
+			padding: 0 !important;
+			border: 0 !important;
+		}
 	</style>
 </head>
 <body>
@@ -1746,23 +1767,45 @@
 					if (badgeEl) badgeEl.textContent = logoBadge;
 				}
 
-				// 2. Restaurar cuadrículas personalizadas (si se agregaron o eliminaron cuadros)
+				// 2. Restaurar cuadrículas personalizadas eliminando cualquier rastro del editor
+				const cleanPublicGrid = container => {
+					if (!container) return;
+					container.querySelectorAll('.card-action-floating-bar, .add-card-slot, .card-action-btn, .editor-inline-toolbar, .editor-top-bar').forEach(el => el.remove());
+					container.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+					container.querySelectorAll('[spellcheck]').forEach(el => el.removeAttribute('spellcheck'));
+					container.querySelectorAll('[data-deletable-box]').forEach(el => el.removeAttribute('data-deletable-box'));
+					container.querySelectorAll('.selectable-box, .is-card-selected, .active-editable-focus').forEach(el => el.classList.remove('selectable-box', 'is-card-selected', 'active-editable-focus'));
+				};
+
 				if (content.solutions_grid_html) {
 					const solGrid = document.querySelector('.solutions-grid');
-					if (solGrid) solGrid.innerHTML = content.solutions_grid_html;
+					if (solGrid) {
+						solGrid.innerHTML = content.solutions_grid_html;
+						cleanPublicGrid(solGrid);
+					}
 				}
 				if (content.advantages_grid_html) {
 					const advGrid = document.querySelector('.advantages-grid');
-					if (advGrid) advGrid.innerHTML = content.advantages_grid_html;
+					if (advGrid) {
+						advGrid.innerHTML = content.advantages_grid_html;
+						cleanPublicGrid(advGrid);
+					}
 				}
 				if (content.about_visual_html) {
 					const abtVisual = document.querySelector('.about-visual');
-					if (abtVisual) abtVisual.innerHTML = content.about_visual_html;
+					if (abtVisual) {
+						abtVisual.innerHTML = content.about_visual_html;
+						cleanPublicGrid(abtVisual);
+					}
 				}
 				if (content.stats_grid_html) {
 					const statsGrid = document.querySelector('.stats-grid');
-					if (statsGrid) statsGrid.innerHTML = content.stats_grid_html;
+					if (statsGrid) {
+						statsGrid.innerHTML = content.stats_grid_html;
+						cleanPublicGrid(statsGrid);
+					}
 				}
+				cleanPublicGrid(document.body);
 
 				// 3. Aplicar estilos y textos dinámicos
 				document.querySelectorAll('[data-landing-key]').forEach(el => {

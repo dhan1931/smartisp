@@ -1050,6 +1050,27 @@ app.post('/api/auth/admin-content', async (req, res) => {
   return res.json({ ok: true });
 });
 
+const sanitizeLandingGridHtml = html => {
+  if (typeof html !== 'string') return '';
+  return html
+    .replace(/<div class="card-action-floating-bar"[\s\S]*?<\/div>/gi, '')
+    .replace(/<div class="add-card-slot"[\s\S]*?<\/div>/gi, '')
+    .replace(/<button[^>]*class="[^"]*card-action-btn[^"]*"[\s\S]*?<\/button>/gi, '')
+    .replace(/\s*selectable-box/g, '')
+    .replace(/\s*is-card-selected/g, '')
+    .replace(/\s*active-editable-focus/g, '')
+    .replace(/\s*contenteditable="[^"]*"/gi, '')
+    .replace(/\s*spellcheck="[^"]*"/gi, '')
+    .replace(/\s*data-deletable-box="[^"]*"/gi, '');
+};
+
+const sanitizeLandingRows = rows => (rows || []).map(r => {
+  if (r.key && r.key.endsWith('_grid_html') && typeof r.value === 'string') {
+    return { key: r.key, value: sanitizeLandingGridHtml(r.value) };
+  }
+  return r;
+});
+
 app.get('/api/auth/landing-content', async (req, res) => {
   if (pool) {
     try {
@@ -1059,13 +1080,15 @@ app.get('/api/auth/landing-content', async (req, res) => {
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )`);
       const result = await pool.query('SELECT content_key AS "key", content_value AS value FROM landing_content ORDER BY content_key');
-      return res.json({ content: result.rows });
+      return res.json({ content: sanitizeLandingRows(result.rows) });
     } catch (err) {
       console.warn('Error reading landing_content table:', err.message);
-      return res.json({ content: [...inMemoryLandingContent.entries()].map(([key, value]) => ({ key, value })) });
+      const rows = [...inMemoryLandingContent.entries()].map(([key, value]) => ({ key, value }));
+      return res.json({ content: sanitizeLandingRows(rows) });
     }
   }
-  return res.json({ content: [...inMemoryLandingContent.entries()].map(([key, value]) => ({ key, value })) });
+  const rows = [...inMemoryLandingContent.entries()].map(([key, value]) => ({ key, value }));
+  return res.json({ content: sanitizeLandingRows(rows) });
 });
 
 app.post('/api/auth/landing-content', async (req, res) => {
@@ -1079,15 +1102,22 @@ app.post('/api/auth/landing-content', async (req, res) => {
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )`);
       for (const [key, value] of Object.entries(content)) {
+        const cleanVal = key.endsWith('_grid_html') ? sanitizeLandingGridHtml(value) : String(value ?? '');
         await pool.query(`INSERT INTO landing_content (content_key, content_value, updated_at) VALUES ($1, $2, NOW())
-          ON CONFLICT (content_key) DO UPDATE SET content_value = EXCLUDED.content_value, updated_at = NOW()`, [String(key), String(value ?? '')]);
+          ON CONFLICT (content_key) DO UPDATE SET content_value = EXCLUDED.content_value, updated_at = NOW()`, [String(key), cleanVal]);
       }
     } catch (err) {
       console.warn('Error writing to landing_content table:', err.message);
-      for (const [key, value] of Object.entries(content)) inMemoryLandingContent.set(key, String(value ?? ''));
+      for (const [key, value] of Object.entries(content)) {
+        const cleanVal = key.endsWith('_grid_html') ? sanitizeLandingGridHtml(value) : String(value ?? '');
+        inMemoryLandingContent.set(key, cleanVal);
+      }
     }
   } else {
-    for (const [key, value] of Object.entries(content)) inMemoryLandingContent.set(key, String(value ?? ''));
+    for (const [key, value] of Object.entries(content)) {
+      const cleanVal = key.endsWith('_grid_html') ? sanitizeLandingGridHtml(value) : String(value ?? '');
+      inMemoryLandingContent.set(key, cleanVal);
+    }
   }
   return res.json({ ok: true, message: 'Página de presentación guardada correctamente.' });
 });

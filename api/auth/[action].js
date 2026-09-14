@@ -1115,6 +1115,20 @@ export default async function handler(req, res) {
     }
 
     if (action === 'landing-content' && (req.method === 'GET' || req.method === 'POST')) {
+      const sanitizeLandingGridHtml = html => {
+        if (typeof html !== 'string') return '';
+        return html
+          .replace(/<div class="card-action-floating-bar"[\s\S]*?<\/div>/gi, '')
+          .replace(/<div class="add-card-slot"[\s\S]*?<\/div>/gi, '')
+          .replace(/<button[^>]*class="[^"]*card-action-btn[^"]*"[\s\S]*?<\/button>/gi, '')
+          .replace(/\s*selectable-box/g, '')
+          .replace(/\s*is-card-selected/g, '')
+          .replace(/\s*active-editable-focus/g, '')
+          .replace(/\s*contenteditable="[^"]*"/gi, '')
+          .replace(/\s*spellcheck="[^"]*"/gi, '')
+          .replace(/\s*data-deletable-box="[^"]*"/gi, '');
+      };
+
       await database.query(`CREATE TABLE IF NOT EXISTS landing_content (
         content_key TEXT PRIMARY KEY,
         content_value TEXT NOT NULL DEFAULT '',
@@ -1122,13 +1136,20 @@ export default async function handler(req, res) {
       )`);
       if (req.method === 'GET') {
         const result = await database.query('SELECT content_key AS "key", content_value AS value FROM landing_content ORDER BY content_key');
-        return res.status(200).json({ content: result.rows });
+        const cleanRows = (result.rows || []).map(r => {
+          if (r.key && r.key.endsWith('_grid_html') && typeof r.value === 'string') {
+            return { key: r.key, value: sanitizeLandingGridHtml(r.value) };
+          }
+          return r;
+        });
+        return res.status(200).json({ content: cleanRows });
       }
       if (!await requireAdmin(req, res, database)) return;
       const content = bodyOf(req);
       for (const [key, value] of Object.entries(content)) {
+        const cleanVal = key.endsWith('_grid_html') ? sanitizeLandingGridHtml(value) : String(value ?? '');
         await database.query(`INSERT INTO landing_content (content_key, content_value, updated_at) VALUES ($1, $2, NOW())
-          ON CONFLICT (content_key) DO UPDATE SET content_value = EXCLUDED.content_value, updated_at = NOW()`, [String(key), String(value ?? '')]);
+          ON CONFLICT (content_key) DO UPDATE SET content_value = EXCLUDED.content_value, updated_at = NOW()`, [String(key), cleanVal]);
       }
       return res.status(200).json({ ok: true, message: 'Página de presentación guardada correctamente.' });
     }
