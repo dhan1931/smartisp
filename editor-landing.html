@@ -1141,10 +1141,10 @@
 		}
 	
 		/* ==========================================================================
-		   EDITOR VISUAL STYLES & INTERACTIVE TOOLBAR
+		   ADVANCED VISUAL EDITOR STYLES & INTERACTIVE TOOLBARS
 		   ========================================================================== */
 		body {
-			padding-top: 56px !important;
+			padding-top: 58px !important;
 		}
 
 		/* TOP BAR EDITOR */
@@ -1153,7 +1153,7 @@
 			top: 0;
 			left: 0;
 			right: 0;
-			height: 56px;
+			height: 58px;
 			background: #081722;
 			border-bottom: 1px solid #16364d;
 			display: flex;
@@ -1211,7 +1211,7 @@
 		.editor-actions-group {
 			display: flex;
 			align-items: center;
-			gap: 9px;
+			gap: 8px;
 		}
 
 		.editor-action-btn {
@@ -1219,12 +1219,12 @@
 			cursor: pointer;
 			font-family: inherit;
 			font-weight: 700;
-			font-size: 12.5px;
-			padding: 7px 14px;
+			font-size: 12px;
+			padding: 7px 13px;
 			border-radius: 6px;
 			display: inline-flex;
 			align-items: center;
-			gap: 7px;
+			gap: 6px;
 			text-decoration: none;
 			transition: all 0.2s ease;
 			white-space: nowrap;
@@ -1289,7 +1289,7 @@
 			background: rgba(255, 255, 255, 0.08);
 		}
 
-		/* IN-PLACE EDITABLE ELEMENTS */
+		/* IN-PLACE EDITABLE TEXT ELEMENTS */
 		[data-landing-key] {
 			outline: 1.5px dashed rgba(8, 126, 164, 0.35);
 			outline-offset: 3px;
@@ -1311,7 +1311,237 @@
 			box-shadow: 0 0 0 4px rgba(8, 126, 164, 0.18) !important;
 		}
 
-		/* MODALS */
+		/* FLOATING TEXT FORMATTING TOOLBAR */
+		.floating-format-bar {
+			position: fixed;
+			z-index: 100005;
+			background: #091a25;
+			border: 1px solid #1a415e;
+			border-radius: 10px;
+			padding: 5px 8px;
+			display: none;
+			align-items: center;
+			gap: 6px;
+			box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+			font-family: 'DM Sans', sans-serif;
+			color: #fff;
+		}
+		.floating-format-bar.visible {
+			display: flex;
+		}
+
+		.format-btn {
+			background: #142e42;
+			border: 1px solid #244b6a;
+			color: #e2f0f9;
+			padding: 4px 8px;
+			border-radius: 5px;
+			cursor: pointer;
+			font-size: 11.5px;
+			font-weight: 700;
+			display: inline-flex;
+			align-items: center;
+			gap: 4px;
+			transition: all 0.15s;
+		}
+		.format-btn:hover {
+			background: #087ea4;
+			color: #fff;
+			border-color: #087ea4;
+		}
+
+		.format-divider {
+			width: 1px;
+			height: 18px;
+			background: #254b6d;
+			margin: 0 2px;
+		}
+
+		/* SIZE GRID POPOVER */
+		.size-grid-popover {
+			position: absolute;
+			bottom: calc(100% + 8px);
+			left: 0;
+			background: #081722;
+			border: 1px solid #1e425e;
+			border-radius: 10px;
+			padding: 12px;
+			width: 250px;
+			box-shadow: 0 16px 36px rgba(0,0,0,0.55);
+			display: none;
+			z-index: 100007;
+		}
+		.size-grid-popover.open {
+			display: block;
+		}
+
+		.size-grid {
+			display: grid;
+			grid-template-columns: repeat(3, 1fr);
+			gap: 5px;
+			margin-top: 8px;
+		}
+
+		.size-chip {
+			background: #142c3d;
+			border: 1px solid #234760;
+			color: #d1e7f5;
+			padding: 5px 6px;
+			border-radius: 6px;
+			font-size: 11px;
+			font-weight: 700;
+			text-align: center;
+			cursor: pointer;
+			transition: all 0.15s;
+		}
+		.size-chip:hover {
+			background: #087ea4;
+			color: #fff;
+			border-color: #087ea4;
+		}
+
+		.size-slider-row {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			margin-top: 10px;
+		}
+		.size-slider-row input[type="range"] {
+			flex: 1;
+			accent-color: #087ea4;
+		}
+
+		/* COLOR SWATCHES POPOVER */
+		.color-grid-popover {
+			position: absolute;
+			bottom: calc(100% + 8px);
+			left: 70px;
+			background: #081722;
+			border: 1px solid #1e425e;
+			border-radius: 10px;
+			padding: 12px;
+			width: 210px;
+			box-shadow: 0 16px 36px rgba(0,0,0,0.55);
+			display: none;
+			z-index: 100007;
+		}
+		.color-grid-popover.open {
+			display: block;
+		}
+
+		.swatch-grid {
+			display: grid;
+			grid-template-columns: repeat(4, 1fr);
+			gap: 6px;
+			margin-top: 6px;
+		}
+
+		.color-swatch-btn {
+			width: 34px;
+			height: 34px;
+			border-radius: 6px;
+			border: 2px solid rgba(255,255,255,0.2);
+			cursor: pointer;
+			transition: transform 0.15s, border-color 0.15s;
+		}
+		.color-swatch-btn:hover {
+			transform: scale(1.15);
+			border-color: #fff;
+		}
+
+		/* SELECTABLE & DELETABLE BOXES */
+		.selectable-box {
+			position: relative;
+			transition: box-shadow 0.2s ease, outline 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+			cursor: pointer;
+		}
+
+		.selectable-box:hover {
+			outline: 2px solid rgba(8, 126, 164, 0.45);
+		}
+
+		.selectable-box.is-card-selected {
+			outline: 3px solid #087ea4 !important;
+			box-shadow: 0 0 0 6px rgba(8, 126, 164, 0.25), 0 20px 40px rgba(0, 0, 0, 0.16) !important;
+			transform: translateY(-2px);
+		}
+
+		.card-action-floating-bar {
+			position: absolute;
+			top: -16px;
+			right: 12px;
+			background: #081722;
+			border: 1px solid #234b6a;
+			border-radius: 20px;
+			padding: 3px 8px;
+			display: none;
+			align-items: center;
+			gap: 6px;
+			z-index: 25;
+			box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+		}
+
+		.selectable-box.is-card-selected .card-action-floating-bar {
+			display: flex;
+		}
+
+		.card-action-btn {
+			background: transparent;
+			border: 0;
+			color: #c5e3f5;
+			font-size: 11px;
+			font-weight: 700;
+			padding: 3px 8px;
+			border-radius: 12px;
+			cursor: pointer;
+			display: inline-flex;
+			align-items: center;
+			gap: 4px;
+		}
+		.card-action-btn:hover {
+			background: rgba(255,255,255,0.15);
+			color: #fff;
+		}
+		.card-action-btn.delete-btn {
+			color: #fca5a5;
+		}
+		.card-action-btn.delete-btn:hover {
+			background: #dc2626;
+			color: #fff;
+		}
+
+		/* ADD NEW CARD BUTTON SLOT */
+		.add-card-slot {
+			grid-column: 1 / -1;
+			display: flex;
+			justify-content: center;
+			padding: 16px 0 6px;
+		}
+
+		.btn-add-grid-item {
+			background: #ffffff;
+			border: 2px dashed #9acfe9;
+			color: #087ea4;
+			padding: 12px 24px;
+			border-radius: 10px;
+			font-size: 13.5px;
+			font-weight: 700;
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			cursor: pointer;
+			transition: all 0.2s ease;
+			box-shadow: 0 4px 14px rgba(8, 126, 164, 0.06);
+		}
+
+		.btn-add-grid-item:hover {
+			background: #eaf6fc;
+			border-color: #087ea4;
+			transform: translateY(-2px);
+			box-shadow: 0 8px 22px rgba(8, 126, 164, 0.16);
+		}
+
+		/* MODALS & OVERLAYS */
 		.editor-modal-overlay {
 			position: fixed;
 			top: 0;
@@ -1320,7 +1550,7 @@
 			bottom: 0;
 			background: rgba(9, 26, 37, 0.75);
 			backdrop-filter: blur(5px);
-			z-index: 100000;
+			z-index: 100010;
 			display: flex;
 			align-items: center;
 			justify-content: center;
@@ -1394,7 +1624,6 @@
 			background: #f8fafc;
 		}
 
-		/* LOGO EDITOR TABS & CHECKERBOARD */
 		.modal-tabs {
 			display: flex;
 			background: #e2e8f0;
@@ -1456,7 +1685,7 @@
 			min-height: 90px;
 		}
 
-		/* TOAST NOTIFICATION */
+		/* TOAST */
 		.editor-toast {
 			position: fixed;
 			bottom: 24px;
@@ -1471,7 +1700,7 @@
 			gap: 12px;
 			font-size: 13.5px;
 			font-weight: 600;
-			z-index: 100001;
+			z-index: 100020;
 			transform: translateY(100px);
 			opacity: 0;
 			transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1505,16 +1734,16 @@
 		</div>
 
 		<div class="editor-actions-group">
-			<button type="button" class="editor-action-btn secondary" id="openLogoModalBtn" title="Cambiar logotipo exclusivo de la página de inicio">
+			<button type="button" class="editor-action-btn secondary" id="openLogoModalBtn" title="Cambiar logotipo independiente de la presentación">
 				<span>🖼️ Logo de Presentación</span>
 			</button>
-			<button type="button" class="editor-action-btn primary" id="saveLandingChangesBtn" title="Guardar todos los cambios en el servidor">
+			<button type="button" class="editor-action-btn primary" id="saveLandingChangesBtn" title="Guardar todos los cambios en el servidor (Ctrl+S)">
 				<span>💾 Guardar Cambios</span>
 			</button>
 			<a href="index.html" target="_blank" class="editor-action-btn outline" title="Ver cómo luce la página para los clientes">
 				<span>👁️ Ver en Vivo ↗</span>
 			</a>
-			<button type="button" class="editor-action-btn danger" id="resetLandingDefaultsBtn" title="Restablecer textos y logo a los valores originales">
+			<button type="button" class="editor-action-btn danger" id="resetLandingDefaultsBtn" title="Restablecer textos, cuadros y logo a valores originales">
 				<span>↩️ Restaurar</span>
 			</button>
 			<a href="admin.html" class="editor-action-btn subtle" title="Regresar al panel de control">
@@ -1522,6 +1751,63 @@
 			</a>
 		</div>
 	</header>
+
+	<!-- FLOATING TEXT FORMATTING TOOLBAR -->
+	<div id="floatingFormatBar" class="floating-format-bar">
+		<button type="button" class="format-btn" id="formatSizeToggleBtn" title="Modificar tamaño de texto">
+			<span>🔤 Tamaño: <span id="currentSizeLabel">16px</span> ▼</span>
+		</button>
+		<button type="button" class="format-btn" id="stepDownSizeBtn" title="Reducir tamaño (A-)">A-</button>
+		<button type="button" class="format-btn" id="stepUpSizeBtn" title="Aumentar tamaño (A+)">A+</button>
+		<div class="format-divider"></div>
+		<button type="button" class="format-btn" id="formatColorToggleBtn" title="Cambiar color del texto">
+			<span>🎨 Color ▼</span>
+		</button>
+		<div class="format-divider"></div>
+		<button type="button" class="format-btn" id="boldToggleBtn" title="Negrita (B)"><b>B</b></button>
+		<button type="button" class="format-btn" id="italicToggleBtn" title="Cursiva (I)"><i>I</i></button>
+		<button type="button" class="format-btn" id="underlineToggleBtn" title="Subrayado (U)"><u>U</u></button>
+		<div class="format-divider"></div>
+		<button type="button" class="format-btn" id="alignLeftBtn" title="Alinear a la izquierda">⯇</button>
+		<button type="button" class="format-btn" id="alignCenterBtn" title="Centrar">≡</button>
+		<button type="button" class="format-btn" id="alignRightBtn" title="Alinear a la derecha">⯈</button>
+
+		<!-- Size Popover -->
+		<div class="size-grid-popover" id="sizeGridPopover">
+			<div style="font-size:11px; font-weight:700; color:#8cd3f5; margin-bottom:4px;">Cuadrícula de Tamaños:</div>
+			<div class="size-grid">
+				<div class="size-chip" data-size="12px">12px (Pequeño)</div>
+				<div class="size-chip" data-size="14px">14px (Normal)</div>
+				<div class="size-chip" data-size="16px">16px (Estándar)</div>
+				<div class="size-chip" data-size="18px">18px (Mediano)</div>
+				<div class="size-chip" data-size="22px">22px (Subtítulo)</div>
+				<div class="size-chip" data-size="28px">28px (Título)</div>
+				<div class="size-chip" data-size="36px">36px (Grande)</div>
+				<div class="size-chip" data-size="46px">46px (Hero)</div>
+				<div class="size-chip" data-size="56px">56px (Gigante)</div>
+			</div>
+			<div class="size-slider-row">
+				<span style="font-size:11px; color:#94a3b8;">Ajuste:</span>
+				<input type="range" id="sizeRangeSlider" min="10" max="64" value="16">
+				<span id="sliderValueText" style="font-size:11px; font-weight:700; color:#fff; min-width:24px;">16px</span>
+			</div>
+		</div>
+
+		<!-- Color Swatches Popover -->
+		<div class="color-grid-popover" id="colorGridPopover">
+			<div style="font-size:11px; font-weight:700; color:#8cd3f5; margin-bottom:4px;">Paleta de Colores:</div>
+			<div class="swatch-grid">
+				<button type="button" class="color-swatch-btn" style="background:#102c3d;" data-color="#102c3d" title="Navy Oscuro"></button>
+				<button type="button" class="color-swatch-btn" style="background:#087ea4;" data-color="#087ea4" title="Azul SmartISP"></button>
+				<button type="button" class="color-swatch-btn" style="background:#0284c7;" data-color="#0284c7" title="Azul Cielo"></button>
+				<button type="button" class="color-swatch-btn" style="background:#f5a524;" data-color="#f5a524" title="Naranja"></button>
+				<button type="button" class="color-swatch-btn" style="background:#10b981;" data-color="#10b981" title="Verde Esmeralda"></button>
+				<button type="button" class="color-swatch-btn" style="background:#5e7480;" data-color="#5e7480" title="Gris Tenue"></button>
+				<button type="button" class="color-swatch-btn" style="background:#dc2626;" data-color="#dc2626" title="Rojo"></button>
+				<button type="button" class="color-swatch-btn" style="background:#ffffff; border:2px solid #cbd5e1;" data-color="#ffffff" title="Blanco"></button>
+			</div>
+		</div>
+	</div>
 
 	<!-- MODAL LOGOTIPO EXCLUSIVO DE LA PÁGINA DE PRESENTACIÓN -->
 	<div class="editor-modal-overlay" id="landingLogoModal">
@@ -1736,26 +2022,27 @@
 		<!-- STATS COUNTER BAR -->
 		<section class="stats-section">
 			<div class="stats-grid">
-				<div class="stat-item">
+				<div class="stat-item selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
 					<span class="stat-number" data-landing-key="stat1_num" contenteditable="true" spellcheck="false">+10 Años</span>
 					<span class="stat-label" data-landing-key="stat1_label" contenteditable="true" spellcheck="false">Trayectoria y Experiencia</span>
 					<span class="stat-desc" data-landing-key="stat1_desc" contenteditable="true" spellcheck="false">Liderando el mercado de telecomunicaciones y redes</span>
 				</div>
-				<div class="stat-item">
+				<div class="stat-item selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
 					<span class="stat-number" data-landing-key="stat2_num" contenteditable="true" spellcheck="false">+500</span>
 					<span class="stat-label" data-landing-key="stat2_label" contenteditable="true" spellcheck="false">Proyectos de Red Exitosos</span>
 					<span class="stat-desc" data-landing-key="stat2_desc" contenteditable="true" spellcheck="false">Despliegues de fibra óptica y data centers</span>
 				</div>
-				<div class="stat-item">
+				<div class="stat-item selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
 					<span class="stat-number" data-landing-key="stat3_num" contenteditable="true" spellcheck="false">100%</span>
 					<span class="stat-label" data-landing-key="stat3_label" contenteditable="true" spellcheck="false">Equipos Homologados</span>
 					<span class="stat-desc" data-landing-key="stat3_desc" contenteditable="true" spellcheck="false">Marcas líderes globales con garantía directa</span>
 				</div>
-				<div class="stat-item">
+				<div class="stat-item selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
 					<span class="stat-number" data-landing-key="stat4_num" contenteditable="true" spellcheck="false">24 / 7</span>
 					<span class="stat-label" data-landing-key="stat4_label" contenteditable="true" spellcheck="false">Soporte Técnico Especializado</span>
 					<span class="stat-desc" data-landing-key="stat4_desc" contenteditable="true" spellcheck="false">Ingenieros listos para resolver incidencias</span>
 				</div>
+				<div class="add-card-slot"><button type="button" class="btn-add-grid-item" id="addStatItemBtn"><i data-lucide="plus-circle" width="18"></i> <span>➕ Agregar Nueva Estadística</span></button></div>
 			</div>
 		</section>
 
@@ -1789,27 +2076,27 @@
 					</div>
 
 					<div class="about-visual">
-						<div class="value-box">
+						<div class="value-box selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
 							<i data-lucide="award" width="28"></i>
 							<h5 data-landing-key="value1_h5" contenteditable="true" spellcheck="false">Calidad Certificada</h5>
 							<p data-landing-key="value1_p" contenteditable="true" spellcheck="false">Trabajamos exclusivamente con fabricantes de prestigio global y estándares internacionales de telecomunicación.</p>
 						</div>
-						<div class="value-box">
+						<div class="value-box selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
 							<i data-lucide="zap" width="28"></i>
 							<h5 data-landing-key="value2_h5" contenteditable="true" spellcheck="false">Respuesta Inmediata</h5>
 							<p data-landing-key="value2_p" contenteditable="true" spellcheck="false">Contamos con inventario en bodega listo para entrega rápida y minimización de tiempos de parada.</p>
 						</div>
-						<div class="value-box">
+						<div class="value-box selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
 							<i data-lucide="users" width="28"></i>
 							<h5 data-landing-key="value3_h5" contenteditable="true" spellcheck="false">Ingeniería Humana</h5>
 							<p data-landing-key="value3_p" contenteditable="true" spellcheck="false">Asesoría personalizada brindada por ingenieros con experiencia en campo y despliegues reales.</p>
 						</div>
-						<div class="value-box">
+						<div class="value-box selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
 							<i data-lucide="shield-alert" width="28"></i>
 							<h5 data-landing-key="value4_h5" contenteditable="true" spellcheck="false">Continuidad de Servicio</h5>
 							<p data-landing-key="value4_p" contenteditable="true" spellcheck="false">Equipamiento con tolerancia a fallas, redundancia y alta eficiencia energética para operaciones críticas.</p>
 						</div>
-					</div>
+						<div class="add-card-slot"><button type="button" class="btn-add-grid-item" id="addValueBoxBtn"><i data-lucide="plus-circle" width="18"></i> <span>➕ Agregar Nuevo Pilar / Cuadro</span></button></div>
 				</div>
 			</div>
 		</section>
@@ -1825,7 +2112,7 @@
 
 				<div class="solutions-grid">
 					<!-- Solution 1 -->
-					<div class="solution-card">
+					<div class="solution-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
 						<div>
 							<div class="solution-icon-wrap"><i data-lucide="network" width="26"></i></div>
 							<h3 data-landing-key="sol1_h3" contenteditable="true" spellcheck="false">Fibra Óptica & FTTH</h3>
@@ -1843,7 +2130,7 @@
 					</div>
 
 					<!-- Solution 2 -->
-					<div class="solution-card">
+					<div class="solution-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
 						<div>
 							<div class="solution-icon-wrap"><i data-lucide="server" width="26"></i></div>
 							<h3 data-landing-key="sol2_h3" contenteditable="true" spellcheck="false">Servidores & Data Center</h3>
@@ -1861,7 +2148,7 @@
 					</div>
 
 					<!-- Solution 3 -->
-					<div class="solution-card">
+					<div class="solution-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
 						<div>
 							<div class="solution-icon-wrap"><i data-lucide="radio" width="26"></i></div>
 							<h3 data-landing-key="sol3_h3" contenteditable="true" spellcheck="false">Conectividad & Radioenlaces</h3>
@@ -1879,7 +2166,7 @@
 					</div>
 
 					<!-- Solution 4 -->
-					<div class="solution-card">
+					<div class="solution-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
 						<div>
 							<div class="solution-icon-wrap"><i data-lucide="laptop" width="26"></i></div>
 							<h3 data-landing-key="sol4_h3" contenteditable="true" spellcheck="false">Equipamiento TI Corporativo</h3>
@@ -1895,6 +2182,7 @@
 							<i data-lucide="arrow-up-right" width="14"></i>
 						</a>
 					</div>
+					<div class="add-card-slot"><button type="button" class="btn-add-grid-item" id="addSolutionCardBtn"><i data-lucide="plus-circle" width="18"></i> <span>➕ Agregar Nueva Línea de Solución</span></button></div>
 				</div>
 			</div>
 		</section>
@@ -1909,29 +2197,30 @@
 				</div>
 
 				<div class="advantages-grid">
-					<div class="advantage-card">
+					<div class="advantage-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
 						<div class="advantage-icon"><i data-lucide="shield-check" width="28"></i></div>
 						<h4 data-landing-key="adv1_h4" contenteditable="true" spellcheck="false">Garantía Directa</h4>
 						<p data-landing-key="adv1_p" contenteditable="true" spellcheck="false">Todos nuestros productos cuentan con garantía respaldada por los fabricantes y reemplazo inmediato ante fallas.</p>
 					</div>
 
-					<div class="advantage-card">
+					<div class="advantage-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
 						<div class="advantage-icon"><i data-lucide="truck" width="28"></i></div>
 						<h4 data-landing-key="adv2_h4" contenteditable="true" spellcheck="false">Despacho a Nivel Nacional</h4>
 						<p data-landing-key="adv2_p" contenteditable="true" spellcheck="false">Entregas seguras y rápidas a cualquier provincia del país con seguimiento en tiempo real de tu encomienda.</p>
 					</div>
 
-					<div class="advantage-card">
+					<div class="advantage-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
 						<div class="advantage-icon"><i data-lucide="cpu" width="28"></i></div>
 						<h4 data-landing-key="adv3_h4" contenteditable="true" spellcheck="false">Asesoría de Ingenieros</h4>
 						<p data-landing-key="adv3_p" contenteditable="true" spellcheck="false">No solo vendemos cajas: te ayudamos a dimensionar tu red para optimizar tu inversión y prevenir cuellos de botella.</p>
 					</div>
 
-					<div class="advantage-card">
+					<div class="advantage-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
 						<div class="advantage-icon"><i data-lucide="credit-card" width="28"></i></div>
 						<h4 data-landing-key="adv4_h4" contenteditable="true" spellcheck="false">Compra en Línea Segura</h4>
 						<p data-landing-key="adv4_p" contenteditable="true" spellcheck="false">Nuestra tienda virtual te permite consultar stock, cotizar en el momento y pagar con métodos de pago protegidos.</p>
 					</div>
+					<div class="add-card-slot"><button type="button" class="btn-add-grid-item" id="addAdvantageCardBtn"><i data-lucide="plus-circle" width="18"></i> <span>➕ Agregar Nueva Ventaja / Cuadro</span></button></div>
 				</div>
 			</div>
 		</section>
@@ -2126,25 +2415,22 @@
 
 	
 	<script>
-		// Initialize Lucide Icons
 		lucide.createIcons();
 
-		// Prevent normal link navigation inside the editor unless Ctrl is pressed
+		// Prevent link navigation in editor mode
 		document.addEventListener('click', e => {
 			const link = e.target.closest('a');
 			if (!link) return;
-			// Allow editor bar links and modal triggers
-			if (link.closest('#editorTopBar') || link.closest('.editor-modal-overlay') || link.dataset.allowNavigate) {
-				return;
-			}
-			// If clicking on an internal anchor or button, prevent accidental navigation
+			if (link.closest('#editorTopBar') || link.closest('.editor-modal-overlay') || link.closest('.card-action-floating-bar')) return;
 			if (!e.ctrlKey && !e.metaKey) {
 				e.preventDefault();
 			}
 		});
 
-		// State management
 		let isDirty = false;
+		let selectedCardBox = null;
+		let activeTextElement = null;
+
 		const landingState = {
 			logo_type: 'text',
 			logo_image: '',
@@ -2162,9 +2448,7 @@
 			iconEl.textContent = isError ? '❌' : '✅';
 			toast.classList.toggle('error', isError);
 			toast.classList.add('show');
-			setTimeout(() => {
-				toast.classList.remove('show');
-			}, 3500);
+			setTimeout(() => { toast.classList.remove('show'); }, 3500);
 		};
 
 		const markDirty = (dirty = true) => {
@@ -2180,18 +2464,350 @@
 		window.addEventListener('beforeunload', e => {
 			if (isDirty) {
 				e.preventDefault();
-				e.returnValue = 'Tienes cambios sin guardar en la página de presentación.';
+				e.returnValue = 'Tienes cambios sin guardar.';
 			}
 		});
 
 		// Listen to all contenteditable edits
-		document.querySelectorAll('[data-landing-key]').forEach(el => {
-			el.addEventListener('input', () => {
+		const bindEditableEvents = () => {
+			document.querySelectorAll('[data-landing-key]').forEach(el => {
+				if (el._bound) return;
+				el._bound = true;
+				el.addEventListener('input', () => { markDirty(true); });
+				el.addEventListener('focus', () => {
+					activeTextElement = el;
+					positionFormatBar(el);
+				});
+			});
+		};
+		bindEditableEvents();
+
+		// =========================================================================
+		// FLOATING TEXT FORMATTING TOOLBAR & SIZE GRID
+		// =========================================================================
+		const formatBar = document.querySelector('#floatingFormatBar');
+		const sizePopover = document.querySelector('#sizeGridPopover');
+		const colorPopover = document.querySelector('#colorGridPopover');
+		const currentSizeLabel = document.querySelector('#currentSizeLabel');
+		const sizeSlider = document.querySelector('#sizeRangeSlider');
+		const sliderVal = document.querySelector('#sliderValueText');
+
+		const positionFormatBar = el => {
+			if (!el) return;
+			const rect = el.getBoundingClientRect();
+			const top = Math.max(65, rect.top - 48);
+			const left = Math.min(window.innerWidth - 380, Math.max(10, rect.left));
+			formatBar.style.top = top + 'px';
+			formatBar.style.left = left + 'px';
+			formatBar.classList.add('visible');
+
+			// Read current computed font size
+			const currentSize = parseInt(window.getComputedStyle(el).fontSize, 10) || 16;
+			if (currentSizeLabel) currentSizeLabel.textContent = currentSize + 'px';
+			if (sizeSlider) sizeSlider.value = currentSize;
+			if (sliderVal) sliderVal.textContent = currentSize + 'px';
+		};
+
+		document.addEventListener('click', e => {
+			if (e.target.closest('#floatingFormatBar') || e.target.closest('[data-landing-key]')) return;
+			formatBar?.classList.remove('visible');
+			sizePopover?.classList.remove('open');
+			colorPopover?.classList.remove('open');
+			activeTextElement = null;
+		});
+
+		// Toggle Popovers
+		document.querySelector('#formatSizeToggleBtn')?.addEventListener('click', e => {
+			e.stopPropagation();
+			sizePopover.classList.toggle('open');
+			colorPopover.classList.remove('open');
+		});
+
+		document.querySelector('#formatColorToggleBtn')?.addEventListener('click', e => {
+			e.stopPropagation();
+			colorPopover.classList.toggle('open');
+			sizePopover.classList.remove('open');
+		});
+
+		// Apply Font Size
+		const setElementFontSize = sizePx => {
+			if (!activeTextElement) return;
+			activeTextElement.style.fontSize = sizePx;
+			if (currentSizeLabel) currentSizeLabel.textContent = sizePx;
+			if (sliderVal) sliderVal.textContent = sizePx;
+			if (sizeSlider) sizeSlider.value = parseInt(sizePx, 10);
+			markDirty(true);
+		};
+
+		document.querySelectorAll('.size-chip').forEach(chip => {
+			chip.addEventListener('click', e => {
+				e.stopPropagation();
+				setElementFontSize(chip.dataset.size);
+				sizePopover.classList.remove('open');
+			});
+		});
+
+		sizeSlider?.addEventListener('input', e => {
+			setElementFontSize(e.target.value + 'px');
+		});
+
+		// Step A- / A+
+		document.querySelector('#stepDownSizeBtn')?.addEventListener('click', e => {
+			e.stopPropagation();
+			if (!activeTextElement) return;
+			const cur = parseInt(window.getComputedStyle(activeTextElement).fontSize, 10) || 16;
+			const next = Math.max(10, cur - 2);
+			setElementFontSize(next + 'px');
+		});
+
+		document.querySelector('#stepUpSizeBtn')?.addEventListener('click', e => {
+			e.stopPropagation();
+			if (!activeTextElement) return;
+			const cur = parseInt(window.getComputedStyle(activeTextElement).fontSize, 10) || 16;
+			const next = Math.min(72, cur + 2);
+			setElementFontSize(next + 'px');
+		});
+
+		// Color Swatches
+		document.querySelectorAll('.color-swatch-btn').forEach(btn => {
+			btn.addEventListener('click', e => {
+				e.stopPropagation();
+				if (!activeTextElement) return;
+				activeTextElement.style.color = btn.dataset.color;
+				colorPopover.classList.remove('open');
 				markDirty(true);
 			});
 		});
 
-		// --- Logo Rendering in Editor ---
+		// Bold, Italic, Underline
+		document.querySelector('#boldToggleBtn')?.addEventListener('click', e => {
+			e.stopPropagation();
+			if (!activeTextElement) return;
+			const cur = window.getComputedStyle(activeTextElement).fontWeight;
+			activeTextElement.style.fontWeight = (cur === '700' || cur === 'bold' || cur === '800') ? 'normal' : 'bold';
+			markDirty(true);
+		});
+
+		document.querySelector('#italicToggleBtn')?.addEventListener('click', e => {
+			e.stopPropagation();
+			if (!activeTextElement) return;
+			const cur = window.getComputedStyle(activeTextElement).fontStyle;
+			activeTextElement.style.fontStyle = (cur === 'italic') ? 'normal' : 'italic';
+			markDirty(true);
+		});
+
+		document.querySelector('#underlineToggleBtn')?.addEventListener('click', e => {
+			e.stopPropagation();
+			if (!activeTextElement) return;
+			const cur = activeTextElement.style.textDecoration;
+			activeTextElement.style.textDecoration = (cur === 'underline') ? 'none' : 'underline';
+			markDirty(true);
+		});
+
+		// Alignments
+		document.querySelector('#alignLeftBtn')?.addEventListener('click', e => {
+			e.stopPropagation();
+			if (activeTextElement) { activeTextElement.style.textAlign = 'left'; markDirty(true); }
+		});
+		document.querySelector('#alignCenterBtn')?.addEventListener('click', e => {
+			e.stopPropagation();
+			if (activeTextElement) { activeTextElement.style.textAlign = 'center'; markDirty(true); }
+		});
+		document.querySelector('#alignRightBtn')?.addEventListener('click', e => {
+			e.stopPropagation();
+			if (activeTextElement) { activeTextElement.style.textAlign = 'right'; markDirty(true); }
+		});
+
+		// =========================================================================
+		// SELECTABLE & DELETABLE BOXES (SELECCIÓN Y SUPR/DELETE)
+		// =========================================================================
+		const setSelectedCardBox = box => {
+			if (selectedCardBox && selectedCardBox !== box) {
+				selectedCardBox.classList.remove('is-card-selected');
+			}
+			selectedCardBox = box;
+			if (selectedCardBox) {
+				selectedCardBox.classList.add('is-card-selected');
+			}
+		};
+
+		const deleteBox = box => {
+			if (!box) return;
+			box.style.transform = 'scale(0.85)';
+			box.style.opacity = '0';
+			setTimeout(() => {
+				box.remove();
+				if (selectedCardBox === box) selectedCardBox = null;
+				markDirty(true);
+				showToast('🗑️ Cuadro eliminado');
+			}, 180);
+		};
+
+		const duplicateBox = box => {
+			if (!box) return;
+			const clone = box.cloneNode(true);
+			clone.classList.remove('is-card-selected');
+			// Generate unique keys for clone
+			const rand = Math.random().toString(36).slice(2, 7);
+			clone.querySelectorAll('[data-landing-key]').forEach(el => {
+				el.dataset.landingKey = el.dataset.landingKey + '_dup_' + rand;
+			});
+			box.after(clone);
+			bindBoxEvents(clone);
+			bindEditableEvents();
+			lucide.createIcons();
+			setSelectedCardBox(clone);
+			markDirty(true);
+			showToast('📋 Cuadro duplicado');
+		};
+
+		const bindBoxEvents = box => {
+			if (box._boxBound) return;
+			box._boxBound = true;
+
+			box.addEventListener('click', e => {
+				// Don't select box if user is actively clicking to edit text inside
+				if (e.target.closest('[data-landing-key]')) {
+					return;
+				}
+				e.stopPropagation();
+				setSelectedCardBox(box);
+			});
+
+			const delBtn = box.querySelector('.delete-btn');
+			delBtn?.addEventListener('click', e => {
+				e.stopPropagation();
+				deleteBox(box);
+			});
+
+			const dupBtn = box.querySelector('.duplicate-btn');
+			dupBtn?.addEventListener('click', e => {
+				e.stopPropagation();
+				duplicateBox(box);
+			});
+		};
+
+		document.querySelectorAll('.selectable-box').forEach(bindBoxEvents);
+
+		// Global click outside to deselect
+		document.addEventListener('click', e => {
+			if (!e.target.closest('.selectable-box') && !e.target.closest('#editorTopBar') && !e.target.closest('#floatingFormatBar')) {
+				setSelectedCardBox(null);
+			}
+		});
+
+		// SUPRIMIR / DELETE KEY EVENT
+		document.addEventListener('keydown', e => {
+			if ((e.key === 'Delete' || e.key === 'Backspace') && selectedCardBox) {
+				// If user is currently typing in an editable text or input, don't delete card
+				const active = document.activeElement;
+				if (active && (active.isContentEditable || active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+					return;
+				}
+				e.preventDefault();
+				deleteBox(selectedCardBox);
+			}
+		});
+
+		// =========================================================================
+		// ADD NEW CARDS ("➕ AGREGAR CUADRO")
+		// =========================================================================
+		const floatingBarHtml = `<div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (Supr)">🗑️ Eliminar (Supr)</button></div>`;
+
+		document.querySelector('#addSolutionCardBtn')?.addEventListener('click', () => {
+			const id = Date.now().toString().slice(-4);
+			const card = document.createElement('div');
+			card.className = 'solution-card selectable-box';
+			card.dataset.deletableBox = 'true';
+			card.innerHTML = `${floatingBarHtml}
+				<div>
+					<div class="solution-icon-wrap"><i data-lucide="network" width="26"></i></div>
+					<h3 data-landing-key="custom_sol_${id}_h3" contenteditable="true">Nueva Línea de Solución</h3>
+					<p data-landing-key="custom_sol_${id}_p" contenteditable="true">Describe aquí los detalles y beneficios de esta solución de conectividad.</p>
+					<ul>
+						<li><i data-lucide="check-circle-2" width="14"></i> <span data-landing-key="custom_sol_${id}_li1" contenteditable="true">Característica destacada 1</span></li>
+						<li><i data-lucide="check-circle-2" width="14"></i> <span data-landing-key="custom_sol_${id}_li2" contenteditable="true">Característica destacada 2</span></li>
+						<li><i data-lucide="check-circle-2" width="14"></i> <span data-landing-key="custom_sol_${id}_li3" contenteditable="true">Característica destacada 3</span></li>
+					</ul>
+				</div>
+				<a href="tienda.html" class="btn-solution-link">
+					<span data-landing-key="custom_sol_${id}_btn" contenteditable="true">Ver en la Tienda</span>
+					<i data-lucide="arrow-up-right" width="14"></i>
+				</a>`;
+			const slot = document.querySelector('.solutions-grid .add-card-slot');
+			if (slot) slot.before(card);
+			else document.querySelector('.solutions-grid').appendChild(card);
+			bindBoxEvents(card);
+			bindEditableEvents();
+			lucide.createIcons();
+			setSelectedCardBox(card);
+			markDirty(true);
+			showToast('➕ Nueva solución agregada. Haz clic en el texto para editar.');
+		});
+
+		document.querySelector('#addAdvantageCardBtn')?.addEventListener('click', () => {
+			const id = Date.now().toString().slice(-4);
+			const card = document.createElement('div');
+			card.className = 'advantage-card selectable-box';
+			card.dataset.deletableBox = 'true';
+			card.innerHTML = `${floatingBarHtml}
+				<div class="advantage-icon"><i data-lucide="shield-check" width="28"></i></div>
+				<h4 data-landing-key="custom_adv_${id}_h4" contenteditable="true">Nueva Ventaja Competitiva</h4>
+				<p data-landing-key="custom_adv_${id}_p" contenteditable="true">Describe aquí la razón por la que tus clientes deben elegir tu empresa.</p>`;
+			const slot = document.querySelector('.advantages-grid .add-card-slot');
+			if (slot) slot.before(card);
+			else document.querySelector('.advantages-grid').appendChild(card);
+			bindBoxEvents(card);
+			bindEditableEvents();
+			lucide.createIcons();
+			setSelectedCardBox(card);
+			markDirty(true);
+			showToast('➕ Nueva ventaja agregada.');
+		});
+
+		document.querySelector('#addValueBoxBtn')?.addEventListener('click', () => {
+			const id = Date.now().toString().slice(-4);
+			const card = document.createElement('div');
+			card.className = 'value-box selectable-box';
+			card.dataset.deletableBox = 'true';
+			card.innerHTML = `${floatingBarHtml}
+				<i data-lucide="award" width="28"></i>
+				<h5 data-landing-key="custom_val_${id}_h5" contenteditable="true">Nuevo Pilar Corporativo</h5>
+				<p data-landing-key="custom_val_${id}_p" contenteditable="true">Describe el compromiso, garantía o diferencial técnico de la empresa.</p>`;
+			const slot = document.querySelector('.about-visual .add-card-slot');
+			if (slot) slot.before(card);
+			else document.querySelector('.about-visual').appendChild(card);
+			bindBoxEvents(card);
+			bindEditableEvents();
+			lucide.createIcons();
+			setSelectedCardBox(card);
+			markDirty(true);
+			showToast('➕ Nuevo pilar agregado.');
+		});
+
+		document.querySelector('#addStatItemBtn')?.addEventListener('click', () => {
+			const id = Date.now().toString().slice(-4);
+			const card = document.createElement('div');
+			card.className = 'stat-item selectable-box';
+			card.dataset.deletableBox = 'true';
+			card.innerHTML = `${floatingBarHtml}
+				<span class="stat-number" data-landing-key="custom_stat_${id}_num" contenteditable="true">+100</span>
+				<span class="stat-label" data-landing-key="custom_stat_${id}_label" contenteditable="true">Título de Estadística</span>
+				<span class="stat-desc" data-landing-key="custom_stat_${id}_desc" contenteditable="true">Descripción de este logro o métrica.</span>`;
+			const slot = document.querySelector('.stats-grid .add-card-slot');
+			if (slot) slot.before(card);
+			else document.querySelector('.stats-grid').appendChild(card);
+			bindBoxEvents(card);
+			bindEditableEvents();
+			lucide.createIcons();
+			setSelectedCardBox(card);
+			markDirty(true);
+			showToast('➕ Nueva estadística agregada.');
+		});
+
+		// =========================================================================
+		// LOGO MODAL & RENDERING
+		// =========================================================================
 		const renderLandingLogo = () => {
 			const navLogoWrap = document.querySelector('.navbar .landing-logo-container');
 			const footLogoWrap = document.querySelector('.footer-brand .landing-footer-logo-container');
@@ -2223,11 +2839,9 @@
 			}
 		};
 
-		// --- Logo Modal UI ---
 		const openLogoModal = () => {
 			const modal = document.querySelector('#landingLogoModal');
 			if (!modal) return;
-			// Sync state into inputs
 			const isImg = landingState.logo_type === 'image';
 			document.querySelector('#tabLogoImageBtn').classList.toggle('active', isImg);
 			document.querySelector('#tabLogoTextBtn').classList.toggle('active', !isImg);
@@ -2249,7 +2863,6 @@
 			document.querySelector('#modalLogoBadgeInput2').value = landingState.logo_badge || 'Infraestructura TI';
 			document.querySelector('#modalLogoTextInput').value = landingState.logo_text || 'smartisp';
 			updateModalTextPreview();
-
 			modal.classList.add('open');
 		};
 
@@ -2267,7 +2880,6 @@
 			box.innerHTML = `${part1}<b style="color:#087ea4;">${part2}</b><span style="color:#f5a524;">.</span>`;
 		};
 
-		// Logo modal events
 		document.querySelector('#openLogoModalBtn')?.addEventListener('click', openLogoModal);
 		document.querySelector('#closeLogoModalBtn')?.addEventListener('click', closeLogoModal);
 		document.querySelector('#modalCancelLogoBtn')?.addEventListener('click', closeLogoModal);
@@ -2318,7 +2930,6 @@
 			}
 		});
 
-		// Drag & drop for logo modal
 		const dropBox = document.querySelector('#modalLogoDropBox');
 		if (dropBox) {
 			['dragenter', 'dragover'].forEach(n => {
@@ -2372,7 +2983,9 @@
 			showToast('Logotipo actualizado en el editor.');
 		});
 
-		// --- Load Data from API ---
+		// =========================================================================
+		// LOAD & SAVE ENGINE
+		// =========================================================================
 		const loadLandingData = async () => {
 			try {
 				const res = await fetch('/api/auth/landing-content');
@@ -2380,7 +2993,6 @@
 				const data = await res.json();
 				const content = Object.fromEntries((data.content || []).map(i => [i.key, i.value]));
 
-				// State
 				if (content.landing_logo_type) landingState.logo_type = content.landing_logo_type;
 				if (content.landing_logo_image) landingState.logo_image = content.landing_logo_image;
 				if (content.landing_logo_height) landingState.logo_height = content.landing_logo_height;
@@ -2389,7 +3001,25 @@
 
 				renderLandingLogo();
 
-				// Texts
+				// Restore dynamic grids if saved
+				const restoreGrid = (selector, htmlContent, addBtnId, addBtnText) => {
+					if (!htmlContent) return;
+					const container = document.querySelector(selector);
+					if (!container) return;
+					container.innerHTML = htmlContent + `<div class="add-card-slot"><button type="button" class="btn-add-grid-item" id="${addBtnId}"><i data-lucide="plus-circle" width="18"></i> <span>${addBtnText}</span></button></div>`;
+				};
+
+				if (content.solutions_grid_html) restoreGrid('.solutions-grid', content.solutions_grid_html, 'addSolutionCardBtn', '➕ Agregar Nueva Línea de Solución');
+				if (content.advantages_grid_html) restoreGrid('.advantages-grid', content.advantages_grid_html, 'addAdvantageCardBtn', '➕ Agregar Nueva Ventaja / Cuadro');
+				if (content.about_visual_html) restoreGrid('.about-visual', content.about_visual_html, 'addValueBoxBtn', '➕ Agregar Nuevo Pilar / Cuadro');
+				if (content.stats_grid_html) restoreGrid('.stats-grid', content.stats_grid_html, 'addStatItemBtn', '➕ Agregar Nueva Estadística');
+
+				// Bind box events & editable
+				document.querySelectorAll('.selectable-box').forEach(bindBoxEvents);
+				bindEditableEvents();
+				lucide.createIcons();
+
+				// Apply texts & font sizes
 				document.querySelectorAll('[data-landing-key]').forEach(el => {
 					const k = el.dataset.landingKey;
 					if (content[k] !== undefined && content[k] !== '') {
@@ -2408,27 +3038,48 @@
 							}
 						}
 					}
+					if (content[k + '_size']) el.style.fontSize = content[k + '_size'];
+					if (content[k + '_color']) el.style.color = content[k + '_color'];
+					if (content[k + '_weight']) el.style.fontWeight = content[k + '_weight'];
+					if (content[k + '_align']) el.style.textAlign = content[k + '_align'];
 				});
 
 				markDirty(false);
 			} catch (e) {
-				console.warn('Error cargando datos de presentación:', e);
+				console.warn('Error al cargar datos:', e);
 			}
 		};
 
-		// --- Save Data to API ---
+		const cleanGridHtml = selector => {
+			const container = document.querySelector(selector);
+			if (!container) return '';
+			const clone = container.cloneNode(true);
+			// Remove add-card-slot before saving
+			clone.querySelectorAll('.add-card-slot').forEach(s => s.remove());
+			// Remove selected classes and format bar artifacts
+			clone.querySelectorAll('.is-card-selected').forEach(c => c.classList.remove('is-card-selected'));
+			return clone.innerHTML.trim();
+		};
+
 		const saveLandingData = async () => {
 			const saveBtn = document.querySelector('#saveLandingChangesBtn');
 			const originalHtml = saveBtn.innerHTML;
 			saveBtn.disabled = true;
 			saveBtn.innerHTML = '<span>⏳ Guardando...</span>';
 
+			// Deselect any active card box
+			setSelectedCardBox(null);
+
 			const payload = {
 				landing_logo_type: landingState.logo_type,
 				landing_logo_image: landingState.logo_image,
 				landing_logo_height: landingState.logo_height,
 				landing_logo_text: landingState.logo_text,
-				landing_logo_badge: landingState.logo_badge
+				landing_logo_badge: landingState.logo_badge,
+				solutions_grid_html: cleanGridHtml('.solutions-grid'),
+				advantages_grid_html: cleanGridHtml('.advantages-grid'),
+				about_visual_html: cleanGridHtml('.about-visual'),
+				stats_grid_html: cleanGridHtml('.stats-grid')
 			};
 
 			document.querySelectorAll('[data-landing-key]').forEach(el => {
@@ -2447,6 +3098,10 @@
 						payload[k] = el.textContent.trim();
 					}
 				}
+				if (el.style.fontSize) payload[k + '_size'] = el.style.fontSize;
+				if (el.style.color) payload[k + '_color'] = el.style.color;
+				if (el.style.fontWeight) payload[k + '_weight'] = el.style.fontWeight;
+				if (el.style.textAlign) payload[k + '_align'] = el.style.textAlign;
 			});
 
 			try {
@@ -2456,9 +3111,7 @@
 					body: JSON.stringify(payload)
 				});
 				const result = await response.json();
-				if (!response.ok) {
-					throw new Error(result.error || 'No se pudo guardar la presentación.');
-				}
+				if (!response.ok) throw new Error(result.error || 'No se pudo guardar.');
 				markDirty(false);
 				showToast('¡Página de presentación guardada con éxito!');
 			} catch (err) {
@@ -2472,7 +3125,6 @@
 
 		document.querySelector('#saveLandingChangesBtn')?.addEventListener('click', saveLandingData);
 
-		// Keyboard shortcut Ctrl+S
 		document.addEventListener('keydown', e => {
 			if ((e.ctrlKey || e.metaKey) && e.key === 's') {
 				e.preventDefault();
@@ -2480,24 +3132,20 @@
 			}
 		});
 
-		// --- Reset Defaults ---
 		document.querySelector('#resetLandingDefaultsBtn')?.addEventListener('click', async () => {
-			if (!confirm('¿Estás seguro de restablecer todos los textos y el logotipo de la página de presentación a sus valores originales de fábrica?')) {
+			if (!confirm('¿Restablecer todos los textos, cuadros y logotipo a los valores originales de fábrica?')) {
 				return;
 			}
 			try {
 				const res = await fetch('/api/auth/landing-content/reset', { method: 'POST' });
 				if (!res.ok) throw new Error('Error al restablecer.');
 				showToast('Valores originales restablecidos. Recargando...');
-				setTimeout(() => {
-					location.reload();
-				}, 700);
+				setTimeout(() => { location.reload(); }, 700);
 			} catch (err) {
 				showToast(err.message, true);
 			}
 		});
 
-		// Initialize
 		loadLandingData();
 	</script>
 </body>

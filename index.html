@@ -1710,7 +1710,7 @@
 			});
 		}
 
-		// Sincronizar contenido dinámico y logotipo exclusivo de la página de presentación
+		// Sincronizar contenido dinámico, cuadrículas y logotipo exclusivo de la página de presentación
 		(async () => {
 			try {
 				const res = await fetch('/api/auth/landing-content');
@@ -1751,15 +1751,31 @@
 					if (badgeEl) badgeEl.textContent = logoBadge;
 				}
 
-				// 2. Aplicar textos dinámicos
+				// 2. Restaurar cuadrículas personalizadas (si se agregaron o eliminaron cuadros)
+				if (content.solutions_grid_html) {
+					const solGrid = document.querySelector('.solutions-grid');
+					if (solGrid) solGrid.innerHTML = content.solutions_grid_html;
+				}
+				if (content.advantages_grid_html) {
+					const advGrid = document.querySelector('.advantages-grid');
+					if (advGrid) advGrid.innerHTML = content.advantages_grid_html;
+				}
+				if (content.about_visual_html) {
+					const abtVisual = document.querySelector('.about-visual');
+					if (abtVisual) abtVisual.innerHTML = content.about_visual_html;
+				}
+				if (content.stats_grid_html) {
+					const statsGrid = document.querySelector('.stats-grid');
+					if (statsGrid) statsGrid.innerHTML = content.stats_grid_html;
+				}
+
+				// 3. Aplicar estilos y textos dinámicos
 				document.querySelectorAll('[data-landing-key]').forEach(el => {
 					const k = el.dataset.landingKey;
 					if (content[k] !== undefined && content[k] !== '') {
-						// Preserve span formatting if key is hero_title
 						if (k === 'hero_title' && content[k].includes('<span')) {
 							el.innerHTML = content[k];
 						} else {
-							// If element has lucide child icon or link inside, preserve structure
 							const icon = el.querySelector('i[data-lucide]');
 							if (icon) {
 								el.childNodes.forEach(node => {
@@ -1772,7 +1788,19 @@
 							}
 						}
 					}
+					// Restaurar tamaño de fuente guardado si existe
+					if (content[k + '_size']) {
+						el.style.fontSize = content[k + '_size'];
+					}
+					if (content[k + '_color']) {
+						el.style.color = content[k + '_color'];
+					}
 				});
+
+				// Re-renderizar iconos en cuadros dinámicos
+				if (window.lucide && typeof lucide.createIcons === 'function') {
+					lucide.createIcons();
+				}
 			} catch (e) {
 				console.warn('Error loading landing content:', e);
 			}
