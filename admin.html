@@ -482,9 +482,17 @@
               <strong style="font-size:13.5px;color:var(--ink);">⚙️ Asignación de Columnas y Encabezados</strong>
               <small style="display:block;color:var(--muted);font-size:11.5px;">Detectadas automáticamente. Puedes cambiar la fila o columnas si tu archivo tiene otro formato u orden:</small>
             </div>
-            <div style="display:flex;align-items:center;gap:6px;">
-              <label for="selectHeaderRow" style="margin:0;font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;">Fila de Encabezados:</label>
-              <select id="selectHeaderRow" style="padding:5px 8px;font-size:12px;width:auto;margin:0;background:white;border:1px solid var(--line);border-radius:6px;font-weight:600;"></select>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+              <div style="display:flex;align-items:center;gap:6px;background:#e8f4f8;padding:4px 10px;border-radius:6px;border:1px solid #cde5eb;">
+                <label for="importPriceMargin" style="margin:0;font-size:12px;font-weight:700;color:#087ea4;white-space:nowrap;">📈 Margen de Ganancia:</label>
+                <input type="number" id="importPriceMargin" value="30" min="0" max="500" step="1" style="width:50px;padding:3px 4px;margin:0;font-size:12px;font-weight:700;text-align:center;background:white;border:1px solid #90caf9;border-radius:4px;color:#087ea4;">
+                <span style="font-size:12px;font-weight:700;color:#087ea4;">%</span>
+                <span style="font-size:11px;color:var(--muted);margin-left:2px;" title="Fórmula: Y + (Y)30% = Precio Total">(Y + 30%)</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <label for="selectHeaderRow" style="margin:0;font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;">Fila de Encabezados:</label>
+                <select id="selectHeaderRow" style="padding:5px 8px;font-size:12px;width:auto;margin:0;background:white;border:1px solid var(--line);border-radius:6px;font-weight:600;"></select>
+              </div>
             </div>
           </div>
 
@@ -497,7 +505,7 @@
               <select id="colSelectName" style="padding:6px 8px;font-size:12px;margin:0;background:white;border:1.5px solid #087ea4;border-radius:6px;font-weight:600;"></select>
             </div>
             <div>
-              <label for="colSelectPrice" style="margin:0 0 4px;font-size:11.5px;font-weight:700;color:var(--ink);">Precio (PVP / Costo):</label>
+              <label for="colSelectPrice" style="margin:0 0 4px;font-size:11.5px;font-weight:700;color:var(--ink);">Precio Base (Y + 30%):</label>
               <select id="colSelectPrice" style="padding:6px 8px;font-size:12px;margin:0;background:white;border:1px solid var(--line);border-radius:6px;"></select>
             </div>
             <div>
@@ -530,7 +538,7 @@
                 <th>SKU</th>
                 <th>Nombre del Producto</th>
                 <th>Categoría</th>
-                <th>Precio</th>
+                <th>Precio Total (Y + 30%)</th>
                 <th>Descripción</th>
               </tr>
             </thead>
@@ -1847,7 +1855,13 @@
         const category = categoryVal || 'General';
 
         const priceVal = mapping.price !== null && mapping.price !== undefined && mapping.price >= 0 ? row[mapping.price] : 0;
-        const price = parsePriceValue(priceVal);
+        const rawPrice = parsePriceValue(priceVal);
+
+        const marginInput = document.getElementById('importPriceMargin');
+        const marginPct = (marginInput && !isNaN(parseFloat(marginInput.value))) ? parseFloat(marginInput.value) : 30;
+
+        // Fórmula: precio del producto = Y -> Y + (Y)30% = precio total
+        const price = rawPrice > 0 ? Math.round((rawPrice + (rawPrice * (marginPct / 100))) * 100) / 100 : 0;
 
         const descriptionVal = mapping.description !== null && mapping.description !== undefined && mapping.description >= 0 ? String(row[mapping.description] || '').trim() : '';
         const description = descriptionVal;
@@ -1861,6 +1875,8 @@
           name,
           category,
           price,
+          originalPrice: rawPrice,
+          marginPct,
           description,
           imageUrl,
           visible: true,
@@ -1941,7 +1957,11 @@
             duplicatesCount++;
             const existing = uniqueMap.get(candidate.name);
             if (!existing.imageUrl && candidate.imageUrl) existing.imageUrl = candidate.imageUrl;
-            if ((!existing.price || existing.price <= 0) && candidate.price > 0) existing.price = candidate.price;
+            if ((!existing.price || existing.price <= 0) && candidate.price > 0) {
+              existing.price = candidate.price;
+              existing.originalPrice = candidate.originalPrice;
+              existing.marginPct = candidate.marginPct;
+            }
             if (!existing.description && candidate.description) existing.description = candidate.description;
             if (!existing.sku && candidate.sku) existing.sku = candidate.sku;
           } else {
@@ -1972,6 +1992,9 @@
       // Renderizar chips informativos de mapeo activo
       const activeFile = currentImportState.filesData[currentImportState.activeFileIdx];
       if (activeFile) {
+        const marginInput = document.getElementById('importPriceMargin');
+        const activeMargin = (marginInput && !isNaN(parseFloat(marginInput.value))) ? parseFloat(marginInput.value) : 30;
+
         const fieldsInfo = [
           { key: 'name', label: 'Nombre del Producto', required: true },
           { key: 'sku', label: 'SKU / Código', required: false, fallback: 'Auto-generar' },
@@ -1985,6 +2008,9 @@
           const colIdx = activeFile.mapping[f.key];
           if (colIdx !== null && colIdx !== undefined && colIdx >= 0) {
             const colName = activeFile.headers[colIdx] || `Columna ${colIdx + 1}`;
+            if (f.key === 'price') {
+              return `<span class="mapping-chip found">✓ <strong>${f.label}</strong>: "${escapeHtml(colName)}" (Fórmula: Y + ${activeMargin}%)</span>`;
+            }
             return `<span class="mapping-chip found">✓ <strong>${f.label}</strong>: "${escapeHtml(colName)}" (Col ${colIdx + 1})</span>`;
           }
           return `<span class="mapping-chip missing">${f.required ? '✗' : '○'} <strong>${f.label}</strong>: (${f.fallback})</span>`;
@@ -2001,7 +2027,12 @@
           <td><code style="font-size:11px;">${escapeHtml(p.sku || '-')}</code></td>
           <td><strong>${escapeHtml(p.name)}</strong></td>
           <td><span class="mapping-chip" style="font-size:10px;padding:2px 6px;">${escapeHtml(p.category)}</span></td>
-          <td>${p.price > 0 ? '$' + p.price.toLocaleString('es-CL') : '<span style="color:var(--muted);font-style:italic;">$0 (Cotización)</span>'}</td>
+          <td>
+            ${p.price > 0 ? `
+              <div style="font-weight:700;color:var(--blue);font-size:13px;">$${p.price.toLocaleString('es-CL')}</div>
+              ${p.originalPrice && p.originalPrice !== p.price ? `<div style="color:var(--muted);font-size:10.5px;">Excel: $${p.originalPrice.toLocaleString('es-CL')} + ${p.marginPct || 30}%</div>` : ''}
+            ` : '<span style="color:var(--muted);font-style:italic;">$0 (Cotización)</span>'}
+          </td>
           <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);">${escapeHtml(p.description || '-')}</td>
         </tr>
       `).join('');
@@ -2367,6 +2398,13 @@
         refreshImportPreview();
       });
     });
+
+    const marginInputEl = document.getElementById('importPriceMargin');
+    if (marginInputEl) {
+      marginInputEl.addEventListener('input', () => {
+        refreshImportPreview();
+      });
+    }
 
     $('#logoutButton').addEventListener('click', async () => { await api('logout', { method: 'POST' }); localStorage.removeItem('smartisp.accountUser'); localStorage.removeItem('smartisp.accountRemembered'); sessionStorage.removeItem('smartisp.accountUser'); location.reload(); });
     const savedAccount = (() => { try { const stored = sessionStorage.getItem('smartisp.accountUser') || (localStorage.getItem('smartisp.accountRemembered') === 'true' ? localStorage.getItem('smartisp.accountUser') : null); return JSON.parse(stored || 'null'); } catch { return null; } })();
