@@ -2261,7 +2261,7 @@
 							<div class="contact-icon"><i data-lucide="phone-call" width="22"></i></div>
 							<div class="contact-details">
 								<strong data-landing-key="contact_phone_title" contenteditable="true" spellcheck="false">Teléfonos de Atención</strong>
-								<p>Ventas Móvil: <a href="tel:+593999000000" data-landing-key="contact_phone2" contenteditable="true" spellcheck="false">+593 99 900 0000</a></p>
+								<p>Ventas Móvil: <a href="tel:+593983576667" data-landing-key="contact_phone2" contenteditable="true" spellcheck="false">+593 98 357 6667</a></p>
 							</div>
 						</div>
 
@@ -2284,9 +2284,9 @@
 						</div>
 
 						<!-- WhatsApp Quick Chat -->
-						<a href="https://wa.me/593999000000?text=Hola%20SmartISP,%20deseo%20m%C3%A1s%20informaci%C3%B3n%20sobre%20sus%20soluciones%20y%20equipos" target="_blank" rel="noopener" class="btn-whatsapp-direct">
+						<a href="https://wa.me/593983576667?text=Hola%20SmartISP,%20deseo%20m%C3%A1s%20informaci%C3%B3n%20sobre%20sus%20soluciones%20y%20equipos" target="_blank" rel="noopener" class="btn-whatsapp-direct">
 							<i data-lucide="message-circle" width="18"></i>
-							<span data-landing-key="contact_whatsapp_text" contenteditable="true" spellcheck="false">Escribir por WhatsApp al Asesor Comercial</span>
+							<span data-landing-key="contact_whatsapp_text" contenteditable="true" spellcheck="false">Escribir por WhatsApp al Asesor Comercial (+593 983576667)</span>
 						</a>
 					</div>
 
@@ -3063,11 +3063,36 @@
 					if (content[k + '_align']) el.style.textAlign = content[k + '_align'];
 				});
 
+				syncWhatsAppLink();
 				markDirty(false);
 			} catch (e) {
 				console.warn('Error al cargar datos:', e);
 			}
 		};
+
+		const syncWhatsAppLink = () => {
+			const waBtn = document.querySelector('.btn-whatsapp-direct');
+			if (!waBtn) return;
+			const textEl = waBtn.querySelector('[data-landing-key="contact_whatsapp_text"]') || waBtn;
+			const raw = (textEl.textContent || '').replace(/[^\d+]/g, '');
+			const clean = raw.replace(/\D/g, '');
+			let num = '593983576667';
+			if (clean.length >= 8) {
+				if (clean.startsWith('09') && clean.length === 10) {
+					num = '593' + clean.slice(1);
+				} else if (clean.startsWith('593') && clean.length >= 11) {
+					num = clean;
+				} else if (clean.length === 9 && clean.startsWith('9')) {
+					num = '593' + clean;
+				} else {
+					num = clean;
+				}
+			}
+			waBtn.href = `https://wa.me/${num}?text=${encodeURIComponent('Hola SmartISP, deseo más información sobre sus soluciones y equipos.')}`;
+		};
+		syncWhatsAppLink();
+		document.querySelector('[data-landing-key="contact_whatsapp_text"]')?.addEventListener('input', syncWhatsAppLink);
+		document.querySelector('.btn-whatsapp-direct')?.addEventListener('click', syncWhatsAppLink);
 
 		const cleanGridHtml = selector => {
 			const container = document.querySelector(selector);
