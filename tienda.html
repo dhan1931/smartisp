@@ -71,7 +71,7 @@
 		.sidebar-title i { color: var(--blue); }
 		.sidebar-clear-btn { border: none; background: transparent; color: var(--blue); font-size: 11px; font-weight: 600; cursor: pointer; padding: 3px 6px; border-radius: 4px; transition: background .15s ease; }
 		.sidebar-clear-btn:hover { background: #eef6fa; }
-		.sidebar-categories { display: flex; flex-direction: column; gap: 2px; max-height: calc(85vh - 120px); overflow-y: auto; padding-right: 2px; }
+		.sidebar-categories { display: flex; flex-direction: column; gap: 3px; max-height: calc(85vh - 120px); overflow-y: auto; padding-right: 2px; }
 		.sidebar-categories::-webkit-scrollbar { width: 4px; }
 		.sidebar-categories::-webkit-scrollbar-thumb { background: #d0e0e8; border-radius: 4px; }
 		.sidebar-cat-btn { display: flex; align-items: center; width: 100%; padding: 7px 9px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: var(--ink); font-size: 13px; font-family: inherit; text-align: left; cursor: pointer; transition: all .15s ease; gap: 8px; line-height: 1.25; }
@@ -83,6 +83,45 @@
 		.sidebar-cat-count { font-size: 11px; color: var(--muted); background: #f0f4f6; padding: 1px 7px; border-radius: 10px; font-weight: 600; flex-shrink: 0; }
 		.sidebar-cat-btn:hover .sidebar-cat-count { background: #e0eff8; color: var(--blue); }
 		.sidebar-cat-btn.active .sidebar-cat-count { background: var(--blue); color: #ffffff; }
+
+		/* Acordeón de Macro-Categorías y Subcategorías Afines */
+		.sidebar-group { border-radius: 6px; overflow: hidden; margin-bottom: 2px; }
+		.sidebar-group-header { display: flex; align-items: center; width: 100%; border-radius: 6px; background: transparent; transition: background .15s ease; border: 1px solid transparent; }
+		.sidebar-group-header:hover { background: #f3f8fb; }
+		.sidebar-group.is-active-group > .sidebar-group-header { background: #e8f4fc; border-color: #bee0f3; }
+		.sidebar-group-btn { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 7px 4px 7px 9px; border: 0; background: transparent; color: var(--ink); font-size: 12.5px; font-weight: 600; font-family: inherit; text-align: left; cursor: pointer; line-height: 1.25; }
+		.sidebar-group-btn:hover { color: var(--blue); }
+		.sidebar-group.is-active-group .sidebar-group-btn { color: var(--blue); font-weight: 700; }
+		.sidebar-group.is-active-group .sidebar-cat-icon { color: var(--blue); }
+		.sidebar-group-toggle { border: 0; background: transparent; color: var(--muted); padding: 7px 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; transition: color .15s ease; }
+		.sidebar-group-toggle:hover { color: var(--navy); }
+		.sidebar-group-toggle i, .sidebar-group-toggle svg { transition: transform .2s ease; }
+		.sidebar-group.is-expanded .sidebar-group-toggle i, .sidebar-group.is-expanded .sidebar-group-toggle svg { transform: rotate(180deg); }
+
+		/* Lista de subcategorías anidadas */
+		.sidebar-subcat-list { display: none; flex-direction: column; gap: 1px; padding: 3px 0 4px 14px; margin-left: 12px; border-left: 2px solid #e1edf5; }
+		.sidebar-group.is-expanded .sidebar-subcat-list { display: flex; }
+		body.dark-mode .sidebar-subcat-list { border-left-color: #294557; }
+		.sidebar-subcat-btn { display: flex; align-items: center; width: 100%; padding: 5px 8px; border-radius: 5px; border: 1px solid transparent; background: transparent; color: #435b71; font-size: 12px; font-family: inherit; text-align: left; cursor: pointer; transition: all .15s ease; gap: 7px; line-height: 1.25; }
+		.sidebar-subcat-btn:hover { background: #f0f7fb; color: var(--blue); }
+		.sidebar-subcat-btn.active { background: #e0effa; color: var(--blue); font-weight: 700; border-color: #bee0f3; }
+		.sidebar-subcat-bullet { width: 5px; height: 5px; border-radius: 50%; background: #9bb3c3; flex-shrink: 0; transition: background .15s ease, transform .15s ease; }
+		.sidebar-subcat-btn:hover .sidebar-subcat-bullet { background: var(--blue); }
+		.sidebar-subcat-btn.active .sidebar-subcat-bullet { background: var(--blue); transform: scale(1.3); }
+		.sidebar-subcat-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+		.sidebar-subcat-count { font-size: 10.5px; color: var(--muted); background: #eef3f6; padding: 1px 6px; border-radius: 8px; font-weight: 600; flex-shrink: 0; }
+		.sidebar-subcat-btn:hover .sidebar-subcat-count { background: #dcebf5; color: var(--blue); }
+		.sidebar-subcat-btn.active .sidebar-subcat-count { background: var(--blue); color: #ffffff; }
+
+		/* Dark mode para grupos y subcategorías */
+		body.dark-mode .sidebar-group-header:hover { background: rgba(255,255,255,.05); }
+		body.dark-mode .sidebar-group.is-active-group > .sidebar-group-header { background: rgba(17,119,201,.2); border-color: rgba(17,119,201,.4); }
+		body.dark-mode .sidebar-group-btn { color: var(--ink); }
+		body.dark-mode .sidebar-subcat-btn { color: var(--muted); }
+		body.dark-mode .sidebar-subcat-btn:hover, body.dark-mode .sidebar-subcat-btn.active { color: var(--ink); }
+		body.dark-mode .sidebar-subcat-btn:hover { background: rgba(255,255,255,.04); }
+		body.dark-mode .sidebar-subcat-btn.active { background: rgba(17,119,201,.18); border-color: rgba(17,119,201,.35); }
+		body.dark-mode .sidebar-subcat-count { background: rgba(255,255,255,.08); color: var(--muted); }
 
 		/* Toolbar y productos */
 		.store-main { min-width: 0; }
@@ -328,30 +367,10 @@
 							<button type="button" class="sidebar-clear-btn" id="clearCategoryFilter" title="Mostrar todas las categorías">Ver todas</button>
 						</div>
 						<div class="sidebar-categories" id="sidebarCategories">
-							<button type="button" class="sidebar-cat-btn active" data-filter="all">
+							<button type="button" class="sidebar-cat-btn active" data-filter-action="all">
 								<span class="sidebar-cat-icon"><i data-lucide="layers" width="16"></i></span>
 								<span class="sidebar-cat-name">Todo el catálogo</span>
 								<span class="sidebar-cat-count" id="catCountAll">4</span>
-							</button>
-							<button type="button" class="sidebar-cat-btn" data-filter="Notebooks">
-								<span class="sidebar-cat-icon"><i data-lucide="laptop" width="16"></i></span>
-								<span class="sidebar-cat-name">Notebooks</span>
-								<span class="sidebar-cat-count">1</span>
-							</button>
-							<button type="button" class="sidebar-cat-btn" data-filter="Redes">
-								<span class="sidebar-cat-icon"><i data-lucide="network" width="16"></i></span>
-								<span class="sidebar-cat-name">Redes</span>
-								<span class="sidebar-cat-count">1</span>
-							</button>
-							<button type="button" class="sidebar-cat-btn" data-filter="Servidores">
-								<span class="sidebar-cat-icon"><i data-lucide="server" width="16"></i></span>
-								<span class="sidebar-cat-name">Servidores</span>
-								<span class="sidebar-cat-count">1</span>
-							</button>
-							<button type="button" class="sidebar-cat-btn" data-filter="Monitores">
-								<span class="sidebar-cat-icon"><i data-lucide="monitor" width="16"></i></span>
-								<span class="sidebar-cat-name">Monitores</span>
-								<span class="sidebar-cat-count">1</span>
 							</button>
 						</div>
 					</div>
@@ -388,7 +407,11 @@
 			{ name: 'Servidor PowerEdge T150', brand: 'Dell', category: 'Servidores', price: 1299990, reviews: 31, image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=700&q=80', tag: 'Pro IT', description: 'Servidor torre compacto para centralizar datos, aplicaciones y respaldos de pequeñas empresas.', specs: [['Procesador', 'Intel Xeon E-2314'], ['Memoria RAM', '16 GB ECC'], ['Almacenamiento', '2 × 1 TB SATA'], ['Formato', 'Torre 4U'], ['Red', '2 × Gigabit Ethernet'], ['Garantía', '3 años en sitio']] },
 			{ name: 'Monitor UltraWide 34” QHD', brand: 'LG', category: 'Monitores', price: 369990, reviews: 57, image: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=700&q=80', tag: '', description: 'Más espacio para tus proyectos con una imagen nítida y una experiencia envolvente para trabajar.', specs: [['Resolución', '3440 × 1440 QHD'], ['Panel', 'IPS curvo 21:9'], ['Tasa de refresco', '160 Hz'], ['Conexiones', 'HDMI / DisplayPort'], ['Tamaño', '34 pulgadas'], ['Sincronización', 'AMD FreeSync']] }
 		];
-		let selectedFilter = 'all'; let cart = JSON.parse(localStorage.getItem('smartisp.cart') || '[]'); let signedIn = false; let wishlistIds = new Set();
+		let selectedFilter = 'all';
+		let expandedGroups = new Set();
+		let cart = JSON.parse(localStorage.getItem('smartisp.cart') || '[]');
+		let signedIn = false;
+		let wishlistIds = new Set();
 		const money = value => Number(value || 0) > 0 ? '$' + Number(value).toLocaleString('es-CL') : 'Pendiente de cotización';
 		const productKey = product => String(product.id || product.name);
 		const fallbackImage = product => {
@@ -400,25 +423,315 @@
 			if (cat.includes('cable') || cat.includes('accesorio')) return 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=600&q=80';
 			return 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=600&q=80';
 		};
+
+		const toggleWishlist = (product, heartEl) => {
+			if (!product) return;
+			const key = productKey(product);
+			if (wishlistIds.has(key)) {
+				wishlistIds.delete(key);
+				if (heartEl) heartEl.classList.remove('active');
+			} else {
+				wishlistIds.add(key);
+				if (heartEl) heartEl.classList.add('active');
+			}
+		};
+
+		/* Relación de Categorías Afines y Macro-Categorías Jerárquicas */
+		const MACRO_CATEGORIES = [
+			{
+				id: 'redes',
+				name: 'Redes y Telecomunicaciones',
+				icon: 'network',
+				keywords: ['red', 'redes', 'router', 'switch', 'comunicaciones', 'access point', 'antena', 'mikrotik', 'ubiquiti', 'cisco', 'olt', 'onu', 'gpon', 'wireless', 'wi-fi', 'wifi', 'networking', 'radioenlace', 'mimo']
+			},
+			{
+				id: 'fibra-cableado',
+				name: 'Fibra Óptica y Cableado',
+				icon: 'cable',
+				keywords: ['fibra optica', 'fibra', 'cable', 'cableado', 'utp', 'patch cord', 'patch panel', 'conector', 'odf', 'sfp', 'transceiver', 'manga', 'splitter', 'bobina', 'drop']
+			},
+			{
+				id: 'servidores',
+				name: 'Servidores e Infraestructura',
+				icon: 'server',
+				keywords: ['servidor', 'servidores', 'server', 'rack', 'racks', 'gabinete', 'gabinetes', 'datacenter', 'infraestructura', 'pdu', 'nas', 'san', 'almacenamiento en red']
+			},
+			{
+				id: 'computacion',
+				name: 'Computación y Portátiles',
+				icon: 'laptop',
+				keywords: ['tecnologia portatil', 'computadores', 'computador', 'notebooks', 'notebook', 'laptops', 'laptop', 'pc', 'portatil', 'portatiles', 'all-in-one', 'workstation', 'computacion']
+			},
+			{
+				id: 'monitores',
+				name: 'Monitores y Proyección',
+				icon: 'monitor',
+				keywords: ['pantalla', 'pantallas', 'display', 'displays', 'proyectores', 'proyector', 'monitores', 'monitor']
+			},
+			{
+				id: 'componentes',
+				name: 'Componentes y Almacenamiento',
+				icon: 'hard-drive',
+				keywords: ['componentes informaticos', 'componentes', 'almacenamiento', 'memorias', 'memoria', 'ram', 'disco', 'discos', 'ssd', 'hdd', 'nvme', 'procesador', 'procesadores', 'placa madre', 'tarjeta madre', 'tarjeta de video', 'gpu', 'tarjetas']
+			},
+			{
+				id: 'perifericos',
+				name: 'Periféricos y Accesorios',
+				icon: 'headphones',
+				keywords: ['accesorios para computadores', 'audio y video', 'perifericos', 'periferico', 'accesorios', 'accesorio', 'teclados', 'teclado', 'mouse', 'raton', 'auriculares', 'auricular', 'diademas', 'diadema', 'parlantes', 'parlante', 'webcam', 'camara web', 'hub', 'adaptadores', 'adaptador', 'maletines', 'muebles']
+			},
+			{
+				id: 'seguridad',
+				name: 'Seguridad y Videovigilancia',
+				icon: 'shield-check',
+				keywords: ['vigilancia de video', 'camaras videocamaras', 'control de acceso', 'seguridad', 'vigilancia', 'camaras', 'cctv', 'nvr', 'dvr', 'intrusion', 'alarmas', 'alarma', 'biometrico', 'sensores']
+			},
+			{
+				id: 'energia',
+				name: 'Energía y Protección Eléctrica',
+				icon: 'zap',
+				keywords: ['proteccion de poder', 'energia', 'ups', 'baterias', 'bateria', 'fuentes', 'fuente', 'reguladores', 'regulador', 'inversores', 'inversor', 'poe', 'banco de baterias', 'solar']
+			},
+			{
+				id: 'impresion',
+				name: 'Impresión y Puntos de Venta',
+				icon: 'printer',
+				keywords: ['impresoras y escaneres', 'consumibles y media', 'puntos de venta', 'impresoras', 'impresora', 'escaneres', 'escaner', 'toner', 'cartuchos', 'pos', 'codigo de barras']
+			},
+			{
+				id: 'telefonia',
+				name: 'Telefonía y Móviles',
+				icon: 'phone-call',
+				keywords: ['telefonia', 'celulares', 'celular', 'voip', 'telefonos', 'telefono', 'central telefonica', 'pbx', 'smartphones', 'smartphone']
+			},
+			{
+				id: 'software',
+				name: 'Software y Licencias',
+				icon: 'file-code',
+				keywords: ['descargas digitales esd', 'descargas digitales', 'software', 'licencias', 'licencia', 'antivirus', 'sistema operativo']
+			},
+			{
+				id: 'otros',
+				name: 'Otras Soluciones IT',
+				icon: 'package',
+				keywords: []
+			}
+		];
+
+		const normalizeCategoryText = str => String(str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/_/g, ' ').trim();
+
+		const formatCategoryName = name => {
+			if (!name) return '';
+			return String(name).replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+		};
+
+		const getMacroCategory = categoryName => {
+			const norm = normalizeCategoryText(categoryName);
+			if (!norm) return MACRO_CATEGORIES.find(m => m.id === 'otros');
+
+			// Fase 1: Coincidencia exacta con cualquier palabra clave
+			for (const macro of MACRO_CATEGORIES) {
+				if (macro.id === 'otros') continue;
+				for (const kw of macro.keywords) {
+					if (norm === normalizeCategoryText(kw)) {
+						return macro;
+					}
+				}
+			}
+
+			// Fase 2: El nombre contiene la palabra clave (ej. frase clave multipalabra)
+			for (const macro of MACRO_CATEGORIES) {
+				if (macro.id === 'otros') continue;
+				for (const kw of macro.keywords) {
+					const normKw = normalizeCategoryText(kw);
+					if (norm.includes(normKw)) {
+						return macro;
+					}
+				}
+			}
+
+			return MACRO_CATEGORIES.find(m => m.id === 'otros');
+		};
+
+		const productMatchesFilter = (product, filter) => {
+			if (!filter || filter === 'all' || filter.type === 'all') return true;
+			const prodCat = String(product.category || '').trim();
+			if (filter.type === 'macro') {
+				const macro = getMacroCategory(prodCat);
+				return macro && macro.id === filter.id;
+			}
+			if (filter.type === 'sub') {
+				return prodCat.toLowerCase() === String(filter.category || '').toLowerCase();
+			}
+			if (typeof filter === 'string') {
+				if (filter.toLowerCase() === 'all') return true;
+				return prodCat.toLowerCase() === filter.toLowerCase();
+			}
+			return true;
+		};
+
+		const buildCategoryTree = () => {
+			const catCounts = new Map();
+			products.forEach(p => {
+				const cat = String(p.category || 'Otros').trim();
+				catCounts.set(cat, (catCounts.get(cat) || 0) + 1);
+			});
+
+			const usedMacros = new Map();
+			catCounts.forEach((count, catName) => {
+				const macro = getMacroCategory(catName);
+				if (!usedMacros.has(macro.id)) {
+					usedMacros.set(macro.id, {
+						id: macro.id,
+						name: macro.name,
+						icon: macro.icon,
+						totalCount: 0,
+						subcategories: []
+					});
+				}
+				const group = usedMacros.get(macro.id);
+				group.totalCount += count;
+				group.subcategories.push({
+					rawName: catName,
+					displayName: formatCategoryName(catName),
+					count
+				});
+			});
+
+			usedMacros.forEach(g => {
+				g.subcategories.sort((a, b) => a.displayName.localeCompare(b.displayName, 'es'));
+			});
+
+			const groups = [];
+			MACRO_CATEGORIES.forEach(macro => {
+				if (usedMacros.has(macro.id)) {
+					groups.push(usedMacros.get(macro.id));
+				}
+			});
+
+			return { totalProducts: products.length, groups };
+		};
+
+		const renderSidebarCategories = () => {
+			const container = document.querySelector('#sidebarCategories');
+			if (!container) return;
+
+			const { totalProducts, groups } = buildCategoryTree();
+			const isAllActive = !selectedFilter || selectedFilter === 'all';
+
+			// Expandir los grupos activos o todos si son 8 o menos
+			if (expandedGroups.size === 0 && groups.length <= 8) {
+				groups.forEach(g => expandedGroups.add(g.id));
+			}
+
+			let html = `
+				<button type="button" class="sidebar-cat-btn ${isAllActive ? 'active' : ''}" data-filter-action="all">
+					<span class="sidebar-cat-icon"><i data-lucide="layers" width="16"></i></span>
+					<span class="sidebar-cat-name">Todo el catálogo</span>
+					<span class="sidebar-cat-count" id="catCountAll">${totalProducts}</span>
+				</button>
+			`;
+
+			groups.forEach(group => {
+				const isMacroActive = !isAllActive && selectedFilter.type === 'macro' && selectedFilter.id === group.id;
+				const hasActiveChild = !isAllActive && selectedFilter.type === 'sub' && selectedFilter.macroId === group.id;
+				const isExpanded = expandedGroups.has(group.id) || isMacroActive || hasActiveChild;
+
+				html += `
+					<div class="sidebar-group ${isExpanded ? 'is-expanded' : ''} ${isMacroActive ? 'is-active-group' : ''}" data-macro-id="${group.id}">
+						<div class="sidebar-group-header">
+							<button type="button" class="sidebar-group-btn" data-filter-action="macro" data-macro-id="${group.id}" title="Filtrar por ${group.name}">
+								<span class="sidebar-cat-icon"><i data-lucide="${group.icon}" width="16"></i></span>
+								<span class="sidebar-cat-name">${group.name}</span>
+								<span class="sidebar-cat-count">${group.totalCount}</span>
+							</button>
+							<button type="button" class="sidebar-group-toggle" data-toggle-macro="${group.id}" aria-label="Expandir o contraer ${group.name}" title="Expandir/Contraer">
+								<i data-lucide="chevron-down" width="15"></i>
+							</button>
+						</div>
+						<div class="sidebar-subcat-list" id="subcat-list-${group.id}">
+							${group.subcategories.map(sub => {
+								const isSubActive = !isAllActive && selectedFilter.type === 'sub' &&
+									selectedFilter.category.toLowerCase() === sub.rawName.toLowerCase();
+								return `
+									<button type="button" class="sidebar-subcat-btn ${isSubActive ? 'active' : ''}" data-filter-action="sub" data-macro-id="${group.id}" data-category="${sub.rawName}" title="Filtrar por ${sub.displayName}">
+										<span class="sidebar-subcat-bullet"></span>
+										<span class="sidebar-subcat-name">${sub.displayName}</span>
+										<span class="sidebar-subcat-count">${sub.count}</span>
+									</button>
+								`;
+							}).join('')}
+						</div>
+					</div>
+				`;
+			});
+
+			container.innerHTML = html;
+			lucide.createIcons();
+		};
+
+		const updateSidebarActiveStates = () => {
+			const isAllActive = !selectedFilter || selectedFilter === 'all';
+			const allBtn = document.querySelector('[data-filter-action="all"]');
+			if (allBtn) allBtn.classList.toggle('active', isAllActive);
+
+			document.querySelectorAll('.sidebar-group').forEach(group => {
+				const macroId = group.dataset.macroId;
+				const isMacroActive = !isAllActive && selectedFilter.type === 'macro' && selectedFilter.id === macroId;
+				const hasActiveChild = !isAllActive && selectedFilter.type === 'sub' && selectedFilter.macroId === macroId;
+				group.classList.toggle('is-active-group', isMacroActive);
+				if (isMacroActive || hasActiveChild) {
+					group.classList.add('is-expanded');
+					expandedGroups.add(macroId);
+				}
+			});
+
+			document.querySelectorAll('.sidebar-subcat-btn').forEach(btn => {
+				const isSubActive = !isAllActive && selectedFilter.type === 'sub' &&
+					String(btn.dataset.category || '').toLowerCase() === String(selectedFilter.category || '').toLowerCase();
+				btn.classList.toggle('active', isSubActive);
+			});
+		};
+
 		const render = () => {
 			const query = document.querySelector('#searchInput').value.toLowerCase();
 			const sort = document.querySelector('#sortSelect').value;
-			let shown = products.filter(product => (selectedFilter === 'all' || product.category === selectedFilter) && `${product.name} ${product.brand} ${product.category}`.toLowerCase().includes(query));
+			let shown = products.filter(product => productMatchesFilter(product, selectedFilter) && `${product.name} ${product.brand} ${product.category}`.toLowerCase().includes(query));
 			if (sort === 'low') shown.sort((a,b) => a.price-b.price);
 			if (sort === 'high') shown.sort((a,b) => b.price-a.price);
 
+			let activeFilterLabel = '';
+			let breadcrumbLabel = '';
+
+			if (selectedFilter && selectedFilter !== 'all') {
+				if (selectedFilter.type === 'macro') {
+					const macro = MACRO_CATEGORIES.find(m => m.id === selectedFilter.id);
+					activeFilterLabel = macro ? macro.name : selectedFilter.name || 'Categoría';
+					breadcrumbLabel = activeFilterLabel;
+				} else if (selectedFilter.type === 'sub') {
+					const macro = MACRO_CATEGORIES.find(m => m.id === selectedFilter.macroId) || getMacroCategory(selectedFilter.category);
+					const subName = formatCategoryName(selectedFilter.category);
+					activeFilterLabel = `${macro ? macro.name + ' › ' : ''}${subName}`;
+					breadcrumbLabel = activeFilterLabel;
+				} else if (typeof selectedFilter === 'string') {
+					const macro = getMacroCategory(selectedFilter);
+					activeFilterLabel = `${macro ? macro.name + ' › ' : ''}${formatCategoryName(selectedFilter)}`;
+					breadcrumbLabel = activeFilterLabel;
+				}
+			}
+
 			const countEl = document.querySelector('#resultCount');
 			if (countEl) {
-				const filterNote = selectedFilter !== 'all' ? ` en ${selectedFilter}` : '';
-				const queryNote = query ? ` para "${query}"` : (selectedFilter === 'all' ? ' destacados' : '');
+				const filterNote = breadcrumbLabel ? ` en ${breadcrumbLabel}` : '';
+				const queryNote = query ? ` para "${query}"` : (!breadcrumbLabel ? ' destacados' : '');
 				countEl.textContent = `Mostrando ${shown.length} producto${shown.length === 1 ? '' : 's'}${filterNote}${queryNote}`;
 			}
 
 			const badge = document.querySelector('#activeCategoryBadge');
 			const badgeName = document.querySelector('#activeCategoryName');
 			if (badge && badgeName) {
-				if (selectedFilter !== 'all') {
-					badgeName.textContent = selectedFilter;
+				if (activeFilterLabel) {
+					badgeName.textContent = activeFilterLabel;
 					badge.style.display = 'inline-flex';
 				} else {
 					badge.style.display = 'none';
@@ -443,23 +756,87 @@
 		const addToCart = product => { cart.push(product); updateCart(true); };
 		const updateCart = (animate = true) => { localStorage.setItem('smartisp.cart', JSON.stringify(cart)); const count = document.querySelector('#cartCount'); count.textContent = cart.length; if (animate) { count.classList.remove('bump'); void count.offsetWidth; count.classList.add('bump'); } document.querySelector('#cartItems').innerHTML = cart.length ? cart.map((item, index) => `<div class="cart-item"><img src="${item.image}" alt=""><div class="cart-item-copy"><strong>${item.name}</strong><small>${money(item.price)}</small></div><button class="remove-item" data-remove-index="${index}" aria-label="Eliminar ${item.name} del carrito"><i data-lucide="trash-2" width="16"></i></button></div>`).join('') : 'Tu carrito está vacío.'; document.querySelector('#cartTotal').textContent = money(cart.reduce((total, item) => total + item.price, 0)); lucide.createIcons(); document.querySelectorAll('[data-remove-index]').forEach(button => button.addEventListener('click', () => { cart.splice(Number(button.dataset.removeIndex), 1); updateCart(false); })); };
 		const setCategoryFilter = filter => {
-			selectedFilter = filter || 'all';
-			document.querySelectorAll('[data-filter]').forEach(el => {
-				el.classList.toggle('active', el.dataset.filter === selectedFilter);
-			});
+			if (!filter || filter === 'all' || (typeof filter === 'string' && filter.toLowerCase() === 'all')) {
+				selectedFilter = 'all';
+			} else if (typeof filter === 'string') {
+				const macro = getMacroCategory(filter);
+				selectedFilter = { type: 'sub', macroId: macro.id, category: filter };
+				expandedGroups.add(macro.id);
+			} else if (filter && typeof filter === 'object') {
+				selectedFilter = filter;
+				if (filter.type === 'macro') expandedGroups.add(filter.id);
+				if (filter.type === 'sub') expandedGroups.add(filter.macroId);
+			}
+			updateSidebarActiveStates();
 			render();
 		};
 		document.addEventListener('click', event => {
-			const filterEl = event.target.closest('[data-filter]');
-			if (filterEl && (filterEl.closest('#catalogo') || filterEl.closest('.store-sidebar'))) {
+			// Toggle macro accordion
+			const toggleBtn = event.target.closest('[data-toggle-macro]');
+			if (toggleBtn) {
 				event.preventDefault();
-				setCategoryFilter(filterEl.dataset.filter);
+				event.stopPropagation();
+				const macroId = toggleBtn.dataset.toggleMacro;
+				const groupEl = document.querySelector(`.sidebar-group[data-macro-id="${macroId}"]`);
+				if (groupEl) {
+					groupEl.classList.toggle('is-expanded');
+					if (groupEl.classList.contains('is-expanded')) {
+						expandedGroups.add(macroId);
+					} else {
+						expandedGroups.delete(macroId);
+					}
+				}
+				return;
+			}
+
+			// Macro category click
+			const macroBtn = event.target.closest('[data-filter-action="macro"]');
+			if (macroBtn) {
+				event.preventDefault();
+				const macroId = macroBtn.dataset.macroId;
+				setCategoryFilter({ type: 'macro', id: macroId });
 				const catEl = document.querySelector('#catalogo');
 				if (catEl && window.scrollY > catEl.offsetTop + 120) {
 					catEl.scrollIntoView({ behavior: 'smooth' });
 				}
 				return;
 			}
+
+			// Subcategory click
+			const subBtn = event.target.closest('[data-filter-action="sub"]');
+			if (subBtn) {
+				event.preventDefault();
+				const macroId = subBtn.dataset.macroId;
+				const category = subBtn.dataset.category;
+				setCategoryFilter({ type: 'sub', macroId, category });
+				const catEl = document.querySelector('#catalogo');
+				if (catEl && window.scrollY > catEl.offsetTop + 120) {
+					catEl.scrollIntoView({ behavior: 'smooth' });
+				}
+				return;
+			}
+
+			// Filter All click
+			const allBtn = event.target.closest('[data-filter-action="all"]');
+			if (allBtn) {
+				event.preventDefault();
+				setCategoryFilter('all');
+				return;
+			}
+
+			// Legacy data-filter fallback
+			const legacyFilter = event.target.closest('[data-filter]');
+			if (legacyFilter && (legacyFilter.closest('#catalogo') || legacyFilter.closest('.store-sidebar'))) {
+				event.preventDefault();
+				setCategoryFilter(legacyFilter.dataset.filter);
+				const catEl = document.querySelector('#catalogo');
+				if (catEl && window.scrollY > catEl.offsetTop + 120) {
+					catEl.scrollIntoView({ behavior: 'smooth' });
+				}
+				return;
+			}
+
+			// Clear category badge or button
 			if (event.target.closest('#clearCategoryFilter') || event.target.closest('#removeCategoryPill')) {
 				event.preventDefault();
 				setCategoryFilter('all');
@@ -515,8 +892,27 @@
 				console.warn('Contenido remoto no disponible.');
 			}
 		};
-		document.addEventListener('click', event => { const heart = event.target.closest('.heart'); if (!heart) return; const card = heart.closest('.product'); if (!card) return; event.preventDefault(); event.stopImmediatePropagation(); toggleWishlist(products[card.dataset.index], heart); }, true);
-		render(); lucide.createIcons(); applyRemoteSite();
+		// Soporte de parámetros de URL para filtrar categorías al cargar
+		try {
+			const urlParams = new URLSearchParams(window.location.search);
+			const catParam = urlParams.get('categoria') || urlParams.get('category');
+			const macroParam = urlParams.get('macro');
+			if (catParam) {
+				const macro = getMacroCategory(catParam);
+				selectedFilter = { type: 'sub', macroId: macro.id, category: catParam };
+				expandedGroups.add(macro.id);
+			} else if (macroParam) {
+				selectedFilter = { type: 'macro', id: macroParam };
+				expandedGroups.add(macroParam);
+			}
+		} catch (e) {
+			console.warn('URL params no disponibles:', e);
+		}
+
+		renderSidebarCategories();
+		render();
+		lucide.createIcons();
+		applyRemoteSite();
 	</script>
 	<script>
 		const showAccountView = view => { document.querySelector('#loginView').hidden = view !== 'login'; document.querySelector('#registerView').hidden = view !== 'register'; };
