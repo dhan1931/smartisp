@@ -42,9 +42,9 @@
 		.search button { background: var(--blue); border: 0; color: var(--white); width: 48px; display: grid; place-items: center; }
 		.nav-actions { margin-left: auto; display: flex; gap: 18px; align-items: center; }
 		.nav-action { border: 0; background: transparent; color: var(--navy); display: flex; align-items: center; gap: 7px; font-weight: 600; padding: 4px; }
-		.admin-nav-link { display: none; color: #087ea4; border: 1px solid #a9d8d0; background: #eaf7f5; padding: 8px 11px; border-radius: 7px; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; }
-		.admin-nav-link.is-visible { display: inline-flex; }
-		.admin-nav-link:hover { background: #d7f0e8; }
+		.admin-nav-link { display: none; color: #087ea4; border: 1px solid #a9d8d0; background: #eaf7f5; padding: 8px 12px; border-radius: 7px; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; text-decoration: none; transition: all .2s ease; }
+		.admin-nav-link.is-visible { display: inline-flex !important; }
+		.admin-nav-link:hover { background: #d7f0e8; border-color: #087ea4; transform: translateY(-1px); }
 		.cart-button { position: relative; }
 		.cart-count { background: var(--orange); border-radius: 50%; color: #172b3a; font-size: 10px; min-width: 17px; height: 17px; display: grid; place-items: center; position: absolute; top: -7px; left: 17px; }
 		.cart-count.bump { animation: cartBump .45s ease; }
@@ -331,9 +331,15 @@
 		.wishlist-tools button:disabled { cursor: not-allowed; opacity: .35; }
 		.order-item { display: block; }
 		.order-head { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
-		.profile-action { display: flex; align-items: center; gap: 9px; padding: 14px; border: 1px solid var(--line); border-radius: 9px; color: var(--navy); background: white; text-align: left; cursor: pointer; transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease; }
+		.profile-action { display: flex; align-items: center; gap: 9px; padding: 14px; border: 1px solid var(--line); border-radius: 9px; color: var(--navy); background: white; text-align: left; cursor: pointer; transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease, background .2s ease; text-decoration: none; }
 		.profile-action:hover { border-color: #9acfc2; box-shadow: 0 8px 20px rgba(16,44,61,.08); transform: translateY(-2px); }
+		.profile-action.is-active { border-color: var(--blue, #087ea4); background: #f0faf8; box-shadow: 0 0 0 2px rgba(8,126,164,.18); }
+		.profile-action.is-active i { color: var(--blue, #087ea4); }
 		.profile-action small { display: block; margin-top: 3px; color: var(--muted); }
+		.profile-action--admin { grid-column: 1 / -1; background: linear-gradient(135deg, #eaf7f5, #d9f2ed); border: 1px solid #98ded3; color: #066787; text-decoration: none; }
+		.profile-action--admin:hover { background: linear-gradient(135deg, #dcf2ee, #c8ece5); border-color: #087ea4; transform: translateY(-2px); }
+		.profile-action--admin i { color: #087ea4; }
+		.profile-admin-badge { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: #087ea4; color: white; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; vertical-align: middle; }
 		.settings-section { margin-top: 19px; padding-top: 17px; border-top: 1px solid var(--line); }
 		.settings-section h3 { margin-bottom: 8px; color: var(--navy); font-size: 15px; }
 		.setting-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 0; border-bottom: 1px solid #edf3f2; color: var(--navy); font-size: 12px; }
@@ -354,7 +360,7 @@
 	<header class="nav">
 		<a class="logo" href="index.html" title="SmartISP - Volver a la presentación">smart<b>isp</b><span style="color:#f5a524">.</span></a>
 		<form class="search" id="searchForm"><input id="searchInput" type="search" placeholder="¿Qué estás buscando hoy?" aria-label="Buscar productos"><button aria-label="Buscar"><i data-lucide="search" width="18"></i></button></form>
-		<div class="nav-actions"><a class="nav-action" href="index.html" title="Conocer sobre la empresa"><i data-lucide="building-2" width="16"></i><span>Empresa</span></a><button class="nav-action" id="openAccount"><i data-lucide="user" width="16"></i><span id="accountLabel">Mi cuenta</span></button><a class="admin-nav-link" id="adminNavLink" href="/admin.html"><i data-lucide="layout-dashboard" width="16"></i><span>Panel admin</span></a><button class="nav-action cart-button" id="openCart"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="cart-count" id="cartCount">0</b></button></div>
+		<div class="nav-actions"><a class="nav-action" href="index.html" title="Conocer sobre la empresa"><i data-lucide="building-2" width="16"></i><span>Empresa</span></a><button class="nav-action" id="openAccount"><i data-lucide="user" width="16"></i><span id="accountLabel">Mi cuenta</span></button><a class="admin-nav-link" id="adminNavLink" href="admin.html"><i data-lucide="layout-dashboard" width="16"></i><span>Panel admin</span></a><button class="nav-action cart-button" id="openCart"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="cart-count" id="cartCount">0</b></button></div>
 	</header>
 	<main>
 		<section class="hero"><div class="hero-content"><div class="eyebrow" id="heroEyebrow">Infraestructura para proveedores de internet</div><h1 id="heroTitle">Conecta más. Opera mejor.</h1><p id="heroText">Equipamiento confiable para redes, servidores y equipos de trabajo que mantienen tu servicio siempre en línea.</p><a class="primary" id="heroButton" href="#catalogo"><span id="heroButtonText">Explorar soluciones</span> <i data-lucide="arrow-right" width="17"></i></a></div></section>
@@ -399,7 +405,7 @@
 	<footer><div><div class="logo">smart<b>isp</b><span style="color:#f5a524">.</span></div><div>Infraestructura que mantiene tu red en movimiento.</div></div><div class="footer-links"><a href="index.html">Sobre la Empresa</a><a href="index.html#contacto">Contacto y Soporte</a><a href="#">Despachos</a><a href="#">Garantías</a></div><div>© 2026 SmartISP</div></footer>
 		<aside class="drawer" id="drawer"><div class="drawer-panel"><div class="drawer-head"><h2>Tu carrito</h2><button class="icon-button" id="closeCart" aria-label="Cerrar carrito"><i data-lucide="x"></i></button></div><div class="cart-items" id="cartItems">Tu carrito está vacío.</div><div class="cart-total"><span>Total</span><span id="cartTotal">$0</span></div><button class="primary checkout">Finalizar compra <i data-lucide="arrow-up-right" width="16"></i></button></div></aside>
 		<div class="modal" id="productModal" role="dialog" aria-modal="true" aria-labelledby="detailTitle"><div class="modal-panel"><button class="icon-button modal-close" data-close-modal="productModal" aria-label="Cerrar especificaciones"><i data-lucide="x"></i></button><div id="productDetail"></div></div></div>
-		<div class="modal" id="accountModal" role="dialog" aria-modal="true" aria-labelledby="accountTitle"><div class="modal-panel account-panel"><button class="icon-button modal-close" data-close-modal="accountModal" aria-label="Cerrar acceso"><i data-lucide="x"></i></button><div id="loginView"><div class="eyebrow">Área personal</div><h2 id="accountTitle">Entra a tu cuenta</h2><p>Usa tu acceso demo para consultar preferencias y configuraciones.</p><form id="accountForm"><label class="form-field">Correo electrónico<input id="emailInput" type="email" placeholder="tu@correo.com" required autocomplete="email"></label><label class="form-field">Contraseña<input id="passwordInput" type="password" placeholder="Mínimo 6 caracteres" minlength="6" required autocomplete="current-password"></label><div class="form-options"><label><input type="checkbox"> Recordarme</label><a href="#">¿Olvidaste tu contraseña?</a></div><button class="primary account-submit" type="submit">Ingresar <i data-lucide="arrow-right" width="16"></i></button><div class="form-message" id="formMessage"></div></form><button class="account-switch" id="showRegister" type="button">¿Aún no tienes cuenta? <strong>Regístrate</strong></button></div><div id="registerView" hidden><div class="eyebrow">Nueva cuenta</div><h2>Únete a SmartISP</h2><p>Crea tu acceso para guardar tus preferencias y agilizar tus compras.</p><form id="registerForm"><label class="form-field">Nombre<input id="registerName" type="text" placeholder="Tu nombre" minlength="2" required autocomplete="name"></label><label class="form-field">Correo electrónico<input id="registerEmail" type="email" placeholder="tu@correo.com" required autocomplete="email"></label><label class="form-field">Contraseña<input id="registerPassword" type="password" placeholder="Mínimo 6 caracteres" minlength="6" required autocomplete="new-password"></label><label class="form-field">Confirmar contraseña<input id="registerPasswordConfirm" type="password" placeholder="Repite tu contraseña" minlength="6" required autocomplete="new-password"></label><button class="primary account-submit" type="submit">Crear cuenta <i data-lucide="arrow-right" width="16"></i></button><div class="form-message" id="registerMessage"></div></form><button class="account-switch" id="showLogin" type="button">¿Ya tienes cuenta? <strong>Ingresar</strong></button></div><div id="profileView" hidden><div class="eyebrow">Cuenta activa</div><h2>Hola, Medardo</h2><p id="profileEmail">medardo@gmail.com</p><div class="profile-options"><label class="form-options"><span><i data-lucide="moon" width="16" style="vertical-align:middle"></i> Modo oscuro</span><input id="darkModeToggle" type="checkbox"></label><label class="form-options"><span><i data-lucide="bell" width="16" style="vertical-align:middle"></i> Notificaciones de ofertas</span><input type="checkbox" checked></label><label class="form-options"><span><i data-lucide="globe" width="16" style="vertical-align:middle"></i> Idioma</span><select class="select"><option>Español</option><option>English</option></select></label></div><button class="primary account-submit" id="logoutButton" type="button">Cerrar sesión <i data-lucide="log-out" width="16"></i></button></div></div></div>
+		<div class="modal" id="accountModal" style="display:none;" aria-hidden="true"></div>
 	<script>
 		let products = [
 			{ name: 'MacBook Air M2 13”', brand: 'Apple', category: 'Notebooks', price: 899990, reviews: 124, image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=700&q=80', tag: 'Más vendido', description: 'Potencia silenciosa y una batería que acompaña toda tu jornada. Ideal para trabajo, estudio y creación.', specs: [['Procesador', 'Apple M2'], ['Memoria RAM', '8 GB'], ['Almacenamiento', '256 GB SSD'], ['Pantalla', '13.6” Liquid Retina'], ['Batería', 'Hasta 18 horas'], ['Conectividad', 'WiFi 6 / Bluetooth 5.0']] },
@@ -424,7 +430,7 @@
 			return 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=600&q=80';
 		};
 
-		const toggleWishlist = (product, heartEl) => {
+		let toggleWishlist = (product, heartEl) => {
 			if (!product) return;
 			const key = productKey(product);
 			if (wishlistIds.has(key)) {
@@ -745,7 +751,19 @@
 			}).join('') : '<div class="empty">No encontramos productos con esa búsqueda.</div>';
 			lucide.createIcons();
 			document.querySelectorAll('.add').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); cart.push(products[button.dataset.index]); updateCart(); }));
-			document.querySelectorAll('.heart').forEach(button => button.addEventListener('click', event => event.stopPropagation()));
+			document.querySelectorAll('.heart').forEach(button => {
+				const card = button.closest('.product');
+				const prod = card ? products[card.dataset.index] : null;
+				if (prod) {
+					button.classList.toggle('is-saved', wishlistIds.has(productKey(prod)));
+					button.addEventListener('click', event => {
+						event.stopPropagation();
+						toggleWishlist(prod, button);
+					});
+				} else {
+					button.addEventListener('click', event => event.stopPropagation());
+				}
+			});
 			document.querySelectorAll('.product').forEach(card => {
 				const open = () => openProduct(products[card.dataset.index]);
 				card.addEventListener('click', event => { if (!event.target.closest('button')) open(); });
@@ -845,7 +863,8 @@
 		});
 		document.querySelector('#searchForm').addEventListener('submit', event => { event.preventDefault(); render(); document.querySelector('#catalogo').scrollIntoView({ behavior: 'smooth' }); }); document.querySelector('#searchInput').addEventListener('input', render); document.querySelector('#sortSelect').addEventListener('change', render);
 		document.querySelector('#openCart').addEventListener('click', () => document.querySelector('#drawer').classList.add('open')); document.querySelector('#closeCart').addEventListener('click', () => document.querySelector('#drawer').classList.remove('open')); document.querySelector('#drawer').addEventListener('click', event => { if (event.target.id === 'drawer') event.target.classList.remove('open'); });
-		document.querySelector('#openAccount').addEventListener('click', async () => { document.querySelector('#accountModal').classList.add('open'); document.querySelector('#loginView').hidden = signedIn; document.querySelector('#profileView').hidden = !signedIn; if (!signedIn) { try { const response = await fetch('/api/auth/me'); if (response.ok) { signedIn = true; document.querySelector('#loginView').hidden = true; document.querySelector('#profileView').hidden = false; } } catch (error) { console.warn('Backend no disponible'); } } }); document.querySelectorAll('[data-close-modal]').forEach(button => button.addEventListener('click', () => document.querySelector(`#${button.dataset.closeModal}`).classList.remove('open'))); document.querySelectorAll('.modal').forEach(modal => modal.addEventListener('click', event => { if (event.target === modal) modal.classList.remove('open'); })); document.querySelector('#accountForm').addEventListener('submit', async event => { event.preventDefault(); const email = document.querySelector('#emailInput').value.trim().toLowerCase(); const password = document.querySelector('#passwordInput').value; const message = document.querySelector('#formMessage'); try { const response = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) }); const result = await response.json(); if (!response.ok) throw new Error(result.error); signedIn = true; document.querySelector('#profileEmail').textContent = result.user.email; document.querySelector('#loginView').hidden = true; document.querySelector('#profileView').hidden = false; message.classList.remove('show'); lucide.createIcons(); } catch (error) { message.textContent = error.message || 'No se pudo conectar con el servidor.'; message.style.color = '#a53b3b'; message.style.background = '#fff0f0'; message.classList.add('show'); } }); document.querySelector('#logoutButton').addEventListener('click', async () => { await fetch('/api/auth/logout', { method: 'POST' }); signedIn = false; document.querySelector('#profileView').hidden = true; document.querySelector('#loginView').hidden = false; document.querySelector('#accountForm').reset(); document.querySelector('#formMessage').classList.remove('show'); }); document.querySelector('#darkModeToggle').addEventListener('change', event => document.body.classList.toggle('dark-mode', event.target.checked));
+		document.querySelectorAll('[data-close-modal]').forEach(button => button.addEventListener('click', () => document.querySelector(`#${button.dataset.closeModal}`)?.classList.remove('open')));
+		document.querySelectorAll('.modal').forEach(modal => modal.addEventListener('click', event => { if (event.target === modal) modal.classList.remove('open'); }));
 		const applySiteLogo = content => {
 			const logoElements = document.querySelectorAll('.logo');
 			if (!logoElements.length) return;
@@ -914,120 +933,379 @@
 		lucide.createIcons();
 		applyRemoteSite();
 	</script>
-	<script>
-		const showAccountView = view => { document.querySelector('#loginView').hidden = view !== 'login'; document.querySelector('#registerView').hidden = view !== 'register'; };
-		const setSignedInUser = (user, remember = false) => { (remember ? localStorage : sessionStorage).setItem('smartisp.accountUser', JSON.stringify(user)); if (remember) localStorage.setItem('smartisp.accountRemembered', 'true'); else { localStorage.removeItem('smartisp.accountUser'); localStorage.removeItem('smartisp.accountRemembered'); } signedIn = true; document.querySelector('#accountLabel').textContent = user.name; document.querySelector('#profileEmail').textContent = user.email; document.querySelector('#profileView h2').textContent = `Hola, ${user.name}`; };
-		const showFormMessage = (element, text, isError = false) => { element.textContent = text; element.classList.toggle('error', isError); element.classList.add('show'); };
-		document.querySelector('#openAccount').addEventListener('click', () => { if (!signedIn) showAccountView('login'); });
-		document.querySelector('#showRegister').addEventListener('click', () => showAccountView('register'));
-		document.querySelector('#showLogin').addEventListener('click', () => showAccountView('login'));
-		document.querySelector('#registerForm').addEventListener('submit', async event => {
-			event.preventDefault();
-			const name = document.querySelector('#registerName').value.trim();
-			const email = document.querySelector('#registerEmail').value.trim().toLowerCase();
-			const password = document.querySelector('#registerPassword').value;
-			const confirmation = document.querySelector('#registerPasswordConfirm').value;
-			const message = document.querySelector('#registerMessage');
-			if (password !== confirmation) { message.textContent = 'Las contraseñas no coinciden.'; message.classList.add('show'); return; }
-			try {
-				const response = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password }) });
-				const result = await response.json();
-				if (!response.ok) throw new Error(result.error);
-				setSignedInUser(result.user, false);
-				document.querySelector('#profileView h2').textContent = `Hola, ${result.user.name}`;
-				document.querySelector('#profileView').hidden = false;
-				document.querySelector('#registerView').hidden = true;
-				showFormMessage(message, 'Cuenta creada correctamente. Bienvenido a SmartISP.');
-				lucide.createIcons();
-			} catch (error) { showFormMessage(message, error.message || 'No se pudo crear la cuenta.', true); }
-		});
-	</script>
-	<script>
-		document.querySelector('#accountForm').addEventListener('submit', async event => {
-			event.preventDefault();
-			event.stopImmediatePropagation();
-			const message = document.querySelector('#formMessage');
-			try {
-				const response = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: document.querySelector('#emailInput').value.trim().toLowerCase(), password: document.querySelector('#passwordInput').value }) });
-				const result = await response.json();
-				if (!response.ok) throw new Error(result.error);
-				setSignedInUser(result.user, document.querySelector('#accountForm [name="remember"]')?.checked);
-				document.querySelector('#loginView').hidden = true;
-				document.querySelector('#profileView').hidden = false;
-				showFormMessage(message, 'Inicio de sesión correcto. Bienvenido a SmartISP.');
-				lucide.createIcons();
-			} catch (error) {
-				showFormMessage(message, error.message || 'No se pudo conectar con el servidor.', true);
-			}
-		}, true);
-		document.querySelector('#logoutButton').addEventListener('click', () => {
-			document.querySelector('#accountLabel').textContent = 'Mi cuenta';
-		});
-	</script>
-	<script>
-		const accountModal = document.querySelector('#accountModal');
-		const accountLabel = document.querySelector('#accountLabel');
-		const loginView = document.querySelector('#loginView');
-		const registerView = document.querySelector('#registerView');
-		const profileView = document.querySelector('#profileView');
-		const accountForm = document.querySelector('#accountForm');
-		const logoutButton = document.querySelector('#logoutButton');
 
-		const resetAccountState = () => {
-			signedIn = false;
-			accountLabel.textContent = 'Mi cuenta';
-			loginView.hidden = false;
-			registerView.hidden = true;
-			profileView.hidden = true;
-			accountForm.reset();
-			document.querySelector('#formMessage').classList.remove('show');
-			document.querySelector('#registerMessage').classList.remove('show');
-		};
-
-		logoutButton.addEventListener('click', async () => {
-			logoutButton.disabled = true;
-			logoutButton.classList.add('is-loading');
-			const icon = logoutButton.querySelector('i');
-			if (icon) icon.setAttribute('data-lucide', 'loader-circle');
-			lucide.createIcons();
-			try { await fetch('/api/auth/logout', { method: 'POST' }); } catch (error) { console.warn('Sesión local cerrada.'); }
-			resetAccountState();
-			logoutButton.disabled = false;
-			logoutButton.classList.remove('is-loading');
-			accountModal.classList.remove('open');
-			lucide.createIcons();
-		});
-	</script>
 	<script>
-		const legacyAccountModal = document.querySelector('#accountModal');
-		legacyAccountModal.style.display = 'none';
+		// SISTEMA DE CUENTAS, PERFIL, HISTORIAL Y ACCESO ADMINISTRADOR
 		const accountSystem = document.createElement('div');
 		accountSystem.className = 'account-system';
-		accountSystem.innerHTML = `<div class="account-shell"><div class="account-layout"><aside class="account-aside"><div><div class="account-aside-mark"><i data-lucide="shield-check" width="23"></i></div><h2>Tu espacio, a tu manera.</h2><p>Gestiona tus datos, preferencias y seguridad desde un solo lugar.</p></div><div class="account-aside-note"><i data-lucide="lock-keyhole" width="15"></i><span>Tus datos viajan protegidos</span></div></aside><section class="account-main"><button class="account-system-close" type="button" aria-label="Cerrar cuenta"><i data-lucide="x" width="18"></i></button><div id="accountAuthView"><div class="account-kicker">Área personal</div><h2 id="accountSystemTitle">Inicia sesión</h2><p class="account-main-intro">Accede a tus preferencias y agiliza tus próximas compras.</p><div class="account-tabs"><button class="account-tab is-active" type="button" data-account-tab="login">Iniciar sesión</button><button class="account-tab" type="button" data-account-tab="register">Crear cuenta</button></div><div class="account-pane" id="accountLoginPane"><form id="systemLoginForm"><label class="form-field">Email<input name="email" type="email" placeholder="tu@correo.com" required autocomplete="email"></label><label class="form-field">Contraseña<input name="password" type="password" placeholder="Tu contraseña" minlength="6" required autocomplete="current-password"></label><div class="form-options"><label><input type="checkbox" name="remember"> Recordarme</label><a href="#">¿Olvidaste tu contraseña?</a></div><button class="primary account-submit" type="submit">Entrar <i data-lucide="arrow-right" width="16"></i></button><div class="form-message" data-account-message></div></form></div><div class="account-pane" id="accountRegisterPane" hidden><form id="systemRegisterForm"><div class="account-grid"><label class="form-field">Nombre<input name="name" type="text" placeholder="Tu nombre" minlength="2" required autocomplete="given-name"></label><label class="form-field">Apellido<input name="surname" type="text" placeholder="Tu apellido" minlength="2" required autocomplete="family-name"></label></div><label class="form-field">Email<input name="email" type="email" placeholder="tu@correo.com" required autocomplete="email"></label><label class="form-field">Teléfono<input name="phone" type="tel" placeholder="+593 999 999 999" minlength="7" required autocomplete="tel"></label><div class="account-grid"><label class="form-field">Contraseña<input name="password" type="password" placeholder="Mínimo 6 caracteres" minlength="6" required autocomplete="new-password"></label><label class="form-field">Repetir contraseña<input name="confirmation" type="password" placeholder="Repite tu contraseña" minlength="6" required autocomplete="new-password"></label></div><button class="primary account-submit" type="submit">Crear cuenta <i data-lucide="arrow-right" width="16"></i></button><div class="form-message" data-account-message></div></form></div></div><div id="accountProfileView" hidden><div class="account-kicker">Cuenta activa</div><h2>Tu perfil</h2><p class="account-main-intro">Administra tu información y la experiencia de SmartISP.</p><div class="profile-summary"><div><strong data-profile-name></strong><span data-profile-email></span></div></div><div class="profile-actions"><button class="profile-action" type="button" data-account-panel="profile"><i data-lucide="user-cog" width="18"></i><span>Datos personales<small>Editar tu información</small></span></button><button class="profile-action" type="button" data-account-panel="settings"><i data-lucide="sliders-horizontal" width="18"></i><span>Configuraciones<small>Apariencia y preferencias</small></span></button></div><div class="settings-section" data-profile-editor hidden><h3>Datos personales</h3><div class="account-grid"><label class="form-field">Nombre<input data-edit="name" type="text"></label><label class="form-field">Apellido<input data-edit="surname" type="text"></label></div><label class="form-field">Email<input data-edit="email" type="email" required></label><label class="form-field">Teléfono<input data-edit="phone" type="tel"></label><button class="primary account-submit" type="button" data-save-profile>Guardar cambios <i data-lucide="check" width="16"></i></button><div class="form-message" data-account-message></div></div><div class="settings-section" data-preferences hidden><h3>Preferencias</h3><label class="form-field">Apariencia<select data-theme-select><option value="natural">Natural</option><option value="contrast">Contraste alto</option><option value="night">Noche</option></select></label><label class="setting-row"><span>Interfaz compacta<small>Reduce espacios para mostrar más productos</small></span><input data-compact-toggle type="checkbox"></label></div><button class="logout-button" type="button" data-system-logout><i data-lucide="log-out" width="16"></i> Cerrar sesión</button></div></section></div></div>`;
+		accountSystem.id = 'accountSystemModal';
+		accountSystem.innerHTML = `
+			<div class="account-shell">
+				<div class="account-layout">
+					<aside class="account-aside">
+						<div>
+							<div class="account-aside-mark"><i data-lucide="shield-check" width="23"></i></div>
+							<h2>Tu espacio, a tu manera.</h2>
+							<p>Gestiona tus compras, lista de deseos, datos personales y preferencias desde un solo lugar seguro.</p>
+						</div>
+						<div class="account-aside-note"><i data-lucide="lock-keyhole" width="15"></i><span>Tus datos viajan protegidos con cifrado SSL</span></div>
+					</aside>
+					<section class="account-main">
+						<button class="account-system-close" type="button" aria-label="Cerrar ventana"><i data-lucide="x" width="18"></i></button>
+						
+						<!-- VISTA DE AUTENTICACIÓN (LOGIN / REGISTRO) -->
+						<div id="accountAuthView">
+							<div class="account-kicker">Área personal</div>
+							<h2 id="accountSystemTitle">Inicia sesión</h2>
+							<p class="account-main-intro">Accede a tus preferencias, favoritos y agiliza tus próximas compras.</p>
+							<div class="account-tabs">
+								<button class="account-tab is-active" type="button" data-account-tab="login">Iniciar sesión</button>
+								<button class="account-tab" type="button" data-account-tab="register">Crear cuenta</button>
+							</div>
+							<div class="account-pane" id="accountLoginPane">
+								<form id="systemLoginForm">
+									<label class="form-field">Email<input name="email" type="email" placeholder="tu@correo.com" required autocomplete="email"></label>
+									<label class="form-field">Contraseña<input name="password" type="password" placeholder="Tu contraseña" minlength="4" required autocomplete="current-password"></label>
+									<div class="form-options">
+										<label><input type="checkbox" name="remember" checked> Recordarme en este equipo</label>
+										<a href="reset-password.html" target="_blank" rel="noopener">¿Olvidaste tu contraseña?</a>
+									</div>
+									<button class="primary account-submit" type="submit">Entrar <i data-lucide="arrow-right" width="16"></i></button>
+									<div class="form-message" data-account-message></div>
+								</form>
+							</div>
+							<div class="account-pane" id="accountRegisterPane" hidden>
+								<form id="systemRegisterForm">
+									<div class="account-grid">
+										<label class="form-field">Nombre<input name="name" type="text" placeholder="Tu nombre" minlength="2" required autocomplete="given-name"></label>
+										<label class="form-field">Apellido<input name="surname" type="text" placeholder="Tu apellido" minlength="2" required autocomplete="family-name"></label>
+									</div>
+									<label class="form-field">Email<input name="email" type="email" placeholder="tu@correo.com" required autocomplete="email"></label>
+									<label class="form-field">Teléfono<input name="phone" type="tel" placeholder="+593 999 999 999" minlength="7" required autocomplete="tel"></label>
+									<div class="account-grid">
+										<label class="form-field">Contraseña<input name="password" type="password" placeholder="Mínimo 6 caracteres" minlength="6" required autocomplete="new-password"></label>
+										<label class="form-field">Repetir contraseña<input name="confirmation" type="password" placeholder="Repite tu contraseña" minlength="6" required autocomplete="new-password"></label>
+									</div>
+									<button class="primary account-submit" type="submit">Crear cuenta <i data-lucide="arrow-right" width="16"></i></button>
+									<div class="form-message" data-account-message></div>
+								</form>
+							</div>
+						</div>
+
+						<!-- VISTA DE PERFIL DE USUARIO -->
+						<div id="accountProfileView" hidden>
+							<div class="account-kicker">Mi Cuenta</div>
+							<h2>Panel de usuario</h2>
+							<p class="account-main-intro">Gestiona tus pedidos, artículos guardados, perfil y configuración.</p>
+							
+							<div class="profile-summary">
+								<div>
+									<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+										<strong data-profile-name style="font-size:18px;">Usuario</strong>
+										<span class="profile-admin-badge" data-admin-badge style="display: none;"><i data-lucide="shield" width="12"></i> Administrador</span>
+									</div>
+									<span data-profile-email style="display:block;margin-top:2px;"></span>
+								</div>
+							</div>
+
+							<div class="profile-actions">
+								<button class="profile-action is-active" type="button" data-account-panel="wishlist">
+									<i data-lucide="heart" width="18"></i>
+									<span>Wishlist<small>Productos guardados</small></span>
+								</button>
+								<button class="profile-action" type="button" data-account-panel="orders">
+									<i data-lucide="package-check" width="18"></i>
+									<span>Pedidos e historial<small>Consulta tus compras</small></span>
+								</button>
+								<button class="profile-action" type="button" data-account-panel="profile">
+									<i data-lucide="user-cog" width="18"></i>
+									<span>Datos personales<small>Editar tu información</small></span>
+								</button>
+								<button class="profile-action" type="button" data-account-panel="settings">
+									<i data-lucide="sliders-horizontal" width="18"></i>
+									<span>Configuraciones<small>Apariencia y preferencias</small></span>
+								</button>
+								<a class="profile-action profile-action--admin" data-admin-profile-btn href="admin.html" style="display: none;">
+									<i data-lucide="layout-dashboard" width="18"></i>
+									<span>Panel de Control (Admin)<small>Acceso completo para administrar productos, catálogo y web</small></span>
+								</a>
+							</div>
+
+							<!-- SECCIÓN WISHLIST -->
+							<div class="settings-section hub-section" data-hub-panel="wishlist">
+								<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+									<h3 style="margin:0;"><i data-lucide="heart" width="16" style="vertical-align:middle;margin-right:6px;color:#d35b63;"></i> Mi Wishlist</h3>
+									<span style="font-size:12px;color:var(--muted);" data-wishlist-count>0 productos</span>
+								</div>
+								<div class="hub-list" data-wishlist-list></div>
+							</div>
+
+							<!-- SECCIÓN PEDIDOS -->
+							<div class="settings-section hub-section" data-hub-panel="orders" hidden>
+								<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+									<h3 style="margin:0;"><i data-lucide="package-check" width="16" style="vertical-align:middle;margin-right:6px;color:var(--blue);"></i> Pedidos e Historial</h3>
+									<span style="font-size:12px;color:var(--muted);" data-orders-count>0 pedidos</span>
+								</div>
+								<div class="hub-list" data-orders-list></div>
+							</div>
+
+							<!-- SECCIÓN DATOS PERSONALES Y CONTRASEÑA -->
+							<div class="settings-section" data-hub-panel="profile" hidden>
+								<h3>Datos personales</h3>
+								<div class="account-grid">
+									<label class="form-field">Nombre<input data-edit="name" type="text"></label>
+									<label class="form-field">Apellido<input data-edit="surname" type="text"></label>
+								</div>
+								<label class="form-field">Email<input data-edit="email" type="email" required></label>
+								<label class="form-field">Teléfono<input data-edit="phone" type="tel"></label>
+								<button class="primary account-submit" type="button" data-save-profile>Guardar cambios <i data-lucide="check" width="16"></i></button>
+								<div class="form-message" data-account-message></div>
+
+								<section class="password-section">
+									<h3>Cambiar contraseña</h3>
+									<p>Confirma tu contraseña actual para establecer una nueva.</p>
+									<form id="passwordChangeForm">
+										<label class="form-field">Contraseña actual<input name="currentPassword" type="password" required autocomplete="current-password"></label>
+										<label class="form-field">Nueva contraseña<input name="newPassword" type="password" minlength="6" required autocomplete="new-password"></label>
+										<label class="form-field">Repetir nueva contraseña<input name="confirmation" type="password" minlength="6" required autocomplete="new-password"></label>
+										<button class="primary" type="submit">Actualizar contraseña</button>
+										<div class="form-message" data-account-message></div>
+									</form>
+								</section>
+							</div>
+
+							<!-- SECCIÓN CONFIGURACIONES -->
+							<div class="settings-section" data-hub-panel="settings" hidden>
+								<h3>Preferencias y apariencia</h3>
+								<label class="form-field">Tema / Apariencia
+									<select data-theme-select>
+										<option value="natural">Natural (Estándar)</option>
+										<option value="contrast">Contraste alto</option>
+										<option value="night">Modo Noche</option>
+									</select>
+								</label>
+								<label class="setting-row">
+									<span>Interfaz compacta<small>Reduce espacios para mostrar más productos en pantalla</small></span>
+									<input data-compact-toggle type="checkbox">
+								</label>
+							</div>
+
+							<button class="logout-button" type="button" data-system-logout><i data-lucide="log-out" width="16"></i> Cerrar sesión</button>
+						</div>
+					</section>
+				</div>
+			</div>
+		`;
 		document.body.append(accountSystem);
-		lucide.createIcons();
-		const accountState = { user: null, theme: localStorage.getItem('smartisp.theme') || 'natural', compact: localStorage.getItem('smartisp.compact') === 'true' };
-		const readApiResponse = async response => { const text = await response.text(); try { return text ? JSON.parse(text) : { error: `El servidor respondió vacío (HTTP ${response.status}).` }; } catch { return { error: text.slice(0, 180) || `Respuesta inválida del servidor (HTTP ${response.status}).` }; } };
+
+		// ESTADO GLOBAL DE LA CUENTA
+		const accountState = {
+			user: null,
+			theme: localStorage.getItem('smartisp.theme') || 'natural',
+			compact: localStorage.getItem('smartisp.compact') === 'true'
+		};
+
+		const customerData = { wishlist: [], orders: [] };
+
+		const readApiResponse = async response => {
+			const text = await response.text();
+			try {
+				return text ? JSON.parse(text) : { error: `El servidor respondió vacío (HTTP ${response.status}).` };
+			} catch {
+				return { error: text.slice(0, 180) || `Respuesta inválida del servidor (HTTP ${response.status}).` };
+			}
+		};
+
 		const accountAuthView = accountSystem.querySelector('#accountAuthView');
 		const accountProfileView = accountSystem.querySelector('#accountProfileView');
-		const profileEditor = accountSystem.querySelector('[data-profile-editor]');
-		profileEditor.insertAdjacentHTML('beforeend', '<section class="password-section"><h3>Cambiar contraseña</h3><p>Confirma tu contraseña actual para establecer una nueva.</p><form id="passwordChangeForm"><label class="form-field">Contraseña actual<input name="currentPassword" type="password" required autocomplete="current-password"></label><label class="form-field">Nueva contraseña<input name="newPassword" type="password" minlength="8" required autocomplete="new-password"></label><label class="form-field">Repetir nueva contraseña<input name="confirmation" type="password" minlength="8" required autocomplete="new-password"></label><button class="primary" type="submit">Actualizar contraseña</button><div class="form-message" data-account-message></div></form></section>');
-		accountProfileView.querySelector('.profile-actions').insertAdjacentHTML('beforeend', '<button class="profile-action" type="button" data-account-panel="wishlist"><i data-lucide="heart" width="18"></i><span>Wishlist<small>Productos guardados</small></span></button><button class="profile-action" type="button" data-account-panel="orders"><i data-lucide="package-check" width="18"></i><span>Pedidos e historial<small>Consulta tus compras</small></span></button>');
-		accountProfileView.insertAdjacentHTML('beforeend', '<section class="customer-hub" data-customer-hub hidden><div data-hub-view="wishlist"><h3>Mi wishlist</h3><div class="hub-list" data-wishlist-list></div></div><div data-hub-view="orders" hidden><h3>Pedidos e historial</h3><div class="hub-list" data-orders-list></div></div></section>');
-		const accountMessage = form => form.querySelector('[data-account-message]');
-		const showAccountMessage = (form, text, error = false) => { const message = accountMessage(form); message.textContent = text; message.classList.toggle('error', error); message.classList.add('show'); };
-		const showAccountTab = tab => { accountSystem.querySelectorAll('[data-account-tab]').forEach(button => button.classList.toggle('is-active', button.dataset.accountTab === tab)); accountSystem.querySelector('#accountLoginPane').hidden = tab !== 'login'; accountSystem.querySelector('#accountRegisterPane').hidden = tab !== 'register'; accountSystem.querySelector('#accountSystemTitle').textContent = tab === 'login' ? 'Inicia sesión' : 'Crea tu cuenta'; };
-		const customerData = { wishlist: [], orders: [] };
-		const wishlistToast = document.createElement('div'); wishlistToast.className = 'wishlist-toast'; wishlistToast.setAttribute('role', 'status'); wishlistToast.setAttribute('aria-live', 'polite'); document.body.append(wishlistToast); let wishlistToastTimer;
-		const showWishlistToast = (text, removed = false) => { clearTimeout(wishlistToastTimer); wishlistToast.textContent = text; wishlistToast.classList.toggle('is-removed', removed); wishlistToast.classList.remove('is-visible'); requestAnimationFrame(() => wishlistToast.classList.add('is-visible')); wishlistToastTimer = setTimeout(() => wishlistToast.classList.remove('is-visible'), 2800); };
-		const customerApi = async (action, options = {}) => { const response = await fetch(`/api/auth/${action}`, { credentials: 'include', headers: { 'Content-Type': 'application/json' }, ...options }); const result = await readApiResponse(response); if (!response.ok) throw new Error(result.error || 'No se pudo completar la operación.'); return result; };
-		const syncWishlistButtons = () => document.querySelectorAll('.product').forEach(card => card.querySelector('.heart')?.classList.toggle('is-saved', wishlistIds.has(productKey(products[card.dataset.index]))));
-		const renderWishlist = () => { const list = accountProfileView.querySelector('[data-wishlist-list]'); list.innerHTML = customerData.wishlist.length ? customerData.wishlist.map((item, index) => `<div class="hub-item" data-wishlist-item="${index}"><img src="${item.image || ''}" alt=""><div><strong>${item.name}</strong><small>${money(Number(item.price || 0))} · ${item.category || 'SmartISP'}</small></div><div class="wishlist-tools"><button type="button" data-wishlist-action="up" aria-label="Subir" ${index === 0 ? 'disabled' : ''}>↑</button><button type="button" data-wishlist-action="down" aria-label="Bajar" ${index === customerData.wishlist.length - 1 ? 'disabled' : ''}>↓</button><button type="button" data-wishlist-action="remove" aria-label="Quitar">×</button></div></div>`).join('') : '<div class="hub-empty">Todavía no tienes productos guardados.</div>'; };
-		const renderOrders = () => { const list = accountProfileView.querySelector('[data-orders-list]'); list.innerHTML = customerData.orders.length ? customerData.orders.map(order => `<div class="hub-item order-item"><div class="order-head"><strong>Pedido #${String(order.id).slice(0, 8)}</strong><small>${new Date(order.createdAt).toLocaleDateString('es-ES')}</small></div><small>${order.items?.items?.length || order.items?.length || 0} producto(s) · ${money(Number(order.total || 0))} · ${order.status || 'pending_payment'}</small></div>`).join('') : '<div class="hub-empty">Aún no tienes pedidos registrados.</div>'; };
-		const loadCustomerData = async () => { try { const [wishlist, orders] = await Promise.all([customerApi('customer-wishlist'), customerApi('customer-orders')]); customerData.wishlist = wishlist.wishlist || []; customerData.orders = orders.orders || []; wishlistIds = new Set(customerData.wishlist.map(item => String(item.productId))); renderWishlist(); renderOrders(); render(); syncWishlistButtons(); } catch (error) { customerData.wishlist = []; customerData.orders = []; } };
-		const toggleWishlist = async (product, heart = null) => { if (!signedIn) return openAccountSystem(); const id = productKey(product); const saved = wishlistIds.has(id); if (heart) heart.classList.toggle('is-saved', !saved); try { await customerApi(`customer-wishlist${saved ? `?productId=${encodeURIComponent(id)}` : ''}`, { method: saved ? 'DELETE' : 'POST', body: saved ? undefined : JSON.stringify({ productId: id, name: product.name, price: product.price, image: product.image, category: product.category }) }); if (saved) { wishlistIds.delete(id); customerData.wishlist = customerData.wishlist.filter(item => String(item.productId) !== id); } else { wishlistIds.add(id); customerData.wishlist.unshift({ productId: id, name: product.name, price: product.price, image: product.image, category: product.category }); } renderWishlist(); render(); syncWishlistButtons(); showWishlistToast(saved ? 'Lo eliminaste de tu wishlist' : 'Se agregó a tu wishlist', saved); } catch (error) { if (heart) heart.classList.toggle('is-saved', saved); } };
-		const saveWishlistOrder = async () => { await customerApi('customer-wishlist', { method: 'POST', body: JSON.stringify({ order: customerData.wishlist.map(item => item.productId) }) }); };
-		accountProfileView.addEventListener('click', async event => { const button = event.target.closest('[data-wishlist-action]'); if (!button) return; event.preventDefault(); event.stopPropagation(); const row = button.closest('[data-wishlist-item]'); const index = Number(row.dataset.wishlistItem); const action = button.dataset.wishlistAction; try { if (action === 'remove') { await customerApi(`customer-wishlist?productId=${encodeURIComponent(customerData.wishlist[index].productId)}`, { method: 'DELETE' }); wishlistIds.delete(String(customerData.wishlist[index].productId)); customerData.wishlist.splice(index, 1); } else { const nextIndex = action === 'up' ? index - 1 : index + 1; if (nextIndex < 0 || nextIndex >= customerData.wishlist.length) return; [customerData.wishlist[index], customerData.wishlist[nextIndex]] = [customerData.wishlist[nextIndex], customerData.wishlist[index]]; await saveWishlistOrder(); } renderWishlist(); render(); syncWishlistButtons(); if (action === 'remove') showWishlistToast('Lo eliminaste de tu wishlist', true); } catch (error) {} });
+		const accountMessage = form => form?.querySelector('[data-account-message]');
+		const showAccountMessage = (form, text, error = false) => {
+			const message = accountMessage(form);
+			if (!message) return;
+			message.textContent = text;
+			message.classList.toggle('error', error);
+			message.classList.add('show');
+		};
+
+		const showAccountTab = tab => {
+			accountSystem.querySelectorAll('[data-account-tab]').forEach(button => button.classList.toggle('is-active', button.dataset.accountTab === tab));
+			accountSystem.querySelector('#accountLoginPane').hidden = tab !== 'login';
+			accountSystem.querySelector('#accountRegisterPane').hidden = tab !== 'register';
+			accountSystem.querySelector('#accountSystemTitle').textContent = tab === 'login' ? 'Inicia sesión' : 'Crea tu cuenta';
+		};
+
+		const switchProfilePanel = panelName => {
+			accountSystem.querySelectorAll('[data-account-panel]').forEach(btn => {
+				btn.classList.toggle('is-active', btn.dataset.accountPanel === panelName);
+			});
+			accountSystem.querySelectorAll('[data-hub-panel]').forEach(panel => {
+				panel.hidden = panel.dataset.hubPanel !== panelName;
+			});
+			lucide.createIcons();
+		};
+
+		accountSystem.querySelectorAll('[data-account-panel]').forEach(button => {
+			button.addEventListener('click', () => switchProfilePanel(button.dataset.accountPanel));
+		});
+
+		// NOTIFICACIONES TOAST DE WISHLIST
+		const wishlistToast = document.createElement('div');
+		wishlistToast.className = 'wishlist-toast';
+		wishlistToast.setAttribute('role', 'status');
+		wishlistToast.setAttribute('aria-live', 'polite');
+		document.body.append(wishlistToast);
+		let wishlistToastTimer;
+
+		const showWishlistToast = (text, removed = false) => {
+			clearTimeout(wishlistToastTimer);
+			wishlistToast.textContent = text;
+			wishlistToast.classList.toggle('is-removed', removed);
+			wishlistToast.classList.remove('is-visible');
+			requestAnimationFrame(() => wishlistToast.classList.add('is-visible'));
+			wishlistToastTimer = setTimeout(() => wishlistToast.classList.remove('is-visible'), 2800);
+		};
+
+		const customerApi = async (action, options = {}) => {
+			const response = await fetch(`/api/auth/${action}`, {
+				credentials: 'include',
+				headers: { 'Content-Type': 'application/json' },
+				...options
+			});
+			const result = await readApiResponse(response);
+			if (!response.ok) throw new Error(result.error || 'No se pudo completar la operación.');
+			return result;
+		};
+
+		const syncWishlistButtons = () => {
+			document.querySelectorAll('.product').forEach(card => {
+				const prod = products[card.dataset.index];
+				if (prod) {
+					card.querySelector('.heart')?.classList.toggle('is-saved', wishlistIds.has(productKey(prod)));
+				}
+			});
+		};
+
+		const renderWishlist = () => {
+			const list = accountProfileView.querySelector('[data-wishlist-list]');
+			const countEl = accountProfileView.querySelector('[data-wishlist-count]');
+			if (countEl) countEl.textContent = `${customerData.wishlist.length} producto${customerData.wishlist.length === 1 ? '' : 's'}`;
+			if (!list) return;
+			list.innerHTML = customerData.wishlist.length ? customerData.wishlist.map((item, index) => `
+				<div class="hub-item" data-wishlist-item="${index}">
+					<img src="${item.image || ''}" alt="" onerror="this.src='https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=120&q=80'">
+					<div style="flex:1;min-width:0;">
+						<strong style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}</strong>
+						<small>${money(Number(item.price || 0))} · ${item.category || 'SmartISP'}</small>
+					</div>
+					<div class="wishlist-tools">
+						<button type="button" data-wishlist-action="up" aria-label="Subir" ${index === 0 ? 'disabled' : ''} title="Subir prioridad">↑</button>
+						<button type="button" data-wishlist-action="down" aria-label="Bajar" ${index === customerData.wishlist.length - 1 ? 'disabled' : ''} title="Bajar prioridad">↓</button>
+						<button type="button" data-wishlist-action="remove" aria-label="Quitar" title="Eliminar de wishlist">×</button>
+					</div>
+				</div>
+			`).join('') : '<div class="hub-empty">Todavía no tienes productos guardados en tu wishlist. Haz clic en el corazón de cualquier producto para guardarlo aquí.</div>';
+			lucide.createIcons();
+		};
+
+		const renderOrders = () => {
+			const list = accountProfileView.querySelector('[data-orders-list]');
+			const countEl = accountProfileView.querySelector('[data-orders-count]');
+			if (countEl) countEl.textContent = `${customerData.orders.length} pedido${customerData.orders.length === 1 ? '' : 's'}`;
+			if (!list) return;
+			list.innerHTML = customerData.orders.length ? customerData.orders.map(order => `
+				<div class="hub-item order-item">
+					<div class="order-head">
+						<strong>Pedido #${String(order.id).slice(0, 8)}</strong>
+						<small>${new Date(order.createdAt).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })}</small>
+					</div>
+					<small>${order.items?.items?.length || order.items?.length || 0} producto(s) · <b style="color:var(--navy);">${money(Number(order.total || 0))}</b> · <span style="text-transform:capitalize;color:var(--blue);">${order.status === 'completed' ? 'Completado' : order.status === 'processing' ? 'En proceso' : 'Pendiente'}</span></small>
+				</div>
+			`).join('') : '<div class="hub-empty">Aún no tienes pedidos registrados. Tus compras aparecerán aquí para seguimiento.</div>';
+			lucide.createIcons();
+		};
+
+		const loadCustomerData = async () => {
+			try {
+				const [wishlist, orders] = await Promise.all([
+					customerApi('customer-wishlist'),
+					customerApi('customer-orders')
+				]);
+				customerData.wishlist = wishlist.wishlist || [];
+				customerData.orders = orders.orders || [];
+				wishlistIds = new Set(customerData.wishlist.map(item => String(item.productId)));
+				renderWishlist();
+				renderOrders();
+				render();
+				syncWishlistButtons();
+			} catch (error) {
+				customerData.wishlist = [];
+				customerData.orders = [];
+			}
+		};
+
+		// Enlazar toggleWishlist con API backend
+		toggleWishlist = async (product, heart = null) => {
+			if (!signedIn) return openAccountSystem();
+			const id = productKey(product);
+			const saved = wishlistIds.has(id);
+			if (heart) heart.classList.toggle('is-saved', !saved);
+			try {
+				await customerApi(`customer-wishlist${saved ? `?productId=${encodeURIComponent(id)}` : ''}`, {
+					method: saved ? 'DELETE' : 'POST',
+					body: saved ? undefined : JSON.stringify({ productId: id, name: product.name, price: product.price, image: product.image, category: product.category })
+				});
+				if (saved) {
+					wishlistIds.delete(id);
+					customerData.wishlist = customerData.wishlist.filter(item => String(item.productId) !== id);
+				} else {
+					wishlistIds.add(id);
+					customerData.wishlist.unshift({ productId: id, name: product.name, price: product.price, image: product.image, category: product.category });
+				}
+				renderWishlist();
+				render();
+				syncWishlistButtons();
+				showWishlistToast(saved ? 'Lo eliminaste de tu wishlist' : 'Se agregó a tu wishlist', saved);
+			} catch (error) {
+				if (heart) heart.classList.toggle('is-saved', saved);
+			}
+		};
+
+		const saveWishlistOrder = async () => {
+			await customerApi('customer-wishlist', {
+				method: 'POST',
+				body: JSON.stringify({ order: customerData.wishlist.map(item => item.productId) })
+			});
+		};
+
+		accountProfileView.addEventListener('click', async event => {
+			const button = event.target.closest('[data-wishlist-action]');
+			if (!button) return;
+			event.preventDefault();
+			event.stopPropagation();
+			const row = button.closest('[data-wishlist-item]');
+			const index = Number(row?.dataset?.wishlistItem);
+			if (isNaN(index)) return;
+			const action = button.dataset.wishlistAction;
+			try {
+				if (action === 'remove') {
+					await customerApi(`customer-wishlist?productId=${encodeURIComponent(customerData.wishlist[index].productId)}`, { method: 'DELETE' });
+					wishlistIds.delete(String(customerData.wishlist[index].productId));
+					customerData.wishlist.splice(index, 1);
+				} else {
+					const nextIndex = action === 'up' ? index - 1 : index + 1;
+					if (nextIndex < 0 || nextIndex >= customerData.wishlist.length) return;
+					[customerData.wishlist[index], customerData.wishlist[nextIndex]] = [customerData.wishlist[nextIndex], customerData.wishlist[index]];
+					await saveWishlistOrder();
+				}
+				renderWishlist();
+				render();
+				syncWishlistButtons();
+				if (action === 'remove') showWishlistToast('Lo eliminaste de tu wishlist', true);
+			} catch (error) {
+				console.warn('Error en wishlist action:', error);
+			}
+		});
+
 		const completeCheckout = () => {
 			if (!cart.length) {
 				alert('Tu carrito está vacío. Agrega productos antes de finalizar la compra.');
@@ -1035,27 +1313,187 @@
 			}
 			window.location.href = '/checkout.html';
 		};
-		document.querySelectorAll('a').forEach(link => { if (link.textContent.includes('Olvidaste tu contraseña')) { link.href = '/reset-password.html'; link.target = '_blank'; link.rel = 'noopener'; } });
-		const applyAccountPreferences = () => { document.body.dataset.accountTheme = accountState.theme; document.body.classList.toggle('account-compact', accountState.compact); localStorage.setItem('smartisp.theme', accountState.theme); localStorage.setItem('smartisp.compact', accountState.compact); };
-		const renderAccountProfile = () => { const user = accountState.user; accountSystem.querySelector('[data-profile-name]').textContent = `${user.name} ${user.surname || ''}`.trim(); accountSystem.querySelector('[data-profile-email]').textContent = `${user.email} · ${user.phone || 'Sin teléfono'}`; accountSystem.querySelectorAll('[data-edit]').forEach(input => { input.value = user[input.dataset.edit] || ''; }); accountSystem.querySelector('[data-theme-select]').value = accountState.theme; accountSystem.querySelector('[data-compact-toggle]').checked = accountState.compact; lucide.createIcons(); };
-		const openAccountSystem = () => { accountSystem.classList.add('is-open'); accountSystem.querySelector('[data-account-tab="login"]').focus(); };
-		const closeAccountSystem = () => accountSystem.classList.remove('is-open');
-		const adminNavLink = document.querySelector('#adminNavLink');
-		const updateAdminAccess = user => { adminNavLink.classList.toggle('is-visible', user?.role === 'admin'); };
-		const setAccountUser = (user, remember = localStorage.getItem('smartisp.accountRemembered') === 'true') => { accountState.user = user; (remember ? localStorage : sessionStorage).setItem('smartisp.accountUser', JSON.stringify(user)); if (remember) localStorage.setItem('smartisp.accountRemembered', 'true'); else { localStorage.removeItem('smartisp.accountUser'); localStorage.removeItem('smartisp.accountRemembered'); } signedIn = true; document.querySelector('#accountLabel').textContent = user.name; updateAdminAccess(user); accountAuthView.hidden = true; accountProfileView.hidden = false; renderAccountProfile(); loadCustomerData(); };
-		const resetAccountUser = () => { accountState.user = null; localStorage.removeItem('smartisp.accountUser'); localStorage.removeItem('smartisp.accountRemembered'); sessionStorage.removeItem('smartisp.accountUser'); signedIn = false; updateAdminAccess(null); document.querySelector('#accountLabel').textContent = 'Mi cuenta'; accountAuthView.hidden = false; accountProfileView.hidden = true; accountSystem.querySelectorAll('form').forEach(form => form.reset()); accountSystem.querySelectorAll('[data-account-message]').forEach(message => message.classList.remove('show')); showAccountTab('login'); };
+
+		const applyAccountPreferences = () => {
+			document.body.dataset.accountTheme = accountState.theme;
+			document.body.classList.toggle('account-compact', accountState.compact);
+			localStorage.setItem('smartisp.theme', accountState.theme);
+			localStorage.setItem('smartisp.compact', accountState.compact);
+		};
+
+		const updateAdminAccess = user => {
+			const isAdmin = Boolean(user && (user.role === 'admin' || user.email === 'medardo@gmail.com'));
+			const adminNav = document.querySelector('#adminNavLink');
+			if (adminNav) {
+				adminNav.classList.toggle('is-visible', isAdmin);
+				adminNav.style.display = isAdmin ? 'inline-flex' : 'none';
+			}
+			const adminProfileBtn = accountSystem.querySelector('[data-admin-profile-btn]');
+			if (adminProfileBtn) {
+				adminProfileBtn.style.display = isAdmin ? 'flex' : 'none';
+			}
+			const adminBadge = accountSystem.querySelector('[data-admin-badge]');
+			if (adminBadge) {
+				adminBadge.style.display = isAdmin ? 'inline-flex' : 'none';
+			}
+			lucide.createIcons();
+		};
+
+		const renderAccountProfile = () => {
+			const user = accountState.user;
+			if (!user) return;
+			const nameEl = accountSystem.querySelector('[data-profile-name]');
+			if (nameEl) nameEl.textContent = `${user.name || ''} ${user.surname || ''}`.trim() || 'Usuario';
+			const emailEl = accountSystem.querySelector('[data-profile-email]');
+			if (emailEl) emailEl.textContent = `${user.email} ${user.phone ? '· ' + user.phone : ''}`;
+			accountSystem.querySelectorAll('[data-edit]').forEach(input => {
+				input.value = user[input.dataset.edit] || '';
+			});
+			const themeSel = accountSystem.querySelector('[data-theme-select]');
+			if (themeSel) themeSel.value = accountState.theme;
+			const compactTog = accountSystem.querySelector('[data-compact-toggle]');
+			if (compactTog) compactTog.checked = accountState.compact;
+			lucide.createIcons();
+		};
+
+		const openAccountSystem = () => {
+			accountSystem.classList.add('is-open');
+			if (accountState.user) {
+				switchProfilePanel('wishlist');
+			} else {
+				showAccountTab('login');
+				const loginInput = accountSystem.querySelector('#accountLoginPane input[name="email"]');
+				if (loginInput) loginInput.focus();
+			}
+			lucide.createIcons();
+		};
+
+		const closeAccountSystem = () => {
+			accountSystem.classList.remove('is-open');
+		};
+
+		const setAccountUser = (user, remember = localStorage.getItem('smartisp.accountRemembered') === 'true') => {
+			accountState.user = user;
+			(remember ? localStorage : sessionStorage).setItem('smartisp.accountUser', JSON.stringify(user));
+			if (remember) localStorage.setItem('smartisp.accountRemembered', 'true');
+			else {
+				localStorage.removeItem('smartisp.accountUser');
+				localStorage.removeItem('smartisp.accountRemembered');
+			}
+			signedIn = true;
+			const label = document.querySelector('#accountLabel');
+			if (label) label.textContent = user.name || 'Mi cuenta';
+			updateAdminAccess(user);
+			accountAuthView.hidden = true;
+			accountProfileView.hidden = false;
+			renderAccountProfile();
+			loadCustomerData();
+			switchProfilePanel('wishlist');
+		};
+
+		const resetAccountUser = () => {
+			accountState.user = null;
+			localStorage.removeItem('smartisp.accountUser');
+			localStorage.removeItem('smartisp.accountRemembered');
+			sessionStorage.removeItem('smartisp.accountUser');
+			signedIn = false;
+			updateAdminAccess(null);
+			const label = document.querySelector('#accountLabel');
+			if (label) label.textContent = 'Mi cuenta';
+			accountAuthView.hidden = false;
+			accountProfileView.hidden = true;
+			accountSystem.querySelectorAll('form').forEach(form => form.reset());
+			accountSystem.querySelectorAll('[data-account-message]').forEach(message => message.classList.remove('show'));
+			customerData.wishlist = [];
+			customerData.orders = [];
+			wishlistIds.clear();
+			render();
+			showAccountTab('login');
+		};
+
+		// Botón Mi cuenta en barra superior
 		const accountTrigger = document.querySelector('#openAccount');
-		const cleanAccountTrigger = accountTrigger.cloneNode(true);
-		accountTrigger.replaceWith(cleanAccountTrigger);
-		cleanAccountTrigger.addEventListener('click', event => { event.preventDefault(); openAccountSystem(); });
+		if (accountTrigger) {
+			const cleanAccountTrigger = accountTrigger.cloneNode(true);
+			accountTrigger.replaceWith(cleanAccountTrigger);
+			cleanAccountTrigger.addEventListener('click', event => {
+				event.preventDefault();
+				openAccountSystem();
+			});
+		}
+
 		accountSystem.querySelector('.account-system-close').addEventListener('click', closeAccountSystem);
-		accountSystem.addEventListener('click', event => { if (event.target === accountSystem) closeAccountSystem(); });
-		accountSystem.querySelectorAll('[data-account-tab]').forEach(button => button.addEventListener('click', () => showAccountTab(button.dataset.accountTab)));
-		accountSystem.querySelector('#systemLoginForm').addEventListener('submit', async event => { event.preventDefault(); const form = event.currentTarget; const values = Object.fromEntries(new FormData(form)); const button = form.querySelector('button[type="submit"]'); button.classList.add('is-loading'); try { const response = await fetch('/api/auth/login', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values) }); const result = await readApiResponse(response); if (!response.ok) throw new Error(result.error); setAccountUser(result.user, values.remember === 'on'); } catch (error) { showAccountMessage(form, error.message || 'No se pudo iniciar sesión.', true); } finally { button.classList.remove('is-loading'); } });
-		accountSystem.querySelector('#systemRegisterForm').addEventListener('submit', async event => { event.preventDefault(); const form = event.currentTarget; const values = Object.fromEntries(new FormData(form)); if (values.password !== values.confirmation) { showAccountMessage(form, 'Las contraseñas no coinciden.', true); return; } const button = form.querySelector('button[type="submit"]'); button.classList.add('is-loading'); try { const response = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values) }); const result = await readApiResponse(response); if (!response.ok) throw new Error(result.error); setAccountUser(result.user); } catch (error) { showAccountMessage(form, error.message || 'No se pudo crear la cuenta.', true); } finally { button.classList.remove('is-loading'); } });
-		accountSystem.querySelector('[data-system-logout]').addEventListener('click', async event => { const button = event.currentTarget; button.disabled = true; try { await fetch('/api/auth/logout', { method: 'POST' }); } finally { resetAccountUser(); button.disabled = false; closeAccountSystem(); } });
-		accountSystem.querySelectorAll('[data-account-panel]').forEach(button => button.addEventListener('click', () => { const panel = button.dataset.accountPanel; accountSystem.querySelector('[data-profile-editor]').hidden = panel !== 'profile'; accountSystem.querySelector('[data-preferences]').hidden = panel !== 'settings'; const hub = accountSystem.querySelector('[data-customer-hub]'); hub.hidden = !['wishlist', 'orders'].includes(panel); if (hub.hidden) return; hub.querySelector('[data-hub-view="wishlist"]').hidden = panel !== 'wishlist'; hub.querySelector('[data-hub-view="orders"]').hidden = panel !== 'orders'; }));
+		accountSystem.addEventListener('click', event => {
+			if (event.target === accountSystem) closeAccountSystem();
+		});
+
+		accountSystem.querySelectorAll('[data-account-tab]').forEach(button => {
+			button.addEventListener('click', () => showAccountTab(button.dataset.accountTab));
+		});
+
+		accountSystem.querySelector('#systemLoginForm').addEventListener('submit', async event => {
+			event.preventDefault();
+			const form = event.currentTarget;
+			const values = Object.fromEntries(new FormData(form));
+			const button = form.querySelector('button[type="submit"]');
+			button.classList.add('is-loading');
+			try {
+				const response = await fetch('/api/auth/login', {
+					method: 'POST',
+					credentials: 'include',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(values)
+				});
+				const result = await readApiResponse(response);
+				if (!response.ok) throw new Error(result.error);
+				setAccountUser(result.user, values.remember === 'on');
+			} catch (error) {
+				showAccountMessage(form, error.message || 'No se pudo iniciar sesión.', true);
+			} finally {
+				button.classList.remove('is-loading');
+			}
+		});
+
+		accountSystem.querySelector('#systemRegisterForm').addEventListener('submit', async event => {
+			event.preventDefault();
+			const form = event.currentTarget;
+			const values = Object.fromEntries(new FormData(form));
+			if (values.password !== values.confirmation) {
+				showAccountMessage(form, 'Las contraseñas no coinciden.', true);
+				return;
+			}
+			const button = form.querySelector('button[type="submit"]');
+			button.classList.add('is-loading');
+			try {
+				const response = await fetch('/api/auth/register', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(values)
+				});
+				const result = await readApiResponse(response);
+				if (!response.ok) throw new Error(result.error);
+				setAccountUser(result.user);
+			} catch (error) {
+				showAccountMessage(form, error.message || 'No se pudo crear la cuenta.', true);
+			} finally {
+				button.classList.remove('is-loading');
+			}
+		});
+
+		accountSystem.querySelector('[data-system-logout]').addEventListener('click', async event => {
+			const button = event.currentTarget;
+			button.disabled = true;
+			try {
+				await fetch('/api/auth/logout', { method: 'POST' });
+			} finally {
+				resetAccountUser();
+				button.disabled = false;
+				closeAccountSystem();
+			}
+		});
+
 		accountSystem.querySelector('[data-save-profile]').addEventListener('click', async () => {
+			if (!accountState.user) return;
 			accountSystem.querySelectorAll('[data-edit]').forEach(input => {
 				accountState.user[input.dataset.edit] = input.value.trim();
 			});
@@ -1075,75 +1513,86 @@
 				const result = await readApiResponse(response);
 				if (!response.ok) throw new Error(result.error);
 				if (result.user) setAccountUser(result.user);
-				showAccountMessage(accountSystem.querySelector('[data-profile-editor]'), 'Datos guardados correctamente.');
+				showAccountMessage(accountSystem.querySelector('[data-hub-panel="profile"]'), 'Datos guardados correctamente.');
 			} catch (err) {
-				showAccountMessage(accountSystem.querySelector('[data-profile-editor]'), err.message || 'Error al guardar datos.', true);
+				showAccountMessage(accountSystem.querySelector('[data-hub-panel="profile"]'), err.message || 'Error al guardar datos.', true);
 			}
 		});
-		accountSystem.querySelector('#passwordChangeForm').addEventListener('submit', async event => { event.preventDefault(); const form = event.currentTarget; const values = Object.fromEntries(new FormData(form)); if (values.newPassword !== values.confirmation) { showAccountMessage(form, 'La confirmación no coincide con la nueva contraseña.', true); return; } const button = form.querySelector('button[type="submit"]'); button.disabled = true; try { const response = await fetch('/api/auth/change-password', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values) }); const result = await readApiResponse(response); if (!response.ok) throw new Error(result.error); form.reset(); showAccountMessage(form, 'Contraseña actualizada correctamente.'); } catch (error) { showAccountMessage(form, error.message || 'No se pudo cambiar la contraseña.', true); } finally { button.disabled = false; } });
-		document.querySelector('.checkout').addEventListener('click', completeCheckout);
-		accountSystem.querySelector('[data-theme-select]').addEventListener('change', event => { accountState.theme = event.target.value; applyAccountPreferences(); });
-		accountSystem.querySelector('[data-compact-toggle]').addEventListener('change', event => { accountState.compact = event.target.checked; applyAccountPreferences(); });
+
+		accountSystem.querySelector('#passwordChangeForm').addEventListener('submit', async event => {
+			event.preventDefault();
+			const form = event.currentTarget;
+			const values = Object.fromEntries(new FormData(form));
+			if (values.newPassword !== values.confirmation) {
+				showAccountMessage(form, 'La confirmación no coincide con la nueva contraseña.', true);
+				return;
+			}
+			const button = form.querySelector('button[type="submit"]');
+			button.disabled = true;
+			try {
+				const response = await fetch('/api/auth/change-password', {
+					method: 'POST',
+					credentials: 'include',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(values)
+				});
+				const result = await readApiResponse(response);
+				if (!response.ok) throw new Error(result.error);
+				form.reset();
+				showAccountMessage(form, 'Contraseña actualizada correctamente.');
+			} catch (error) {
+				showAccountMessage(form, error.message || 'No se pudo cambiar la contraseña.', true);
+			} finally {
+				button.disabled = false;
+			}
+		});
+
+		const checkoutBtn = document.querySelector('.checkout');
+		if (checkoutBtn) checkoutBtn.addEventListener('click', completeCheckout);
+
+		accountSystem.querySelector('[data-theme-select]').addEventListener('change', event => {
+			accountState.theme = event.target.value;
+			applyAccountPreferences();
+		});
+
+		accountSystem.querySelector('[data-compact-toggle]').addEventListener('change', event => {
+			accountState.compact = event.target.checked;
+			applyAccountPreferences();
+		});
+
 		applyAccountPreferences();
-		fetch('/api/auth/me', { credentials: 'include' }).then(async response => { if (!response.ok) throw new Error('No hay una sesion activa.'); return response.json(); }).then(result => { setAccountUser(result.user); }).catch(() => {});
+		lucide.createIcons();
+
+		// Restaurar sesión de localStorage / sessionStorage inmediatamente al cargar la página
+		try {
+			const savedUserRaw = localStorage.getItem('smartisp.accountUser') || sessionStorage.getItem('smartisp.accountUser');
+			if (savedUserRaw) {
+				const savedUser = JSON.parse(savedUserRaw);
+				if (savedUser && (savedUser.name || savedUser.email)) {
+					setAccountUser(savedUser, localStorage.getItem('smartisp.accountRemembered') === 'true');
+				}
+			}
+		} catch (e) {
+			console.warn('Error restaurando usuario guardado:', e);
+		}
+
+		// Validar y sincronizar sesión activa con backend
+		fetch('/api/auth/me', { credentials: 'include' })
+			.then(async response => {
+				if (!response.ok) throw new Error('No hay sesión activa.');
+				return response.json();
+			})
+			.then(result => {
+				if (result && result.user) {
+					setAccountUser(result.user, localStorage.getItem('smartisp.accountRemembered') === 'true');
+				}
+			})
+			.catch(() => {});
 	</script>
 	<script>
 		const applyHeroDesign = async () => { try { const response = await fetch('/api/auth/catalog'); if (!response.ok) return; const content = Object.fromEntries((await response.json()).content.map(item => [item.key, item.value])); const hero = document.querySelector('.hero'); const setText = (selector, key) => { if (content[key]) document.querySelector(selector).textContent = content[key]; }; const hexToRgba = (hex, opacity) => { const value = String(hex || '').replace('#', ''); if (!/^[\da-f]{6}$/i.test(value)) return `rgba(228,245,243,${opacity})`; return `rgba(${parseInt(value.slice(0, 2), 16)},${parseInt(value.slice(2, 4), 16)},${parseInt(value.slice(4, 6), 16)},${opacity})`; }; setText('#heroEyebrow', 'hero_eyebrow'); setText('#heroTitle', 'hero_title'); setText('#heroText', 'hero_text'); setText('#heroButtonText', 'hero_button_text'); if (content.hero_button_link) document.querySelector('#heroButton').href = content.hero_button_link; if (content.hero_image_position) hero.style.setProperty('--hero-image-position', content.hero_image_position); if (content.hero_height) hero.style.setProperty('--hero-height', `${Math.max(280, Math.min(700, Number(content.hero_height) || 370))}px`); if (content.hero_content_width) hero.style.setProperty('--hero-content-width', `${Math.max(320, Math.min(900, Number(content.hero_content_width) || 510))}px`); if (content.hero_text_color) hero.style.setProperty('--hero-text-color', content.hero_text_color); if (content.primary_color) { hero.style.setProperty('--blue', content.primary_color); document.documentElement.style.setProperty('--blue', content.primary_color); } if (content.hero_overlay_opacity || content.primary_color) hero.style.setProperty('--hero-overlay', hexToRgba(content.hero_overlay_color || '#e4f5f3', Math.max(0, Math.min(1, Number(content.hero_overlay_opacity || 96) / 100)))); } catch (error) { console.warn('Diseño del hero no disponible.'); } };
 		applyHeroDesign();
 	</script>
-	<script>
-		const categoryIcon = catName => {
-			const c = String(catName || '').toLowerCase();
-			if (c.includes('notebook') || c.includes('laptop') || c.includes('comput')) return 'laptop';
-			if (c.includes('red') || c.includes('router') || c.includes('switch') || c.includes('wifi') || c.includes('mikrotik') || c.includes('cisco')) return 'network';
-			if (c.includes('servidor') || c.includes('server')) return 'server';
-			if (c.includes('fibra') || c.includes('cable') || c.includes('accesorio') || c.includes('conector') || c.includes('patch')) return 'cable';
-			if (c.includes('monitor') || c.includes('pantalla') || c.includes('display')) return 'monitor';
-			if (c.includes('disco') || c.includes('almacen') || c.includes('ssd') || c.includes('hdd') || c.includes('memoria')) return 'hard-drive';
-			if (c.includes('antena') || c.includes('radio') || c.includes('inalam') || c.includes('wireless')) return 'radio';
-			if (c.includes('camara') || c.includes('cámara') || c.includes('cctv') || c.includes('seguridad')) return 'camera';
-			if (c.includes('audio') || c.includes('auricular') || c.includes('headphone') || c.includes('parlante')) return 'headphones';
-			if (c === 'all' || c.includes('todo')) return 'layers';
-			return 'package';
-		};
 
-		const renderSidebarCategories = () => {
-			try {
-				const counts = new Map();
-				(products || []).forEach(product => {
-					const cat = String(product.category || 'Otros').trim();
-					if (cat) counts.set(cat, (counts.get(cat) || 0) + 1);
-				});
-				const entries = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-				const totalCount = products.length;
-
-				const sidebarContainer = document.querySelector('#sidebarCategories');
-				if (sidebarContainer) {
-					const items = [
-						{ filter: 'all', label: 'Todo el catálogo', count: totalCount, icon: 'layers' },
-						...entries.map(([name, count]) => ({
-							filter: name,
-							label: name,
-							count: count,
-							icon: categoryIcon(name)
-						}))
-					];
-
-					sidebarContainer.innerHTML = items.map(item => `
-						<button type="button" class="sidebar-cat-btn ${selectedFilter === item.filter ? 'active' : ''}" data-filter="${String(item.filter).replace(/"/g, '&quot;')}">
-							<span class="sidebar-cat-icon"><i data-lucide="${item.icon}" width="16"></i></span>
-							<span class="sidebar-cat-name" title="${item.label}">${item.label}</span>
-							<span class="sidebar-cat-count">${item.count}</span>
-						</button>
-					`).join('');
-				}
-				lucide.createIcons();
-			} catch (err) {
-				console.warn('Error al renderizar categorías en barra lateral:', err);
-			}
-		};
-
-		renderSidebarCategories();
-	</script>
 </body>
 </html>
