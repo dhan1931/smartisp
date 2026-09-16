@@ -915,6 +915,31 @@
       }
     });
 
+    // Cargar logotipo oficial configurado de la tienda
+    fetch('/api/auth/catalog')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (!data || !data.content) return;
+        const content = Object.fromEntries(data.content.map(i => [i.key, i.value]));
+        const mode = content.logo_type || (content.logo_image ? 'image' : 'text');
+        const brand = content.brand_name || 'SmartISP';
+        const height = parseInt(content.logo_height, 10) || 38;
+        const lightImg = content.logo_image || '';
+        const text = (content.logo_text || brand || 'smartisp').trim();
+        const logoEl = document.querySelector('header .logo');
+        if (!logoEl) return;
+
+        if (mode === 'image' && lightImg) {
+          logoEl.innerHTML = `<img src="${lightImg}" alt="${brand}" style="height:${height}px; max-height:140px; width:auto; object-fit:contain; vertical-align:middle; display:inline-block;">`;
+        } else if (text) {
+          const mid = Math.ceil(text.length / 2);
+          const part1 = text.slice(0, mid);
+          const part2 = text.slice(mid);
+          logoEl.innerHTML = `${part1}<b style="color:var(--blue, #087ea4);">${part2}</b><span style="color:#f5a524;">.</span>`;
+        }
+      })
+      .catch(() => {});
+
     lucide.createIcons();
   </script>
 </body>

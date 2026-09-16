@@ -866,23 +866,52 @@
 		document.querySelectorAll('[data-close-modal]').forEach(button => button.addEventListener('click', () => document.querySelector(`#${button.dataset.closeModal}`)?.classList.remove('open')));
 		document.querySelectorAll('.modal').forEach(modal => modal.addEventListener('click', event => { if (event.target === modal) modal.classList.remove('open'); }));
 		const applySiteLogo = content => {
-			const logoElements = document.querySelectorAll('.logo');
-			if (!logoElements.length) return;
+			if (!content) return;
 			const mode = content.logo_type || (content.logo_image ? 'image' : 'text');
 			const brand = content.brand_name || 'SmartISP';
-			const height = parseInt(content.logo_height, 10) || 38;
+			const lightHeight = parseInt(content.logo_height, 10) || 38;
+			const darkHeight = parseInt(content.logo_dark_height, 10) || 42;
+			const darkInvert = content.logo_dark_invert === 'true' || content.logo_dark_invert === true;
+			const lightImg = content.logo_image || '';
+			const darkImg = content.logo_dark_image || lightImg;
+			const text = (content.logo_text || brand || 'smartisp').trim();
 
-			logoElements.forEach(logo => {
-				if (mode === 'image' && content.logo_image) {
-					logo.innerHTML = `<img src="${content.logo_image}" alt="${brand}" style="height:${height}px; max-height:60px; width:auto; object-fit:contain; vertical-align:middle; display:inline-block;">`;
-				} else if (content.logo_text) {
-					const text = content.logo_text.trim();
+			// 1. Barra superior / Navbar claro (.nav .logo)
+			const navLogo = document.querySelector('.nav .logo');
+			if (navLogo) {
+				if (mode === 'image' && lightImg) {
+					navLogo.innerHTML = `<img src="${lightImg}" alt="${brand}" style="height:${lightHeight}px; max-height:140px; width:auto; object-fit:contain; vertical-align:middle; display:inline-block;">`;
+				} else if (text) {
 					const mid = Math.ceil(text.length / 2);
 					const part1 = text.slice(0, mid);
 					const part2 = text.slice(mid);
-					logo.innerHTML = `${part1}<b style="color:var(--blue, #087ea4);">${part2}</b><span style="color:#f5a524;">.</span>`;
-				} else if (content.brand_name) {
-					logo.textContent = content.brand_name;
+					navLogo.innerHTML = `${part1}<b style="color:var(--blue, #087ea4);">${part2}</b><span style="color:#f5a524;">.</span>`;
+				}
+			}
+
+			// 2. Pie de página oscuro (footer .logo)
+			const footLogo = document.querySelector('footer .logo');
+			if (footLogo) {
+				if (mode === 'image' && darkImg) {
+					const filterStyle = darkInvert ? 'filter: brightness(0) invert(1);' : '';
+					footLogo.innerHTML = `<img src="${darkImg}" alt="${brand}" style="height:${darkHeight}px; max-height:140px; width:auto; object-fit:contain; vertical-align:middle; display:inline-block; ${filterStyle}">`;
+				} else if (text) {
+					const mid = Math.ceil(text.length / 2);
+					const part1 = text.slice(0, mid);
+					const part2 = text.slice(mid);
+					footLogo.innerHTML = `${part1}<b style="color:var(--blue, #087ea4);">${part2}</b><span style="color:#f5a524;">.</span>`;
+				}
+			}
+
+			// 3. Otros posibles contenedores de .logo
+			document.querySelectorAll('.logo:not(.nav .logo):not(footer .logo)').forEach(otherLogo => {
+				if (mode === 'image' && lightImg) {
+					otherLogo.innerHTML = `<img src="${lightImg}" alt="${brand}" style="height:${lightHeight}px; max-height:140px; width:auto; object-fit:contain; vertical-align:middle; display:inline-block;">`;
+				} else if (text) {
+					const mid = Math.ceil(text.length / 2);
+					const part1 = text.slice(0, mid);
+					const part2 = text.slice(mid);
+					otherLogo.innerHTML = `${part1}<b style="color:var(--blue, #087ea4);">${part2}</b><span style="color:#f5a524;">.</span>`;
 				}
 			});
 		};

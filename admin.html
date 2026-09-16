@@ -31,10 +31,15 @@
     .logo-tab { border: none; background: transparent; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer; transition: all .15s ease; }
     .logo-tab.active { background: white; color: var(--blue); box-shadow: 0 2px 6px rgba(16,44,61,.08); }
     .logo-upload-zone { border: 2px dashed #9acfe9; border-radius: 10px; background: #f4faff; padding: 22px 18px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; }
-    .logo-upload-zone:hover, .logo-upload-zone.dragover { border-color: var(--blue); background: #eaf5fc; }
+    .logo-upload-zone:hover, .logo-upload-zone.drag-over { border-color: var(--blue); background: #eaf5fc; }
     .logo-upload-icon-circle { width: 48px; height: 48px; border-radius: 50%; background: #e0f2fe; display: grid; place-items: center; margin: 0 auto; }
     .logo-preview-canvas-box { border: 1px solid #dce8ec; border-radius: 8px; overflow: hidden; padding: 12px 18px; display: flex; align-items: center; justify-content: center; min-height: 75px; }
     .logo-checker-bg { width: 100%; display: flex; align-items: center; justify-content: center; padding: 14px; border-radius: 6px; background-color: #f8fafc; background-image: linear-gradient(45deg, #e2e8f0 25%, transparent 25%), linear-gradient(-45deg, #e2e8f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e2e8f0 75%), linear-gradient(-45deg, transparent 75%, #e2e8f0 75%); background-size: 16px 16px; background-position: 0 0, 0 8px, 8px -8px, -8px 0px; }
+    .logo-checker-bg.dark-preview { background-color: #0b1e2a; background-image: linear-gradient(45deg, #132a3a 25%, transparent 25%), linear-gradient(-45deg, #132a3a 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #132a3a 75%), linear-gradient(-45deg, transparent 75%, #132a3a 75%); border: 1px solid #1a384d; }
+    .logo-size-slider-row { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+    .logo-size-slider-row input[type="range"] { flex: 1; height: 6px; accent-color: var(--blue); cursor: pointer; margin: 0; padding: 0; }
+    .logo-size-slider-row input[type="number"] { width: 72px; padding: 7px 8px; text-align: center; font-weight: 700; margin: 0; }
+    .logo-quick-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; background: #f0f7fa; border: 1px solid #cce5ef; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; }
     .logo-badge-format { font-size: 11px; font-weight: 800; background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 6px; letter-spacing: 0.05em; }
     /* Product Grid & Compact Cards */
     #productsList { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; margin-top: 14px; }
@@ -171,24 +176,34 @@
                 <h4 style="margin:0 0 3px; font-size:14px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:6px;">
                   <span>🎨</span> Diseño del Logotipo de la Tienda
                 </h4>
-                <span style="font-size:11.5px; color:var(--muted);">Elige si deseas usar tu logotipo oficial en imagen PNG o un logo de texto tipográfico.</span>
+                <span style="font-size:11.5px; color:var(--muted);">Personaliza el logo para el navbar claro, el pie de página oscuro y la versión tipográfica. Puedes agrandarlo hasta 140px.</span>
               </div>
               <div class="logo-type-tabs">
-                <button type="button" class="logo-tab active" data-logo-mode="image">🖼️ Imagen PNG</button>
-                <button type="button" class="logo-tab" data-logo-mode="text">✍️ Solo Texto</button>
+                <button type="button" class="logo-tab active" data-logo-mode="light" id="tabLogoLightBtn">☀️ Fondo Claro (Navbar)</button>
+                <button type="button" class="logo-tab" data-logo-mode="dark" id="tabLogoDarkBtn">🌙 Fondo Oscuro (Footer)</button>
+                <button type="button" class="logo-tab" data-logo-mode="text" id="tabLogoTextBtn">✍️ Solo Texto</button>
               </div>
               <input type="hidden" name="logo_type" id="logoTypeInput" value="image">
+              <input type="hidden" name="logo_image" id="logoImageHidden">
+              <input type="hidden" name="logo_height" id="logoHeightHidden" value="38">
+              <input type="hidden" name="logo_dark_image" id="logoDarkImageHidden">
+              <input type="hidden" name="logo_dark_height" id="logoDarkHeightHidden" value="42">
+              <input type="hidden" name="logo_dark_invert" id="logoDarkInvertHidden" value="false">
             </div>
 
-            <!-- PANEL MODO IMAGEN PNG -->
-            <div id="logoImagePanel" class="logo-panel">
-              <div class="logo-upload-zone" id="logoDropZone">
-                <div class="logo-upload-prompt" id="logoUploadPrompt">
+            <!-- PANEL 1: LOGO PARA FONDO CLARO (NAVBAR) -->
+            <div id="logoLightPanel" class="logo-panel">
+              <div style="margin-bottom:12px; font-size:12px; font-weight:700; color:var(--blue); display:flex; align-items:center; gap:6px;">
+                <span>☀️ Logotipo para Barra Superior / Menú Claro</span>
+                <span style="font-weight:400; color:var(--muted); font-size:11px;">(Visible en el navbar principal de la tienda)</span>
+              </div>
+              <div class="logo-upload-zone" id="logoLightDropZone">
+                <div class="logo-upload-prompt" id="logoLightPrompt">
                   <div class="logo-upload-icon-circle">
                     <span style="font-size:24px;">🖼️</span>
                   </div>
                   <div style="font-weight:700; font-size:13px; color:var(--ink); margin-top:8px;">
-                    Sube tu logotipo en formato <span style="color:var(--blue); font-weight:800;">PNG</span>
+                    Sube tu logotipo para <span style="color:var(--blue); font-weight:800;">fondo claro</span>
                   </div>
                   <div style="font-size:11.5px; color:var(--muted); margin-top:3px;">
                     Recomendado: PNG con fondo transparente (también admite WebP, SVG o JPG). Máx. 3 MB.
@@ -198,14 +213,13 @@
                   </button>
                 </div>
                 <input type="file" id="logoFileInput" name="logo_image_file" accept=".png, image/png, image/jpeg, image/webp, image/svg+xml" style="display:none;">
-                <input type="hidden" name="logo_image" id="logoImageHidden">
               </div>
 
-              <!-- Vista previa de imagen cargada -->
-              <div id="logoPreviewContainer" style="display:none; margin-top:12px;">
+              <!-- Vista previa de imagen clara -->
+              <div id="logoLightPreviewWrap" style="display:none; margin-top:12px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                   <span style="font-size:12px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:6px;">
-                    <span style="color:#16a34a; font-weight:900;">✓</span> Logotipo PNG cargado:
+                    <span style="color:#16a34a; font-weight:900;">✓</span> Logotipo para fondo claro cargado:
                   </span>
                   <div style="display:flex; gap:6px;">
                     <button type="button" class="button secondary" id="changeLogoBtn" style="padding:4px 10px; font-size:11px;">🔄 Cambiar</button>
@@ -214,29 +228,106 @@
                 </div>
                 <div class="logo-preview-canvas-box">
                   <div class="logo-checker-bg" id="logoPreviewChecker">
-                    <img id="logoImgPreview" src="" alt="Logotipo subido" style="height:38px; max-height:65px; max-width:100%; object-fit:contain; display:block; margin:auto;">
+                    <img id="logoImgPreview" src="" alt="Logotipo fondo claro" style="height:38px; max-height:140px; max-width:100%; object-fit:contain; display:block; margin:auto;">
                   </div>
                 </div>
               </div>
 
-              <div class="logo-controls-grid" style="margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                <label style="margin:0;">Altura del logo en la tienda
-                  <select name="logo_height" id="logoHeightSelect">
-                    <option value="26">Muy compacto (26px)</option>
-                    <option value="32">Compacto (32px)</option>
-                    <option value="38" selected>Estándar (38px - Recomendado)</option>
-                    <option value="46">Mediano (46px)</option>
-                    <option value="54">Grande (54px)</option>
-                    <option value="64">Extra grande (64px)</option>
-                  </select>
-                </label>
-                <label style="margin:0;">Nombre comercial de la marca
-                  <input name="brand_name" id="brandNameInput" placeholder="SmartISP Telecomunicaciones" autocomplete="off">
-                </label>
+              <div class="logo-controls-grid" style="margin-top:14px; display:grid; grid-template-columns:1.2fr 1fr; gap:14px; align-items:end;">
+                <div>
+                  <label style="margin:0 0 4px; display:flex; justify-content:space-between;">
+                    <span>Altura del logo en la barra superior:</span>
+                    <span id="logoHeightVal" style="color:var(--blue); font-weight:800;">38px</span>
+                  </label>
+                  <div class="logo-size-slider-row">
+                    <input type="range" id="logoHeightRange" min="20" max="140" step="2" value="38">
+                    <input type="number" id="logoHeightNum" min="20" max="140" value="38">
+                    <span style="font-size:11.5px; color:var(--muted); font-weight:600;">px</span>
+                  </div>
+                </div>
+                <div>
+                  <label style="margin:0 0 4px;">Nombre comercial de la marca
+                    <input name="brand_name" id="brandNameInput" placeholder="SmartISP Telecomunicaciones" autocomplete="off">
+                  </label>
+                </div>
               </div>
             </div>
 
-            <!-- PANEL MODO TEXTO -->
+            <!-- PANEL 2: LOGO PARA FONDO OSCURO (FOOTER) -->
+            <div id="logoDarkPanel" class="logo-panel" style="display:none;">
+              <div style="margin-bottom:12px; font-size:12px; font-weight:700; color:#0e7490; display:flex; align-items:center; gap:6px;">
+                <span>🌙 Logotipo para Pie de Página / Fondo Oscuro</span>
+                <span style="font-weight:400; color:var(--muted); font-size:11px;">(Visible en el footer oscuro de la tienda y páginas de compra)</span>
+              </div>
+
+              <!-- Quick Bar: Copiar del menú claro & auto invert -->
+              <div class="logo-quick-bar">
+                <button type="button" class="button secondary" id="btnCopyLightToDark" style="padding:6px 12px; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
+                  <span>📋</span> Usar el mismo logo del menú claro
+                </button>
+                <label style="margin:0; font-size:12px; font-weight:600; color:var(--ink); display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
+                  <input type="checkbox" id="logoDarkAutoInvert" style="width:16px; height:16px; margin:0; accent-color:var(--blue);">
+                  <span>⚪ Invertir colores automáticamente a blanco (para logos oscuros)</span>
+                </label>
+              </div>
+
+              <div class="logo-upload-zone" id="logoDarkDropZone">
+                <div class="logo-upload-prompt" id="logoDarkPrompt">
+                  <div class="logo-upload-icon-circle" style="background:#e2e8f0;">
+                    <span style="font-size:24px;">🌙</span>
+                  </div>
+                  <div style="font-weight:700; font-size:13px; color:var(--ink); margin-top:8px;">
+                    Sube tu logotipo para <span style="color:#0369a1; font-weight:800;">fondo oscuro</span>
+                  </div>
+                  <div style="font-size:11.5px; color:var(--muted); margin-top:3px;">
+                    Recomendado: PNG en blanco o colores claros con transparencia. Si no subes uno, se usará el del menú claro.
+                  </div>
+                  <button type="button" class="button secondary" id="chooseLogoDarkBtn" style="margin-top:10px; padding:6px 14px; font-size:12px;">
+                    📁 Seleccionar archivo PNG oscuro
+                  </button>
+                </div>
+                <input type="file" id="logoDarkFileInput" name="logo_dark_image_file" accept=".png, image/png, image/jpeg, image/webp, image/svg+xml" style="display:none;">
+              </div>
+
+              <!-- Vista previa de imagen oscura -->
+              <div id="logoDarkPreviewWrap" style="display:none; margin-top:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <span style="font-size:12px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:6px;">
+                    <span style="color:#16a34a; font-weight:900;">✓</span> Logotipo para fondo oscuro cargado:
+                  </span>
+                  <div style="display:flex; gap:6px;">
+                    <button type="button" class="button secondary" id="changeLogoDarkBtn" style="padding:4px 10px; font-size:11px;">🔄 Cambiar</button>
+                    <button type="button" class="button danger" id="deleteLogoDarkBtn" style="padding:4px 10px; font-size:11px; background:#fff1f1; border:1px solid #fecaca; color:#b91c1c;">🗑️ Quitar imagen</button>
+                  </div>
+                </div>
+                <div class="logo-preview-canvas-box" style="background:#071722;">
+                  <div class="logo-checker-bg dark-preview" id="logoDarkPreviewChecker">
+                    <img id="logoDarkImgPreview" src="" alt="Logotipo fondo oscuro" style="height:42px; max-height:140px; max-width:100%; object-fit:contain; display:block; margin:auto;">
+                  </div>
+                </div>
+              </div>
+
+              <div class="logo-controls-grid" style="margin-top:14px; display:grid; grid-template-columns:1.2fr 1fr; gap:14px; align-items:end;">
+                <div>
+                  <label style="margin:0 0 4px; display:flex; justify-content:space-between;">
+                    <span>Altura del logo en el pie de página (footer):</span>
+                    <span id="logoDarkHeightVal" style="color:var(--blue); font-weight:800;">42px</span>
+                  </label>
+                  <div class="logo-size-slider-row">
+                    <input type="range" id="logoDarkHeightRange" min="20" max="140" step="2" value="42">
+                    <input type="number" id="logoDarkHeightNum" min="20" max="140" value="42">
+                    <span style="font-size:11.5px; color:var(--muted); font-weight:600;">px</span>
+                  </div>
+                </div>
+                <div>
+                  <span style="font-size:11.5px; color:var(--muted); line-height:1.4; display:block;">
+                    💡 En el footer de la tienda el fondo es azul oscuro (<code>#102c3d</code>). Si activas invertir colores, el logo se convertirá en blanco puro automáticamente.
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- PANEL 3: MODO TEXTO -->
             <div id="logoTextPanel" class="logo-panel" style="display:none;">
               <div class="logo-controls-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                 <label style="margin:0;">Texto del logo
@@ -743,6 +834,9 @@
       logo_type: 'image',
       logo_image: '',
       logo_height: '38',
+      logo_dark_image: '',
+      logo_dark_height: '42',
+      logo_dark_invert: 'false',
       logo_text: 'smartisp',
       hero_eyebrow: 'Infraestructura para proveedores de internet',
       hero_title: 'Conecta más. Opera mejor.',
@@ -843,6 +937,19 @@
       }
       delete values.logo_image_file;
 
+      const logoDarkFileInput = form.querySelector('input[name="logo_dark_image_file"]');
+      if (logoDarkFileInput?.files[0]) {
+        values.logo_dark_image = await fileToDataUrl(logoDarkFileInput.files[0]);
+      } else {
+        values.logo_dark_image = $('#logoDarkImageHidden')?.value || '';
+      }
+      delete values.logo_dark_image_file;
+
+      values.logo_type = $('#logoTypeInput')?.value || 'image';
+      values.logo_height = $('#logoHeightHidden')?.value || '38';
+      values.logo_dark_height = $('#logoDarkHeightHidden')?.value || '42';
+      values.logo_dark_invert = $('#logoDarkInvertHidden')?.value === 'true' ? 'true' : 'false';
+
       if (values.logo_type === 'text' && values.brand_name_alt) {
         values.brand_name = values.brand_name_alt;
       }
@@ -851,26 +958,72 @@
       return values;
     };
     
-    // --- Logo Customizer Handlers ---
+    // --- Logo Customizer Handlers (Luz, Oscuro y Texto con Sliders 20-140px) ---
     const setLogoMode = mode => {
-      const isImg = mode === 'image';
       const typeInput = $('#logoTypeInput');
-      if (typeInput) typeInput.value = isImg ? 'image' : 'text';
+      const isText = mode === 'text';
+      if (typeInput) typeInput.value = isText ? 'text' : 'image';
+
       document.querySelectorAll('.logo-tab').forEach(t => {
-        t.classList.toggle('active', t.dataset.logoMode === (isImg ? 'image' : 'text'));
+        t.classList.toggle('active', t.dataset.logoMode === mode);
       });
-      const imgPanel = $('#logoImagePanel');
-      const txtPanel = $('#logoTextPanel');
-      if (imgPanel) imgPanel.style.display = isImg ? 'block' : 'none';
-      if (txtPanel) txtPanel.style.display = isImg ? 'none' : 'block';
+
+      const lightPanel = $('#logoLightPanel');
+      const darkPanel = $('#logoDarkPanel');
+      const textPanel = $('#logoTextPanel');
+
+      if (lightPanel) lightPanel.style.display = mode === 'light' ? 'block' : 'none';
+      if (darkPanel) darkPanel.style.display = mode === 'dark' ? 'block' : 'none';
+      if (textPanel) textPanel.style.display = mode === 'text' ? 'block' : 'none';
     };
 
-    const updateLogoImageUI = dataUrl => {
+    const syncLightHeight = val => {
+      const v = String(val || 38);
+      const hidden = $('#logoHeightHidden');
+      const range = $('#logoHeightRange');
+      const num = $('#logoHeightNum');
+      const label = $('#logoHeightVal');
+      const img = $('#logoImgPreview');
+
+      if (hidden) hidden.value = v;
+      if (range) range.value = v;
+      if (num) num.value = v;
+      if (label) label.textContent = `${v}px`;
+      if (img) img.style.height = `${v}px`;
+    };
+
+    const syncDarkHeight = val => {
+      const v = String(val || 42);
+      const hidden = $('#logoDarkHeightHidden');
+      const range = $('#logoDarkHeightRange');
+      const num = $('#logoDarkHeightNum');
+      const label = $('#logoDarkHeightVal');
+      const img = $('#logoDarkImgPreview');
+
+      if (hidden) hidden.value = v;
+      if (range) range.value = v;
+      if (num) num.value = v;
+      if (label) label.textContent = `${v}px`;
+      if (img) img.style.height = `${v}px`;
+    };
+
+    const setDarkInvert = inverted => {
+      const isInverted = inverted === true || inverted === 'true';
+      const hidden = $('#logoDarkInvertHidden');
+      const chk = $('#logoDarkAutoInvert');
+      const img = $('#logoDarkImgPreview');
+
+      if (hidden) hidden.value = isInverted ? 'true' : 'false';
+      if (chk) chk.checked = isInverted;
+      if (img) img.style.filter = isInverted ? 'brightness(0) invert(1)' : 'none';
+    };
+
+    const updateLogoLightUI = dataUrl => {
       const hidden = $('#logoImageHidden');
       const preview = $('#logoImgPreview');
-      const previewBox = $('#logoPreviewContainer');
-      const promptBox = $('#logoUploadPrompt');
-      const height = $('#logoHeightSelect')?.value || '38';
+      const previewBox = $('#logoLightPreviewWrap');
+      const promptBox = $('#logoLightPrompt');
+      const height = $('#logoHeightHidden')?.value || '38';
 
       if (dataUrl) {
         if (hidden) hidden.value = dataUrl;
@@ -890,6 +1043,33 @@
       }
     };
 
+    const updateLogoDarkUI = dataUrl => {
+      const hidden = $('#logoDarkImageHidden');
+      const preview = $('#logoDarkImgPreview');
+      const previewBox = $('#logoDarkPreviewWrap');
+      const promptBox = $('#logoDarkPrompt');
+      const height = $('#logoDarkHeightHidden')?.value || '42';
+      const isInverted = $('#logoDarkInvertHidden')?.value === 'true';
+
+      if (dataUrl) {
+        if (hidden) hidden.value = dataUrl;
+        if (preview) {
+          preview.src = dataUrl;
+          preview.style.height = `${height}px`;
+          preview.style.filter = isInverted ? 'brightness(0) invert(1)' : 'none';
+        }
+        if (previewBox) previewBox.style.display = 'block';
+        if (promptBox) promptBox.style.display = 'none';
+      } else {
+        if (hidden) hidden.value = '';
+        if (preview) preview.src = '';
+        if (previewBox) previewBox.style.display = 'none';
+        if (promptBox) promptBox.style.display = 'block';
+        const fileInput = $('#logoDarkFileInput');
+        if (fileInput) fileInput.value = '';
+      }
+    };
+
     const updateLogoTextPreview = () => {
       const text = ($('#logoTextInput')?.value || 'smartisp').trim();
       const previewEl = $('#logoTextLivePreview');
@@ -905,15 +1085,19 @@
     };
 
     const syncLogoSettings = values => {
-      const mode = values.logo_type || (values.logo_image ? 'image' : 'image');
+      const mode = values.logo_type === 'text' ? 'text' : 'light';
       setLogoMode(mode);
 
-      if ($('#logoHeightSelect')) $('#logoHeightSelect').value = values.logo_height || '38';
+      syncLightHeight(values.logo_height || '38');
+      syncDarkHeight(values.logo_dark_height || '42');
+      setDarkInvert(values.logo_dark_invert === 'true' || values.logo_dark_invert === true);
+
       if ($('#brandNameInput')) $('#brandNameInput').value = values.brand_name || '';
       if ($('#brandNameAltInput')) $('#brandNameAltInput').value = values.brand_name || '';
       if ($('#logoTextInput')) $('#logoTextInput').value = values.logo_text || '';
 
-      updateLogoImageUI(values.logo_image || '');
+      updateLogoLightUI(values.logo_image || '');
+      updateLogoDarkUI(values.logo_dark_image || '');
       updateLogoTextPreview();
     };
 
@@ -928,74 +1112,107 @@
         });
       });
 
-      $('#chooseLogoBtn')?.addEventListener('click', () => {
-        $('#logoFileInput')?.click();
-      });
-      $('#changeLogoBtn')?.addEventListener('click', () => {
-        $('#logoFileInput')?.click();
-      });
-      $('#deleteLogoBtn')?.addEventListener('click', () => {
-        updateLogoImageUI('');
-      });
+      // Handlers de logo claro
+      $('#chooseLogoBtn')?.addEventListener('click', () => $('#logoFileInput')?.click());
+      $('#changeLogoBtn')?.addEventListener('click', () => $('#logoFileInput')?.click());
+      $('#deleteLogoBtn')?.addEventListener('click', () => updateLogoLightUI(''));
 
-      $('#logoHeightSelect')?.addEventListener('change', event => {
-        const preview = $('#logoImgPreview');
-        if (preview) preview.style.height = `${event.target.value}px`;
-      });
+      $('#logoHeightRange')?.addEventListener('input', e => syncLightHeight(e.target.value));
+      $('#logoHeightNum')?.addEventListener('input', e => syncLightHeight(e.target.value));
 
       $('#logoFileInput')?.addEventListener('change', async event => {
         const file = event.target.files?.[0];
         if (!file) return;
         try {
-          if (!file.type.startsWith('image/')) {
-            throw new Error('Selecciona un archivo de imagen válido (PNG recomendado).');
-          }
-          if (file.size > MAX_IMAGE_SIZE) {
-            throw new Error('El logotipo no puede superar 3 MB.');
-          }
+          if (!file.type.startsWith('image/')) throw new Error('Selecciona un archivo de imagen válido (PNG recomendado).');
+          if (file.size > MAX_IMAGE_SIZE) throw new Error('El logotipo no puede superar 3 MB.');
           const dataUrl = await fileToDataUrl(file);
-          updateLogoImageUI(dataUrl);
+          updateLogoLightUI(dataUrl);
         } catch (err) {
           event.target.value = '';
           showMessage($('#contentMessage'), err.message, true);
         }
       });
 
-      const dropZone = $('#logoDropZone');
-      if (dropZone) {
+      const dropZoneLight = $('#logoLightDropZone');
+      if (dropZoneLight) {
         ['dragenter', 'dragover'].forEach(eventName => {
-          dropZone.addEventListener(eventName, e => {
-            e.preventDefault();
-            e.stopPropagation();
-            dropZone.classList.add('drag-over');
-          });
+          dropZoneLight.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); dropZoneLight.classList.add('drag-over'); });
         });
         ['dragleave', 'drop'].forEach(eventName => {
-          dropZone.addEventListener(eventName, e => {
-            e.preventDefault();
-            e.stopPropagation();
-            dropZone.classList.remove('drag-over');
-          });
+          dropZoneLight.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); dropZoneLight.classList.remove('drag-over'); });
         });
-        dropZone.addEventListener('drop', async e => {
-          const files = e.dataTransfer?.files;
-          if (!files || !files.length) return;
-          const file = files[0];
+        dropZoneLight.addEventListener('drop', async e => {
+          const file = e.dataTransfer?.files?.[0];
+          if (!file) return;
           try {
-            if (!file.type.startsWith('image/')) {
-              throw new Error('Selecciona un archivo de imagen válido (PNG recomendado).');
-            }
-            if (file.size > MAX_IMAGE_SIZE) {
-              throw new Error('El logotipo no puede superar 3 MB.');
-            }
+            if (!file.type.startsWith('image/')) throw new Error('Selecciona un archivo de imagen válido (PNG recomendado).');
+            if (file.size > MAX_IMAGE_SIZE) throw new Error('El logotipo no puede superar 3 MB.');
             const dataUrl = await fileToDataUrl(file);
-            updateLogoImageUI(dataUrl);
+            updateLogoLightUI(dataUrl);
           } catch (err) {
             showMessage($('#contentMessage'), err.message, true);
           }
         });
       }
 
+      // Handlers de logo oscuro
+      $('#chooseLogoDarkBtn')?.addEventListener('click', () => $('#logoDarkFileInput')?.click());
+      $('#changeLogoDarkBtn')?.addEventListener('click', () => $('#logoDarkFileInput')?.click());
+      $('#deleteLogoDarkBtn')?.addEventListener('click', () => updateLogoDarkUI(''));
+
+      $('#logoDarkHeightRange')?.addEventListener('input', e => syncDarkHeight(e.target.value));
+      $('#logoDarkHeightNum')?.addEventListener('input', e => syncDarkHeight(e.target.value));
+
+      $('#logoDarkAutoInvert')?.addEventListener('change', e => setDarkInvert(e.target.checked));
+
+      $('#btnCopyLightToDark')?.addEventListener('click', () => {
+        const lightData = $('#logoImageHidden')?.value || '';
+        if (!lightData) {
+          showMessage($('#contentMessage'), 'Primero sube o selecciona un logotipo para fondo claro.', true);
+          return;
+        }
+        updateLogoDarkUI(lightData);
+        showMessage($('#contentMessage'), '✓ Logotipo de menú claro copiado al fondo oscuro.');
+      });
+
+      $('#logoDarkFileInput')?.addEventListener('change', async event => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        try {
+          if (!file.type.startsWith('image/')) throw new Error('Selecciona un archivo de imagen válido (PNG recomendado).');
+          if (file.size > MAX_IMAGE_SIZE) throw new Error('El logotipo no puede superar 3 MB.');
+          const dataUrl = await fileToDataUrl(file);
+          updateLogoDarkUI(dataUrl);
+        } catch (err) {
+          event.target.value = '';
+          showMessage($('#contentMessage'), err.message, true);
+        }
+      });
+
+      const dropZoneDark = $('#logoDarkDropZone');
+      if (dropZoneDark) {
+        ['dragenter', 'dragover'].forEach(eventName => {
+          dropZoneDark.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); dropZoneDark.classList.add('drag-over'); });
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+          dropZoneDark.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); dropZoneDark.classList.remove('drag-over'); });
+        });
+        dropZoneDark.addEventListener('drop', async e => {
+          const file = e.dataTransfer?.files?.[0];
+          if (!file) return;
+          try {
+            if (!file.type.startsWith('image/')) throw new Error('Selecciona un archivo de imagen válido (PNG recomendado).');
+            if (file.size > MAX_IMAGE_SIZE) throw new Error('El logotipo no puede superar 3 MB.');
+            const dataUrl = await fileToDataUrl(file);
+            updateLogoDarkUI(dataUrl);
+          } catch (err) {
+            showMessage($('#contentMessage'), err.message, true);
+          }
+        });
+      }
+
+      // Handlers de texto y nombre comercial
       $('#logoTextInput')?.addEventListener('input', updateLogoTextPreview);
 
       $('#brandNameInput')?.addEventListener('input', e => {
