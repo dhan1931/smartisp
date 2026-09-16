@@ -1685,6 +1685,88 @@
 			min-height: 90px;
 		}
 
+		.checkerboard-preview.dark-preview {
+			background-color: #0b1e2a;
+			background-image:
+			  linear-gradient(45deg, #102636 25%, transparent 25%),
+			  linear-gradient(-45deg, #102636 25%, transparent 25%),
+			  linear-gradient(45deg, transparent 75%, #102636 75%),
+			  linear-gradient(-45deg, transparent 75%, #102636 75%);
+			border-color: #1e3a4f;
+		}
+
+		/* Aspectos y características con visto en líneas de negocio */
+		.solution-card ul {
+			margin-bottom: 8px !important;
+		}
+
+		.solution-card ul li {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			position: relative;
+			padding: 3px 0;
+		}
+
+		.solution-card ul li span {
+			flex: 1;
+			min-width: 0;
+		}
+
+		.btn-delete-feature {
+			display: none;
+			align-items: center;
+			justify-content: center;
+			width: 18px;
+			height: 18px;
+			min-width: 18px;
+			border-radius: 50%;
+			border: none;
+			background: #fee2e2;
+			color: #dc2626;
+			font-size: 13px;
+			font-weight: 700;
+			cursor: pointer;
+			line-height: 1;
+			padding: 0;
+			margin-left: 6px;
+			transition: background .15s, transform .15s;
+		}
+
+		.solution-card ul li:hover .btn-delete-feature {
+			display: inline-flex;
+		}
+
+		.btn-delete-feature:hover {
+			background: #ef4444;
+			color: white;
+			transform: scale(1.1);
+		}
+
+		.btn-add-feature {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			margin-top: 4px;
+			margin-bottom: 18px;
+			padding: 5px 12px;
+			font-size: 11.5px;
+			font-weight: 700;
+			color: #087ea4;
+			background: #f0f9fb;
+			border: 1px dashed #7ec4dc;
+			border-radius: 6px;
+			cursor: pointer;
+			transition: all .2s ease;
+		}
+
+		.btn-add-feature:hover {
+			background: #ddf2f7;
+			border-color: #087ea4;
+			color: #065b75;
+			transform: translateY(-1px);
+		}
+
 		/* TOAST */
 		.editor-toast {
 			position: fixed;
@@ -1811,32 +1893,33 @@
 
 	<!-- MODAL LOGOTIPO EXCLUSIVO DE LA PÁGINA DE PRESENTACIÓN -->
 	<div class="editor-modal-overlay" id="landingLogoModal">
-		<div class="editor-modal-card">
+		<div class="editor-modal-card" style="max-width:660px;">
 			<div class="editor-modal-head">
 				<h3><span>🎨</span> Logotipo de la Página de Presentación</h3>
 				<button type="button" class="editor-modal-close-btn" id="closeLogoModalBtn">&times;</button>
 			</div>
 			<div class="editor-modal-body">
-				<div style="background:#e0f2fe; border:1px solid #bae6fd; border-radius:8px; padding:10px 14px; font-size:12px; color:#0369a1; margin-bottom:18px; display:flex; gap:8px; line-height:1.4;">
+				<div style="background:#e0f2fe; border:1px solid #bae6fd; border-radius:8px; padding:10px 14px; font-size:12px; color:#0369a1; margin-bottom:14px; display:flex; gap:8px; line-height:1.4;">
 					<span>ℹ️</span>
-					<span><strong>Nota importante:</strong> Este logotipo es exclusivo de la página de presentación (Landing Page) y <u>no altera ni afecta</u> el logotipo configurado en la tienda online.</span>
+					<span><strong>Personalización independiente:</strong> Ahora puedes configurar un logo para el <b>fondo claro (menú superior)</b> y otro para el <b>fondo oscuro (pie de página / footer)</b> con tamaños ampliados hasta 140px.</span>
 				</div>
 
-				<div class="modal-tabs">
-					<button type="button" class="modal-tab-btn active" id="tabLogoImageBtn">🖼️ Logotipo en Imagen PNG</button>
-					<button type="button" class="modal-tab-btn" id="tabLogoTextBtn">✍️ Logotipo en Texto</button>
+				<div class="modal-tabs" style="margin-bottom:16px;">
+					<button type="button" class="modal-tab-btn active" id="tabLogoLightBtn">☀️ Logo Fondo Claro (Navbar)</button>
+					<button type="button" class="modal-tab-btn" id="tabLogoDarkBtn">🌙 Logo Fondo Oscuro (Footer)</button>
+					<button type="button" class="modal-tab-btn" id="tabLogoTextBtn">✍️ Modo Texto</button>
 				</div>
 
-				<!-- Panel Modo Imagen -->
-				<div id="modalLogoImagePanel">
+				<!-- Panel Modo Imagen Claro (Navbar) -->
+				<div id="modalLogoLightPanel">
 					<div class="logo-drop-box" id="modalLogoDropBox">
 						<div id="modalLogoPrompt">
 							<span style="font-size:28px;">🖼️</span>
 							<div style="font-weight:700; font-size:13.5px; color:var(--ink); margin-top:8px;">
-								Arrastra tu logotipo aquí o haz clic para seleccionarlo
+								Arrastra tu logotipo para fondo claro aquí o haz clic para seleccionarlo
 							</div>
 							<div style="font-size:11.5px; color:var(--muted); margin-top:4px;">
-								Recomendado: <b>PNG con fondo transparente</b> (también admite WebP o SVG). Máx. 3 MB.
+								Se muestra en la barra superior blanca. Recomendado: <b>PNG con fondo transparente</b>.
 							</div>
 							<button type="button" class="editor-action-btn secondary" id="modalSelectFileBtn" style="margin-top:12px;">
 								📁 Seleccionar archivo PNG
@@ -1847,31 +1930,88 @@
 
 					<div id="modalLogoPreviewWrap" style="display:none; margin-top:14px;">
 						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-							<span style="font-size:12px; font-weight:700; color:#15803d;">✓ Logotipo cargado:</span>
+							<span style="font-size:12px; font-weight:700; color:#15803d;">✓ Logotipo Fondo Claro cargado:</span>
 							<div style="display:flex; gap:6px;">
 								<button type="button" class="editor-action-btn secondary" id="modalChangeImgBtn" style="padding:4px 10px; font-size:11px;">🔄 Cambiar</button>
 								<button type="button" class="editor-action-btn danger" id="modalDeleteImgBtn" style="padding:4px 10px; font-size:11px; background:#fff1f1; border-color:#fecaca; color:#b91c1c;">🗑️ Quitar imagen</button>
 							</div>
 						</div>
-						<div class="checkerboard-preview">
-							<img id="modalLogoPreviewImg" src="" alt="Vista previa" style="height:38px; max-height:60px; object-fit:contain; display:block;">
+						<div class="checkerboard-preview" style="padding:16px;">
+							<img id="modalLogoPreviewImg" src="" alt="Vista previa claro" style="height:38px; max-height:140px; object-fit:contain; display:block;">
 						</div>
 					</div>
 
-					<div style="margin-top:16px; display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+					<div style="margin-top:16px; display:grid; grid-template-columns:1.2fr 0.8fr; gap:14px; align-items:center;">
 						<div>
-							<label style="display:block; font-size:12px; font-weight:700; margin-bottom:5px; color:var(--ink);">Altura en el menú:</label>
-							<select id="modalLogoHeightSelect" style="width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-size:13px;">
-								<option value="28">Compacto (28px)</option>
-								<option value="34">Mediano (34px)</option>
-								<option value="38" selected>Estándar (38px - Recomendado)</option>
-								<option value="46">Grande (46px)</option>
-								<option value="54">Extra Grande (54px)</option>
-							</select>
+							<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+								<label for="modalLogoHeightRange" style="font-size:12px; font-weight:700; color:var(--ink); margin:0;">Tamaño / Altura (Navbar):</label>
+								<span id="modalLogoHeightVal" style="font-size:12px; font-weight:800; color:var(--blue);">38px</span>
+							</div>
+							<div style="display:flex; align-items:center; gap:8px;">
+								<input type="range" id="modalLogoHeightRange" min="20" max="140" value="38" step="2" style="flex:1;">
+								<input type="number" id="modalLogoHeightNumber" min="20" max="140" value="38" style="width:62px; padding:5px 6px; font-size:12px; font-weight:700; border:1px solid var(--line); border-radius:6px; text-align:center;">
+							</div>
 						</div>
 						<div>
-							<label style="display:block; font-size:12px; font-weight:700; margin-bottom:5px; color:var(--ink);">Distintivo / Badge (opcional):</label>
+							<label for="modalLogoBadgeInput" style="display:block; font-size:12px; font-weight:700; margin-bottom:5px; color:var(--ink);">Distintivo / Badge (opcional):</label>
 							<input type="text" id="modalLogoBadgeInput" placeholder="Ej: Infraestructura TI" style="width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-size:13px;" value="Infraestructura TI">
+						</div>
+					</div>
+				</div>
+
+				<!-- Panel Modo Imagen Oscuro (Footer) -->
+				<div id="modalLogoDarkPanel" style="display:none;">
+					<div style="background:#f1f5f9; border:1px solid #cbd5e1; border-radius:8px; padding:10px 14px; font-size:12px; color:#334155; margin-bottom:12px; line-height:1.4;">
+						<span>🌙 <strong>Logotipo para el Pie de Página:</strong> El fondo al pie de la página es oscuro (<code>#0b1e2a</code>). Puedes subir aquí un logo con letras blancas o claras para una nitidez óptima.</span>
+					</div>
+
+					<div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; align-items:center;">
+						<button type="button" class="editor-action-btn secondary" id="modalCopyLightToDarkBtn" style="font-size:11.5px; padding:6px 12px;">
+							📋 Usar el mismo logo del menú claro
+						</button>
+						<label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:var(--ink); cursor:pointer; margin:0;">
+							<input type="checkbox" id="modalDarkAutoInvert" style="width:16px; height:16px; margin:0; accent-color:var(--blue);">
+							<span>⚪ Invertir colores automáticamente a blanco</span>
+						</label>
+					</div>
+
+					<div class="logo-drop-box" id="modalLogoDarkDropBox">
+						<div id="modalLogoDarkPrompt">
+							<span style="font-size:28px;">🌙</span>
+							<div style="font-weight:700; font-size:13.5px; color:var(--ink); margin-top:8px;">
+								Arrastra tu logotipo para fondo oscuro o haz clic aquí
+							</div>
+							<div style="font-size:11.5px; color:var(--muted); margin-top:4px;">
+								Ideal para logos en blanco, claro o negativo. Máx. 3 MB.
+							</div>
+							<button type="button" class="editor-action-btn secondary" id="modalSelectDarkFileBtn" style="margin-top:12px;">
+								📁 Seleccionar archivo para fondo oscuro
+							</button>
+						</div>
+						<input type="file" id="modalLogoDarkFileInput" accept=".png, image/png, image/webp, image/svg+xml, image/jpeg" style="display:none;">
+					</div>
+
+					<div id="modalLogoDarkPreviewWrap" style="display:none; margin-top:14px;">
+						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+							<span style="font-size:12px; font-weight:700; color:#0284c7;">✓ Logotipo Fondo Oscuro (Vista previa en fondo real):</span>
+							<div style="display:flex; gap:6px;">
+								<button type="button" class="editor-action-btn secondary" id="modalChangeDarkImgBtn" style="padding:4px 10px; font-size:11px;">🔄 Cambiar</button>
+								<button type="button" class="editor-action-btn danger" id="modalDeleteDarkImgBtn" style="padding:4px 10px; font-size:11px; background:#fff1f1; border-color:#fecaca; color:#b91c1c;">🗑️ Quitar imagen</button>
+							</div>
+						</div>
+						<div class="checkerboard-preview dark-preview" style="padding:16px;">
+							<img id="modalLogoDarkPreviewImg" src="" alt="Vista previa oscuro" style="height:42px; max-height:140px; object-fit:contain; display:block;">
+						</div>
+					</div>
+
+					<div style="margin-top:16px;">
+						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+							<label for="modalLogoDarkHeightRange" style="font-size:12px; font-weight:700; color:var(--ink); margin:0;">Tamaño / Altura en el Footer:</label>
+							<span id="modalLogoDarkHeightVal" style="font-size:12px; font-weight:800; color:var(--blue);">42px</span>
+						</div>
+						<div style="display:flex; align-items:center; gap:8px;">
+							<input type="range" id="modalLogoDarkHeightRange" min="20" max="140" value="42" step="2" style="flex:1;">
+							<input type="number" id="modalLogoDarkHeightNumber" min="20" max="140" value="42" style="width:62px; padding:5px 6px; font-size:12px; font-weight:700; border:1px solid var(--line); border-radius:6px; text-align:center;">
 						</div>
 					</div>
 				</div>
@@ -2428,6 +2568,9 @@
 			logo_type: 'text',
 			logo_image: '',
 			logo_height: '38',
+			logo_dark_image: '',
+			logo_dark_height: '42',
+			logo_dark_invert: false,
 			logo_text: 'smartisp',
 			logo_badge: 'Infraestructura TI'
 		};
@@ -2640,6 +2783,8 @@
 			if (!box) return;
 			const clone = box.cloneNode(true);
 			clone.classList.remove('is-card-selected');
+			// Remover botones de edición clonados antes de re-vincular
+			clone.querySelectorAll('.btn-add-feature, .btn-delete-feature, .card-action-floating-bar').forEach(el => el.remove());
 			// Generate unique keys for clone
 			const rand = Math.random().toString(36).slice(2, 7);
 			clone.querySelectorAll('[data-landing-key]').forEach(el => {
@@ -2647,6 +2792,9 @@
 			});
 			box.after(clone);
 			bindBoxEvents(clone);
+			if (clone.classList.contains('solution-card')) {
+				bindSolutionCardFeatures(clone);
+			}
 			bindEditableEvents();
 			lucide.createIcons();
 			setSelectedCardBox(clone);
@@ -2743,6 +2891,7 @@
 			if (slot) slot.before(card);
 			else document.querySelector('.solutions-grid').appendChild(card);
 			bindBoxEvents(card);
+			bindSolutionCardFeatures(card);
 			bindEditableEvents();
 			lucide.createIcons();
 			setSelectedCardBox(card);
@@ -2811,6 +2960,93 @@
 		});
 
 		// =========================================================================
+		// SOLUTION CARD DYNAMIC FEATURES (ASPECTOS CON VISTO)
+		// =========================================================================
+		const bindSolutionCardFeatures = card => {
+			if (!card) return;
+			const ul = card.querySelector('ul');
+			if (!ul) return;
+
+			// 1. Armar cada li existente con botón de eliminar
+			ul.querySelectorAll('li').forEach(li => {
+				const textSpan = li.querySelector('span') || li;
+				if (!textSpan.hasAttribute('contenteditable')) {
+					textSpan.contentEditable = 'true';
+					textSpan.spellcheck = false;
+				}
+
+				if (!li.querySelector('.btn-delete-feature')) {
+					const delBtn = document.createElement('button');
+					delBtn.type = 'button';
+					delBtn.className = 'btn-delete-feature';
+					delBtn.title = 'Eliminar este aspecto';
+					delBtn.innerHTML = '&times;';
+					delBtn.addEventListener('click', e => {
+						e.stopPropagation();
+						li.style.transform = 'scale(0.85)';
+						li.style.opacity = '0';
+						setTimeout(() => {
+							li.remove();
+							markDirty(true);
+							showToast('🗑️ Aspecto eliminado');
+						}, 150);
+					});
+					li.appendChild(delBtn);
+				}
+			});
+
+			// 2. Insertar botón "➕ Agregar aspecto" después de ul si no existe
+			let addBtn = card.querySelector('.btn-add-feature');
+			if (!addBtn) {
+				addBtn = document.createElement('button');
+				addBtn.type = 'button';
+				addBtn.className = 'btn-add-feature';
+				addBtn.innerHTML = `<i data-lucide="plus" width="13"></i> <span>➕ Agregar aspecto</span>`;
+				ul.after(addBtn);
+			}
+
+			if (!addBtn._bound) {
+				addBtn._bound = true;
+				addBtn.addEventListener('click', e => {
+					e.stopPropagation();
+					const id = Date.now().toString().slice(-5);
+					const newLi = document.createElement('li');
+					newLi.innerHTML = `<i data-lucide="check-circle-2" width="14"></i> <span data-landing-key="custom_feat_${id}" contenteditable="true" spellcheck="false">Nuevo aspecto destacado</span><button type="button" class="btn-delete-feature" title="Eliminar este aspecto">&times;</button>`;
+
+					const delBtn = newLi.querySelector('.btn-delete-feature');
+					delBtn.addEventListener('click', ev => {
+						ev.stopPropagation();
+						newLi.style.transform = 'scale(0.85)';
+						newLi.style.opacity = '0';
+						setTimeout(() => {
+							newLi.remove();
+							markDirty(true);
+							showToast('🗑️ Aspecto eliminado');
+						}, 150);
+					});
+
+					ul.appendChild(newLi);
+					bindEditableEvents();
+					if (window.lucide && typeof lucide.createIcons === 'function') {
+						lucide.createIcons();
+					}
+
+					const span = newLi.querySelector('span');
+					if (span) {
+						span.focus();
+						const range = document.createRange();
+						range.selectNodeContents(span);
+						const sel = window.getSelection();
+						sel.removeAllRanges();
+						sel.addRange(range);
+					}
+					markDirty(true);
+					showToast('➕ Nuevo aspecto agregado. Escribe el texto.');
+				});
+			}
+		};
+
+		// =========================================================================
 		// LOGO MODAL & RENDERING
 		// =========================================================================
 		const renderLandingLogo = () => {
@@ -2818,17 +3054,31 @@
 			const footLogoWrap = document.querySelector('.footer-brand .landing-footer-logo-container');
 
 			const mode = landingState.logo_type || 'text';
-			const img = landingState.logo_image || '';
-			const height = parseInt(landingState.logo_height, 10) || 38;
+			const lightImg = landingState.logo_image || '';
+			const lightHeight = parseInt(landingState.logo_height, 10) || 38;
+			const darkImg = landingState.logo_dark_image || lightImg;
+			const darkHeight = parseInt(landingState.logo_dark_height, 10) || 42;
+			const darkInvert = !!landingState.logo_dark_invert;
 			const text = (landingState.logo_text || 'smartisp').trim();
 			const badge = (landingState.logo_badge || '').trim();
 
-			if (mode === 'image' && img) {
+			if (mode === 'image') {
 				if (navLogoWrap) {
-					navLogoWrap.innerHTML = `<img src="${img}" alt="Logo" style="height:${height}px; max-height:58px; width:auto; object-fit:contain; vertical-align:middle; display:inline-block;">${badge ? `<span class="logo-badge" style="margin-left:8px;">${badge}</span>` : ''}`;
+					if (lightImg) {
+						navLogoWrap.innerHTML = `<img src="${lightImg}" alt="Logo" style="height:${lightHeight}px; max-height:140px; width:auto; object-fit:contain; vertical-align:middle; display:inline-block;">${badge ? `<span class="logo-badge" style="margin-left:8px;">${badge}</span>` : ''}`;
+					} else {
+						const mid = Math.ceil(text.length / 2);
+						navLogoWrap.innerHTML = `${text.slice(0, mid)}<b style="color:var(--blue, #087ea4);">${text.slice(mid)}</b><span style="color:#f5a524;">.</span> ${badge ? `<span class="logo-badge" style="margin-left:8px;">${badge}</span>` : ''}`;
+					}
 				}
 				if (footLogoWrap) {
-					footLogoWrap.innerHTML = `<img src="${img}" alt="Logo" style="height:${height}px; max-height:58px; width:auto; object-fit:contain; vertical-align:middle; display:inline-block;">`;
+					if (darkImg) {
+						const filterStyle = darkInvert ? 'filter: brightness(0) invert(1);' : '';
+						footLogoWrap.innerHTML = `<img src="${darkImg}" alt="Logo Footer" style="height:${darkHeight}px; max-height:140px; width:auto; object-fit:contain; vertical-align:middle; display:inline-block; ${filterStyle}">`;
+					} else {
+						const mid = Math.ceil(text.length / 2);
+						footLogoWrap.innerHTML = `${text.slice(0, mid)}<b style="color:var(--blue, #087ea4);">${text.slice(mid)}</b><span style="color:#f5a524;">.</span>`;
+					}
 				}
 			} else {
 				const mid = Math.ceil(text.length / 2);
@@ -2844,30 +3094,86 @@
 			}
 		};
 
+		const switchLogoTab = tabName => {
+			document.querySelector('#tabLogoLightBtn')?.classList.toggle('active', tabName === 'light');
+			document.querySelector('#tabLogoDarkBtn')?.classList.toggle('active', tabName === 'dark');
+			document.querySelector('#tabLogoTextBtn')?.classList.toggle('active', tabName === 'text');
+
+			const lightP = document.querySelector('#modalLogoLightPanel');
+			const darkP = document.querySelector('#modalLogoDarkPanel');
+			const textP = document.querySelector('#modalLogoTextPanel');
+			if (lightP) lightP.style.display = tabName === 'light' ? 'block' : 'none';
+			if (darkP) darkP.style.display = tabName === 'dark' ? 'block' : 'none';
+			if (textP) textP.style.display = tabName === 'text' ? 'block' : 'none';
+
+			if (tabName === 'text') {
+				landingState.logo_type = 'text';
+			} else {
+				landingState.logo_type = 'image';
+			}
+		};
+
 		const openLogoModal = () => {
 			const modal = document.querySelector('#landingLogoModal');
 			if (!modal) return;
 			const isImg = landingState.logo_type === 'image';
-			document.querySelector('#tabLogoImageBtn').classList.toggle('active', isImg);
-			document.querySelector('#tabLogoTextBtn').classList.toggle('active', !isImg);
-			document.querySelector('#modalLogoImagePanel').style.display = isImg ? 'block' : 'none';
-			document.querySelector('#modalLogoTextPanel').style.display = isImg ? 'none' : 'block';
+			switchLogoTab(isImg ? 'light' : 'text');
 
+			// Light preview & values
 			if (landingState.logo_image) {
-				document.querySelector('#modalLogoPreviewImg').src = landingState.logo_image;
-				document.querySelector('#modalLogoPreviewImg').style.height = (landingState.logo_height || 38) + 'px';
+				const pImg = document.querySelector('#modalLogoPreviewImg');
+				if (pImg) {
+					pImg.src = landingState.logo_image;
+					pImg.style.height = (landingState.logo_height || 38) + 'px';
+				}
 				document.querySelector('#modalLogoPreviewWrap').style.display = 'block';
 				document.querySelector('#modalLogoPrompt').style.display = 'none';
 			} else {
 				document.querySelector('#modalLogoPreviewWrap').style.display = 'none';
 				document.querySelector('#modalLogoPrompt').style.display = 'block';
 			}
+			const lHeight = landingState.logo_height || '38';
+			const lRange = document.querySelector('#modalLogoHeightRange');
+			const lNum = document.querySelector('#modalLogoHeightNumber');
+			const lVal = document.querySelector('#modalLogoHeightVal');
+			if (lRange) lRange.value = lHeight;
+			if (lNum) lNum.value = lHeight;
+			if (lVal) lVal.textContent = lHeight + 'px';
+			const lBadge = document.querySelector('#modalLogoBadgeInput');
+			if (lBadge) lBadge.value = landingState.logo_badge || 'Infraestructura TI';
 
-			document.querySelector('#modalLogoHeightSelect').value = landingState.logo_height || '38';
-			document.querySelector('#modalLogoBadgeInput').value = landingState.logo_badge || 'Infraestructura TI';
-			document.querySelector('#modalLogoBadgeInput2').value = landingState.logo_badge || 'Infraestructura TI';
-			document.querySelector('#modalLogoTextInput').value = landingState.logo_text || 'smartisp';
+			// Dark preview & values
+			const darkImg = landingState.logo_dark_image || '';
+			if (darkImg) {
+				const pDarkImg = document.querySelector('#modalLogoDarkPreviewImg');
+				if (pDarkImg) {
+					pDarkImg.src = darkImg;
+					pDarkImg.style.height = (landingState.logo_dark_height || 42) + 'px';
+					pDarkImg.style.filter = landingState.logo_dark_invert ? 'brightness(0) invert(1)' : 'none';
+				}
+				document.querySelector('#modalLogoDarkPreviewWrap').style.display = 'block';
+				document.querySelector('#modalLogoDarkPrompt').style.display = 'none';
+			} else {
+				document.querySelector('#modalLogoDarkPreviewWrap').style.display = 'none';
+				document.querySelector('#modalLogoDarkPrompt').style.display = 'block';
+			}
+			const dHeight = landingState.logo_dark_height || '42';
+			const dRange = document.querySelector('#modalLogoDarkHeightRange');
+			const dNum = document.querySelector('#modalLogoDarkHeightNumber');
+			const dVal = document.querySelector('#modalLogoDarkHeightVal');
+			if (dRange) dRange.value = dHeight;
+			if (dNum) dNum.value = dHeight;
+			if (dVal) dVal.textContent = dHeight + 'px';
+			const dInvert = document.querySelector('#modalDarkAutoInvert');
+			if (dInvert) dInvert.checked = !!landingState.logo_dark_invert;
+
+			// Text mode
+			const tInput = document.querySelector('#modalLogoTextInput');
+			if (tInput) tInput.value = landingState.logo_text || 'smartisp';
+			const tBadge = document.querySelector('#modalLogoBadgeInput2');
+			if (tBadge) tBadge.value = landingState.logo_badge || 'Infraestructura TI';
 			updateModalTextPreview();
+
 			modal.classList.add('open');
 		};
 
@@ -2889,29 +3195,66 @@
 		document.querySelector('#closeLogoModalBtn')?.addEventListener('click', closeLogoModal);
 		document.querySelector('#modalCancelLogoBtn')?.addEventListener('click', closeLogoModal);
 
-		document.querySelector('#tabLogoImageBtn')?.addEventListener('click', () => {
-			landingState.logo_type = 'image';
-			document.querySelector('#tabLogoImageBtn').classList.add('active');
-			document.querySelector('#tabLogoTextBtn').classList.remove('active');
-			document.querySelector('#modalLogoImagePanel').style.display = 'block';
-			document.querySelector('#modalLogoTextPanel').style.display = 'none';
+		document.querySelector('#tabLogoLightBtn')?.addEventListener('click', () => switchLogoTab('light'));
+		document.querySelector('#tabLogoDarkBtn')?.addEventListener('click', () => switchLogoTab('dark'));
+		document.querySelector('#tabLogoTextBtn')?.addEventListener('click', () => switchLogoTab('text'));
+
+		// Light Logo Height Controls
+		const syncLightHeight = val => {
+			landingState.logo_height = String(val);
+			const lRange = document.querySelector('#modalLogoHeightRange');
+			const lNum = document.querySelector('#modalLogoHeightNumber');
+			const lVal = document.querySelector('#modalLogoHeightVal');
+			const preview = document.querySelector('#modalLogoPreviewImg');
+			if (lRange) lRange.value = val;
+			if (lNum) lNum.value = val;
+			if (lVal) lVal.textContent = val + 'px';
+			if (preview) preview.style.height = val + 'px';
+		};
+		document.querySelector('#modalLogoHeightRange')?.addEventListener('input', e => syncLightHeight(e.target.value));
+		document.querySelector('#modalLogoHeightNumber')?.addEventListener('input', e => syncLightHeight(e.target.value));
+
+		// Dark Logo Height Controls
+		const syncDarkHeight = val => {
+			landingState.logo_dark_height = String(val);
+			const dRange = document.querySelector('#modalLogoDarkHeightRange');
+			const dNum = document.querySelector('#modalLogoDarkHeightNumber');
+			const dVal = document.querySelector('#modalLogoDarkHeightVal');
+			const preview = document.querySelector('#modalLogoDarkPreviewImg');
+			if (dRange) dRange.value = val;
+			if (dNum) dNum.value = val;
+			if (dVal) dVal.textContent = val + 'px';
+			if (preview) preview.style.height = val + 'px';
+		};
+		document.querySelector('#modalLogoDarkHeightRange')?.addEventListener('input', e => syncDarkHeight(e.target.value));
+		document.querySelector('#modalLogoDarkHeightNumber')?.addEventListener('input', e => syncDarkHeight(e.target.value));
+
+		// Dark Logo Auto Invert Checkbox
+		document.querySelector('#modalDarkAutoInvert')?.addEventListener('change', e => {
+			landingState.logo_dark_invert = e.target.checked;
+			const preview = document.querySelector('#modalLogoDarkPreviewImg');
+			if (preview) preview.style.filter = e.target.checked ? 'brightness(0) invert(1)' : 'none';
 		});
 
-		document.querySelector('#tabLogoTextBtn')?.addEventListener('click', () => {
-			landingState.logo_type = 'text';
-			document.querySelector('#tabLogoTextBtn').classList.add('active');
-			document.querySelector('#tabLogoImageBtn').classList.remove('active');
-			document.querySelector('#modalLogoImagePanel').style.display = 'none';
-			document.querySelector('#modalLogoTextPanel').style.display = 'block';
+		// Copy Light to Dark
+		document.querySelector('#modalCopyLightToDarkBtn')?.addEventListener('click', () => {
+			if (!landingState.logo_image) {
+				showToast('Primero sube un logotipo para fondo claro.', true);
+				return;
+			}
+			landingState.logo_dark_image = landingState.logo_image;
+			const pDarkImg = document.querySelector('#modalLogoDarkPreviewImg');
+			if (pDarkImg) {
+				pDarkImg.src = landingState.logo_image;
+				pDarkImg.style.height = (landingState.logo_dark_height || 42) + 'px';
+				pDarkImg.style.filter = landingState.logo_dark_invert ? 'brightness(0) invert(1)' : 'none';
+			}
+			document.querySelector('#modalLogoDarkPreviewWrap').style.display = 'block';
+			document.querySelector('#modalLogoDarkPrompt').style.display = 'none';
+			showToast('Logo del menú claro copiado al fondo oscuro.');
 		});
 
-		document.querySelector('#modalSelectFileBtn')?.addEventListener('click', () => {
-			document.querySelector('#modalLogoFileInput')?.click();
-		});
-		document.querySelector('#modalChangeImgBtn')?.addEventListener('click', () => {
-			document.querySelector('#modalLogoFileInput')?.click();
-		});
-
+		// File Reader Helper
 		const fileToDataUrl = file => new Promise((resolve, reject) => {
 			if (!file) return resolve('');
 			if (file.size > 3 * 1024 * 1024) return reject(new Error('La imagen no puede superar 3 MB.'));
@@ -2921,13 +3264,18 @@
 			reader.readAsDataURL(file);
 		});
 
+		// Light Logo File Upload & Drag-Drop
+		document.querySelector('#modalSelectFileBtn')?.addEventListener('click', () => document.querySelector('#modalLogoFileInput')?.click());
+		document.querySelector('#modalChangeImgBtn')?.addEventListener('click', () => document.querySelector('#modalLogoFileInput')?.click());
 		document.querySelector('#modalLogoFileInput')?.addEventListener('change', async e => {
 			const file = e.target.files?.[0];
 			if (!file) return;
 			try {
 				const dataUrl = await fileToDataUrl(file);
 				landingState.logo_image = dataUrl;
-				document.querySelector('#modalLogoPreviewImg').src = dataUrl;
+				landingState.logo_type = 'image';
+				const pImg = document.querySelector('#modalLogoPreviewImg');
+				if (pImg) pImg.src = dataUrl;
 				document.querySelector('#modalLogoPreviewWrap').style.display = 'block';
 				document.querySelector('#modalLogoPrompt').style.display = 'none';
 			} catch (err) {
@@ -2935,21 +3283,19 @@
 			}
 		});
 
-		const dropBox = document.querySelector('#modalLogoDropBox');
-		if (dropBox) {
-			['dragenter', 'dragover'].forEach(n => {
-				dropBox.addEventListener(n, e => { e.preventDefault(); dropBox.classList.add('drag-over'); });
-			});
-			['dragleave', 'drop'].forEach(n => {
-				dropBox.addEventListener(n, e => { e.preventDefault(); dropBox.classList.remove('drag-over'); });
-			});
-			dropBox.addEventListener('drop', async e => {
+		const dropBoxLight = document.querySelector('#modalLogoDropBox');
+		if (dropBoxLight) {
+			['dragenter', 'dragover'].forEach(n => dropBoxLight.addEventListener(n, e => { e.preventDefault(); dropBoxLight.classList.add('drag-over'); }));
+			['dragleave', 'drop'].forEach(n => dropBoxLight.addEventListener(n, e => { e.preventDefault(); dropBoxLight.classList.remove('drag-over'); }));
+			dropBoxLight.addEventListener('drop', async e => {
 				const file = e.dataTransfer?.files?.[0];
 				if (!file) return;
 				try {
 					const dataUrl = await fileToDataUrl(file);
 					landingState.logo_image = dataUrl;
-					document.querySelector('#modalLogoPreviewImg').src = dataUrl;
+					landingState.logo_type = 'image';
+					const pImg = document.querySelector('#modalLogoPreviewImg');
+					if (pImg) pImg.src = dataUrl;
 					document.querySelector('#modalLogoPreviewWrap').style.display = 'block';
 					document.querySelector('#modalLogoPrompt').style.display = 'none';
 				} catch (err) {
@@ -2960,32 +3306,83 @@
 
 		document.querySelector('#modalDeleteImgBtn')?.addEventListener('click', () => {
 			landingState.logo_image = '';
-			document.querySelector('#modalLogoPreviewImg').src = '';
+			const pImg = document.querySelector('#modalLogoPreviewImg');
+			if (pImg) pImg.src = '';
 			document.querySelector('#modalLogoPreviewWrap').style.display = 'none';
 			document.querySelector('#modalLogoPrompt').style.display = 'block';
 			if (document.querySelector('#modalLogoFileInput')) document.querySelector('#modalLogoFileInput').value = '';
 		});
 
-		document.querySelector('#modalLogoHeightSelect')?.addEventListener('change', e => {
-			landingState.logo_height = e.target.value;
-			const preview = document.querySelector('#modalLogoPreviewImg');
-			if (preview) preview.style.height = e.target.value + 'px';
+		// Dark Logo File Upload & Drag-Drop
+		document.querySelector('#modalSelectDarkFileBtn')?.addEventListener('click', () => document.querySelector('#modalLogoDarkFileInput')?.click());
+		document.querySelector('#modalChangeDarkImgBtn')?.addEventListener('click', () => document.querySelector('#modalLogoDarkFileInput')?.click());
+		document.querySelector('#modalLogoDarkFileInput')?.addEventListener('change', async e => {
+			const file = e.target.files?.[0];
+			if (!file) return;
+			try {
+				const dataUrl = await fileToDataUrl(file);
+				landingState.logo_dark_image = dataUrl;
+				landingState.logo_type = 'image';
+				const pImg = document.querySelector('#modalLogoDarkPreviewImg');
+				if (pImg) pImg.src = dataUrl;
+				document.querySelector('#modalLogoDarkPreviewWrap').style.display = 'block';
+				document.querySelector('#modalLogoDarkPrompt').style.display = 'none';
+			} catch (err) {
+				showToast(err.message, true);
+			}
+		});
+
+		const dropBoxDark = document.querySelector('#modalLogoDarkDropBox');
+		if (dropBoxDark) {
+			['dragenter', 'dragover'].forEach(n => dropBoxDark.addEventListener(n, e => { e.preventDefault(); dropBoxDark.classList.add('drag-over'); }));
+			['dragleave', 'drop'].forEach(n => dropBoxDark.addEventListener(n, e => { e.preventDefault(); dropBoxDark.classList.remove('drag-over'); }));
+			dropBoxDark.addEventListener('drop', async e => {
+				const file = e.dataTransfer?.files?.[0];
+				if (!file) return;
+				try {
+					const dataUrl = await fileToDataUrl(file);
+					landingState.logo_dark_image = dataUrl;
+					landingState.logo_type = 'image';
+					const pImg = document.querySelector('#modalLogoDarkPreviewImg');
+					if (pImg) pImg.src = dataUrl;
+					document.querySelector('#modalLogoDarkPreviewWrap').style.display = 'block';
+					document.querySelector('#modalLogoDarkPrompt').style.display = 'none';
+				} catch (err) {
+					showToast(err.message, true);
+				}
+			});
+		}
+
+		document.querySelector('#modalDeleteDarkImgBtn')?.addEventListener('click', () => {
+			landingState.logo_dark_image = '';
+			const pImg = document.querySelector('#modalLogoDarkPreviewImg');
+			if (pImg) pImg.src = '';
+			document.querySelector('#modalLogoDarkPreviewWrap').style.display = 'none';
+			document.querySelector('#modalLogoDarkPrompt').style.display = 'block';
+			if (document.querySelector('#modalLogoDarkFileInput')) document.querySelector('#modalLogoDarkFileInput').value = '';
 		});
 
 		document.querySelector('#modalLogoTextInput')?.addEventListener('input', updateModalTextPreview);
 
 		document.querySelector('#modalApplyLogoBtn')?.addEventListener('click', () => {
-			landingState.logo_height = document.querySelector('#modalLogoHeightSelect')?.value || '38';
-			if (landingState.logo_type === 'image') {
-				landingState.logo_badge = document.querySelector('#modalLogoBadgeInput')?.value || '';
-			} else {
+			landingState.logo_height = document.querySelector('#modalLogoHeightRange')?.value || '38';
+			landingState.logo_dark_height = document.querySelector('#modalLogoDarkHeightRange')?.value || '42';
+			landingState.logo_dark_invert = !!document.querySelector('#modalDarkAutoInvert')?.checked;
+
+			const activeTab = document.querySelector('.modal-tabs .modal-tab-btn.active');
+			if (activeTab && activeTab.id === 'tabLogoTextBtn') {
+				landingState.logo_type = 'text';
 				landingState.logo_text = document.querySelector('#modalLogoTextInput')?.value || 'smartisp';
 				landingState.logo_badge = document.querySelector('#modalLogoBadgeInput2')?.value || '';
+			} else {
+				landingState.logo_type = 'image';
+				landingState.logo_badge = document.querySelector('#modalLogoBadgeInput')?.value || '';
 			}
+
 			renderLandingLogo();
 			markDirty(true);
 			closeLogoModal();
-			showToast('Logotipo actualizado en el editor.');
+			showToast('Logotipos actualizados en el editor.');
 		});
 
 		// =========================================================================
@@ -3001,6 +3398,11 @@
 				if (content.landing_logo_type) landingState.logo_type = content.landing_logo_type;
 				if (content.landing_logo_image) landingState.logo_image = content.landing_logo_image;
 				if (content.landing_logo_height) landingState.logo_height = content.landing_logo_height;
+				if (content.landing_logo_dark_image) landingState.logo_dark_image = content.landing_logo_dark_image;
+				if (content.landing_logo_dark_height) landingState.logo_dark_height = content.landing_logo_dark_height;
+				if (content.landing_logo_dark_invert !== undefined) {
+					landingState.logo_dark_invert = content.landing_logo_dark_invert === 'true' || content.landing_logo_dark_invert === true;
+				}
 				if (content.landing_logo_text) landingState.logo_text = content.landing_logo_text;
 				if (content.landing_logo_badge) landingState.logo_badge = content.landing_logo_badge;
 
@@ -3025,6 +3427,9 @@
 							}
 						});
 						bindBoxEvents(card);
+						if (card.classList.contains('solution-card')) {
+							bindSolutionCardFeatures(card);
+						}
 					});
 				};
 
@@ -3033,8 +3438,9 @@
 				if (content.about_visual_html) restoreGrid('.about-visual', content.about_visual_html, 'addValueBoxBtn', '➕ Agregar Nuevo Pilar / Cuadro');
 				if (content.stats_grid_html) restoreGrid('.stats-grid', content.stats_grid_html, 'addStatItemBtn', '➕ Agregar Nueva Estadística');
 
-				// Bind box events & editable
+				// Bind box events, features & editable
 				document.querySelectorAll('.selectable-box').forEach(bindBoxEvents);
+				document.querySelectorAll('.solution-card').forEach(bindSolutionCardFeatures);
 				bindEditableEvents();
 				lucide.createIcons();
 
@@ -3047,11 +3453,13 @@
 						} else {
 							const icon = el.querySelector('i[data-lucide]');
 							if (icon) {
+								let textVal = '';
 								el.childNodes.forEach(node => {
 									if (node.nodeType === Node.TEXT_NODE) {
-										node.textContent = ' ' + content[k].trim();
+										textVal += node.textContent;
 									}
 								});
+								el.textContent = textVal.trim();
 							} else {
 								el.textContent = content[k];
 							}
@@ -3099,7 +3507,7 @@
 			if (!container) return '';
 			const clone = container.cloneNode(true);
 			// 1. Remover barras flotantes, botones, slots y toolbars del editor
-			clone.querySelectorAll('.add-card-slot, .card-action-floating-bar, .card-action-btn, .editor-inline-toolbar, .editor-top-bar').forEach(s => s.remove());
+			clone.querySelectorAll('.add-card-slot, .card-action-floating-bar, .card-action-btn, .editor-inline-toolbar, .editor-top-bar, .btn-add-feature, .btn-delete-feature').forEach(s => s.remove());
 			// 2. Remover clases de selección y foco del editor
 			clone.querySelectorAll('.is-card-selected').forEach(c => c.classList.remove('is-card-selected'));
 			clone.querySelectorAll('.selectable-box').forEach(c => c.classList.remove('selectable-box'));
@@ -3124,6 +3532,9 @@
 				landing_logo_type: landingState.logo_type,
 				landing_logo_image: landingState.logo_image,
 				landing_logo_height: landingState.logo_height,
+				landing_logo_dark_image: landingState.logo_dark_image,
+				landing_logo_dark_height: landingState.logo_dark_height,
+				landing_logo_dark_invert: landingState.logo_dark_invert ? 'true' : 'false',
 				landing_logo_text: landingState.logo_text,
 				landing_logo_badge: landingState.logo_badge,
 				solutions_grid_html: cleanGridHtml('.solutions-grid'),

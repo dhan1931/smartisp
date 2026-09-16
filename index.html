@@ -1760,18 +1760,32 @@
 				const logoMode = content.landing_logo_type || (content.landing_logo_image ? 'image' : 'text');
 				const logoImg = content.landing_logo_image || '';
 				const logoHeight = parseInt(content.landing_logo_height, 10) || 38;
+				const logoDarkImg = content.landing_logo_dark_image || logoImg;
+				const logoDarkHeight = parseInt(content.landing_logo_dark_height, 10) || 42;
+				const logoDarkInvert = content.landing_logo_dark_invert === 'true' || content.landing_logo_dark_invert === true;
 				const logoText = (content.landing_logo_text || '').trim();
 				const logoBadge = (content.landing_logo_badge || '').trim();
 
 				const navLogoWrap = document.querySelector('.navbar .landing-logo-container');
 				const footLogoWrap = document.querySelector('.footer-brand .landing-footer-logo-container');
 
-				if (logoMode === 'image' && logoImg) {
+				if (logoMode === 'image') {
 					if (navLogoWrap) {
-						navLogoWrap.innerHTML = `<img src="${logoImg}" alt="Logo" style="height:${logoHeight}px; max-height:58px; width:auto; object-fit:contain; vertical-align:middle; display:inline-block;">${logoBadge ? `<span class="logo-badge" style="margin-left:8px;">${logoBadge}</span>` : ''}`;
+						if (logoImg) {
+							navLogoWrap.innerHTML = `<img src="${logoImg}" alt="Logo" style="height:${logoHeight}px; max-height:140px; width:auto; object-fit:contain; vertical-align:middle; display:inline-block;">${logoBadge ? `<span class="logo-badge" style="margin-left:8px;">${logoBadge}</span>` : ''}`;
+						} else if (logoText) {
+							const mid = Math.ceil(logoText.length / 2);
+							navLogoWrap.innerHTML = `${logoText.slice(0, mid)}<b style="color:var(--blue, #087ea4);">${logoText.slice(mid)}</b><span style="color:#f5a524;">.</span> ${logoBadge ? `<span class="logo-badge" style="margin-left:8px;">${logoBadge}</span>` : ''}`;
+						}
 					}
 					if (footLogoWrap) {
-						footLogoWrap.innerHTML = `<img src="${logoImg}" alt="Logo" style="height:${logoHeight}px; max-height:58px; width:auto; object-fit:contain; vertical-align:middle; display:inline-block;">`;
+						if (logoDarkImg) {
+							const filterStyle = logoDarkInvert ? 'filter: brightness(0) invert(1);' : '';
+							footLogoWrap.innerHTML = `<img src="${logoDarkImg}" alt="Logo Footer" style="height:${logoDarkHeight}px; max-height:140px; width:auto; object-fit:contain; vertical-align:middle; display:inline-block; ${filterStyle}">`;
+						} else if (logoText) {
+							const mid = Math.ceil(logoText.length / 2);
+							footLogoWrap.innerHTML = `${logoText.slice(0, mid)}<b style="color:var(--blue, #087ea4);">${logoText.slice(mid)}</b><span style="color:#f5a524;">.</span>`;
+						}
 					}
 				} else if (logoText) {
 					const mid = Math.ceil(logoText.length / 2);
@@ -1792,7 +1806,7 @@
 				// 2. Restaurar cuadrículas personalizadas eliminando cualquier rastro del editor
 				const cleanPublicGrid = container => {
 					if (!container) return;
-					container.querySelectorAll('.card-action-floating-bar, .add-card-slot, .card-action-btn, .editor-inline-toolbar, .editor-top-bar').forEach(el => el.remove());
+					container.querySelectorAll('.card-action-floating-bar, .add-card-slot, .card-action-btn, .editor-inline-toolbar, .editor-top-bar, .btn-add-feature, .btn-delete-feature').forEach(el => el.remove());
 					container.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
 					container.querySelectorAll('[spellcheck]').forEach(el => el.removeAttribute('spellcheck'));
 					container.querySelectorAll('[data-deletable-box]').forEach(el => el.removeAttribute('data-deletable-box'));
