@@ -147,6 +147,7 @@
 		.reviews { color: var(--muted); font-size: 11px; margin-left: 4px; letter-spacing: 0; }
 		.price-row { display: flex; justify-content: space-between; align-items: center; margin-top: 13px; }
 		.price { color: var(--navy); font-family: 'Space Grotesk', sans-serif; font-size: 21px; font-weight: 700; }
+		.price.is-quote { color: var(--blue); font-size: 13.5px; font-weight: 700; line-height: 1.25; }
 		.add { color: var(--blue); border: 1px solid #9acfe9; background: #effaff; width: 35px; height: 35px; display: grid; place-items: center; border-radius: 4px; }
 		.add:hover { background: var(--blue); color: white; }
 		.benefits { background: var(--navy); color: white; display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; padding: 25px 5vw; }
@@ -418,7 +419,7 @@
 		let cart = JSON.parse(localStorage.getItem('smartisp.cart') || '[]');
 		let signedIn = false;
 		let wishlistIds = new Set();
-		const money = value => Number(value || 0) > 0 ? '$' + Number(value).toLocaleString('es-CL') : 'Pendiente de cotización';
+		const money = value => Number(value || 0) > 0 ? '$' + Number(value).toLocaleString('es-CL') : 'Solicitar cotización';
 		const productKey = product => String(product.id || product.name);
 		const fallbackImage = product => {
 			const cat = String(product?.category || '').toLowerCase();
@@ -754,8 +755,20 @@
 			const query = document.querySelector('#searchInput').value.toLowerCase();
 			const sort = document.querySelector('#sortSelect').value;
 			let shown = products.filter(product => productMatchesFilter(product, selectedFilter) && `${product.name} ${product.brand} ${product.category}`.toLowerCase().includes(query));
-			if (sort === 'low') shown.sort((a,b) => a.price-b.price);
-			if (sort === 'high') shown.sort((a,b) => b.price-a.price);
+			if (sort === 'low') shown.sort((a,b) => {
+				const pA = Number(a.price || 0), pB = Number(b.price || 0);
+				if (pA <= 0 && pB <= 0) return 0;
+				if (pA <= 0) return 1;
+				if (pB <= 0) return -1;
+				return pA - pB;
+			});
+			if (sort === 'high') shown.sort((a,b) => {
+				const pA = Number(a.price || 0), pB = Number(b.price || 0);
+				if (pA <= 0 && pB <= 0) return 0;
+				if (pA <= 0) return 1;
+				if (pB <= 0) return -1;
+				return pB - pA;
+			});
 
 			let activeFilterLabel = '';
 			let breadcrumbLabel = '';
@@ -798,7 +811,7 @@
 			document.querySelector('#products').innerHTML = shown.length ? shown.map(product => {
 				const pImg = product.image || fallbackImage(product);
 				const fbImg = fallbackImage(product);
-				return `<article class="product" data-index="${products.indexOf(product)}" tabindex="0" role="group" aria-label="Ver especificaciones de ${product.name}"><div class="product-image">${product.tag ? `<span class="tag">${product.tag}</span>` : ''}<button class="heart" aria-label="Agregar a favoritos"><i data-lucide="heart" width="16"></i></button><img src="${pImg}" alt="${product.name}" loading="lazy" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></div><div class="product-info"><div class="product-brand">${product.brand}</div><h3>${product.name}</h3><div><span class="stars">★★★★★</span><span class="reviews">(${product.reviews})</span></div><div class="price-row"><span class="price">${money(product.price)}</span><button class="add" data-index="${products.indexOf(product)}" aria-label="Agregar ${product.name} al carrito"><i data-lucide="plus" width="18"></i></button></div></div></article>`;
+				return `<article class="product" data-index="${products.indexOf(product)}" tabindex="0" role="group" aria-label="Ver especificaciones de ${product.name}"><div class="product-image">${product.tag ? `<span class="tag">${product.tag}</span>` : ''}<button class="heart" aria-label="Agregar a favoritos"><i data-lucide="heart" width="16"></i></button><img src="${pImg}" alt="${product.name}" loading="lazy" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></div><div class="product-info"><div class="product-brand">${product.brand}</div><h3>${product.name}</h3><div><span class="stars">★★★★★</span><span class="reviews">(${product.reviews})</span></div><div class="price-row"><span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span><button class="add" data-index="${products.indexOf(product)}" aria-label="Agregar ${product.name} al carrito"><i data-lucide="plus" width="18"></i></button></div></div></article>`;
 			}).join('') : '<div class="empty">No encontramos productos con esa búsqueda.</div>';
 			lucide.createIcons();
 			document.querySelectorAll('.add').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); cart.push(products[button.dataset.index]); updateCart(); }));
@@ -821,9 +834,27 @@
 				card.addEventListener('keydown', event => { if ((event.key === 'Enter' || event.key === ' ') && !event.target.closest('button')) { event.preventDefault(); open(); } });
 			});
 		};
-		const openProduct = product => { const pImg = product.image || fallbackImage(product); const fbImg = fallbackImage(product); document.querySelector('#productDetail').innerHTML = `<div class="detail-layout"><div class="detail-image"><img src="${pImg}" alt="${product.name}" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></div><div class="detail-copy"><div class="product-brand">${product.brand} · ${product.category}</div><h2 id="detailTitle">${product.name}</h2><div><span class="stars">★★★★★</span><span class="reviews">${product.reviews} opiniones</span></div><span class="price">${money(product.price)}</span><p class="detail-description">${product.description}</p><div class="specs">${product.specs.map(spec => `<div class="spec"><span>${spec[0]}</span><strong>${spec[1]}</strong></div>`).join('')}</div><button class="primary" data-detail-add="${products.indexOf(product)}" style="margin-top:22px">Agregar al carrito <i data-lucide="shopping-cart" width="16"></i></button></div></div>`; document.querySelector('#productModal').classList.add('open'); lucide.createIcons(); document.querySelector('[data-detail-add]').addEventListener('click', () => addToCart(product)); };
+		const openProduct = product => { const pImg = product.image || fallbackImage(product); const fbImg = fallbackImage(product); document.querySelector('#productDetail').innerHTML = `<div class="detail-layout"><div class="detail-image"><img src="${pImg}" alt="${product.name}" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></div><div class="detail-copy"><div class="product-brand">${product.brand} · ${product.category}</div><h2 id="detailTitle">${product.name}</h2><div><span class="stars">★★★★★</span><span class="reviews">${product.reviews} opiniones</span></div><span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span><p class="detail-description">${product.description}</p><div class="specs">${product.specs.map(spec => `<div class="spec"><span>${spec[0]}</span><strong>${spec[1]}</strong></div>`).join('')}</div><button class="primary" data-detail-add="${products.indexOf(product)}" style="margin-top:22px">Agregar al carrito <i data-lucide="shopping-cart" width="16"></i></button></div></div>`; document.querySelector('#productModal').classList.add('open'); lucide.createIcons(); document.querySelector('[data-detail-add]').addEventListener('click', () => addToCart(product)); };
 		const addToCart = product => { cart.push(product); updateCart(true); };
-		const updateCart = (animate = true) => { localStorage.setItem('smartisp.cart', JSON.stringify(cart)); const count = document.querySelector('#cartCount'); count.textContent = cart.length; if (animate) { count.classList.remove('bump'); void count.offsetWidth; count.classList.add('bump'); } document.querySelector('#cartItems').innerHTML = cart.length ? cart.map((item, index) => `<div class="cart-item"><img src="${item.image}" alt=""><div class="cart-item-copy"><strong>${item.name}</strong><small>${money(item.price)}</small></div><button class="remove-item" data-remove-index="${index}" aria-label="Eliminar ${item.name} del carrito"><i data-lucide="trash-2" width="16"></i></button></div>`).join('') : 'Tu carrito está vacío.'; document.querySelector('#cartTotal').textContent = money(cart.reduce((total, item) => total + item.price, 0)); lucide.createIcons(); document.querySelectorAll('[data-remove-index]').forEach(button => button.addEventListener('click', () => { cart.splice(Number(button.dataset.removeIndex), 1); updateCart(false); })); };
+		const updateCart = (animate = true) => {
+			localStorage.setItem('smartisp.cart', JSON.stringify(cart));
+			const count = document.querySelector('#cartCount');
+			count.textContent = cart.length;
+			if (animate) {
+				count.classList.remove('bump');
+				void count.offsetWidth;
+				count.classList.add('bump');
+			}
+			document.querySelector('#cartItems').innerHTML = cart.length ? cart.map((item, index) => `<div class="cart-item"><img src="${item.image}" alt=""><div class="cart-item-copy"><strong>${item.name}</strong><small>${money(item.price)}</small></div><button class="remove-item" data-remove-index="${index}" aria-label="Eliminar ${item.name} del carrito"><i data-lucide="trash-2" width="16"></i></button></div>`).join('') : 'Tu carrito está vacío.';
+			const totalNum = cart.reduce((total, item) => total + Number(item.price || 0), 0);
+			const hasQuoteOnly = cart.length > 0 && cart.every(i => !Number(i.price || 0));
+			document.querySelector('#cartTotal').textContent = totalNum > 0 ? money(totalNum) : (hasQuoteOnly ? 'Solicitar cotización' : '$0');
+			lucide.createIcons();
+			document.querySelectorAll('[data-remove-index]').forEach(button => button.addEventListener('click', () => {
+				cart.splice(Number(button.dataset.removeIndex), 1);
+				updateCart(false);
+			}));
+		};
 		const setCategoryFilter = filter => {
 			if (!filter || filter === 'all' || (typeof filter === 'string' && filter.toLowerCase() === 'all')) {
 				selectedFilter = 'all';

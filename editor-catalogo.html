@@ -857,6 +857,11 @@
             <option value="visible">Solo Visibles</option>
             <option value="hidden">Solo Ocultos</option>
           </select>
+          <select id="filterPrice" class="filter-select">
+            <option value="all">Precios: Todos</option>
+            <option value="with_price">Con Precio Fijo</option>
+            <option value="quote">Solicitar Cotización</option>
+          </select>
           <select id="filterPhoto" class="filter-select">
             <option value="all">Fotos: Todos</option>
             <option value="with_photo">Con Imagen</option>
@@ -1216,8 +1221,22 @@
             <input type="text" id="prodSkuInput" class="form-control" placeholder="DELL-VOSTRO-3520">
           </div>
           <div class="form-group">
-            <label class="form-label" for="prodPriceInput">* Precio de Venta (USD):</label>
-            <input type="number" id="prodPriceInput" class="form-control" step="0.01" min="0" placeholder="0.00" required>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+              <label class="form-label" for="prodPriceInput" style="margin-bottom:0;">* Precio de Venta (USD):</label>
+              <label style="font-size:12px; font-weight:600; color:var(--blue); display:inline-flex; align-items:center; gap:5px; cursor:pointer; margin:0;" title="Marcar este producto sin precio para solicitar cotización">
+                <input type="checkbox" id="chkQuotePrice" style="cursor:pointer; accent-color:var(--blue); width:15px; height:15px;">
+                Solicitar cotización
+              </label>
+            </div>
+            <div style="position:relative;">
+              <input type="number" id="prodPriceInput" class="form-control" step="0.01" min="0" placeholder="0.00" required>
+              <div id="quotePriceBadge" style="display:none; position:absolute; inset:0; background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:0 12px; align-items:center; color:#0369a1; font-size:12.5px; font-weight:700; gap:6px; cursor:pointer;" onclick="document.getElementById('chkQuotePrice').click()" title="Clic para volver a ingresar un precio">
+                <i data-lucide="file-text" width="15"></i> Sin precio · Solicitar cotización ($0)
+              </div>
+            </div>
+            <span style="font-size:11px; color:var(--muted); margin-top:3px; display:block;">
+              Marca "Solicitar cotización" para productos sin precio fijo en tienda.
+            </span>
           </div>
         </div>
         <div class="form-row">
@@ -1405,6 +1424,9 @@
     // --- FORMATEO DE MONEDA ---
     const formatMoney = amount => {
       const n = Number(amount) || 0;
+      if (n <= 0) {
+        return '<span class="badge-quote" style="background:#e0f2fe; color:#0369a1; font-weight:700; font-size:11.5px; padding:3px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;"><i data-lucide="file-text" width="12"></i> Solicitar cotización</span>';
+      }
       return `$${n.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
@@ -1905,6 +1927,7 @@
       const sub = document.getElementById('filterSubCat').value;
       const vis = document.getElementById('filterVisibility').value;
       const photo = document.getElementById('filterPhoto').value;
+      const priceFilter = document.getElementById('filterPrice')?.value || 'all';
 
       return productsList.filter(p => {
         if (macro !== 'all' && p.category !== macro) return false;
@@ -1913,6 +1936,8 @@
         if (vis === 'hidden' && p.visible !== false) return false;
         if (photo === 'with_photo' && !p.imageUrl) return false;
         if (photo === 'without_photo' && p.imageUrl) return false;
+        if (priceFilter === 'with_price' && Number(p.price || 0) <= 0) return false;
+        if (priceFilter === 'quote' && Number(p.price || 0) > 0) return false;
 
         if (q) {
           const matchStr = `${p.name || ''} ${p.sku || ''} ${p.category || ''} ${p.subcategory || ''} ${p.description || ''}`.toLowerCase();
@@ -2036,7 +2061,7 @@
       lucide.createIcons();
     };
 
-    ['productSearchInput', 'filterMacroCat', 'filterSubCat', 'filterVisibility', 'filterPhoto'].forEach(id => {
+    ['productSearchInput', 'filterMacroCat', 'filterSubCat', 'filterVisibility', 'filterPhoto', 'filterPrice'].forEach(id => {
       document.getElementById(id)?.addEventListener('input', () => {
         if (id === 'filterMacroCat') updateSubcategoryOptions();
         renderProductsTab();
@@ -2150,12 +2175,44 @@
     }
 
     // --- MODAL PRODUCTO (NUEVO / EDITAR) ---
+    const chkQuotePriceEl = document.getElementById('chkQuotePrice');
+    const quotePriceBadgeEl = document.getElementById('quotePriceBadge');
+    const prodPriceInputEl = document.getElementById('prodPriceInput');
+
+    if (chkQuotePriceEl && prodPriceInputEl) {
+      chkQuotePriceEl.addEventListener('change', () => {
+        if (chkQuotePriceEl.checked) {
+          prodPriceInputEl.value = '0';
+          prodPriceInputEl.required = false;
+          if (quotePriceBadgeEl) {
+            quotePriceBadgeEl.style.display = 'flex';
+            lucide.createIcons();
+          }
+        } else {
+          if (quotePriceBadgeEl) quotePriceBadgeEl.style.display = 'none';
+          prodPriceInputEl.value = '';
+          prodPriceInputEl.required = true;
+          prodPriceInputEl.focus();
+        }
+      });
+
+      prodPriceInputEl.addEventListener('input', () => {
+        if (Number(prodPriceInputEl.value) > 0 && chkQuotePriceEl.checked) {
+          chkQuotePriceEl.checked = false;
+          if (quotePriceBadgeEl) quotePriceBadgeEl.style.display = 'none';
+        }
+      });
+    }
+
     document.getElementById('btnNewProduct').addEventListener('click', () => {
       document.getElementById('prodModalTitle').textContent = 'Nuevo Producto';
       document.getElementById('prodId').value = '';
       document.getElementById('prodNameInput').value = '';
       document.getElementById('prodSkuInput').value = '';
       document.getElementById('prodPriceInput').value = '';
+      document.getElementById('prodPriceInput').required = true;
+      if (chkQuotePriceEl) chkQuotePriceEl.checked = false;
+      if (quotePriceBadgeEl) quotePriceBadgeEl.style.display = 'none';
       document.getElementById('prodCategorySelect').value = categoriesList[0]?.name || 'General';
       document.getElementById('prodSubcategoryInput').value = '';
       document.getElementById('prodImageUrlInput').value = '';
@@ -2176,7 +2233,20 @@
       document.getElementById('prodId').value = p.id;
       document.getElementById('prodNameInput').value = p.name || '';
       document.getElementById('prodSkuInput').value = p.sku || '';
-      document.getElementById('prodPriceInput').value = p.price || '';
+
+      const priceNum = Number(p.price || 0);
+      if (priceNum <= 0) {
+        if (chkQuotePriceEl) chkQuotePriceEl.checked = true;
+        document.getElementById('prodPriceInput').value = '0';
+        document.getElementById('prodPriceInput').required = false;
+        if (quotePriceBadgeEl) quotePriceBadgeEl.style.display = 'flex';
+      } else {
+        if (chkQuotePriceEl) chkQuotePriceEl.checked = false;
+        document.getElementById('prodPriceInput').value = p.price;
+        document.getElementById('prodPriceInput').required = true;
+        if (quotePriceBadgeEl) quotePriceBadgeEl.style.display = 'none';
+      }
+
       document.getElementById('prodCategorySelect').value = p.category || (categoriesList[0]?.name || 'General');
       document.getElementById('prodSubcategoryInput').value = p.subcategory || '';
       document.getElementById('prodImageUrlInput').value = p.imageUrl || '';
@@ -2200,6 +2270,7 @@
       if (localFileInput) localFileInput.value = '';
 
       openModal('productModal');
+      lucide.createIcons();
     };
 
     // Botón eliminar producto desde adentro del modal
@@ -2239,11 +2310,15 @@
     document.getElementById('productForm').addEventListener('submit', async e => {
       e.preventDefault();
       const id = document.getElementById('prodId').value || crypto.randomUUID();
+      const isQuote = document.getElementById('chkQuotePrice')?.checked;
+      const rawPrice = parseFloat(document.getElementById('prodPriceInput').value);
+      const finalPrice = isQuote || isNaN(rawPrice) || rawPrice <= 0 ? 0 : rawPrice;
+
       const product = {
         id,
         name: document.getElementById('prodNameInput').value.trim(),
         sku: document.getElementById('prodSkuInput').value.trim(),
-        price: parseFloat(document.getElementById('prodPriceInput').value) || 0,
+        price: finalPrice,
         category: document.getElementById('prodCategorySelect').value,
         subcategory: document.getElementById('prodSubcategoryInput').value.trim(),
         imageUrl: document.getElementById('prodImageUrlInput').value.trim(),
@@ -2614,6 +2689,7 @@
           </tr>
         `;
       }
+      lucide.createIcons();
     };
 
     // --- EJECUTAR IMPORTACIÓN MASIVA EN LOTES ---

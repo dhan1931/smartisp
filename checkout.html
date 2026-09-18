@@ -745,7 +745,7 @@
   </main>
 
   <script>
-    const money = value => '$' + Number(value || 0).toLocaleString('es-CL');
+    const money = value => Number(value || 0) > 0 ? '$' + Number(value).toLocaleString('es-CL') : 'Solicitar cotización';
     const productKey = product => String(product.id || product.name);
     
     // Load Cart from localStorage
@@ -766,6 +766,7 @@
     });
     const groupedItems = [...cartMap.values()];
     const totalAmount = groupedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const hasQuoteOnly = groupedItems.length > 0 && groupedItems.every(i => !Number(i.price || 0));
 
     // Render Summary
     const cartItemsList = document.querySelector('#cartItemsList');
@@ -787,8 +788,8 @@
         </div>
       `).join('');
     }
-    subtotalText.textContent = money(totalAmount);
-    totalText.textContent = money(totalAmount);
+    subtotalText.textContent = totalAmount > 0 ? money(totalAmount) : (hasQuoteOnly ? 'Solicitar cotización' : '$0');
+    totalText.textContent = totalAmount > 0 ? money(totalAmount) : (hasQuoteOnly ? 'Solicitar cotización' : '$0');
 
     // Elements
     const form = document.querySelector('#checkoutForm');
@@ -898,7 +899,7 @@
             <td style="text-align:right">${money(item.price * item.quantity)}</td>
           </tr>
         `).join('');
-        document.querySelector('#successTotalText').textContent = money(totalAmount);
+        document.querySelector('#successTotalText').textContent = totalAmount > 0 ? money(totalAmount) : (hasQuoteOnly ? 'Solicitar cotización' : '$0');
 
         // Hide checkout view and show success view
         document.querySelector('#processBanner').style.display = 'none';

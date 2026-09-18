@@ -549,7 +549,7 @@
           </div>
           <div class="stat-card">
             <span class="stat-num" id="statPendingPrice">0</span>
-            <span class="stat-label">Precio $0 (Cotización)</span>
+            <span class="stat-label">Solicitar cotización</span>
           </div>
         </div>
 
@@ -717,8 +717,17 @@
           </label>
 
           <label style="margin:0;">
-            Precio ($) *
-            <input name="price" type="number" min="0" step="0.01" value="0" required placeholder="0 (Pendiente de cotización)">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span>Precio ($) *</span>
+              <label style="font-size:12px; font-weight:600; color:var(--blue); display:inline-flex; align-items:center; gap:5px; cursor:pointer; margin:0;" title="Marcar este producto para solicitar cotización">
+                <input type="checkbox" id="adminChkQuotePrice" style="cursor:pointer; accent-color:var(--blue); width:15px; height:15px;">
+                Solicitar cotización
+              </label>
+            </div>
+            <input name="price" id="adminProdPriceInput" type="number" min="0" step="0.01" value="0" required placeholder="0 (Solicitar cotización)">
+            <div id="adminQuotePriceBadge" style="display:none; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; border-radius:6px; padding:6px 10px; margin-top:4px; font-size:12px; font-weight:700; align-items:center; gap:5px; cursor:pointer;" onclick="document.getElementById('adminChkQuotePrice').click()" title="Clic para volver a ingresar un precio">
+              📄 Sin precio fijo · Solicitar cotización ($0)
+            </div>
           </label>
 
           <label style="margin:0;">
@@ -1326,7 +1335,7 @@
     const renderProductCard = product => {
       const isHidden = product.visible === false;
       const priceNum = Number(product.price) || 0;
-      const priceDisplay = priceNum > 0 ? `$${priceNum.toLocaleString('es-CL')}` : '<span class="price-quote">Cotización ($0)</span>';
+      const priceDisplay = priceNum > 0 ? `$${priceNum.toLocaleString('es-CL')}` : '<span class="price-quote">Solicitar cotización</span>';
       const hasImg = Boolean(product.imageUrl);
       const imgTag = hasImg
         ? `<img src="${escapeHtml(product.imageUrl)}" alt="${escapeHtml(product.name || '')}" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\\'product-card-no-img\\\'><span style=\\\'font-size:24px;\\\'>📦</span><small>Foto no disponible</small></div>';">`
@@ -1439,7 +1448,28 @@
       form.dataset.productId = product.id || '';
       form.querySelector('[name="id"]').value = product.id || '';
       form.querySelector('[name="name"]').value = product.name || '';
-      form.querySelector('[name="price"]').value = product.price !== undefined ? product.price : 0;
+      
+      const priceNum = Number(product.price !== undefined ? product.price : 0);
+      const adminChk = $('#adminChkQuotePrice');
+      const adminBadge = $('#adminQuotePriceBadge');
+      const priceInput = form.querySelector('[name="price"]');
+      if (priceNum <= 0) {
+        if (adminChk) adminChk.checked = true;
+        if (adminBadge) adminBadge.style.display = 'flex';
+        if (priceInput) {
+          priceInput.value = 0;
+          priceInput.style.display = 'none';
+          priceInput.required = false;
+        }
+      } else {
+        if (adminChk) adminChk.checked = false;
+        if (adminBadge) adminBadge.style.display = 'none';
+        if (priceInput) {
+          priceInput.value = product.price;
+          priceInput.style.display = 'block';
+          priceInput.required = true;
+        }
+      }
       form.querySelector('[name="category"]').value = product.category || '';
       form.querySelector('[name="sku"]').value = product.sku || '';
       form.querySelector('[name="visible"]').value = product.visible !== false ? 'true' : 'false';
@@ -1523,6 +1553,32 @@
         }
       });
 
+      const adminChk = $('#adminChkQuotePrice');
+      const adminBadge = $('#adminQuotePriceBadge');
+      const priceInput = form.querySelector('[name="price"]');
+      if (adminChk && priceInput) {
+        adminChk.addEventListener('change', () => {
+          if (adminChk.checked) {
+            priceInput.value = 0;
+            priceInput.style.display = 'none';
+            priceInput.required = false;
+            if (adminBadge) adminBadge.style.display = 'flex';
+          } else {
+            if (adminBadge) adminBadge.style.display = 'none';
+            priceInput.style.display = 'block';
+            priceInput.value = '';
+            priceInput.required = true;
+            priceInput.focus();
+          }
+        });
+        priceInput.addEventListener('input', () => {
+          if (Number(priceInput.value) > 0 && adminChk.checked) {
+            adminChk.checked = false;
+            if (adminBadge) adminBadge.style.display = 'none';
+          }
+        });
+      }
+
       form.addEventListener('image-applied', () => {
         if (preview && urlInput) {
           preview.src = urlInput.value;
@@ -1539,7 +1595,9 @@
         try {
           const values = await productValues(form);
           values.id = form.dataset.productId || crypto.randomUUID();
-          values.price = Number(values.price) || 0;
+          const isQuote = $('#adminChkQuotePrice')?.checked;
+          const parsedPrice = Number(values.price);
+          values.price = isQuote || isNaN(parsedPrice) || parsedPrice <= 0 ? 0 : parsedPrice;
           values.visible = values.visible === 'true';
           await api('admin-products', { method: 'POST', body: JSON.stringify(values) });
           showMessage($('#productMessage'), 'Producto guardado correctamente.');
@@ -2333,7 +2391,7 @@
           { key: 'name', label: 'Nombre del Producto', required: true },
           { key: 'sku', label: 'SKU / Código', required: false, fallback: 'Auto-generar' },
           { key: 'category', label: 'Categoría', required: false, fallback: 'General' },
-          { key: 'price', label: 'Precio', required: false, fallback: '$0 (Cotización)' },
+          { key: 'price', label: 'Precio', required: false, fallback: 'Solicitar cotización' },
           { key: 'imageUrl', label: 'Imagen', required: false, fallback: 'Búsqueda web auto' },
           { key: 'description', label: 'Descripción', required: false, fallback: 'Sin descripción' }
         ];
@@ -2368,7 +2426,7 @@
             ${p.price > 0 ? `
               <div style="font-weight:700;color:var(--blue);font-size:13px;">$${p.price.toLocaleString('es-CL')}</div>
               ${p.originalPrice && p.originalPrice !== p.price ? `<div style="color:var(--muted);font-size:10.5px;">Excel: $${p.originalPrice.toLocaleString('es-CL')} + ${p.marginPct || 30}%</div>` : ''}
-            ` : '<span style="color:var(--muted);font-style:italic;">$0 (Cotización)</span>'}
+            ` : '<span style="color:var(--muted);font-style:italic;">Solicitar cotización</span>'}
           </td>
           <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);">${escapeHtml(p.description || '-')}</td>
         </tr>
