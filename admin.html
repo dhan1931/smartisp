@@ -1486,6 +1486,7 @@
       if (productModalInitialized) return;
       productModalInitialized = true;
       const form = $('#productModalForm');
+      if (!form) return;
       const fileInput = form.querySelector('[name="imageFile"]');
       const changeButton = form.querySelector('[data-change-image]');
       const searchWebButton = form.querySelector('[data-search-web-image]');
@@ -1494,21 +1495,21 @@
       const previewBox = form.querySelector('.image-preview');
       const urlInput = form.querySelector('[name="imageUrl"]');
 
-      changeButton.addEventListener('click', () => fileInput.click());
+      changeButton?.addEventListener('click', () => fileInput?.click());
 
-      fileInput.addEventListener('change', () => {
-        if (fileInput.files[0]) {
+      fileInput?.addEventListener('change', () => {
+        if (fileInput.files && fileInput.files[0]) {
           openCropEditor(fileInput.files[0], fileInput, urlInput);
         }
       });
 
-      searchWebButton.addEventListener('click', () => {
-        const productName = form.querySelector('[name="name"]').value.trim();
+      searchWebButton?.addEventListener('click', () => {
+        const productName = form.querySelector('[name="name"]')?.value?.trim() || '';
         openWebImageSearchModal(productName, form);
       });
 
-      editButton.addEventListener('click', async () => {
-        if (!urlInput.value) return;
+      editButton?.addEventListener('click', async () => {
+        if (!urlInput?.value) return;
         const originalText = editButton.textContent;
         editButton.disabled = true;
         editButton.textContent = '⏳ Cargando...';
@@ -1523,16 +1524,18 @@
       });
 
       form.addEventListener('image-applied', () => {
-        preview.src = urlInput.value;
-        preview.hidden = false;
-        previewBox.classList.remove('is-empty');
-        editButton.disabled = false;
+        if (preview && urlInput) {
+          preview.src = urlInput.value;
+          preview.hidden = false;
+        }
+        if (previewBox) previewBox.classList.remove('is-empty');
+        if (editButton) editButton.disabled = false;
       });
 
       form.addEventListener('submit', async event => {
         event.preventDefault();
         const saveBtn = $('#saveProductModalButton');
-        saveBtn.disabled = true;
+        if (saveBtn) saveBtn.disabled = true;
         try {
           const values = await productValues(form);
           values.id = form.dataset.productId || crypto.randomUUID();
@@ -1549,7 +1552,7 @@
         }
       });
 
-      $('#modalDeleteProductButton').addEventListener('click', async () => {
+      $('#modalDeleteProductButton')?.addEventListener('click', async () => {
         const id = form.dataset.productId;
         if (!id) return closeProductEditModal();
         if (!confirm('¿Seguro que deseas eliminar este producto?')) return;
@@ -1563,8 +1566,8 @@
         }
       });
 
-      $('#closeProductModalButton').addEventListener('click', closeProductEditModal);
-      $('#cancelProductModalButton').addEventListener('click', closeProductEditModal);
+      $('#closeProductModalButton')?.addEventListener('click', closeProductEditModal);
+      $('#cancelProductModalButton')?.addEventListener('click', closeProductEditModal);
 
       $('#productSearchInput')?.addEventListener('input', () => {
         refreshProductList();
@@ -1771,9 +1774,9 @@
     $('#cropBox').addEventListener('pointerdown', event => { cropState.dragging = true; cropState.resizeHandle = event.target.dataset.resize || ''; cropState.startX = event.clientX; cropState.startY = event.clientY; cropState.startBoxX = cropState.box.x; cropState.startBoxY = cropState.box.y; cropState.startBoxW = cropState.box.w; cropState.startBoxH = cropState.box.h; event.currentTarget.setPointerCapture(event.pointerId); });
     $('#cropBox').addEventListener('pointermove', event => { if (!cropState.dragging) return; const box = cropState.box; const dx = event.clientX - cropState.startX; const dy = event.clientY - cropState.startY; const handle = cropState.resizeHandle; if (handle) { if (handle.includes('e')) box.w = Math.max(40, Math.min(cropState.canvasWidth - box.x, cropState.startBoxW + dx)); if (handle.includes('s')) box.h = Math.max(40, Math.min(cropState.canvasHeight - box.y, cropState.startBoxH + dy)); if (handle.includes('w')) { const nextX = Math.max(0, Math.min(cropState.startBoxX + cropState.startBoxW - 40, cropState.startBoxX + dx)); box.x = nextX; box.w = cropState.startBoxW + cropState.startBoxX - nextX; } if (handle.includes('n')) { const nextY = Math.max(0, Math.min(cropState.startBoxY + cropState.startBoxH - 40, cropState.startBoxY + dy)); box.y = nextY; box.h = cropState.startBoxH + cropState.startBoxY - nextY; } } else { box.x = Math.max(0, Math.min(cropState.canvasWidth - box.w, cropState.startBoxX + dx)); box.y = Math.max(0, Math.min(cropState.canvasHeight - box.h, cropState.startBoxY + dy)); } event.currentTarget.style.left = `${cropState.offsetX + box.x}px`; event.currentTarget.style.top = `${cropState.offsetY + box.y}px`; event.currentTarget.style.width = `${box.w}px`; event.currentTarget.style.height = `${box.h}px`; });
     $('#cropBox').addEventListener('pointerup', () => { cropState.dragging = false; });
-    $('#cancelCropButton').addEventListener('click', () => closeCropEditor(true));
-    $('#applyCropButton').addEventListener('click', applyCrop);
-    $('#newProductButton').addEventListener('click', () => openProductEditModal({}));
+    $('#cancelCropButton')?.addEventListener('click', () => closeCropEditor(true));
+    $('#applyCropButton')?.addEventListener('click', applyCrop);
+    $('#newProductButton')?.addEventListener('click', () => openProductEditModal({}));
 
     // ==========================================
     // IMPORTADOR INTELIGENTE DE EXCEL / CSV
@@ -2646,11 +2649,11 @@
       });
     });
 
-    $('#closeImageSearchModalButton').addEventListener('click', closeWebImageSearchModal);
-    $('#cancelImageSearchButton').addEventListener('click', closeWebImageSearchModal);
-    $('#imageSearchForm').addEventListener('submit', event => {
+    $('#closeImageSearchModalButton')?.addEventListener('click', closeWebImageSearchModal);
+    $('#cancelImageSearchButton')?.addEventListener('click', closeWebImageSearchModal);
+    $('#imageSearchForm')?.addEventListener('submit', event => {
       event.preventDefault();
-      const q = $('#imageSearchInput').value.trim();
+      const q = $('#imageSearchInput')?.value.trim();
       if (q) executeImageSearch(q, currentSearchStore);
     });
 
@@ -2673,33 +2676,35 @@
       }
     });
 
-    $('#openImportModalButton').addEventListener('click', openImportModal);
-    $('#closeImportModalButton').addEventListener('click', closeImportModal);
-    $('#cancelImportButton').addEventListener('click', openImportModal);
-    $('#importDropzone').addEventListener('click', () => $('#importFileInput').click());
-    $('#importFileInput').addEventListener('change', event => {
+    $('#openImportModalButton')?.addEventListener('click', openImportModal);
+    $('#closeImportModalButton')?.addEventListener('click', closeImportModal);
+    $('#cancelImportButton')?.addEventListener('click', closeImportModal);
+    $('#importDropzone')?.addEventListener('click', () => $('#importFileInput')?.click());
+    $('#importFileInput')?.addEventListener('change', event => {
       if (event.target.files && event.target.files.length) processImportFiles(event.target.files);
     });
 
     const dropzone = $('#importDropzone');
-    ['dragenter', 'dragover'].forEach(name => {
-      dropzone.addEventListener(name, event => {
-        event.preventDefault();
-        dropzone.classList.add('dragover');
+    if (dropzone) {
+      ['dragenter', 'dragover'].forEach(name => {
+        dropzone.addEventListener(name, event => {
+          event.preventDefault();
+          dropzone.classList.add('dragover');
+        });
       });
-    });
-    ['dragleave', 'drop'].forEach(name => {
-      dropzone.addEventListener(name, event => {
-        event.preventDefault();
-        dropzone.classList.remove('dragover');
+      ['dragleave', 'drop'].forEach(name => {
+        dropzone.addEventListener(name, event => {
+          event.preventDefault();
+          dropzone.classList.remove('dragover');
+        });
       });
-    });
-    dropzone.addEventListener('drop', event => {
-      const files = event.dataTransfer?.files;
-      if (files && files.length) processImportFiles(files);
-    });
+      dropzone.addEventListener('drop', event => {
+        const files = event.dataTransfer?.files;
+        if (files && files.length) processImportFiles(files);
+      });
+    }
 
-    $('#startImportButton').addEventListener('click', startBulkImport);
+    $('#startImportButton')?.addEventListener('click', startBulkImport);
 
     // Eventos interactivos del configurador de columnas y encabezados
     const headerRowSelectEl = document.getElementById('selectHeaderRow');
