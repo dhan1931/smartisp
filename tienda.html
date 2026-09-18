@@ -443,7 +443,7 @@
 		};
 
 		/* Relación de Categorías Afines y Macro-Categorías Jerárquicas */
-		const MACRO_CATEGORIES = [
+		let MACRO_CATEGORIES = [
 			{
 				id: 'redes',
 				name: 'Redes y Telecomunicaciones',
@@ -533,85 +533,136 @@
 
 		const getMacroCategory = categoryName => {
 			const norm = normalizeCategoryText(categoryName);
-			if (!norm) return MACRO_CATEGORIES.find(m => m.id === 'otros');
+			if (!norm) return MACRO_CATEGORIES.find(m => m.id === 'otros') || MACRO_CATEGORIES[0];
 
-			// Fase 1: Coincidencia exacta con cualquier palabra clave
+			// 0. Coincidencia directa con id o nombre de macro-categoría
 			for (const macro of MACRO_CATEGORIES) {
-				if (macro.id === 'otros') continue;
-				for (const kw of macro.keywords) {
-					if (norm === normalizeCategoryText(kw)) {
-						return macro;
+				if (normalizeCategoryText(macro.id) === norm || normalizeCategoryText(macro.name) === norm) {
+					return macro;
+				}
+			}
+
+			// 1. Coincidencia con alguna subcategoría declarada
+			for (const macro of MACRO_CATEGORIES) {
+				if (Array.isArray(macro.subcategories)) {
+					for (const sub of macro.subcategories) {
+						if (normalizeCategoryText(sub) === norm) {
+							return macro;
+						}
 					}
 				}
 			}
 
-			// Fase 2: El nombre contiene la palabra clave (ej. frase clave multipalabra)
+			// 2. Coincidencia exacta con palabras clave
 			for (const macro of MACRO_CATEGORIES) {
 				if (macro.id === 'otros') continue;
-				for (const kw of macro.keywords) {
-					const normKw = normalizeCategoryText(kw);
-					if (norm.includes(normKw)) {
-						return macro;
+				if (Array.isArray(macro.keywords)) {
+					for (const kw of macro.keywords) {
+						if (norm === normalizeCategoryText(kw)) {
+							return macro;
+						}
 					}
 				}
 			}
 
-			return MACRO_CATEGORIES.find(m => m.id === 'otros');
+			// 3. Subcadena / inclusión
+			for (const macro of MACRO_CATEGORIES) {
+				if (macro.id === 'otros') continue;
+				if (Array.isArray(macro.keywords)) {
+					for (const kw of macro.keywords) {
+						const normKw = normalizeCategoryText(kw);
+						if (norm.includes(normKw) || normKw.includes(norm)) {
+							return macro;
+						}
+					}
+				}
+			}
+
+			return MACRO_CATEGORIES.find(m => m.id === 'otros') || MACRO_CATEGORIES[0];
 		};
 
 		const productMatchesFilter = (product, filter) => {
 			if (!filter || filter === 'all' || filter.type === 'all') return true;
 			const prodCat = String(product.category || '').trim();
+			const prodSub = String(product.subcategory || '').trim();
 			if (filter.type === 'macro') {
 				const macro = getMacroCategory(prodCat);
-				return macro && macro.id === filter.id;
+				return (macro && macro.id === filter.id) || (prodCat.toLowerCase() === filter.id.toLowerCase());
 			}
 			if (filter.type === 'sub') {
-				return prodCat.toLowerCase() === String(filter.category || '').toLowerCase();
+				const target = String(filter.category || '').toLowerCase();
+				return (prodSub && prodSub.toLowerCase() === target) || (prodCat.toLowerCase() === target);
 			}
 			if (typeof filter === 'string') {
 				if (filter.toLowerCase() === 'all') return true;
-				return prodCat.toLowerCase() === filter.toLowerCase();
+				const target = filter.toLowerCase();
+				return prodCat.toLowerCase() === target || (prodSub && prodSub.toLowerCase() === target);
 			}
 			return true;
 		};
 
 		const buildCategoryTree = () => {
-			const catCounts = new Map();
+			const usedMacros = new Map();
+
 			products.forEach(p => {
 				const cat = String(p.category || 'Otros').trim();
-				catCounts.set(cat, (catCounts.get(cat) || 0) + 1);
-			});
+				const sub = String(p.subcategory || '').trim();
+				const macro = getMacroCategory(cat);
+				const macroId = macro ? macro.id : 'otros';
 
-			const usedMacros = new Map();
-			catCounts.forEach((count, catName) => {
-				const macro = getMacroCategory(catName);
-				if (!usedMacros.has(macro.id)) {
-					usedMacros.set(macro.id, {
-						id: macro.id,
-						name: macro.name,
-						icon: macro.icon,
+				if (!usedMacros.has(macroId)) {
+					usedMacros.set(macroId, {
+						id: macroId,
+						name: macro ? macro.name : 'Otros',
+						icon: macro ? macro.icon : 'package',
 						totalCount: 0,
-						subcategories: []
+						subcategoriesMap: new Map()
 					});
 				}
-				const group = usedMacros.get(macro.id);
-				group.totalCount += count;
-				group.subcategories.push({
-					rawName: catName,
-					displayName: formatCategoryName(catName),
-					count
-				});
-			});
+				const group = usedMacros.get(macroId);
+				group.totalCount++;
 
-			usedMacros.forEach(g => {
-				g.subcategories.sort((a, b) => a.displayName.localeCompare(b.displayName, 'es'));
+				const subName = sub || cat;
+				if (subName) {
+					group.subcategoriesMap.set(subName, (group.subcategoriesMap.get(subName) || 0) + 1);
+				}
 			});
 
 			const groups = [];
 			MACRO_CATEGORIES.forEach(macro => {
-				if (usedMacros.has(macro.id)) {
-					groups.push(usedMacros.get(macro.id));
+				const g = usedMacros.get(macro.id);
+				if (g && g.totalCount > 0) {
+					const subcategories = Array.from(g.subcategoriesMap.entries()).map(([rawName, count]) => ({
+						rawName,
+						displayName: formatCategoryName(rawName),
+						count
+					})).sort((a, b) => a.displayName.localeCompare(b.displayName, 'es'));
+
+					groups.push({
+						id: g.id,
+						name: g.name,
+						icon: g.icon,
+						totalCount: g.totalCount,
+						subcategories
+					});
+				}
+			});
+
+			// Agregar grupos de productos huérfanos que no estén en MACRO_CATEGORIES
+			usedMacros.forEach((g, key) => {
+				if (!MACRO_CATEGORIES.some(m => m.id === key) && g.totalCount > 0) {
+					const subcategories = Array.from(g.subcategoriesMap.entries()).map(([rawName, count]) => ({
+						rawName,
+						displayName: formatCategoryName(rawName),
+						count
+					})).sort((a, b) => a.displayName.localeCompare(b.displayName, 'es'));
+					groups.push({
+						id: g.id,
+						name: g.name,
+						icon: g.icon,
+						totalCount: g.totalCount,
+						subcategories
+					});
 				}
 			});
 
@@ -921,12 +972,22 @@
 				const response = await fetch('/api/auth/catalog');
 				if (!response.ok) return;
 				const remote = await response.json();
-				if (remote.products.length) {
-					products = remote.products.map(product => ({ ...product, brand: product.category || 'SmartISP', image: product.imageUrl, reviews: 0, tag: '', specs: [] }));
+				if (Array.isArray(remote.categories) && remote.categories.length) {
+					MACRO_CATEGORIES = remote.categories;
+				}
+				if (remote.products && remote.products.length) {
+					products = remote.products.map(product => ({
+						...product,
+						brand: product.category || 'SmartISP',
+						image: product.imageUrl,
+						reviews: 0,
+						tag: '',
+						specs: []
+					}));
 					render();
 					if (typeof renderSidebarCategories === 'function') renderSidebarCategories();
 				}
-				const content = Object.fromEntries(remote.content.map(item => [item.key, item.value]));
+				const content = Object.fromEntries((remote.content || []).map(item => [item.key, item.value]));
 				applySiteLogo(content);
 				if (content.hero_title) document.querySelector('.hero h1').textContent = content.hero_title;
 				if (content.hero_text) document.querySelector('.hero p').textContent = content.hero_text;

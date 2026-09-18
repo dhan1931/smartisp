@@ -1,0 +1,2450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartISP · Editor de Catálogo y Categorías</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --blue: #087ea4;
+      --blue-dark: #075d7d;
+      --blue-light: #e8f4f8;
+      --navy: #102c3d;
+      --dark: #0b1e2a;
+      --ink: #163342;
+      --muted: #5a7382;
+      --line: #d8e5e7;
+      --bg: #f4f8f9;
+      --card-bg: #ffffff;
+      --success: #059669;
+      --success-light: #ecfdf5;
+      --warning: #d97706;
+      --warning-light: #fffbeb;
+      --danger: #dc2626;
+      --danger-light: #fef2f2;
+      --radius: 12px;
+      --shadow: 0 4px 18px rgba(16,44,61,0.06);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Navigation */
+    .top-header {
+      background: var(--navy);
+      color: #ffffff;
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .brand-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 19px;
+      font-weight: 700;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-badge {
+      background: rgba(8,126,164,0.4);
+      border: 1px solid rgba(128,214,255,0.4);
+      color: #80d6ff;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .03em;
+    }
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      border: 1px solid transparent;
+      transition: all .2s ease;
+      white-space: nowrap;
+    }
+    .btn-primary { background: var(--blue); color: #ffffff; }
+    .btn-primary:hover { background: var(--blue-dark); box-shadow: 0 4px 12px rgba(8,126,164,0.3); }
+    .btn-secondary { background: #ffffff; color: var(--ink); border-color: var(--line); }
+    .btn-secondary:hover { background: #f0f6f8; border-color: #b0c9d1; }
+    .btn-dark { background: rgba(255,255,255,0.12); color: #ffffff; border-color: rgba(255,255,255,0.25); }
+    .btn-dark:hover { background: rgba(255,255,255,0.22); }
+    .btn-success { background: var(--success); color: #ffffff; }
+    .btn-success:hover { background: #047857; }
+    .btn-danger { background: var(--danger-light); color: var(--danger); border-color: #fecaca; }
+    .btn-danger:hover { background: var(--danger); color: #ffffff; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
+
+    /* Layout Shell */
+    .main-shell {
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px;
+      flex: 1;
+    }
+
+    /* Tab Switcher */
+    .nav-tabs {
+      display: flex;
+      background: #e6eff2;
+      border-radius: 12px;
+      padding: 5px;
+      gap: 6px;
+      margin-bottom: 24px;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      flex: 1;
+      min-width: 200px;
+      border: none;
+      background: transparent;
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all .2s ease;
+    }
+    .tab-btn:hover { color: var(--ink); background: rgba(255,255,255,0.5); }
+    .tab-btn.active {
+      background: #ffffff;
+      color: var(--navy);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .tab-count {
+      background: #e2e8f0;
+      color: #475569;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 700;
+    }
+    .tab-btn.active .tab-count {
+      background: var(--blue-light);
+      color: var(--blue);
+    }
+
+    /* Panels */
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; animation: fadeIn .25s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Stat Cards */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-box {
+      background: var(--card-bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: var(--shadow);
+    }
+    .stat-icon-wrap {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      background: var(--blue-light);
+      color: var(--blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .stat-num {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--navy);
+      font-family: 'Space Grotesk', sans-serif;
+      line-height: 1.1;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+    }
+
+    /* Content Cards */
+    .content-card {
+      background: var(--card-bg);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .card-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--navy);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-desc {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    /* Categories Grid */
+    .categories-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 18px;
+    }
+    .category-card {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: all .2s ease;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .category-card:hover {
+      border-color: #9cd5e8;
+      box-shadow: 0 8px 24px rgba(8,126,164,0.12);
+      transform: translateY(-2px);
+    }
+    .cat-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #edf3f5;
+    }
+    .cat-identity {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .cat-icon-badge {
+      width: 42px;
+      height: 42px;
+      background: #eef7fb;
+      color: var(--blue);
+      border: 1px solid #cce8f3;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .cat-name-wrap h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1.2;
+    }
+    .cat-slug {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: monospace;
+    }
+    .cat-prod-count {
+      background: #eef5f7;
+      color: var(--blue-dark);
+      padding: 3px 9px;
+      border-radius: 12px;
+      font-size: 11.5px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    /* Subcategories & Chips */
+    .chips-section {
+      margin-bottom: 14px;
+    }
+    .chips-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .chips-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #f1f6f8;
+      border: 1px solid #dce8ec;
+      padding: 3px 9px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--ink);
+    }
+    .chip.keyword-chip {
+      background: #fdf8ed;
+      border-color: #fde8bc;
+      color: #92400e;
+      font-size: 11px;
+    }
+    .chip-remove {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      padding: 0 2px;
+    }
+    .chip-remove:hover { color: var(--danger); }
+    .chip-add-btn {
+      background: transparent;
+      border: 1px dashed #9bc8d8;
+      color: var(--blue);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .chip-add-btn:hover { background: #eef7fb; border-color: var(--blue); }
+
+    .cat-actions {
+      margin-top: auto;
+      padding-top: 14px;
+      border-top: 1px solid #edf3f5;
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    /* Products Table & Grid */
+    .filter-bar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 20px;
+      background: #f8fafb;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+    .search-input-wrap {
+      flex: 1;
+      min-width: 240px;
+      position: relative;
+    }
+    .search-input-wrap input {
+      width: 100%;
+      padding: 9px 12px 9px 36px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 13px;
+      background: #ffffff;
+      outline: none;
+    }
+    .search-input-wrap input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(8,126,164,0.15); }
+    .search-icon {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    .filter-select {
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 13px;
+      background: #ffffff;
+      color: var(--ink);
+      font-weight: 500;
+      outline: none;
+    }
+    .filter-select:focus { border-color: var(--blue); }
+
+    /* Products Table */
+    .data-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #ffffff;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+    .data-table th {
+      background: #edf4f6;
+      color: var(--ink);
+      font-weight: 700;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      white-space: nowrap;
+    }
+    .data-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+    }
+    .data-table tr:hover { background: #f8fcfe; }
+    .prod-thumb-img {
+      width: 44px;
+      height: 44px;
+      object-fit: contain;
+      background: #f1f6f8;
+      border-radius: 6px;
+      border: 1px solid #e2edf0;
+      display: block;
+      cursor: pointer;
+      transition: transform .2s ease;
+    }
+    .prod-thumb-img:hover { transform: scale(1.08); border-color: var(--blue); }
+    .prod-thumb-placeholder {
+      width: 44px;
+      height: 44px;
+      background: #fef3c7;
+      border: 1px dashed #f59e0b;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #b45309;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      line-height: 1;
+    }
+    .prod-title {
+      font-weight: 600;
+      color: var(--navy);
+      display: block;
+      max-width: 320px;
+    }
+    .prod-sku {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: monospace;
+      background: #edf2f5;
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-top: 3px;
+    }
+    .badge-cat {
+      background: #eef7fb;
+      color: var(--blue-dark);
+      border: 1px solid #c9e6f3;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+    .badge-sub {
+      background: #f3f4f6;
+      color: #4b5563;
+      border: 1px solid #e5e7eb;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+      display: inline-block;
+      margin-top: 4px;
+      white-space: nowrap;
+    }
+    .prod-price {
+      font-weight: 700;
+      color: var(--navy);
+      font-size: 14px;
+      white-space: nowrap;
+    }
+    .switch-toggle {
+      position: relative;
+      display: inline-block;
+      width: 38px;
+      height: 22px;
+    }
+    .switch-toggle input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #cbd5e1;
+      transition: .25s;
+      border-radius: 22px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .25s;
+      border-radius: 50%;
+    }
+    input:checked + .slider { background-color: var(--success); }
+    input:checked + .slider:before { transform: translateX(16px); }
+
+    /* Excel Import Section */
+    .import-hero {
+      background: linear-gradient(135deg, #093349 0%, #104c6d 100%);
+      color: #ffffff;
+      padding: 24px;
+      border-radius: var(--radius);
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .dropzone-box {
+      border: 2px dashed #8dc3d5;
+      border-radius: var(--radius);
+      padding: 40px 24px;
+      text-align: center;
+      background: #f8fcfe;
+      cursor: pointer;
+      transition: all .2s ease;
+      margin-bottom: 24px;
+    }
+    .dropzone-box:hover, .dropzone-box.dragover {
+      background: #e9f5f9;
+      border-color: var(--blue);
+      transform: scale(1.005);
+    }
+    .dropzone-icon {
+      color: var(--blue);
+      margin-bottom: 12px;
+    }
+
+    /* Affinity Badge */
+    .affinity-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .affinity-badge.exact { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .affinity-badge.keyword { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+    .affinity-badge.product { background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
+    .affinity-badge.fallback { background: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb; }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(11,30,42,0.65);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease;
+    }
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal-dialog {
+      background: #ffffff;
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 620px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 28px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.2);
+      transform: scale(0.95);
+      transition: transform .2s ease;
+    }
+    .modal-overlay.open .modal-dialog { transform: scale(1); }
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    .modal-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--navy);
+    }
+    .modal-close-btn {
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--muted);
+      line-height: 1;
+    }
+    .modal-close-btn:hover { color: var(--danger); }
+
+    /* Form controls in modal */
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-label {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+    .form-control {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 13px;
+      outline: none;
+      font-family: inherit;
+    }
+    .form-control:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(8,126,164,0.15);
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    /* Toast Notification */
+    .toast-msg {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--navy);
+      color: #ffffff;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 300;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all .25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .toast-msg.show { transform: translateY(0); opacity: 1; }
+    .toast-msg.toast-success { background: #065f46; border-left: 4px solid #34d399; }
+    .toast-msg.toast-error { background: #991b1b; border-left: 4px solid #f87171; }
+
+    /* Progress bar */
+    .progress-bar-wrap {
+      background: #e2e8f0;
+      border-radius: 6px;
+      height: 10px;
+      overflow: hidden;
+      margin: 12px 0;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--success);
+      width: 0%;
+      transition: width .2s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header class="top-header">
+    <div class="brand-wrap">
+      <div class="brand-title">
+        <span>smart<b style="color:#38bdf8;">isp</b><span style="color:#f5a524;">.</span></span>
+        <span class="brand-badge">CATÁLOGO & CATEGORÍAS</span>
+      </div>
+    </div>
+    <div class="top-actions">
+      <a href="/admin.html" class="btn btn-dark btn-sm">
+        <i data-lucide="arrow-left" width="15"></i> Volver a Admin General
+      </a>
+      <a href="/tienda.html" target="_blank" class="btn btn-dark btn-sm">
+        <i data-lucide="shopping-bag" width="15"></i> Ver Tienda ↗
+      </a>
+      <span id="userBadge" style="font-size:12px; color:#cbd5e1; margin-left:8px;"></span>
+      <button id="logoutBtn" class="btn btn-danger btn-sm" style="margin-left:4px;">Salir</button>
+    </div>
+  </header>
+
+  <!-- Main Content Shell -->
+  <main class="main-shell">
+
+    <!-- Tab Switcher -->
+    <nav class="nav-tabs">
+      <button type="button" class="tab-btn active" data-tab="tab-categories">
+        <i data-lucide="folder-tree" width="18"></i>
+        <span>1. Categorías y Subcategorías</span>
+        <span class="tab-count" id="countCatTab">0</span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="tab-products">
+        <i data-lucide="package" width="18"></i>
+        <span>2. Catálogo de Productos</span>
+        <span class="tab-count" id="countProdTab">0</span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="tab-importer">
+        <i data-lucide="file-spreadsheet" width="18"></i>
+        <span>3. Importador Inteligente Excel</span>
+        <span class="tab-count" style="background:#dcfce7; color:#15803d;">Afinidad AI</span>
+      </button>
+    </nav>
+
+    <!-- TAB 1: GESTIÓN DE CATEGORÍAS Y SUBCATEGORÍAS -->
+    <section id="tab-categories" class="tab-pane active">
+      
+      <!-- Stats Row -->
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-icon-wrap"><i data-lucide="folder" width="24"></i></div>
+          <div>
+            <div class="stat-num" id="statCategoriesTotal">0</div>
+            <div class="stat-label">Macro-Categorías</div>
+          </div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-icon-wrap" style="background:#fef3c7; color:#d97706;"><i data-lucide="git-branch" width="24"></i></div>
+          <div>
+            <div class="stat-num" id="statSubcategoriesTotal">0</div>
+            <div class="stat-label">Subcategorías Activas</div>
+          </div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-icon-wrap" style="background:#ecfdf5; color:#059669;"><i data-lucide="sparkles" width="24"></i></div>
+          <div>
+            <div class="stat-num" id="statKeywordsTotal">0</div>
+            <div class="stat-label">Palabras de Afinidad</div>
+          </div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-icon-wrap" style="background:#f3e8ff; color:#7e22ce;"><i data-lucide="boxes" width="24"></i></div>
+          <div>
+            <div class="stat-num" id="statAssignedProducts">0</div>
+            <div class="stat-label">Productos Organizados</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Categories Action Header -->
+      <div class="content-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title"><i data-lucide="layout-grid" width="20"></i> Macro-Categorías y Taxonomía</h2>
+            <p class="card-desc">Crea, edita o renombra categorías y subcategorías. Configura palabras clave de afinidad para que las subidas de Excel se enlacen automáticamente a su categoría correcta.</p>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" id="btnNewCategory" class="btn btn-primary">
+              <i data-lucide="plus" width="16"></i> Nueva Categoría
+            </button>
+            <button type="button" id="btnReassignModal" class="btn btn-secondary">
+              <i data-lucide="arrow-left-right" width="16"></i> Reasignar Productos
+            </button>
+            <button type="button" id="btnResetCategories" class="btn btn-secondary" style="color:var(--muted);" title="Restablecer categorías recomendadas">
+              <i data-lucide="rotate-ccw" width="15"></i> Predeterminadas
+            </button>
+          </div>
+        </div>
+
+        <!-- Categories Grid -->
+        <div class="categories-grid" id="categoriesContainer">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: CATÁLOGO DE PRODUCTOS -->
+    <section id="tab-products" class="tab-pane">
+      <div class="content-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title"><i data-lucide="package-search" width="20"></i> Catálogo Completo de Productos</h2>
+            <p class="card-desc">Gestiona todos los artículos de la tienda, edita su categoría general, subcategoría, precio con margen, y busca imágenes en Amazon o internet.</p>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button type="button" id="btnNewProduct" class="btn btn-primary">
+              <i data-lucide="plus" width="16"></i> Nuevo Producto
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="switchTab('tab-importer')">
+              <i data-lucide="file-up" width="16"></i> Importar Excel
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <div class="search-input-wrap">
+            <i data-lucide="search" class="search-icon" width="16"></i>
+            <input type="text" id="productSearchInput" placeholder="Buscar por nombre, SKU, marca, categoría...">
+          </div>
+          <select id="filterMacroCat" class="filter-select">
+            <option value="all">Todas las Macro-Categorías</option>
+          </select>
+          <select id="filterSubCat" class="filter-select">
+            <option value="all">Todas las Subcategorías</option>
+          </select>
+          <select id="filterVisibility" class="filter-select">
+            <option value="all">Visibilidad: Todos</option>
+            <option value="visible">Solo Visibles</option>
+            <option value="hidden">Solo Ocultos</option>
+          </select>
+          <select id="filterPhoto" class="filter-select">
+            <option value="all">Fotos: Todos</option>
+            <option value="with_photo">Con Imagen</option>
+            <option value="without_photo">Sin Imagen (Pendientes)</option>
+          </select>
+        </div>
+
+        <!-- Table View -->
+        <div class="data-table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width:60px;">Foto</th>
+                <th>Producto & SKU</th>
+                <th>Macro-Categoría</th>
+                <th>Subcategoría</th>
+                <th>Precio Tienda</th>
+                <th style="text-align:center; width:80px;">Visible</th>
+                <th style="text-align:right; width:140px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="productsTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: IMPORTADOR INTELIGENTE DE EXCEL -->
+    <section id="tab-importer" class="tab-pane">
+      
+      <!-- Importer Header Banner -->
+      <div class="import-hero">
+        <div style="max-width:700px;">
+          <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; color:#bbf2f6; margin-bottom:8px;">
+            <i data-lucide="sparkles" width="14"></i> MOTOR INTELIGENTE DE AFINIDAD DE CATEGORÍAS
+          </div>
+          <h2 style="font-size:22px; font-weight:700; margin-bottom:6px; font-family:'Space Grotesk',sans-serif;">Importador de Catálogos Excel (.xlsx, .xls, .csv)</h2>
+          <p style="font-size:13.5px; color:#d8f1f5; line-height:1.5;">
+            Detecta automáticamente cualquier fila y columna. Cuando encuentre categorías como <em>"cómputo"</em>, <em>"portátiles"</em>, <em>"switches"</em> o <em>"cámaras"</em>, las analizará y enlazará automáticamente a la categoría afín de la tienda. Puedes revisar y editar cada enlace antes de confirmar.
+          </p>
+        </div>
+        <div style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); padding:14px 18px; border-radius:10px; text-align:right;">
+          <div style="font-size:12px; color:#bae6fd; font-weight:600;">Fórmula de Precio Aplicada:</div>
+          <div style="font-size:17px; font-weight:800; color:#ffffff; font-family:'Space Grotesk',sans-serif;">Y + (Y)30% = Precio Total</div>
+          <small style="color:#d8f1f5; font-size:11px;">Margen editable en el configurador</small>
+        </div>
+      </div>
+
+      <!-- Drag & Drop Zone -->
+      <div class="dropzone-box" id="excelDropzone">
+        <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display:none;" multiple>
+        <i data-lucide="cloud-upload" class="dropzone-icon" width="48"></i>
+        <h3 style="font-size:16px; font-weight:700; color:var(--navy); margin-bottom:4px;">Haz clic o arrastra aquí tu archivo de Excel</h3>
+        <p style="font-size:13px; color:var(--muted); margin-bottom:12px;">Soporta archivos de distribuidores, listas de precios y formatos de inventario (.xlsx, .xls, .csv)</p>
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('excelFileInput').click()">
+          <i data-lucide="file" width="15"></i> Seleccionar archivo del equipo
+        </button>
+      </div>
+
+      <!-- Importer Workspace (Hidden until file selected) -->
+      <div id="importerWorkspace" class="content-card" style="display:none;">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title" id="importFileNameTitle"><i data-lucide="file-check" width="18"></i> Archivo cargado</h3>
+            <span id="importFileStats" style="font-size:12.5px; color:var(--muted);"></span>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="display:flex; align-items:center; gap:6px; background:#e8f4f8; padding:5px 12px; border-radius:8px; border:1px solid #cde5eb;">
+              <label for="importPriceMargin" style="font-size:12px; font-weight:700; color:var(--blue); margin:0;">📈 Margen de Ganancia:</label>
+              <input type="number" id="importPriceMargin" value="30" min="0" max="500" step="1" style="width:52px; padding:3px 6px; font-size:12px; font-weight:700; text-align:center; border:1px solid #90caf9; border-radius:4px; color:var(--blue);">
+              <span style="font-size:12px; font-weight:700; color:var(--blue);">%</span>
+              <span style="font-size:11px; color:var(--muted);">(Y + 30%)</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="resetImportFile()">Elegir otro archivo</button>
+          </div>
+        </div>
+
+        <!-- Column Mapping Configuration -->
+        <div style="background:#f1f7f9; border:1px solid #cbe0e7; border-radius:10px; padding:16px; margin-bottom:18px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
+            <div>
+              <strong style="font-size:13.5px; color:var(--navy);">⚙️ Asignación Inteligente de Columnas</strong>
+              <div style="font-size:11.5px; color:var(--muted);">Detectadas automáticamente. Puedes ajustar los encabezados según la estructura de tu archivo:</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <label for="selectHeaderRow" style="font-size:12px; font-weight:700; color:var(--ink);">Fila de Encabezados:</label>
+              <select id="selectHeaderRow" class="filter-select" style="padding:4px 8px; font-size:12px;"></select>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px;">
+            <div>
+              <label class="form-label" style="margin-bottom:3px;">* Nombre del Producto:</label>
+              <select id="mapColName" class="filter-select" style="width:100%; border-color:var(--blue); font-weight:600;"></select>
+            </div>
+            <div>
+              <label class="form-label" style="margin-bottom:3px;">Precio Base (Y):</label>
+              <select id="mapColPrice" class="filter-select" style="width:100%;"></select>
+            </div>
+            <div>
+              <label class="form-label" style="margin-bottom:3px;">Categoría en Excel (Detectar Afinidad):</label>
+              <select id="mapColCategory" class="filter-select" style="width:100%; border-color:#059669; font-weight:600;"></select>
+            </div>
+            <div>
+              <label class="form-label" style="margin-bottom:3px;">SKU / Código / Ref:</label>
+              <select id="mapColSku" class="filter-select" style="width:100%;"></select>
+            </div>
+            <div>
+              <label class="form-label" style="margin-bottom:3px;">Foto / URL Imagen:</label>
+              <select id="mapColImage" class="filter-select" style="width:100%;"></select>
+            </div>
+            <div>
+              <label class="form-label" style="margin-bottom:3px;">Descripción Detallada:</label>
+              <select id="mapColDesc" class="filter-select" style="width:100%;"></select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview Table with Real-time Category Linking -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <h4 style="font-size:14px; font-weight:700; color:var(--navy);">
+            Vista previa y enlace de afinidad de categorías:
+          </h4>
+          <span id="previewCountBadge" style="font-size:12px; color:var(--muted);"></span>
+        </div>
+
+        <div class="data-table-wrap" style="max-height:380px; overflow-y:auto; margin-bottom:18px;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width:50px;">Foto</th>
+                <th>Nombre del Producto</th>
+                <th>SKU</th>
+                <th>Precio Final (+30%)</th>
+                <th>Texto en Excel</th>
+                <th style="min-width:240px;">Macro-Categoría Asignada (Afinidad)</th>
+                <th style="min-width:180px;">Subcategoría</th>
+              </tr>
+            </thead>
+            <tbody id="importPreviewTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Additional Options & Import Action -->
+        <div style="background:#eef8f8; border:1px solid #c9e8e3; border-radius:8px; padding:12px 16px; margin-bottom:16px;">
+          <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; cursor:pointer; margin:0;">
+            <input type="checkbox" id="chkAutoFetchImages" checked style="width:17px; height:17px; accent-color:var(--blue);">
+            <span>🌐 Buscar fotografías nítidas automáticamente en internet/Amazon para artículos que vengan sin imagen</span>
+          </label>
+        </div>
+
+        <!-- Progress Container -->
+        <div id="importProgressWrap" style="display:none; margin:16px 0;">
+          <div style="display:flex; justify-content:space-between; font-size:12.5px; font-weight:600; color:var(--navy); margin-bottom:4px;">
+            <span id="importProgressText">Procesando e importando...</span>
+            <span id="importProgressPct">0%</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="importProgressBar"></div>
+          </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <button type="button" class="btn btn-secondary" onclick="resetImportFile()">Cancelar</button>
+          <button type="button" id="btnExecuteImport" class="btn btn-success" style="padding:10px 20px; font-size:14px;">
+            <i data-lucide="upload-cloud" width="18"></i> Confirmar e Importar al Catálogo
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: CREAR / EDITAR CATEGORÍA -->
+  <div class="modal-overlay" id="categoryModal">
+    <div class="modal-dialog">
+      <div class="modal-head">
+        <h3 class="modal-title" id="catModalTitle">Nueva Categoría</h3>
+        <button type="button" class="modal-close-btn" onclick="closeModal('categoryModal')">✕</button>
+      </div>
+      <form id="categoryForm">
+        <input type="hidden" id="catOriginalId">
+        <div class="form-group">
+          <label class="form-label" for="catNameInput">* Nombre de la Categoría General:</label>
+          <input type="text" id="catNameInput" class="form-control" placeholder="Ej. Computadoras y Portátiles" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="catIdInput">Identificador (Slug):</label>
+            <input type="text" id="catIdInput" class="form-control" placeholder="computacion" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="catIconInput">Icono Lucide:</label>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <select id="catIconInput" class="form-control" style="flex:1;">
+                <option value="laptop">laptop (Portátiles / PC)</option>
+                <option value="network">network (Redes)</option>
+                <option value="cable">cable (Fibra / Cableado)</option>
+                <option value="server">server (Servidores)</option>
+                <option value="shield-check">shield-check (Seguridad)</option>
+                <option value="zap">zap (Energía / UPS)</option>
+                <option value="monitor">monitor (Pantallas)</option>
+                <option value="hard-drive">hard-drive (Discos / Componentes)</option>
+                <option value="headphones">headphones (Periféricos)</option>
+                <option value="printer">printer (Impresión)</option>
+                <option value="phone-call">phone-call (Telefonía)</option>
+                <option value="file-code">file-code (Software)</option>
+                <option value="package">package (Otros / General)</option>
+                <option value="cpu">cpu (Procesadores)</option>
+                <option value="wifi">wifi (Conectividad)</option>
+                <option value="camera">camera (Cámaras)</option>
+              </select>
+              <div id="catIconPreview" class="cat-icon-badge" style="width:38px; height:38px;"><i data-lucide="laptop" width="18"></i></div>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="catSubcategoriesInput">
+            Subcategorías (separadas por coma o saltos de línea):
+          </label>
+          <textarea id="catSubcategoriesInput" class="form-control" rows="3" placeholder="Ej: Portátiles y Laptops, Computadoras de Escritorio (PC), Equipos All-In-One"></textarea>
+          <small style="color:var(--muted); font-size:11px;">Estas subcategorías aparecerán en el menú y filtros de la tienda.</small>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="catKeywordsInput">
+            Palabras Clave de Afinidad para Excel (separadas por coma):
+          </label>
+          <textarea id="catKeywordsInput" class="form-control" rows="3" placeholder="Ej: computo, computadoras, laptops, portatiles, notebooks, pc, desktop, all-in-one"></textarea>
+          <small style="color:var(--muted); font-size:11px;">Cuando un archivo Excel contenga alguna de estas palabras en la columna o título, se enlazará automáticamente a esta categoría.</small>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('categoryModal')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Categoría</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: REASIGNAR PRODUCTOS ENTRE CATEGORÍAS -->
+  <div class="modal-overlay" id="reassignModal">
+    <div class="modal-dialog">
+      <div class="modal-head">
+        <h3 class="modal-title"><i data-lucide="arrow-left-right" width="20"></i> Reasignar Productos Masivamente</h3>
+        <button type="button" class="modal-close-btn" onclick="closeModal('reassignModal')">✕</button>
+      </div>
+      <form id="reassignForm">
+        <p style="font-size:13px; color:var(--muted); margin-bottom:16px;">
+          Mueve todos los artículos de una categoría existente hacia otra categoría o subcategoría con un solo clic.
+        </p>
+        <div class="form-group">
+          <label class="form-label">Categoría Origen (actual):</label>
+          <select id="reassignFromCategory" class="form-control" required></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Subcategoría Origen (Opcional - dejar en blanco para mover toda la categoría):</label>
+          <input type="text" id="reassignFromSubcategory" class="form-control" placeholder="Dejar vacío para mover todo">
+        </div>
+        <hr style="border:0; border-top:1px solid var(--line); margin:18px 0;">
+        <div class="form-group">
+          <label class="form-label">Categoría Destino (nueva):</label>
+          <select id="reassignToCategory" class="form-control" required></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Subcategoría Destino (Opcional):</label>
+          <input type="text" id="reassignToSubcategory" class="form-control" placeholder="Ej: Portátiles y Laptops">
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('reassignModal')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Reasignar Productos Ahora</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CREAR / EDITAR PRODUCTO -->
+  <div class="modal-overlay" id="productModal">
+    <div class="modal-dialog" style="max-width:700px;">
+      <div class="modal-head">
+        <h3 class="modal-title" id="prodModalTitle">Editar Producto</h3>
+        <button type="button" class="modal-close-btn" onclick="closeModal('productModal')">✕</button>
+      </div>
+      <form id="productForm">
+        <input type="hidden" id="prodId">
+        <div class="form-group">
+          <label class="form-label" for="prodNameInput">* Nombre del Producto:</label>
+          <input type="text" id="prodNameInput" class="form-control" placeholder="Ej: Laptop Dell Vostro 3520 Intel Core i5 16GB SSD 512GB" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="prodSkuInput">SKU / Código / Número de Parte:</label>
+            <input type="text" id="prodSkuInput" class="form-control" placeholder="DELL-VOSTRO-3520">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="prodPriceInput">* Precio de Venta (USD):</label>
+            <input type="number" id="prodPriceInput" class="form-control" step="0.01" min="0" placeholder="0.00" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="prodCategorySelect">* Macro-Categoría General:</label>
+            <select id="prodCategorySelect" class="form-control" required></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="prodSubcategorySelect">Subcategoría:</label>
+            <input type="text" id="prodSubcategoryInput" class="form-control" placeholder="Escribe o selecciona de la lista" list="subcatDataList">
+            <datalist id="subcatDataList"></datalist>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fotografía del Producto:</label>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <img id="prodImagePreview" src="" alt="" class="prod-thumb-img" style="width:54px; height:54px; display:none;">
+            <input type="text" id="prodImageUrlInput" class="form-control" placeholder="https://ejemplo.com/foto.jpg" style="flex:1;">
+            <button type="button" class="btn btn-secondary btn-sm" id="btnSearchProductImage">
+              <i data-lucide="search" width="14"></i> Buscar Foto
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="prodDescInput">Descripción Detallada y Características:</label>
+          <textarea id="prodDescInput" class="form-control" rows="3" placeholder="Detalla procesador, puertos, compatibilidad o especificaciones..."></textarea>
+        </div>
+        <div class="form-group">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; font-weight:600;">
+            <input type="checkbox" id="prodVisibleInput" checked style="width:18px; height:18px; accent-color:var(--blue);">
+            <span>Visible en la tienda pública (desmarca para ocultar temporalmente sin borrar)</span>
+          </label>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('productModal')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Producto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: BUSCADOR DE FOTOS AMAZON / GOOGLE -->
+  <div class="modal-overlay" id="imageSearchModal">
+    <div class="modal-dialog" style="max-width:780px;">
+      <div class="modal-head">
+        <div>
+          <h3 class="modal-title">🔍 Buscar Foto en Amazon e Internet</h3>
+          <small id="searchModalProductTitle" style="color:var(--muted); font-size:12px;"></small>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="closeModal('imageSearchModal')">✕</button>
+      </div>
+      <form id="imageSearchForm" style="display:flex; gap:8px; margin-bottom:14px;">
+        <input type="text" id="imageSearchQuery" class="form-control" placeholder="Escribe el modelo o marca del producto..." required>
+        <button type="submit" class="btn btn-primary">Buscar</button>
+      </form>
+      <div style="display:flex; gap:8px; margin-bottom:14px;">
+        <button type="button" class="btn btn-sm btn-secondary active-store" data-store="all">🌐 Todos</button>
+        <button type="button" class="btn btn-sm btn-secondary" data-store="amazon">🛒 Solo Amazon</button>
+        <button type="button" class="btn btn-sm btn-secondary" data-store="web">🔍 Google & Web</button>
+      </div>
+      <div id="imageResultsGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:10px; max-height:360px; overflow-y:auto; padding:4px;">
+        <!-- Image cards dynamically populated -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast-msg">
+    <i data-lucide="check-circle" id="toastIcon" width="18"></i>
+    <span id="toastText">Operación realizada</span>
+  </div>
+
+  <!-- Main Application Script -->
+  <script>
+    // --- ESTADO GLOBAL ---
+    let categoriesList = [];
+    let productsList = [];
+    let currentAdminUser = null;
+    let currentImportState = null;
+    let targetImageProduct = null;
+
+    // --- HELPER DE LLAMADAS API CON CREDENCIALES ---
+    const api = async (endpoint, options = {}) => {
+      const res = await fetch(`/api/auth/${endpoint}`, {
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        ...options
+      });
+      const text = await res.text();
+      let data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text || `Error ${res.status}` }; }
+      if (!res.ok) throw new Error(data.error || 'Ocurrió un error en la solicitud.');
+      return data;
+    };
+
+    // --- NOTIFICACIONES TOAST ---
+    const showToast = (message, type = 'success') => {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toastText');
+      const icon = document.getElementById('toastIcon');
+      text.textContent = message;
+      toast.className = `toast-msg show ${type === 'error' ? 'toast-error' : 'toast-success'}`;
+      if (icon) {
+        icon.setAttribute('data-lucide', type === 'error' ? 'alert-triangle' : 'check-circle');
+        lucide.createIcons();
+      }
+      setTimeout(() => toast.classList.remove('show'), 3500);
+    };
+
+    // --- CONTROL DE PESTAÑAS ---
+    const switchTab = tabId => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === tabId));
+      lucide.createIcons();
+    };
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+
+    // --- MODALES ---
+    const openModal = id => {
+      const modal = document.getElementById(id);
+      if (modal) {
+        modal.classList.add('open');
+        lucide.createIcons();
+      }
+    };
+    const closeModal = id => {
+      const modal = document.getElementById(id);
+      if (modal) modal.classList.remove('open');
+    };
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+      modal.addEventListener('click', e => {
+        if (e.target === modal) closeModal(modal.id);
+      });
+    });
+
+    // --- FORMATEO DE MONEDA ---
+    const formatMoney = amount => {
+      const n = Number(amount) || 0;
+      return `$${n.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
+
+    // --- MOTOR DE AFINIDAD DE CATEGORÍAS (REQUERIMIENTO CLAVE) ---
+    const normalizeText = str => String(str || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const matchCategoryAffinity = (rawCategoryStr, rawProductName, availableCats = categoriesList) => {
+      const normCat = normalizeText(rawCategoryStr);
+      const normProd = normalizeText(rawProductName);
+
+      if (!availableCats || !availableCats.length) {
+        return {
+          category: rawCategoryStr || 'General',
+          subcategory: '',
+          matchedCategory: null,
+          confidence: 'fallback',
+          badgeText: 'Sin categorías'
+        };
+      }
+
+      // 1. Análisis de texto de Categoría del Excel
+      if (normCat && normCat !== 'general' && normCat !== 'otros' && normCat !== 'n a' && normCat !== 'null') {
+        // 1a. Coincidencia exacta con nombre o slug de categoría
+        for (const cat of availableCats) {
+          if (normalizeText(cat.name) === normCat || normalizeText(cat.id) === normCat) {
+            return { category: cat.name, subcategory: '', matchedCategory: cat, confidence: 'exact', badgeText: 'Coincidencia directa' };
+          }
+        }
+
+        // 1b. Coincidencia con alguna subcategoría declarada
+        for (const cat of availableCats) {
+          if (Array.isArray(cat.subcategories)) {
+            for (const sub of cat.subcategories) {
+              if (normalizeText(sub) === normCat) {
+                return { category: cat.name, subcategory: sub, matchedCategory: cat, confidence: 'exact_sub', badgeText: 'Subcategoría exacta' };
+              }
+            }
+          }
+        }
+
+        // 1c. Coincidencia exacta con alguna palabra clave de afinidad
+        for (const cat of availableCats) {
+          if (Array.isArray(cat.keywords)) {
+            for (const kw of cat.keywords) {
+              const nKw = normalizeText(kw);
+              if (nKw && (normCat === nKw || normCat.split(' ').includes(nKw))) {
+                return { category: cat.name, subcategory: '', matchedCategory: cat, confidence: 'keyword', badgeText: `Afinidad: "${kw}"` };
+              }
+            }
+          }
+        }
+
+        // 1d. Subcadena en palabras clave
+        for (const cat of availableCats) {
+          if (Array.isArray(cat.keywords)) {
+            for (const kw of cat.keywords) {
+              const nKw = normalizeText(kw);
+              if (nKw.length >= 3 && (normCat.includes(nKw) || nKw.includes(normCat))) {
+                return { category: cat.name, subcategory: '', matchedCategory: cat, confidence: 'keyword', badgeText: `Afinidad: "${kw}"` };
+              }
+            }
+          }
+        }
+      }
+
+      // 2. Análisis del Nombre del Producto (si la categoría en Excel vino vacía o no coincidió)
+      if (normProd) {
+        // 2a. Subcategorías contenidas en el nombre
+        for (const cat of availableCats) {
+          if (Array.isArray(cat.subcategories)) {
+            for (const sub of cat.subcategories) {
+              const nSub = normalizeText(sub);
+              if (nSub.length >= 4 && normProd.includes(nSub)) {
+                return { category: cat.name, subcategory: sub, matchedCategory: cat, confidence: 'product', badgeText: `Detectado: "${sub}"` };
+              }
+            }
+          }
+        }
+
+        // 2b. Palabras clave de mayor longitud contenidas en el nombre
+        let bestMatch = null;
+        let bestLen = 0;
+        let matchedKw = '';
+        for (const cat of availableCats) {
+          if (Array.isArray(cat.keywords)) {
+            for (const kw of cat.keywords) {
+              const nKw = normalizeText(kw);
+              if (nKw.length >= 3) {
+                const words = normProd.split(' ');
+                if (words.includes(nKw) || normProd.includes(` ${nKw} `) || normProd.startsWith(`${nKw} `) || normProd.endsWith(` ${nKw}`)) {
+                  if (nKw.length > bestLen) {
+                    bestLen = nKw.length;
+                    bestMatch = cat;
+                    matchedKw = kw;
+                  }
+                }
+              }
+            }
+          }
+        }
+        if (bestMatch) {
+          return { category: bestMatch.name, subcategory: '', matchedCategory: bestMatch, confidence: 'product', badgeText: `Detectado: "${matchedKw}"` };
+        }
+      }
+
+      // 3. Fallback: categoría "otros" o primera categoría
+      const fallbackCat = availableCats.find(c => c.id === 'otros') || availableCats[0];
+      return {
+        category: rawCategoryStr || (fallbackCat ? fallbackCat.name : 'General'),
+        subcategory: '',
+        matchedCategory: fallbackCat,
+        confidence: 'fallback',
+        badgeText: rawCategoryStr ? `Texto original: "${rawCategoryStr}"` : 'General'
+      };
+    };
+
+    // --- CARGA DE DATOS INICIAL ---
+    const loadAllData = async () => {
+      try {
+        const [catsRes, prodsRes] = await Promise.all([
+          api('categories'),
+          api('admin-products')
+        ]);
+        categoriesList = catsRes.categories || [];
+        productsList = prodsRes.products || [];
+
+        renderCategoriesTab();
+        renderProductsTab();
+        renderCategorySelects();
+      } catch (err) {
+        console.error('Error cargando catálogo:', err);
+        showToast(err.message, 'error');
+      }
+    };
+
+    // --- RENDER TAB 1: CATEGORÍAS ---
+    const renderCategoriesTab = () => {
+      const container = document.getElementById('categoriesContainer');
+      const countTab = document.getElementById('countCatTab');
+      const statCats = document.getElementById('statCategoriesTotal');
+      const statSubs = document.getElementById('statSubcategoriesTotal');
+      const statKws = document.getElementById('statKeywordsTotal');
+      const statProds = document.getElementById('statAssignedProducts');
+
+      if (countTab) countTab.textContent = categoriesList.length;
+      if (statCats) statCats.textContent = categoriesList.length;
+
+      let totalSubs = 0;
+      let totalKws = 0;
+      const catCountMap = new Map();
+
+      productsList.forEach(p => {
+        const cat = String(p.category || 'General').trim();
+        catCountMap.set(cat, (catCountMap.get(cat) || 0) + 1);
+      });
+
+      categoriesList.forEach(c => {
+        if (Array.isArray(c.subcategories)) totalSubs += c.subcategories.length;
+        if (Array.isArray(c.keywords)) totalKws += c.keywords.length;
+      });
+
+      if (statSubs) statSubs.textContent = totalSubs;
+      if (statKws) statKws.textContent = totalKws;
+      if (statProds) statProds.textContent = productsList.length;
+
+      container.innerHTML = categoriesList.map((cat, idx) => {
+        const pCount = catCountMap.get(cat.name) || 0;
+        const subs = Array.isArray(cat.subcategories) ? cat.subcategories : [];
+        const kws = Array.isArray(cat.keywords) ? cat.keywords : [];
+
+        return `
+          <div class="category-card" data-cat-id="${cat.id}">
+            <div class="cat-head">
+              <div class="cat-identity">
+                <div class="cat-icon-badge">
+                  <i data-lucide="${cat.icon || 'package'}" width="20"></i>
+                </div>
+                <div class="cat-name-wrap">
+                  <h3>${cat.name}</h3>
+                  <span class="cat-slug">id: ${cat.id}</span>
+                </div>
+              </div>
+              <span class="cat-prod-count">${pCount} prod.</span>
+            </div>
+
+            <div class="chips-section">
+              <div class="chips-title">
+                <span>Subcategorías (${subs.length})</span>
+                <button type="button" class="chip-add-btn" onclick="quickAddSubcategory('${cat.id}')">
+                  <i data-lucide="plus" width="12"></i> Agregar
+                </button>
+              </div>
+              <div class="chips-container">
+                ${subs.length ? subs.map((sub, sIdx) => `
+                  <span class="chip">
+                    ${sub}
+                    <button type="button" class="chip-remove" onclick="removeSubcategory('${cat.id}', ${sIdx})" title="Eliminar subcategoría">×</button>
+                  </span>
+                `).join('') : '<span style="font-size:11.5px; color:var(--muted);">Sin subcategorías creadas</span>'}
+              </div>
+            </div>
+
+            <div class="chips-section" style="margin-bottom:18px;">
+              <div class="chips-title">
+                <span>Palabras de Afinidad Excel (${kws.length})</span>
+                <button type="button" class="chip-add-btn" onclick="quickAddKeyword('${cat.id}')">
+                  <i data-lucide="plus" width="12"></i> Agregar
+                </button>
+              </div>
+              <div class="chips-container">
+                ${kws.slice(0, 8).map((kw, kIdx) => `
+                  <span class="chip keyword-chip">
+                    ${kw}
+                    <button type="button" class="chip-remove" onclick="removeKeyword('${cat.id}', ${kIdx})" title="Eliminar palabra clave">×</button>
+                  </span>
+                `).join('')}
+                ${kws.length > 8 ? `<span class="chip keyword-chip" style="background:#fff; color:var(--muted); font-weight:700;">+${kws.length - 8} más</span>` : ''}
+                ${!kws.length ? '<span style="font-size:11.5px; color:var(--muted);">Sin palabras clave</span>' : ''}
+              </div>
+            </div>
+
+            <div class="cat-actions">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="openEditCategoryModal('${cat.id}')">
+                <i data-lucide="edit" width="14"></i> Editar
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="openReassignForCat('${cat.name}')" title="Reasignar productos de esta categoría">
+                <i data-lucide="arrow-left-right" width="14"></i> Mover
+              </button>
+              <button type="button" class="btn btn-danger btn-sm" onclick="deleteCategory('${cat.id}')" title="Eliminar categoría">
+                <i data-lucide="trash-2" width="14"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    };
+
+    // --- ACCIONES RÁPIDAS DE SUBCATEGORÍAS Y KEYWORDS ---
+    window.quickAddSubcategory = async catId => {
+      const cat = categoriesList.find(c => c.id === catId);
+      if (!cat) return;
+      const subName = prompt(`Nueva subcategoría para "${cat.name}":`);
+      if (!subName || !subName.trim()) return;
+      if (!Array.isArray(cat.subcategories)) cat.subcategories = [];
+      if (!cat.subcategories.includes(subName.trim())) {
+        cat.subcategories.push(subName.trim());
+        await saveCategoriesToServer();
+      }
+    };
+
+    window.removeSubcategory = async (catId, index) => {
+      const cat = categoriesList.find(c => c.id === catId);
+      if (!cat || !cat.subcategories) return;
+      cat.subcategories.splice(index, 1);
+      await saveCategoriesToServer();
+    };
+
+    window.quickAddKeyword = async catId => {
+      const cat = categoriesList.find(c => c.id === catId);
+      if (!cat) return;
+      const kw = prompt(`Nueva palabra clave de afinidad para "${cat.name}":\n(Ej. "portatiles", "laptops", "switch")`);
+      if (!kw || !kw.trim()) return;
+      if (!Array.isArray(cat.keywords)) cat.keywords = [];
+      const clean = kw.trim().toLowerCase();
+      if (!cat.keywords.includes(clean)) {
+        cat.keywords.push(clean);
+        await saveCategoriesToServer();
+      }
+    };
+
+    window.removeKeyword = async (catId, index) => {
+      const cat = categoriesList.find(c => c.id === catId);
+      if (!cat || !cat.keywords) return;
+      cat.keywords.splice(index, 1);
+      await saveCategoriesToServer();
+    };
+
+    const saveCategoriesToServer = async () => {
+      try {
+        await api('categories', {
+          method: 'POST',
+          body: JSON.stringify({ categories: categoriesList })
+        });
+        showToast('Categorías guardadas correctamente.');
+        renderCategoriesTab();
+        renderCategorySelects();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    };
+
+    // --- CREAR / EDITAR CATEGORÍA COMPLETA ---
+    document.getElementById('btnNewCategory').addEventListener('click', () => {
+      document.getElementById('catModalTitle').textContent = 'Nueva Categoría';
+      document.getElementById('catOriginalId').value = '';
+      document.getElementById('catNameInput').value = '';
+      document.getElementById('catIdInput').value = '';
+      document.getElementById('catIconInput').value = 'package';
+      document.getElementById('catSubcategoriesInput').value = '';
+      document.getElementById('catKeywordsInput').value = '';
+      openModal('categoryModal');
+    });
+
+    window.openEditCategoryModal = catId => {
+      const cat = categoriesList.find(c => c.id === catId);
+      if (!cat) return;
+      document.getElementById('catModalTitle').textContent = `Editar: ${cat.name}`;
+      document.getElementById('catOriginalId').value = cat.id;
+      document.getElementById('catNameInput').value = cat.name;
+      document.getElementById('catIdInput').value = cat.id;
+      document.getElementById('catIconInput').value = cat.icon || 'package';
+      document.getElementById('catSubcategoriesInput').value = (cat.subcategories || []).join('\n');
+      document.getElementById('catKeywordsInput').value = (cat.keywords || []).join(', ');
+      document.getElementById('catIconPreview').innerHTML = `<i data-lucide="${cat.icon || 'package'}" width="18"></i>`;
+      openModal('categoryModal');
+      lucide.createIcons();
+    };
+
+    document.getElementById('catIconInput').addEventListener('change', e => {
+      document.getElementById('catIconPreview').innerHTML = `<i data-lucide="${e.target.value}" width="18"></i>`;
+      lucide.createIcons();
+    });
+
+    document.getElementById('catNameInput').addEventListener('input', e => {
+      const origId = document.getElementById('catOriginalId').value;
+      if (!origId) {
+        document.getElementById('catIdInput').value = e.target.value
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '');
+      }
+    });
+
+    document.getElementById('categoryForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const origId = document.getElementById('catOriginalId').value;
+      const name = document.getElementById('catNameInput').value.trim();
+      const id = (document.getElementById('catIdInput').value.trim() || name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+      const icon = document.getElementById('catIconInput').value.trim() || 'package';
+
+      const rawSubs = document.getElementById('catSubcategoriesInput').value;
+      const subcategories = rawSubs
+        .split(/[\n,]+/)
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      const rawKws = document.getElementById('catKeywordsInput').value;
+      const keywords = rawKws
+        .split(/[\n,]+/)
+        .map(k => k.trim().toLowerCase())
+        .filter(Boolean);
+
+      if (origId) {
+        const idx = categoriesList.findIndex(c => c.id === origId);
+        if (idx !== -1) {
+          categoriesList[idx] = { ...categoriesList[idx], id, name, icon, subcategories, keywords };
+        }
+      } else {
+        categoriesList.push({ id, name, icon, subcategories, keywords });
+      }
+
+      closeModal('categoryModal');
+      await saveCategoriesToServer();
+    });
+
+    window.deleteCategory = async catId => {
+      const cat = categoriesList.find(c => c.id === catId);
+      if (!cat) return;
+      if (!confirm(`¿Eliminar la categoría "${cat.name}"?\nLos productos de esta categoría se mantendrán en el catálogo.`)) return;
+      categoriesList = categoriesList.filter(c => c.id !== catId);
+      await saveCategoriesToServer();
+    };
+
+    document.getElementById('btnResetCategories').addEventListener('click', async () => {
+      if (!confirm('¿Restablecer las categorías y subcategorías predeterminadas de fábrica?\nEsta acción actualizará la lista a los valores recomendados por SmartISP.')) return;
+      try {
+        const res = await api('categories/reset', { method: 'POST' });
+        categoriesList = res.categories || [];
+        showToast('Categorías restablecidas correctamente.');
+        renderCategoriesTab();
+        renderCategorySelects();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    // --- REASIGNAR PRODUCTOS ---
+    window.openReassignForCat = catName => {
+      document.getElementById('reassignFromCategory').value = catName;
+      document.getElementById('reassignFromSubcategory').value = '';
+      document.getElementById('reassignToSubcategory').value = '';
+      openModal('reassignModal');
+    };
+
+    document.getElementById('btnReassignModal').addEventListener('click', () => {
+      document.getElementById('reassignFromSubcategory').value = '';
+      document.getElementById('reassignToSubcategory').value = '';
+      openModal('reassignModal');
+    });
+
+    document.getElementById('reassignForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const fromCategory = document.getElementById('reassignFromCategory').value;
+      const toCategory = document.getElementById('reassignToCategory').value;
+      const fromSubcategory = document.getElementById('reassignFromSubcategory').value.trim();
+      const toSubcategory = document.getElementById('reassignToSubcategory').value.trim();
+
+      try {
+        const res = await api('categories/reassign', {
+          method: 'POST',
+          body: JSON.stringify({ fromCategory, toCategory, fromSubcategory, toSubcategory })
+        });
+        showToast(`¡Listo! Se actualizaron ${res.updatedCount || 0} producto(s).`);
+        closeModal('reassignModal');
+        await loadAllData();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    // --- RENDER TAB 2: PRODUCTOS ---
+    const renderCategorySelects = () => {
+      const macroFilter = document.getElementById('filterMacroCat');
+      const subFilter = document.getElementById('filterSubCat');
+      const prodCat = document.getElementById('prodCategorySelect');
+      const reFrom = document.getElementById('reassignFromCategory');
+      const reTo = document.getElementById('reassignToCategory');
+
+      const catOptions = categoriesList.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+
+      if (macroFilter) {
+        const cur = macroFilter.value;
+        macroFilter.innerHTML = `<option value="all">Todas las Macro-Categorías</option>${catOptions}`;
+        macroFilter.value = cur || 'all';
+      }
+      if (prodCat) {
+        prodCat.innerHTML = catOptions;
+      }
+      if (reFrom) reFrom.innerHTML = catOptions;
+      if (reTo) reTo.innerHTML = catOptions;
+
+      updateSubcategoryOptions();
+    };
+
+    const updateSubcategoryOptions = () => {
+      const macroVal = document.getElementById('filterMacroCat').value;
+      const subFilter = document.getElementById('filterSubCat');
+      if (!subFilter) return;
+
+      const subcatSet = new Set();
+      categoriesList.forEach(c => {
+        if (macroVal === 'all' || c.name === macroVal) {
+          (c.subcategories || []).forEach(s => subcatSet.add(s));
+        }
+      });
+      // Also add any subcategories found in current products
+      productsList.forEach(p => {
+        if (p.subcategory && (macroVal === 'all' || p.category === macroVal)) {
+          subcatSet.add(p.subcategory);
+        }
+      });
+
+      const options = Array.from(subcatSet).sort().map(s => `<option value="${s}">${s}</option>`).join('');
+      subFilter.innerHTML = `<option value="all">Todas las Subcategorías</option>${options}`;
+
+      // Update datalist for product modal
+      const dl = document.getElementById('subcatDataList');
+      if (dl) dl.innerHTML = Array.from(subcatSet).sort().map(s => `<option value="${s}"></option>`).join('');
+    };
+
+    const getFilteredProducts = () => {
+      const q = (document.getElementById('productSearchInput').value || '').toLowerCase().trim();
+      const macro = document.getElementById('filterMacroCat').value;
+      const sub = document.getElementById('filterSubCat').value;
+      const vis = document.getElementById('filterVisibility').value;
+      const photo = document.getElementById('filterPhoto').value;
+
+      return productsList.filter(p => {
+        if (macro !== 'all' && p.category !== macro) return false;
+        if (sub !== 'all' && p.subcategory !== sub) return false;
+        if (vis === 'visible' && p.visible === false) return false;
+        if (vis === 'hidden' && p.visible !== false) return false;
+        if (photo === 'with_photo' && !p.imageUrl) return false;
+        if (photo === 'without_photo' && p.imageUrl) return false;
+
+        if (q) {
+          const matchStr = `${p.name || ''} ${p.sku || ''} ${p.category || ''} ${p.subcategory || ''} ${p.description || ''}`.toLowerCase();
+          return matchStr.includes(q);
+        }
+        return true;
+      });
+    };
+
+    const renderProductsTab = () => {
+      const tbody = document.getElementById('productsTableBody');
+      const countTab = document.getElementById('countProdTab');
+      if (countTab) countTab.textContent = productsList.length;
+
+      const items = getFilteredProducts();
+
+      if (!items.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align:center; padding:36px; color:var(--muted);">
+              No se encontraron productos con los filtros seleccionados.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = items.map(p => {
+        const hasImg = Boolean(p.imageUrl);
+        const imgEl = hasImg
+          ? `<img src="${p.imageUrl}" alt="" class="prod-thumb-img" onclick="openQuickImageSearch('${p.id}')" title="Clic para buscar otra foto">`
+          : `<div class="prod-thumb-placeholder" onclick="openQuickImageSearch('${p.id}')" title="Buscar foto en Amazon o Google"><span>📷</span><span>Buscar</span></div>`;
+
+        const isVisible = p.visible !== false;
+
+        return `
+          <tr data-prod-id="${p.id}">
+            <td>${imgEl}</td>
+            <td>
+              <strong class="prod-title">${p.name || 'Sin nombre'}</strong>
+              ${p.sku ? `<code class="prod-sku">SKU: ${p.sku}</code>` : ''}
+            </td>
+            <td>
+              <span class="badge-cat"><i data-lucide="folder" width="12"></i> ${p.category || 'General'}</span>
+            </td>
+            <td>
+              ${p.subcategory ? `<span class="badge-sub">${p.subcategory}</span>` : '<span style="color:var(--muted); font-size:12px;">—</span>'}
+            </td>
+            <td>
+              <span class="prod-price">${formatMoney(p.price)}</span>
+            </td>
+            <td style="text-align:center;">
+              <label class="switch-toggle" title="Cambiar visibilidad">
+                <input type="checkbox" ${isVisible ? 'checked' : ''} onchange="toggleProductVisibility('${p.id}', this.checked)">
+                <span class="slider"></span>
+              </label>
+            </td>
+            <td style="text-align:right;">
+              <div style="display:flex; justify-content:flex-end; gap:6px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="openEditProductModal('${p.id}')" title="Editar producto">
+                  <i data-lucide="edit-3" width="14"></i>
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="openQuickImageSearch('${p.id}')" title="Buscar foto en Amazon">
+                  <i data-lucide="image" width="14"></i>
+                </button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')" title="Eliminar producto">
+                  <i data-lucide="trash-2" width="14"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    };
+
+    ['productSearchInput', 'filterMacroCat', 'filterSubCat', 'filterVisibility', 'filterPhoto'].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', () => {
+        if (id === 'filterMacroCat') updateSubcategoryOptions();
+        renderProductsTab();
+      });
+    });
+
+    window.toggleProductVisibility = async (productId, isVisible) => {
+      const prod = productsList.find(p => String(p.id) === String(productId));
+      if (!prod) return;
+      prod.visible = isVisible;
+      try {
+        await api('admin-products', { method: 'POST', body: JSON.stringify(prod) });
+        showToast(`Producto ${isVisible ? 'visible en tienda' : 'oculto de la tienda'}.`);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    };
+
+    window.deleteProduct = async productId => {
+      const prod = productsList.find(p => String(p.id) === String(productId));
+      if (!prod) return;
+      if (!confirm(`¿Eliminar definitivamente el producto "${prod.name}"?`)) return;
+      try {
+        await api(`admin-products?id=${encodeURIComponent(productId)}`, { method: 'DELETE' });
+        productsList = productsList.filter(p => String(p.id) !== String(productId));
+        renderProductsTab();
+        renderCategoriesTab();
+        showToast('Producto eliminado.');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    };
+
+    // --- MODAL PRODUCTO (NUEVO / EDITAR) ---
+    document.getElementById('btnNewProduct').addEventListener('click', () => {
+      document.getElementById('prodModalTitle').textContent = 'Nuevo Producto';
+      document.getElementById('prodId').value = '';
+      document.getElementById('prodNameInput').value = '';
+      document.getElementById('prodSkuInput').value = '';
+      document.getElementById('prodPriceInput').value = '';
+      document.getElementById('prodImageUrlInput').value = '';
+      document.getElementById('prodDescInput').value = '';
+      document.getElementById('prodVisibleInput').checked = true;
+      document.getElementById('prodSubcategoryInput').value = '';
+      document.getElementById('prodImagePreview').style.display = 'none';
+      openModal('productModal');
+    });
+
+    window.openEditProductModal = productId => {
+      const p = productsList.find(item => String(item.id) === String(productId));
+      if (!p) return;
+      document.getElementById('prodModalTitle').textContent = `Editar: ${p.name}`;
+      document.getElementById('prodId').value = p.id;
+      document.getElementById('prodNameInput').value = p.name || '';
+      document.getElementById('prodSkuInput').value = p.sku || '';
+      document.getElementById('prodPriceInput').value = p.price || '';
+      document.getElementById('prodCategorySelect').value = p.category || (categoriesList[0]?.name || 'General');
+      document.getElementById('prodSubcategoryInput').value = p.subcategory || '';
+      document.getElementById('prodImageUrlInput').value = p.imageUrl || '';
+      document.getElementById('prodDescInput').value = p.description || '';
+      document.getElementById('prodVisibleInput').checked = p.visible !== false;
+
+      const preview = document.getElementById('prodImagePreview');
+      if (p.imageUrl) {
+        preview.src = p.imageUrl;
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
+      }
+
+      openModal('productModal');
+    };
+
+    document.getElementById('prodImageUrlInput').addEventListener('input', e => {
+      const preview = document.getElementById('prodImagePreview');
+      if (e.target.value.trim()) {
+        preview.src = e.target.value.trim();
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
+      }
+    });
+
+    document.getElementById('productForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const id = document.getElementById('prodId').value || crypto.randomUUID();
+      const product = {
+        id,
+        name: document.getElementById('prodNameInput').value.trim(),
+        sku: document.getElementById('prodSkuInput').value.trim(),
+        price: parseFloat(document.getElementById('prodPriceInput').value) || 0,
+        category: document.getElementById('prodCategorySelect').value,
+        subcategory: document.getElementById('prodSubcategoryInput').value.trim(),
+        imageUrl: document.getElementById('prodImageUrlInput').value.trim(),
+        description: document.getElementById('prodDescInput').value.trim(),
+        visible: document.getElementById('prodVisibleInput').checked
+      };
+
+      try {
+        await api('admin-products', {
+          method: 'POST',
+          body: JSON.stringify(product)
+        });
+        showToast('Producto guardado con éxito.');
+        closeModal('productModal');
+        await loadAllData();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    // --- BUSCADOR DE FOTOS AMAZON / WEB ---
+    window.openQuickImageSearch = productId => {
+      const prod = productsList.find(p => String(p.id) === String(productId));
+      if (!prod) return;
+      targetImageProduct = prod;
+      document.getElementById('searchModalProductTitle').textContent = `Para: ${prod.name}`;
+      document.getElementById('imageSearchQuery').value = prod.name;
+      openModal('imageSearchModal');
+      executeImageSearch(prod.name, prod.category, 'all');
+    };
+
+    document.getElementById('btnSearchProductImage').addEventListener('click', () => {
+      const name = document.getElementById('prodNameInput').value;
+      const cat = document.getElementById('prodCategorySelect').value;
+      if (!name) return alert('Escribe el nombre del producto primero.');
+      targetImageProduct = { id: 'modal-draft', name };
+      document.getElementById('searchModalProductTitle').textContent = `Para: ${name}`;
+      document.getElementById('imageSearchQuery').value = name;
+      openModal('imageSearchModal');
+      executeImageSearch(name, cat, 'all');
+    });
+
+    document.getElementById('imageSearchForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const q = document.getElementById('imageSearchQuery').value;
+      const activeStore = document.querySelector('#imageSearchModal .active-store')?.dataset.store || 'all';
+      executeImageSearch(q, '', activeStore);
+    });
+
+    document.querySelectorAll('#imageSearchModal [data-store]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#imageSearchModal [data-store]').forEach(b => b.classList.remove('active-store', 'btn-primary'));
+        btn.classList.add('active-store', 'btn-primary');
+        const q = document.getElementById('imageSearchQuery').value;
+        executeImageSearch(q, '', btn.dataset.store);
+      });
+    });
+
+    const executeImageSearch = async (query, category = '', store = 'all') => {
+      const grid = document.getElementById('imageResultsGrid');
+      grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px;"><div class="spinner"></div> Buscando imágenes nítidas...</div>';
+
+      try {
+        const res = await api(`search-images?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&store=${encodeURIComponent(store)}&limit=15`);
+        const images = res.images || [];
+
+        if (!images.length) {
+          grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px; color:var(--muted);">No se encontraron imágenes para esta búsqueda. Intenta con palabras clave más sencillas o marca y modelo.</div>';
+          return;
+        }
+
+        grid.innerHTML = images.map(img => `
+          <div style="border:1px solid var(--line); border-radius:8px; overflow:hidden; cursor:pointer; background:#fff; text-align:center; transition:transform .2s;"
+               onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'"
+               onclick="selectFoundImage('${encodeURIComponent(img.url)}')">
+            <img src="${img.thumb || img.url}" alt="" style="width:100%; height:110px; object-fit:contain; background:#f8fafb; padding:4px;">
+            <div style="font-size:10.5px; color:var(--muted); padding:4px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border-top:1px solid var(--line);">
+              ${img.storeName || 'Web'}
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:30px; color:var(--danger);">${err.message}</div>`;
+      }
+    };
+
+    window.selectFoundImage = async encodedUrl => {
+      const url = decodeURIComponent(encodedUrl);
+      if (!targetImageProduct) return;
+
+      if (targetImageProduct.id === 'modal-draft') {
+        document.getElementById('prodImageUrlInput').value = url;
+        const preview = document.getElementById('prodImagePreview');
+        preview.src = url;
+        preview.style.display = 'block';
+        closeModal('imageSearchModal');
+        return;
+      }
+
+      targetImageProduct.imageUrl = url;
+      try {
+        await api('admin-products', { method: 'POST', body: JSON.stringify(targetImageProduct) });
+        showToast('Foto asignada al producto.');
+        closeModal('imageSearchModal');
+        renderProductsTab();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    };
+
+    // --- TAB 3: IMPORTADOR INTELIGENTE DE EXCEL ---
+    const dropzone = document.getElementById('excelDropzone');
+    const fileInput = document.getElementById('excelFileInput');
+
+    dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer?.files?.length) processExcelFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', e => {
+      if (e.target.files?.length) processExcelFile(e.target.files[0]);
+    });
+
+    window.resetImportFile = () => {
+      currentImportState = null;
+      document.getElementById('excelFileInput').value = '';
+      document.getElementById('excelDropzone').style.display = 'block';
+      document.getElementById('importerWorkspace').style.display = 'none';
+      document.getElementById('importProgressWrap').style.display = 'none';
+    };
+
+    const processExcelFile = file => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+
+          if (!rawRows || !rawRows.length) {
+            return alert('El archivo seleccionado no contiene filas legibles.');
+          }
+
+          const headerRowIdx = detectHeaderRowIndex(rawRows);
+          const headers = (rawRows[headerRowIdx] || []).map((c, i) => String(c || '').trim() || `Columna ${i + 1}`);
+          const mapping = detectColumnsMapping(headers, rawRows.slice(headerRowIdx + 1, headerRowIdx + 20));
+
+          currentImportState = {
+            fileName: file.name,
+            matrix: rawRows,
+            headerRowIdx,
+            headers,
+            mapping,
+            parsedProducts: []
+          };
+
+          setupImporterUI();
+        } catch (err) {
+          alert('Error al leer el archivo Excel: ' + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    };
+
+    const detectHeaderRowIndex = rows => {
+      const headerKeywords = ['nombre', 'producto', 'descripcion', 'precio', 'pvp', 'costo', 'sku', 'codigo', 'categoria', 'marca', 'item'];
+      for (let r = 0; r < Math.min(rows.length, 15); r++) {
+        const row = rows[r];
+        if (!Array.isArray(row)) continue;
+        let hits = 0;
+        row.forEach(cell => {
+          const norm = normalizeText(cell);
+          if (headerKeywords.some(kw => norm.includes(kw))) hits++;
+        });
+        if (hits >= 2) return r;
+      }
+      return 0;
+    };
+
+    const detectColumnsMapping = (headers, sampleRows) => {
+      const mapping = { name: null, price: null, category: null, sku: null, imageUrl: null, description: null };
+      const normHeaders = headers.map(h => normalizeText(h));
+
+      const findMatch = regexList => {
+        for (let i = 0; i < normHeaders.length; i++) {
+          const h = normHeaders[i];
+          if (regexList.some(r => r.test(h))) return i;
+        }
+        return null;
+      };
+
+      mapping.name = findMatch([/^nombre/, /^producto/, /^articulo/, /^item/, /^descripcion corta/, /^denominacion/]);
+      mapping.sku = findMatch([/^sku/, /^codigo/, /^code/, /^partnumber/, /^nroparte/, /^referencia/, /^barcode/]);
+      mapping.price = findMatch([/^precio/, /^pvp/, /^pvd/, /^costo/, /^valor/, /^preciounitario/, /^price/, /^importe/]);
+      mapping.category = findMatch([/^categoria/, /^category/, /^linea/, /^familia/, /^grupo/, /^clasificacion/, /^rubro/]);
+      mapping.imageUrl = findMatch([/^foto/, /^imagen/, /^image/, /^picture/, /^urlfoto/, /^urlimagen/]);
+      mapping.description = findMatch([/^descripcion/, /^description/, /^detalle/, /^especificaciones/]);
+
+      if (mapping.name === null) {
+        if (mapping.description !== null) {
+          mapping.name = mapping.description;
+          mapping.description = null;
+        } else {
+          mapping.name = 0;
+        }
+      }
+
+      return mapping;
+    };
+
+    const setupImporterUI = () => {
+      document.getElementById('excelDropzone').style.display = 'none';
+      document.getElementById('importerWorkspace').style.display = 'block';
+
+      const s = currentImportState;
+      document.getElementById('importFileNameTitle').textContent = `📄 ${s.fileName}`;
+      document.getElementById('importFileStats').textContent = `${s.matrix.length} filas leídas en la hoja principal`;
+
+      // Header row select
+      const headerSel = document.getElementById('selectHeaderRow');
+      headerSel.innerHTML = s.matrix.slice(0, 15).map((row, idx) => {
+        const preview = row.slice(0, 4).filter(Boolean).join(' | ') || `Fila vacía (${idx + 1})`;
+        return `<option value="${idx}" ${idx === s.headerRowIdx ? 'selected' : ''}>Fila ${idx + 1}: ${preview.substring(0, 45)}</option>`;
+      }).join('');
+
+      headerSel.onchange = e => {
+        const newIdx = parseInt(e.target.value);
+        s.headerRowIdx = newIdx;
+        s.headers = (s.matrix[newIdx] || []).map((c, i) => String(c || '').trim() || `Columna ${i + 1}`);
+        s.mapping = detectColumnsMapping(s.headers, s.matrix.slice(newIdx + 1, newIdx + 20));
+        renderColumnDropdowns();
+        refreshImportPreview();
+      };
+
+      renderColumnDropdowns();
+      refreshImportPreview();
+    };
+
+    const renderColumnDropdowns = () => {
+      const s = currentImportState;
+      const opts = `<option value="-1">-- No mapeada --</option>` + s.headers.map((h, i) => `<option value="${i}">[Col ${i + 1}] ${h}</option>`).join('');
+
+      const mapElements = {
+        mapColName: 'name',
+        mapColPrice: 'price',
+        mapColCategory: 'category',
+        mapColSku: 'sku',
+        mapColImage: 'imageUrl',
+        mapColDesc: 'description'
+      };
+
+      Object.entries(mapElements).forEach(([elemId, key]) => {
+        const el = document.getElementById(elemId);
+        if (!el) return;
+        el.innerHTML = opts;
+        el.value = s.mapping[key] !== null ? s.mapping[key] : -1;
+        el.onchange = () => {
+          s.mapping[key] = parseInt(el.value) >= 0 ? parseInt(el.value) : null;
+          refreshImportPreview();
+        };
+      });
+    };
+
+    document.getElementById('importPriceMargin').addEventListener('input', () => {
+      refreshImportPreview();
+    });
+
+    const refreshImportPreview = () => {
+      const s = currentImportState;
+      if (!s) return;
+
+      const margin = parseFloat(document.getElementById('importPriceMargin').value) || 30;
+      const startRow = s.headerRowIdx + 1;
+      const products = [];
+
+      for (let r = startRow; r < s.matrix.length; r++) {
+        const row = s.matrix[r];
+        if (!row || !Array.isArray(row)) continue;
+
+        const nameVal = s.mapping.name !== null ? row[s.mapping.name] : '';
+        const name = String(nameVal || '').trim();
+        if (!name) continue;
+
+        const skuVal = s.mapping.sku !== null ? String(row[s.mapping.sku] || '').trim() : '';
+        const rawPriceStr = s.mapping.price !== null ? String(row[s.mapping.price] || '0').replace(/[^0-9.,]/g, '').replace(',', '.') : '0';
+        const basePrice = parseFloat(rawPriceStr) || 0;
+        
+        // Fórmula obligatoria: Y + (Y)30% = precio total
+        const finalPrice = basePrice > 0 ? Math.round((basePrice + (basePrice * (margin / 100))) * 100) / 100 : 0;
+
+        const rawCategory = s.mapping.category !== null ? String(row[s.mapping.category] || '').trim() : '';
+        const imageUrl = s.mapping.imageUrl !== null ? String(row[s.mapping.imageUrl] || '').trim() : '';
+        const description = s.mapping.description !== null ? String(row[s.mapping.description] || '').trim() : '';
+
+        // Análisis de Afinidad en tiempo real
+        const affinity = matchCategoryAffinity(rawCategory, name, categoriesList);
+
+        products.push({
+          name,
+          sku: skuVal,
+          price: finalPrice,
+          basePrice,
+          rawCategory,
+          category: affinity.category,
+          subcategory: affinity.subcategory,
+          affinityInfo: affinity,
+          imageUrl,
+          description,
+          visible: true
+        });
+      }
+
+      s.parsedProducts = products;
+      document.getElementById('previewCountBadge').textContent = `Total detectados: ${products.length} productos listos`;
+
+      const tbody = document.getElementById('importPreviewTableBody');
+      const previewItems = products.slice(0, 30);
+
+      const catSelectOptions = categoriesList.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+
+      tbody.innerHTML = previewItems.map((p, idx) => {
+        const badgeClass = p.affinityInfo.confidence.startsWith('exact') ? 'exact' : (p.affinityInfo.confidence === 'keyword' ? 'keyword' : (p.affinityInfo.confidence === 'product' ? 'product' : 'fallback'));
+
+        return `
+          <tr>
+            <td>
+              ${p.imageUrl
+                ? `<img src="${p.imageUrl}" class="prod-thumb-img" style="width:34px; height:34px;">`
+                : '<div class="prod-thumb-placeholder" style="width:34px; height:34px;"><span>📷</span></div>'
+              }
+            </td>
+            <td>
+              <strong class="prod-title" style="max-width:240px; font-size:12.5px;">${p.name}</strong>
+            </td>
+            <td><code>${p.sku || '—'}</code></td>
+            <td><strong>${formatMoney(p.price)}</strong></td>
+            <td>
+              <span style="font-size:11.5px; color:var(--muted);">${p.rawCategory || '<em>(Vacío)</em>'}</span>
+            </td>
+            <td>
+              <div style="display:flex; flex-direction:column; gap:4px;">
+                <select class="filter-select" style="padding:4px 8px; font-size:12px; font-weight:600;" onchange="currentImportState.parsedProducts[${idx}].category = this.value">
+                  ${categoriesList.map(c => `<option value="${c.name}" ${c.name === p.category ? 'selected' : ''}>${c.name}</option>`).join('')}
+                </select>
+                <span class="affinity-badge ${badgeClass}">${p.affinityInfo.badgeText}</span>
+              </div>
+            </td>
+            <td>
+              <input type="text" class="form-control" style="padding:4px 8px; font-size:12px;" value="${p.subcategory || ''}" placeholder="Opcional" onchange="currentImportState.parsedProducts[${idx}].subcategory = this.value">
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      if (products.length > 30) {
+        tbody.innerHTML += `
+          <tr>
+            <td colspan="7" style="text-align:center; padding:12px; background:#f8fafb; color:var(--muted); font-size:12px;">
+              ... y ${products.length - 30} productos más que se importarán con este mismo mapeo de afinidad.
+            </td>
+          </tr>
+        `;
+      }
+    };
+
+    // --- EJECUTAR IMPORTACIÓN MASIVA EN LOTES ---
+    document.getElementById('btnExecuteImport').addEventListener('click', async () => {
+      const s = currentImportState;
+      if (!s || !s.parsedProducts.length) return alert('No hay productos válidos para importar.');
+
+      const autoFetchPhotos = document.getElementById('chkAutoFetchImages').checked;
+      const total = s.parsedProducts.length;
+      if (!confirm(`¿Confirmas la importación de ${total} productos a la tienda SmartISP?`)) return;
+
+      const progressWrap = document.getElementById('importProgressWrap');
+      const progressBar = document.getElementById('importProgressBar');
+      const progressPct = document.getElementById('importProgressPct');
+      const progressText = document.getElementById('importProgressText');
+      progressWrap.style.display = 'block';
+
+      // 1. Auto-fetch de fotos si está activo para productos sin imagen
+      if (autoFetchPhotos) {
+        progressText.textContent = 'Buscando fotografías en internet para productos sin imagen...';
+        const missingPhotos = s.parsedProducts.filter(p => !p.imageUrl).slice(0, 40);
+        let fetchedCount = 0;
+        for (const item of missingPhotos) {
+          try {
+            const res = await api(`search-images?q=${encodeURIComponent(item.name)}&category=${encodeURIComponent(item.category)}&limit=1`);
+            if (res.images && res.images.length > 0) {
+              item.imageUrl = res.images[0].url;
+              fetchedCount++;
+            }
+          } catch (e) {}
+        }
+      }
+
+      // 2. Subida por lotes de 50 productos
+      const BATCH_SIZE = 50;
+      let importedCount = 0;
+
+      for (let i = 0; i < total; i += BATCH_SIZE) {
+        const batch = s.parsedProducts.slice(i, i + BATCH_SIZE);
+        progressText.textContent = `Guardando productos (${Math.min(i + BATCH_SIZE, total)} de ${total})...`;
+        const pct = Math.round((Math.min(i + BATCH_SIZE, total) / total) * 100);
+        progressBar.style.width = `${pct}%`;
+        progressPct.textContent = `${pct}%`;
+
+        try {
+          await api('admin-products-bulk', {
+            method: 'POST',
+            body: JSON.stringify({ products: batch })
+          });
+          importedCount += batch.length;
+        } catch (err) {
+          alert('Error en lote de importación: ' + err.message);
+          break;
+        }
+      }
+
+      showToast(`¡Éxito! Se importaron ${importedCount} productos correctamente.`);
+      progressText.textContent = '¡Importación finalizada con éxito!';
+      await loadAllData();
+
+      setTimeout(() => {
+        switchTab('tab-products');
+        resetImportFile();
+      }, 1500);
+    });
+
+    // --- AUTENTICACIÓN Y CIERRE DE SESIÓN ---
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await api('logout', { method: 'POST' });
+      localStorage.removeItem('smartisp.accountUser');
+      sessionStorage.removeItem('smartisp.accountUser');
+      window.location.href = '/admin.html';
+    });
+
+    // Verificación de sesión de Administrador
+    (async () => {
+      try {
+        const sessionRes = await api('me');
+        if (sessionRes.user && sessionRes.user.role === 'admin') {
+          currentAdminUser = sessionRes.user;
+          const badge = document.getElementById('userBadge');
+          if (badge) badge.textContent = `👤 ${sessionRes.user.email}`;
+          await loadAllData();
+        } else {
+          window.location.href = '/admin.html';
+        }
+      } catch (err) {
+        window.location.href = '/admin.html';
+      }
+    })();
+  </script>
+</body>
+</html>

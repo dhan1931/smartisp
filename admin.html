@@ -140,6 +140,10 @@
       <div class="toolbar">
         <div><h2>Panel de control</h2><span id="adminIdentity"></span></div>
         <div style="display:flex; gap:10px; align-items:center;">
+          <a href="editor-catalogo.html" class="button" style="background:#075d7d; color:#fff; text-decoration:none; display:inline-flex; align-items:center; gap:8px; font-weight:700; box-shadow:0 3px 10px rgba(7,93,125,0.25);">
+            <span>📦 Editor de Catálogo y Categorías</span>
+            <span style="font-size:11px; background:rgba(255,255,255,0.22); padding:2px 7px; border-radius:10px;">Nuevo ↗</span>
+          </a>
           <a href="editor-landing.html" target="_blank" class="button" style="background:#087ea4; color:#fff; text-decoration:none; display:inline-flex; align-items:center; gap:8px; font-weight:700; box-shadow:0 3px 10px rgba(8,126,164,0.25);">
             <span>🎨 Editar Página de Presentación</span>
             <span style="font-size:11px; background:rgba(255,255,255,0.22); padding:2px 7px; border-radius:10px;">Abrir ↗</span>
@@ -464,6 +468,9 @@
               <span style="color:var(--muted);font-size:12px;">Vista compacta en cuadrícula · Clic en cualquier producto para editar</span>
             </div>
             <div class="actions">
+              <a href="editor-catalogo.html" class="button" style="background:#075d7d;display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:#fff;">
+                <span>📂 Editor de Catálogo y Categorías</span>
+              </a>
               <button id="openImportModalButton" class="button" type="button" style="background:#11815d;display:inline-flex;align-items:center;gap:6px;">
                 <span>📥 Importar Excel / CSV</span>
               </button>
@@ -1630,6 +1637,16 @@
       await loadProducts();
     };
 
+    let adminConfiguredCategories = [];
+    const loadCategories = async () => {
+      try {
+        const res = await api('categories');
+        adminConfiguredCategories = res.categories || [];
+      } catch (e) {
+        console.warn('Error cargando categorías en admin:', e);
+      }
+    };
+
     const loadProducts = async () => {
       initProductModal();
       const result = await api('admin-products');
@@ -1637,7 +1654,16 @@
       refreshProductList();
     };
 
-    const openPanel = async user => { $('#loginPanel').classList.add('hidden'); $('#adminPanel').classList.remove('hidden'); $('#adminIdentity').textContent = `${user.name} ${user.surname || ''} - ${user.email}`; initProductModal(); initLogoCustomizerEvents(); await loadContent(); await loadProducts(); };
+    const openPanel = async user => {
+      $('#loginPanel').classList.add('hidden');
+      $('#adminPanel').classList.remove('hidden');
+      $('#adminIdentity').textContent = `${user.name} ${user.surname || ''} - ${user.email}`;
+      initProductModal();
+      initLogoCustomizerEvents();
+      await loadContent();
+      await loadCategories();
+      await loadProducts();
+    };
     $('#loginForm').addEventListener('submit', async event => { event.preventDefault(); try { const values = Object.fromEntries(new FormData(event.currentTarget)); const remember = values.remember === 'on'; const result = await api('login', { method: 'POST', body: JSON.stringify(values) }); if (result.user.role !== 'admin') throw new Error('Esta cuenta no tiene permisos de administrador.'); (remember ? localStorage : sessionStorage).setItem('smartisp.accountUser', JSON.stringify(result.user)); if (remember) localStorage.setItem('smartisp.accountRemembered', 'true'); else localStorage.removeItem('smartisp.accountRemembered'); await openPanel(result.user); } catch (error) { showMessage($('#loginMessage'), error.message, true); } });
     $('#contentForm').addEventListener('submit', async event => { event.preventDefault(); try { await saveForm(event.currentTarget, $('#contentMessage'), 'Apariencia guardada correctamente.'); } catch (error) { showMessage($('#contentMessage'), error.message, true); } });
     $('#contentForm').addEventListener('input', updateDesignPreview);
@@ -1775,6 +1801,103 @@
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]/g, '');
+
+    const matchCategoryAffinity = (rawCategoryStr, rawProductName, availableCats = adminConfiguredCategories) => {
+      const normalize = str => String(str || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      const normCat = normalize(rawCategoryStr);
+      const normProd = normalize(rawProductName);
+
+      if (!availableCats || !availableCats.length) {
+        return { category: rawCategoryStr || 'General', subcategory: '', confidence: 'fallback' };
+      }
+
+      // 1. Coincidencia con texto de categoría de Excel
+      if (normCat && normCat !== 'general' && normCat !== 'otros' && normCat !== 'n a' && normCat !== 'null') {
+        for (const cat of availableCats) {
+          if (normalize(cat.name) === normCat || normalize(cat.id) === normCat) {
+            return { category: cat.name, subcategory: '', confidence: 'exact' };
+          }
+        }
+        for (const cat of availableCats) {
+          if (Array.isArray(cat.subcategories)) {
+            for (const sub of cat.subcategories) {
+              if (normalize(sub) === normCat) {
+                return { category: cat.name, subcategory: sub, confidence: 'exact_sub' };
+              }
+            }
+          }
+        }
+        for (const cat of availableCats) {
+          if (Array.isArray(cat.keywords)) {
+            for (const kw of cat.keywords) {
+              const nKw = normalize(kw);
+              if (nKw && (normCat === nKw || normCat.split(' ').includes(nKw))) {
+                return { category: cat.name, subcategory: '', confidence: 'keyword' };
+              }
+            }
+          }
+        }
+        for (const cat of availableCats) {
+          if (Array.isArray(cat.keywords)) {
+            for (const kw of cat.keywords) {
+              const nKw = normalize(kw);
+              if (nKw.length >= 3 && (normCat.includes(nKw) || nKw.includes(normCat))) {
+                return { category: cat.name, subcategory: '', confidence: 'keyword' };
+              }
+            }
+          }
+        }
+      }
+
+      // 2. Coincidencia analizando el Nombre del Producto
+      if (normProd) {
+        for (const cat of availableCats) {
+          if (Array.isArray(cat.subcategories)) {
+            for (const sub of cat.subcategories) {
+              const nSub = normalize(sub);
+              if (nSub.length >= 4 && normProd.includes(nSub)) {
+                return { category: cat.name, subcategory: sub, confidence: 'product' };
+              }
+            }
+          }
+        }
+        let bestMatch = null;
+        let bestLen = 0;
+        for (const cat of availableCats) {
+          if (Array.isArray(cat.keywords)) {
+            for (const kw of cat.keywords) {
+              const nKw = normalize(kw);
+              if (nKw.length >= 3) {
+                const words = normProd.split(' ');
+                if (words.includes(nKw) || normProd.includes(` ${nKw} `) || normProd.startsWith(`${nKw} `) || normProd.endsWith(` ${nKw}`)) {
+                  if (nKw.length > bestLen) {
+                    bestLen = nKw.length;
+                    bestMatch = cat;
+                  }
+                }
+              }
+            }
+          }
+        }
+        if (bestMatch) {
+          return { category: bestMatch.name, subcategory: '', confidence: 'product' };
+        }
+      }
+
+      const fallbackCat = availableCats.find(c => c.id === 'otros') || availableCats[0];
+      return {
+        category: rawCategoryStr || (fallbackCat ? fallbackCat.name : 'General'),
+        subcategory: '',
+        confidence: 'fallback'
+      };
+    };
 
     const parsePriceValue = val => {
       if (typeof val === 'number') return isNaN(val) ? 0 : Math.max(0, val);
@@ -2069,7 +2192,9 @@
         const sku = (rawSku.toUpperCase() === 'N/D' || rawSku.toUpperCase() === 'N/A' || rawSku.toUpperCase() === 'NULL') ? '' : rawSku;
 
         const categoryVal = mapping.category !== null && mapping.category !== undefined && mapping.category >= 0 ? String(row[mapping.category] || '').trim() : '';
-        const category = categoryVal || 'General';
+        const affinity = matchCategoryAffinity(categoryVal, name, adminConfiguredCategories);
+        const category = affinity.category || 'General';
+        const subcategory = affinity.subcategory || '';
 
         const priceVal = mapping.price !== null && mapping.price !== undefined && mapping.price >= 0 ? row[mapping.price] : 0;
         const rawPrice = parsePriceValue(priceVal);
@@ -2091,6 +2216,7 @@
           sku,
           name,
           category,
+          subcategory,
           price,
           originalPrice: rawPrice,
           marginPct,
@@ -2243,7 +2369,10 @@
           </td>
           <td><code style="font-size:11px;">${escapeHtml(p.sku || '-')}</code></td>
           <td><strong>${escapeHtml(p.name)}</strong></td>
-          <td><span class="mapping-chip" style="font-size:10px;padding:2px 6px;">${escapeHtml(p.category)}</span></td>
+          <td>
+            <span class="mapping-chip" style="font-size:10px;padding:2px 6px;">${escapeHtml(p.category)}</span>
+            ${p.subcategory ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">› ${escapeHtml(p.subcategory)}</div>` : ''}
+          </td>
           <td>
             ${p.price > 0 ? `
               <div style="font-weight:700;color:var(--blue);font-size:13px;">$${p.price.toLocaleString('es-CL')}</div>
