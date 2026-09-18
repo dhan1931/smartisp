@@ -461,66 +461,42 @@
             <div id="notificationsMessage" class="message"></div>
           </form>
         </section>
-        <section class="panel wide">
-          <div class="toolbar" style="margin-bottom:16px;">
-            <div>
-              <h3 style="margin:0;">Catálogo de productos</h3>
-              <span style="color:var(--muted);font-size:12px;">Vista compacta en cuadrícula · Clic en cualquier producto para editar</span>
-            </div>
-            <div class="actions">
-              <a href="editor-catalogo.html" class="button" style="background:#075d7d;display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:#fff;">
-                <span>📂 Editor de Catálogo y Categorías</span>
-              </a>
-              <button id="openImportModalButton" class="button" type="button" style="background:#11815d;display:inline-flex;align-items:center;gap:6px;">
-                <span>📥 Importar Excel / CSV</span>
-              </button>
-              <button id="newProductButton" class="button" type="button" style="background:var(--blue);display:inline-flex;align-items:center;gap:6px;">
-                <span>+ Nuevo producto</span>
-              </button>
-              <button id="adminDeleteAllProductsButton" class="button" type="button" style="background:#dc2626;display:inline-flex;align-items:center;gap:6px;color:#fff;" title="Eliminar todos los productos del catálogo">
-                <span>🗑️ Eliminar todos</span>
-              </button>
-            </div>
-          </div>
-
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px;flex-wrap:wrap;background:#f8fafb;padding:10px 14px;border-radius:10px;border:1px solid var(--line);">
-            <div class="product-filter-tabs">
-              <button type="button" class="filter-tab active" data-filter="all" id="filterTabAll">
-                Todos <span class="tab-count" id="countAllProducts">0</span>
-              </button>
-              <button type="button" class="filter-tab" data-filter="with-image" id="filterTabWithImage">
-                🖼️ Con imagen <span class="tab-count" id="countWithImage">0</span>
-              </button>
-              <button type="button" class="filter-tab tab-alert" data-filter="without-image" id="filterTabWithoutImage">
-                ⚠️ Sin imagen <span class="tab-count count-alert" id="countWithoutImage">0</span>
-              </button>
-            </div>
-
-            <div style="flex:1;max-width:320px;position:relative;margin-left:auto;">
-              <input id="productSearchInput" type="search" placeholder="🔍 Buscar nombre, SKU o categoría..." style="margin:0;padding:7px 12px 7px 32px;font-size:13px;border-radius:6px;">
-              <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none;">🔍</span>
-            </div>
-            <div id="productsCountBadge" style="font-size:13px;color:var(--muted);font-weight:700;">
-              Cargando productos...
-            </div>
-          </div>
-
-          <!-- Banner de acción cuando hay productos sin imagen -->
-          <div id="missingImagesBanner" class="hidden" style="margin-bottom:14px;background:#fffaf0;border:1px solid #fed7aa;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <span style="font-size:24px;">🛒</span>
-              <div>
-                <strong style="color:#c2410c;font-size:13px;display:block;">Productos pendientes de fotografía</strong>
-                <span style="color:#9a3412;font-size:12px;">Puedes asignar fotos una por una con "🛒 Asignar foto" o usar el autocompletado en lote desde Amazon.</span>
+        <section class="panel wide" style="background: linear-gradient(135deg, #093349 0%, #104c6d 100%); color: #fff; border: 1px solid #1a5c80; padding: 26px 28px; border-radius: 12px; margin-top: 8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px;">
+            <div style="max-width: 680px;">
+              <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(56,189,248,0.2); border:1px solid rgba(56,189,248,0.4); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; color:#7dd3fc; margin-bottom:10px;">
+                <span>📦 CATÁLOGO Y TAXONOMÍA</span> • Gestión Exclusiva
+              </div>
+              <h3 style="margin:0 0 8px; font-size:20px; color:#ffffff; font-weight:700; font-family:'Space Grotesk',sans-serif;">
+                Gestión de Catálogo, Productos y Categorías
+              </h3>
+              <p style="margin:0 0 16px; font-size:13.5px; color:#d8f1f5; line-height:1.5;">
+                La visualización de productos, edición de características (nombre, SKU, precios, fotos, enlaces, descripción), macro-categorías, subcategorías y la importación masiva inteligente desde Excel se administran exclusivamente desde el <strong>Editor de Catálogo</strong>.
+              </p>
+              <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap;">
+                <div style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); padding:8px 16px; border-radius:8px; display:inline-flex; align-items:center; gap:10px;">
+                  <span style="font-size:20px;">📦</span>
+                  <div>
+                    <span style="font-size:11px; color:#bae6fd; display:block; text-transform:uppercase; font-weight:600;">Productos en Catálogo</span>
+                    <strong id="adminCatalogProdCount" style="font-size:17px; color:#ffffff;">0</strong>
+                  </div>
+                </div>
+                <div style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); padding:8px 16px; border-radius:8px; display:inline-flex; align-items:center; gap:10px;">
+                  <span style="font-size:20px;">📂</span>
+                  <div>
+                    <span style="font-size:11px; color:#bae6fd; display:block; text-transform:uppercase; font-weight:600;">Macro-Categorías</span>
+                    <strong id="adminCatalogCatCount" style="font-size:17px; color:#ffffff;">0</strong>
+                  </div>
+                </div>
               </div>
             </div>
-            <button id="batchAutoFetchButton" type="button" class="button" style="background:#ea580c;font-size:12px;padding:7px 14px;display:inline-flex;align-items:center;gap:6px;font-weight:700;">
-              <span>⚡ Auto-buscar fotos en Amazon para todos</span>
-            </button>
+            <div>
+              <a href="editor-catalogo.html" class="button" style="background:#0284c7; color:#fff; border:none; padding:14px 24px; font-size:14px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:10px; border-radius:8px; box-shadow:0 6px 20px rgba(2,132,199,.4);">
+                <span>📂 Ir al Editor de Catálogo y Categorías</span>
+                <span style="font-size:16px;">↗</span>
+              </a>
+            </div>
           </div>
-
-          <div id="productsList"></div>
-          <div id="productMessage" class="message"></div>
         </section>
       </div>
     </section>
@@ -1382,6 +1358,7 @@
 
     const renderProductGrid = (items = allProducts) => {
       const container = $('#productsList');
+      if (!container) return;
       const countBadge = $('#productsCountBadge');
       
       if (countBadge) {
@@ -1645,16 +1622,24 @@
       try {
         const res = await api('categories');
         adminConfiguredCategories = res.categories || [];
+        const catCountEl = document.getElementById('adminCatalogCatCount');
+        if (catCountEl) catCountEl.textContent = adminConfiguredCategories.length;
       } catch (e) {
         console.warn('Error cargando categorías en admin:', e);
       }
     };
 
     const loadProducts = async () => {
-      initProductModal();
-      const result = await api('admin-products');
-      allProducts = result.products || [];
-      refreshProductList();
+      try {
+        initProductModal();
+        const result = await api('admin-products');
+        allProducts = result.products || [];
+        const prodCountEl = document.getElementById('adminCatalogProdCount');
+        if (prodCountEl) prodCountEl.textContent = allProducts.length;
+        refreshProductList();
+      } catch (e) {
+        console.warn('Error al cargar productos en panel general:', e);
+      }
     };
 
     const openPanel = async user => {

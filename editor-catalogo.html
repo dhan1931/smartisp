@@ -1593,7 +1593,7 @@
                   <span class="cat-slug">id: ${cat.id}</span>
                 </div>
               </div>
-              <span class="cat-prod-count">${pCount} prod.</span>
+              <span class="cat-prod-count" style="cursor:pointer;" onclick="filterByCatAndSwitch('${encodeURIComponent(cat.name)}')" title="Ver productos de esta categoría">📦 ${pCount} prod. ↗</span>
             </div>
 
             <div class="chips-section">
@@ -1633,6 +1633,9 @@
             </div>
 
             <div class="cat-actions">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="filterByCatAndSwitch('${encodeURIComponent(cat.name)}')" title="Ver productos de esta categoría">
+                <i data-lucide="package" width="14"></i> Productos (${pCount})
+              </button>
               <button type="button" class="btn btn-secondary btn-sm" onclick="openEditCategoryModal('${cat.id}')">
                 <i data-lucide="edit" width="14"></i> Editar
               </button>
@@ -1648,6 +1651,17 @@
       }).join('');
 
       lucide.createIcons();
+    };
+
+    window.filterByCatAndSwitch = encodedCatName => {
+      const catName = decodeURIComponent(encodedCatName);
+      switchTab('tab-products');
+      const filterMacro = document.getElementById('filterMacroCat');
+      if (filterMacro) {
+        filterMacro.value = catName;
+        updateSubcategoryOptions();
+        renderProductsTab();
+      }
     };
 
     // --- ACCIONES RÁPIDAS DE SUBCATEGORÍAS Y KEYWORDS ---
@@ -2683,6 +2697,17 @@
           const badge = document.getElementById('userBadge');
           if (badge) badge.textContent = `👤 ${sessionRes.user.email}`;
           await loadAllData();
+
+          const urlParams = new URLSearchParams(window.location.search);
+          const initialCat = urlParams.get('category');
+          if (initialCat) {
+            const filterMacro = document.getElementById('filterMacroCat');
+            if (filterMacro) {
+              filterMacro.value = initialCat;
+              updateSubcategoryOptions();
+              renderProductsTab();
+            }
+          }
         } else {
           window.location.href = '/admin.html';
         }
