@@ -770,15 +770,15 @@
 
     <!-- Tab Switcher -->
     <nav class="nav-tabs">
-      <button type="button" class="tab-btn active" data-tab="tab-categories">
-        <i data-lucide="folder-tree" width="18"></i>
-        <span>1. Categorías y Subcategorías</span>
-        <span class="tab-count" id="countCatTab">0</span>
-      </button>
-      <button type="button" class="tab-btn" data-tab="tab-products">
+      <button type="button" class="tab-btn active" data-tab="tab-products">
         <i data-lucide="package" width="18"></i>
-        <span>2. Catálogo de Productos</span>
+        <span>1. Catálogo de Productos</span>
         <span class="tab-count" id="countProdTab">0</span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="tab-categories">
+        <i data-lucide="folder-tree" width="18"></i>
+        <span>2. Categorías y Subcategorías</span>
+        <span class="tab-count" id="countCatTab">0</span>
       </button>
       <button type="button" class="tab-btn" data-tab="tab-importer">
         <i data-lucide="file-spreadsheet" width="18"></i>
@@ -787,9 +787,107 @@
       </button>
     </nav>
 
-    <!-- TAB 1: GESTIÓN DE CATEGORÍAS Y SUBCATEGORÍAS -->
-    <section id="tab-categories" class="tab-pane active">
-      
+    <!-- TAB 1: CATÁLOGO DE PRODUCTOS (VISTA PRINCIPAL) -->
+    <section id="tab-products" class="tab-pane active">
+      <!-- Stats Row de Productos -->
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-icon-wrap"><i data-lucide="package" width="24"></i></div>
+          <div>
+            <div class="stat-num" id="statProductsTotal">0</div>
+            <div class="stat-label">Productos Subidos</div>
+          </div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-icon-wrap" style="background:#ecfdf5; color:#059669;"><i data-lucide="eye" width="24"></i></div>
+          <div>
+            <div class="stat-num" id="statProductsVisible">0</div>
+            <div class="stat-label">Visibles en Tienda</div>
+          </div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-icon-wrap" style="background:#fef3c7; color:#d97706;"><i data-lucide="image" width="24"></i></div>
+          <div>
+            <div class="stat-num" id="statProductsWithPhoto">0</div>
+            <div class="stat-label">Con Fotografía</div>
+          </div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-icon-wrap" style="background:#fef2f2; color:#dc2626;"><i data-lucide="alert-circle" width="24"></i></div>
+          <div>
+            <div class="stat-num" id="statProductsWithoutPhoto" style="color:#dc2626;">0</div>
+            <div class="stat-label">Sin Fotografía</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="content-card">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title"><i data-lucide="package-search" width="20"></i> Productos Registrados en el Catálogo</h2>
+            <p class="card-desc">Aquí puedes ver todos los productos subidos a la tienda, editar cualquier característica (nombre, SKU, precio, imagen, descripción, categoría y subcategoría) o eliminarlos todos juntos.</p>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <button type="button" id="btnDeleteAllProducts" class="btn btn-danger" style="background:#fee2e2; color:#b91c1c; border-color:#fca5a5;" title="Eliminar todos los productos subidos en un solo momento">
+              <i data-lucide="trash-2" width="16"></i> Eliminar todos los productos
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="switchTab('tab-importer')">
+              <i data-lucide="file-up" width="16"></i> Importar Excel
+            </button>
+            <button type="button" id="btnNewProduct" class="btn btn-primary">
+              <i data-lucide="plus" width="16"></i> Nuevo Producto
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <div class="search-input-wrap">
+            <i data-lucide="search" class="search-icon" width="16"></i>
+            <input type="text" id="productSearchInput" placeholder="Buscar por nombre, SKU, marca, categoría, subcategoría...">
+          </div>
+          <select id="filterMacroCat" class="filter-select">
+            <option value="all">Todas las Macro-Categorías</option>
+          </select>
+          <select id="filterSubCat" class="filter-select">
+            <option value="all">Todas las Subcategorías</option>
+          </select>
+          <select id="filterVisibility" class="filter-select">
+            <option value="all">Visibilidad: Todos</option>
+            <option value="visible">Solo Visibles</option>
+            <option value="hidden">Solo Ocultos</option>
+          </select>
+          <select id="filterPhoto" class="filter-select">
+            <option value="all">Fotos: Todos</option>
+            <option value="with_photo">Con Imagen</option>
+            <option value="without_photo">Sin Imagen (Pendientes)</option>
+          </select>
+        </div>
+
+        <!-- Table View -->
+        <div class="data-table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width:60px;">Foto</th>
+                <th>Producto & SKU</th>
+                <th>Macro-Categoría</th>
+                <th>Subcategoría</th>
+                <th>Precio Tienda</th>
+                <th style="text-align:center; width:80px;">Visible</th>
+                <th style="text-align:right; width:150px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="productsTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: GESTIÓN DE CATEGORÍAS Y SUBCATEGORÍAS -->
+    <section id="tab-categories" class="tab-pane">
       <!-- Stats Row -->
       <div class="stats-row">
         <div class="stat-box">
@@ -845,70 +943,6 @@
         <!-- Categories Grid -->
         <div class="categories-grid" id="categoriesContainer">
           <!-- Dynamically populated -->
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 2: CATÁLOGO DE PRODUCTOS -->
-    <section id="tab-products" class="tab-pane">
-      <div class="content-card">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title"><i data-lucide="package-search" width="20"></i> Catálogo Completo de Productos</h2>
-            <p class="card-desc">Gestiona todos los artículos de la tienda, edita su categoría general, subcategoría, precio con margen, y busca imágenes en Amazon o internet.</p>
-          </div>
-          <div style="display:flex; gap:8px;">
-            <button type="button" id="btnNewProduct" class="btn btn-primary">
-              <i data-lucide="plus" width="16"></i> Nuevo Producto
-            </button>
-            <button type="button" class="btn btn-secondary" onclick="switchTab('tab-importer')">
-              <i data-lucide="file-up" width="16"></i> Importar Excel
-            </button>
-          </div>
-        </div>
-
-        <!-- Filter Bar -->
-        <div class="filter-bar">
-          <div class="search-input-wrap">
-            <i data-lucide="search" class="search-icon" width="16"></i>
-            <input type="text" id="productSearchInput" placeholder="Buscar por nombre, SKU, marca, categoría...">
-          </div>
-          <select id="filterMacroCat" class="filter-select">
-            <option value="all">Todas las Macro-Categorías</option>
-          </select>
-          <select id="filterSubCat" class="filter-select">
-            <option value="all">Todas las Subcategorías</option>
-          </select>
-          <select id="filterVisibility" class="filter-select">
-            <option value="all">Visibilidad: Todos</option>
-            <option value="visible">Solo Visibles</option>
-            <option value="hidden">Solo Ocultos</option>
-          </select>
-          <select id="filterPhoto" class="filter-select">
-            <option value="all">Fotos: Todos</option>
-            <option value="with_photo">Con Imagen</option>
-            <option value="without_photo">Sin Imagen (Pendientes)</option>
-          </select>
-        </div>
-
-        <!-- Table View -->
-        <div class="data-table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th style="width:60px;">Foto</th>
-                <th>Producto & SKU</th>
-                <th>Macro-Categoría</th>
-                <th>Subcategoría</th>
-                <th>Precio Tienda</th>
-                <th style="text-align:center; width:80px;">Visible</th>
-                <th style="text-align:right; width:140px;">Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="productsTableBody">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
         </div>
       </div>
     </section>
@@ -1199,13 +1233,27 @@
         </div>
         <div class="form-group">
           <label class="form-label">Fotografía del Producto:</label>
-          <div style="display:flex; gap:10px; align-items:center;">
-            <img id="prodImagePreview" src="" alt="" class="prod-thumb-img" style="width:54px; height:54px; display:none;">
-            <input type="text" id="prodImageUrlInput" class="form-control" placeholder="https://ejemplo.com/foto.jpg" style="flex:1;">
-            <button type="button" class="btn btn-secondary btn-sm" id="btnSearchProductImage">
-              <i data-lucide="search" width="14"></i> Buscar Foto
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <div style="position:relative; display:inline-block;">
+              <img id="prodImagePreview" src="" alt="" class="prod-thumb-img" style="width:58px; height:58px; display:none;">
+              <button type="button" id="btnRemoveProdImage" style="display:none; position:absolute; top:-6px; right:-6px; background:#dc2626; color:#fff; border:none; border-radius:50%; width:20px; height:20px; font-size:11px; cursor:pointer; align-items:center; justify-content:center; box-shadow:0 2px 4px rgba(0,0,0,0.25);" title="Quitar fotografía">✕</button>
+            </div>
+            <input type="text" id="prodImageUrlInput" class="form-control" placeholder="https://ejemplo.com/foto.jpg o sube un archivo local" style="flex:1; min-width:200px;">
+            <input type="file" id="prodLocalFileInput" accept="image/*" style="display:none;">
+            <button type="button" class="btn btn-secondary btn-sm" id="btnUploadLocalImage" title="Subir foto desde tu equipo">
+              <i data-lucide="upload" width="14"></i> Subir Foto
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btnSearchProductImage" title="Buscar foto en internet o Amazon">
+              <i data-lucide="search" width="14"></i> Buscar en Web
             </button>
           </div>
+          <small style="color:var(--muted); font-size:11px; display:block; margin-top:4px;">
+            Puedes ingresar un enlace directo, subir un archivo de imagen de tu equipo o buscar en Amazon y la web.
+          </small>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="prodExternalUrlInput">Enlace Externo / Ficha Técnica (Opcional):</label>
+          <input type="url" id="prodExternalUrlInput" class="form-control" placeholder="https://ejemplo.com/ficha-tecnica o enlace al fabricante">
         </div>
         <div class="form-group">
           <label class="form-label" for="prodDescInput">Descripción Detallada y Características:</label>
@@ -1217,11 +1265,43 @@
             <span>Visible en la tienda pública (desmarca para ocultar temporalmente sin borrar)</span>
           </label>
         </div>
-        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px;">
-          <button type="button" class="btn btn-secondary" onclick="closeModal('productModal')">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar Producto</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; border-top:1px solid var(--line); padding-top:16px;">
+          <button type="button" class="btn btn-danger btn-sm" id="btnModalDeleteProduct" style="display:none; background:#fee2e2; color:#b91c1c; border-color:#fca5a5;" title="Eliminar definitivamente este producto">
+            <i data-lucide="trash-2" width="14"></i> Eliminar este producto
+          </button>
+          <div style="display:flex; gap:8px; margin-left:auto;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('productModal')">Cancelar</button>
+            <button type="submit" class="btn btn-primary">
+              <i data-lucide="save" width="14"></i> Guardar Producto
+            </button>
+          </div>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CONFIRMAR ELIMINAR TODOS LOS PRODUCTOS -->
+  <div class="modal-overlay" id="deleteAllModal">
+    <div class="modal-dialog" style="max-width:480px; text-align:center;">
+      <div style="width:64px; height:64px; border-radius:50%; background:#fee2e2; color:#dc2626; display:flex; align-items:center; justify-content:center; margin:0 auto 16px auto;">
+        <i data-lucide="alert-triangle" width="34" height="34"></i>
+      </div>
+      <h3 class="modal-title" style="margin-bottom:8px; color:#991b1b;">¿Eliminar TODOS los productos?</h3>
+      <p style="font-size:13.5px; color:#475569; line-height:1.5; margin-bottom:16px;">
+        Estás a punto de borrar los <strong id="deleteAllCountText" style="color:#b91c1c;">0</strong> productos registrados en la tienda.
+      </p>
+      <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:12px; margin-bottom:20px; text-align:left;">
+        <div style="color:#991b1b; font-size:12.5px; font-weight:600; display:flex; gap:6px; align-items:flex-start;">
+          <span style="font-size:15px; line-height:1;">⚠️</span>
+          <span>Esta acción vaciará el catálogo de productos por completo en un solo momento. No se puede deshacer. Las categorías y subcategorías configuradas se mantendrán.</span>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:center; gap:10px;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('deleteAllModal')">Cancelar</button>
+        <button type="button" id="btnConfirmDeleteAll" class="btn btn-danger" style="background:#dc2626; color:#fff; border-color:#b91c1c;">
+          <i data-lucide="trash-2" width="15"></i> Sí, vaciar y eliminar todos
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1831,7 +1911,50 @@
     const renderProductsTab = () => {
       const tbody = document.getElementById('productsTableBody');
       const countTab = document.getElementById('countProdTab');
-      if (countTab) countTab.textContent = productsList.length;
+      const total = productsList.length;
+      if (countTab) countTab.textContent = total;
+
+      // Actualizar contadores de estadísticas
+      const visibleCount = productsList.filter(p => p.visible !== false).length;
+      const withPhotoCount = productsList.filter(p => Boolean(p.imageUrl)).length;
+      const withoutPhotoCount = total - withPhotoCount;
+
+      const statTotal = document.getElementById('statProductsTotal');
+      const statVis = document.getElementById('statProductsVisible');
+      const statWithPhoto = document.getElementById('statProductsWithPhoto');
+      const statWithoutPhoto = document.getElementById('statProductsWithoutPhoto');
+
+      if (statTotal) statTotal.textContent = total;
+      if (statVis) statVis.textContent = visibleCount;
+      if (statWithPhoto) statWithPhoto.textContent = withPhotoCount;
+      if (statWithoutPhoto) statWithoutPhoto.textContent = withoutPhotoCount;
+
+      // Estado vacío si no hay ningún producto registrado
+      if (!total) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align:center; padding:50px 20px;">
+              <div style="max-width:440px; margin:0 auto;">
+                <div style="font-size:44px; margin-bottom:12px;">📦</div>
+                <h3 style="font-size:17px; font-weight:700; color:var(--navy); margin-bottom:6px;">No hay productos en el catálogo</h3>
+                <p style="font-size:13px; color:var(--muted); margin-bottom:20px; line-height:1.5;">
+                  Tu catálogo está vacío en este momento. Puedes subir un archivo Excel con productos o registrar uno manualmente ahora mismo.
+                </p>
+                <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+                  <button type="button" class="btn btn-primary" onclick="document.getElementById('btnNewProduct').click()">
+                    <i data-lucide="plus" width="15"></i> Crear primer producto
+                  </button>
+                  <button type="button" class="btn btn-secondary" onclick="switchTab('tab-importer')">
+                    <i data-lucide="file-spreadsheet" width="15"></i> Importar Excel
+                  </button>
+                </div>
+              </div>
+            </td>
+          </tr>
+        `;
+        lucide.createIcons();
+        return;
+      }
 
       const items = getFilteredProducts();
 
@@ -1859,7 +1982,10 @@
             <td>${imgEl}</td>
             <td>
               <strong class="prod-title">${p.name || 'Sin nombre'}</strong>
-              ${p.sku ? `<code class="prod-sku">SKU: ${p.sku}</code>` : ''}
+              <div style="display:flex; gap:6px; align-items:center; margin-top:3px; flex-wrap:wrap;">
+                ${p.sku ? `<code class="prod-sku">SKU: ${p.sku}</code>` : ''}
+                ${p.externalUrl ? `<a href="${p.externalUrl}" target="_blank" style="font-size:11px; color:var(--blue); text-decoration:none; display:inline-flex; align-items:center; gap:2px;">🔗 Ficha técnica</a>` : ''}
+              </div>
             </td>
             <td>
               <span class="badge-cat"><i data-lucide="folder" width="12"></i> ${p.category || 'General'}</span>
@@ -1910,6 +2036,7 @@
       try {
         await api('admin-products', { method: 'POST', body: JSON.stringify(prod) });
         showToast(`Producto ${isVisible ? 'visible en tienda' : 'oculto de la tienda'}.`);
+        renderProductsTab();
       } catch (err) {
         showToast(err.message, 'error');
       }
@@ -1930,6 +2057,84 @@
       }
     };
 
+    // --- ACCIÓN: ELIMINAR TODOS LOS PRODUCTOS ---
+    const btnDeleteAll = document.getElementById('btnDeleteAllProducts');
+    if (btnDeleteAll) {
+      btnDeleteAll.addEventListener('click', () => {
+        if (!productsList.length) {
+          showToast('No hay productos en el catálogo para eliminar.', 'error');
+          return;
+        }
+        const countSpan = document.getElementById('deleteAllCountText');
+        if (countSpan) countSpan.textContent = `${productsList.length}`;
+        openModal('deleteAllModal');
+      });
+    }
+
+    const btnConfirmDeleteAll = document.getElementById('btnConfirmDeleteAll');
+    if (btnConfirmDeleteAll) {
+      btnConfirmDeleteAll.addEventListener('click', async () => {
+        try {
+          btnConfirmDeleteAll.disabled = true;
+          btnConfirmDeleteAll.textContent = 'Eliminando catálogo...';
+          await api('admin-products-clear', { method: 'POST' });
+          productsList = [];
+          renderProductsTab();
+          renderCategoriesTab();
+          closeModal('deleteAllModal');
+          showToast('Todos los productos han sido eliminados correctamente.');
+        } catch (err) {
+          showToast(err.message, 'error');
+        } finally {
+          btnConfirmDeleteAll.disabled = false;
+          btnConfirmDeleteAll.innerHTML = '<i data-lucide="trash-2" width="15"></i> Sí, vaciar y eliminar todos';
+          lucide.createIcons();
+        }
+      });
+    }
+
+    // --- SUBIDA LOCAL Y CONTROL DE FOTO DE PRODUCTO ---
+    const btnUploadLocal = document.getElementById('btnUploadLocalImage');
+    const localFileInput = document.getElementById('prodLocalFileInput');
+    const btnRemoveImage = document.getElementById('btnRemoveProdImage');
+    const prodImgPreview = document.getElementById('prodImagePreview');
+    const prodImgUrlInput = document.getElementById('prodImageUrlInput');
+
+    if (btnUploadLocal && localFileInput) {
+      btnUploadLocal.addEventListener('click', () => localFileInput.click());
+      localFileInput.addEventListener('change', e => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+          showToast('Por favor selecciona un archivo de imagen válido (PNG, JPG, WebP).', 'error');
+          return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          showToast('La imagen es demasiado pesada (máximo 5 MB).', 'error');
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = ev => {
+          const dataUrl = ev.target.result;
+          prodImgUrlInput.value = dataUrl;
+          prodImgPreview.src = dataUrl;
+          prodImgPreview.style.display = 'block';
+          if (btnRemoveImage) btnRemoveImage.style.display = 'flex';
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    if (btnRemoveImage) {
+      btnRemoveImage.addEventListener('click', () => {
+        prodImgUrlInput.value = '';
+        prodImgPreview.src = '';
+        prodImgPreview.style.display = 'none';
+        btnRemoveImage.style.display = 'none';
+        if (localFileInput) localFileInput.value = '';
+      });
+    }
+
     // --- MODAL PRODUCTO (NUEVO / EDITAR) ---
     document.getElementById('btnNewProduct').addEventListener('click', () => {
       document.getElementById('prodModalTitle').textContent = 'Nuevo Producto';
@@ -1937,11 +2142,16 @@
       document.getElementById('prodNameInput').value = '';
       document.getElementById('prodSkuInput').value = '';
       document.getElementById('prodPriceInput').value = '';
+      document.getElementById('prodCategorySelect').value = categoriesList[0]?.name || 'General';
+      document.getElementById('prodSubcategoryInput').value = '';
       document.getElementById('prodImageUrlInput').value = '';
+      document.getElementById('prodExternalUrlInput').value = '';
       document.getElementById('prodDescInput').value = '';
       document.getElementById('prodVisibleInput').checked = true;
-      document.getElementById('prodSubcategoryInput').value = '';
       document.getElementById('prodImagePreview').style.display = 'none';
+      if (document.getElementById('btnRemoveProdImage')) document.getElementById('btnRemoveProdImage').style.display = 'none';
+      if (document.getElementById('btnModalDeleteProduct')) document.getElementById('btnModalDeleteProduct').style.display = 'none';
+      if (localFileInput) localFileInput.value = '';
       openModal('productModal');
     });
 
@@ -1956,27 +2166,59 @@
       document.getElementById('prodCategorySelect').value = p.category || (categoriesList[0]?.name || 'General');
       document.getElementById('prodSubcategoryInput').value = p.subcategory || '';
       document.getElementById('prodImageUrlInput').value = p.imageUrl || '';
+      document.getElementById('prodExternalUrlInput').value = p.externalUrl || '';
       document.getElementById('prodDescInput').value = p.description || '';
       document.getElementById('prodVisibleInput').checked = p.visible !== false;
 
       const preview = document.getElementById('prodImagePreview');
+      const removeBtn = document.getElementById('btnRemoveProdImage');
       if (p.imageUrl) {
         preview.src = p.imageUrl;
         preview.style.display = 'block';
+        if (removeBtn) removeBtn.style.display = 'flex';
       } else {
         preview.style.display = 'none';
+        if (removeBtn) removeBtn.style.display = 'none';
       }
+
+      const modalDeleteBtn = document.getElementById('btnModalDeleteProduct');
+      if (modalDeleteBtn) modalDeleteBtn.style.display = 'inline-flex';
+      if (localFileInput) localFileInput.value = '';
 
       openModal('productModal');
     };
 
+    // Botón eliminar producto desde adentro del modal
+    const btnModalDelete = document.getElementById('btnModalDeleteProduct');
+    if (btnModalDelete) {
+      btnModalDelete.addEventListener('click', async () => {
+        const prodId = document.getElementById('prodId').value;
+        if (!prodId) return;
+        const prod = productsList.find(p => String(p.id) === String(prodId));
+        if (!confirm(`¿Eliminar definitivamente el producto "${prod?.name || 'seleccionado'}"?`)) return;
+        try {
+          await api(`admin-products?id=${encodeURIComponent(prodId)}`, { method: 'DELETE' });
+          productsList = productsList.filter(p => String(p.id) !== String(prodId));
+          closeModal('productModal');
+          renderProductsTab();
+          renderCategoriesTab();
+          showToast('Producto eliminado.');
+        } catch (err) {
+          showToast(err.message, 'error');
+        }
+      });
+    }
+
     document.getElementById('prodImageUrlInput').addEventListener('input', e => {
       const preview = document.getElementById('prodImagePreview');
+      const removeBtn = document.getElementById('btnRemoveProdImage');
       if (e.target.value.trim()) {
         preview.src = e.target.value.trim();
         preview.style.display = 'block';
+        if (removeBtn) removeBtn.style.display = 'flex';
       } else {
         preview.style.display = 'none';
+        if (removeBtn) removeBtn.style.display = 'none';
       }
     });
 
@@ -1991,6 +2233,7 @@
         category: document.getElementById('prodCategorySelect').value,
         subcategory: document.getElementById('prodSubcategoryInput').value.trim(),
         imageUrl: document.getElementById('prodImageUrlInput').value.trim(),
+        externalUrl: document.getElementById('prodExternalUrlInput').value.trim(),
         description: document.getElementById('prodDescInput').value.trim(),
         visible: document.getElementById('prodVisibleInput').checked
       };
@@ -2083,6 +2326,8 @@
         const preview = document.getElementById('prodImagePreview');
         preview.src = url;
         preview.style.display = 'block';
+        const removeBtn = document.getElementById('btnRemoveProdImage');
+        if (removeBtn) removeBtn.style.display = 'flex';
         closeModal('imageSearchModal');
         return;
       }
@@ -2448,3 +2693,4 @@
   </script>
 </body>
 </html>
+

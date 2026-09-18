@@ -966,6 +966,11 @@ export default async function handler(req, res) {
       }
       if (req.method === 'DELETE') {
         const id = String(req.query?.id || '');
+        const clearAll = req.query?.all === 'true' || req.query?.clearAll === 'true';
+        if (clearAll) {
+          await database.query('DELETE FROM products');
+          return res.status(200).json({ ok: true, cleared: true, message: 'Todos los productos han sido eliminados correctamente.' });
+        }
         await database.query('DELETE FROM products WHERE id = $1', [id]);
         return res.status(200).json({ ok: true });
       }
@@ -978,6 +983,25 @@ export default async function handler(req, res) {
         visible = EXCLUDED.visible, updated_at = NOW()`,
         [id, String(product.name || '').trim(), String(product.description || '').trim(), Number(product.price || 0), String(product.category || '').trim(), String(product.imageUrl || '').trim(), String(product.externalUrl || '').trim(), String(product.sku || '').trim(), product.visible !== false]);
       return res.status(200).json({ ok: true, id });
+    }
+
+    if (action === 'admin-products-clear' && req.method === 'POST') {
+      if (!await requireAdmin(req, res, database)) return;
+      await database.query(`CREATE TABLE IF NOT EXISTS products (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        price NUMERIC(12, 2) NOT NULL DEFAULT 0,
+        category TEXT NOT NULL DEFAULT '',
+        image_url TEXT NOT NULL DEFAULT '',
+        external_url TEXT NOT NULL DEFAULT '',
+        sku TEXT NOT NULL DEFAULT '',
+        visible BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )`);
+      await database.query('DELETE FROM products');
+      return res.status(200).json({ ok: true, cleared: true, message: 'Todos los productos han sido eliminados correctamente.' });
     }
 
     if (action === 'admin-products-bulk' && req.method === 'POST') {

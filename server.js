@@ -774,6 +774,33 @@ const inMemoryContent = new Map();
 const inMemoryLandingContent = new Map();
 const inMemoryCategories = new Map();
 
+const PRODUCTS_STORAGE_FILE = path.join(process.cwd(), 'products-storage.json');
+const saveProductsToFile = () => {
+  if (pool) return;
+  try {
+    const list = [...inMemoryProducts.values()];
+    fs.writeFileSync(PRODUCTS_STORAGE_FILE, JSON.stringify(list, null, 2), 'utf8');
+  } catch (e) {
+    console.warn('Error guardando products-storage.json:', e.message);
+  }
+};
+const loadProductsFromFile = () => {
+  if (pool) return;
+  try {
+    if (fs.existsSync(PRODUCTS_STORAGE_FILE)) {
+      const data = JSON.parse(fs.readFileSync(PRODUCTS_STORAGE_FILE, 'utf8'));
+      if (Array.isArray(data)) {
+        inMemoryProducts.clear();
+        data.forEach(p => inMemoryProducts.set(p.id, p));
+        console.log(`Cargados ${data.length} productos desde products-storage.json`);
+      }
+    }
+  } catch (e) {
+    console.warn('Error cargando products-storage.json:', e.message);
+  }
+};
+loadProductsFromFile();
+
 const DEFAULT_CATEGORIES = [
   {
     id: 'computacion',
@@ -1159,6 +1186,7 @@ app.post('/api/auth/categories/reassign', async (req, res) => {
         }
       }
     }
+    saveProductsToFile();
   }
 
   return res.json({ ok: true, updatedCount });
@@ -1200,19 +1228,46 @@ app.post('/api/auth/admin-products', async (req, res) => {
   }
 
   inMemoryProducts.set(id, { id, name, description, price, category, subcategory, imageUrl, externalUrl, sku, visible });
+  saveProductsToFile();
   return res.json({ ok: true, id });
 });
 
 app.delete('/api/auth/admin-products', async (req, res) => {
   if (!await requireAdminUser(req, res)) return;
   const id = String(req.query?.id || '');
+  const clearAll = req.query?.all === 'true' || req.query?.clearAll === 'true';
+
+  if (clearAll) {
+    if (pool) {
+      await ensureProductsTable();
+      await pool.query('DELETE FROM products');
+    } else {
+      inMemoryProducts.clear();
+      saveProductsToFile();
+    }
+    return res.json({ ok: true, cleared: true, message: 'Todos los productos han sido eliminados correctamente.' });
+  }
+
   if (pool) {
     await ensureProductsTable();
     await pool.query('DELETE FROM products WHERE id = $1', [id]);
   } else {
     inMemoryProducts.delete(id);
+    saveProductsToFile();
   }
   return res.json({ ok: true });
+});
+
+app.post('/api/auth/admin-products-clear', async (req, res) => {
+  if (!await requireAdminUser(req, res)) return;
+  if (pool) {
+    await ensureProductsTable();
+    await pool.query('DELETE FROM products');
+  } else {
+    inMemoryProducts.clear();
+    saveProductsToFile();
+  }
+  return res.json({ ok: true, cleared: true, message: 'Todos los productos han sido eliminados correctamente.' });
 });
 
 app.post('/api/auth/admin-products-bulk', async (req, res) => {
@@ -1371,6 +1426,7 @@ app.post('/api/auth/admin-products-bulk', async (req, res) => {
       }
       count++;
     }
+    saveProductsToFile();
   }
 
   return res.json({ ok: true, count });

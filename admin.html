@@ -477,6 +477,9 @@
               <button id="newProductButton" class="button" type="button" style="background:var(--blue);display:inline-flex;align-items:center;gap:6px;">
                 <span>+ Nuevo producto</span>
               </button>
+              <button id="adminDeleteAllProductsButton" class="button" type="button" style="background:#dc2626;display:inline-flex;align-items:center;gap:6px;color:#fff;" title="Eliminar todos los productos del catálogo">
+                <span>🗑️ Eliminar todos</span>
+              </button>
             </div>
           </div>
 
@@ -2664,6 +2667,25 @@
       event.preventDefault();
       const q = $('#imageSearchInput').value.trim();
       if (q) executeImageSearch(q, currentSearchStore);
+    });
+
+    $('#newProductButton')?.addEventListener('click', () => openProductEditModal({}));
+    $('#adminDeleteAllProductsButton')?.addEventListener('click', async () => {
+      if (!allProducts.length) {
+        alert('No hay productos en el catálogo para eliminar.');
+        return;
+      }
+      if (!confirm(`⚠️ ¿ELIMINAR TODOS LOS PRODUCTOS?\n\nEstás a punto de borrar definitivamente los ${allProducts.length} productos del catálogo.\nEsta acción vaciará el catálogo y no se puede deshacer.\n\n¿Deseas continuar?`)) {
+        return;
+      }
+      try {
+        await api('admin-products-clear', { method: 'POST' });
+        allProducts = [];
+        refreshProductList();
+        showMessage($('#productMessage'), 'Todos los productos han sido eliminados correctamente.');
+      } catch (err) {
+        alert('Error al eliminar productos: ' + err.message);
+      }
     });
 
     $('#openImportModalButton').addEventListener('click', openImportModal);
