@@ -677,13 +677,311 @@ const ensureCustomerTables = async database => {
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping JSONB NOT NULL DEFAULT '{}'::jsonb;`);
 };
 
+const DEFAULT_CATEGORIES = [
+  {
+    id: 'computacion',
+    name: 'Computadoras y Portátiles',
+    icon: 'laptop',
+    keywords: [
+      'computacion', 'computadoras', 'computadora', 'computadores', 'computador', 'computo',
+      'portatiles', 'portatil', 'laptops', 'laptop', 'notebooks', 'notebook',
+      'pc', 'ordenador', 'ordenadores', 'all-in-one', 'all in one', 'aio', 'workstation',
+      'desktop', 'macbook', 'chromebook', 'cpu torre', 'mini pc'
+    ],
+    subcategories: [
+      'Portátiles y Laptops',
+      'Computadoras de Escritorio (PC)',
+      'Equipos All-In-One (AIO)',
+      'Workstations de Alto Rendimiento',
+      'Tablets y Dispositivos Móviles'
+    ]
+  },
+  {
+    id: 'redes',
+    name: 'Redes y Telecomunicaciones',
+    icon: 'network',
+    keywords: [
+      'red', 'redes', 'router', 'routers', 'switch', 'switches', 'telecomunicaciones', 'telecom',
+      'access point', 'antena', 'antenas', 'mikrotik', 'ubiquiti', 'cisco', 'tp-link', 'olt', 'onu', 'ont',
+      'gpon', 'wireless', 'wi-fi', 'wifi', 'networking', 'radioenlace', 'mimo', 'poe switch', 'mesh'
+    ],
+    subcategories: [
+      'Routers y Enrutadores',
+      'Switches Gestionables y PoE',
+      'Access Points Inalámbricos',
+      'Equipos GPON / OLT / ONT',
+      'Antenas y Radioenlaces'
+    ]
+  },
+  {
+    id: 'fibra-cableado',
+    name: 'Fibra Óptica y Cableado',
+    icon: 'cable',
+    keywords: [
+      'fibra optica', 'fibra', 'cable', 'cables', 'cableado', 'utp', 'patch cord', 'patch panel',
+      'conector', 'conectores', 'odf', 'sfp', 'transceiver', 'manga', 'splitter', 'splitters',
+      'bobina', 'bobinas', 'drop', 'rosetas', 'acopladores', 'fusionadora', 'cleaver'
+    ],
+    subcategories: [
+      'Bobinas de Fibra y Cable Drop',
+      'Cables de Red UTP / FTP / Patch Cords',
+      'Conectores Rápidos y Acopladores',
+      'Módulos SFP y Transceivers',
+      'Splitters Ópticos y Cajas ODF'
+    ]
+  },
+  {
+    id: 'servidores',
+    name: 'Servidores e Infraestructura',
+    icon: 'server',
+    keywords: [
+      'servidor', 'servidores', 'server', 'rack', 'racks', 'gabinete', 'gabinetes',
+      'datacenter', 'infraestructura', 'pdu', 'nas', 'san', 'almacenamiento en red', 'chasis', 'poweredge'
+    ],
+    subcategories: [
+      'Servidores en Torre y Rack',
+      'Gabinetes y Racks de Comunicaciones',
+      'Sistemas de Almacenamiento NAS / SAN',
+      'Unidades PDU y Gestión Eléctrica'
+    ]
+  },
+  {
+    id: 'seguridad',
+    name: 'Seguridad y Videovigilancia',
+    icon: 'shield-check',
+    keywords: [
+      'seguridad', 'vigilancia', 'videovigilancia', 'camaras', 'camara', 'camera', 'cctv',
+      'nvr', 'dvr', 'intrusion', 'alarmas', 'alarma', 'biometrico', 'sensores', 'sensor',
+      'control de acceso', 'hikvision', 'dahua', 'domo', 'bullet', 'ptz'
+    ],
+    subcategories: [
+      'Cámaras de Seguridad IP y CCTV',
+      'Grabadores NVR y DVR',
+      'Control de Acceso y Asistencia Biométrico',
+      'Sensores, Alarmas y Sirenas'
+    ]
+  },
+  {
+    id: 'energia',
+    name: 'Energía y Protección Eléctrica',
+    icon: 'zap',
+    keywords: [
+      'energia', 'ups', 'baterias', 'bateria', 'fuentes', 'fuente', 'reguladores', 'regulador',
+      'inversores', 'inversor', 'poe', 'banco de baterias', 'solar', 'electrica', 'voltaje', 'transformador'
+    ],
+    subcategories: [
+      'Sistemas UPS / No-Break',
+      'Reguladores de Voltaje',
+      'Baterías e Inversores de Corriente',
+      'Fuentes de Alimentación e Inyectores PoE'
+    ]
+  },
+  {
+    id: 'monitores',
+    name: 'Monitores y Proyección',
+    icon: 'monitor',
+    keywords: [
+      'pantalla', 'pantallas', 'display', 'displays', 'proyectores', 'proyector',
+      'monitores', 'monitor', 'curvo', 'ultrawide', 'qhd', '4k', 'gaming monitor'
+    ],
+    subcategories: [
+      'Monitores de Oficina y Corporativos',
+      'Monitores Gamer y UltraWide',
+      'Proyectores y Accesorios de Video'
+    ]
+  },
+  {
+    id: 'componentes',
+    name: 'Componentes y Almacenamiento',
+    icon: 'hard-drive',
+    keywords: [
+      'componentes', 'almacenamiento', 'memorias', 'memoria', 'ram', 'disco', 'discos',
+      'ssd', 'hdd', 'nvme', 'm.2', 'procesador', 'procesadores', 'placa madre', 'tarjeta madre',
+      'tarjeta de video', 'gpu', 'fuente de poder atx'
+    ],
+    subcategories: [
+      'Discos de Estado Sólido (SSD / M.2 NVMe)',
+      'Memorias RAM (DDR4 / DDR5)',
+      'Discos Duros (HDD Internos y Externos)',
+      'Procesadores y Placas Madre'
+    ]
+  },
+  {
+    id: 'perifericos',
+    name: 'Periféricos y Accesorios',
+    icon: 'headphones',
+    keywords: [
+      'perifericos', 'periferico', 'accesorios', 'accesorio', 'teclados', 'teclado',
+      'mouse', 'raton', 'auriculares', 'auricular', 'diademas', 'diadema', 'parlantes',
+      'parlante', 'webcam', 'camara web', 'hub', 'adaptadores', 'adaptador', 'mochilas', 'maletines'
+    ],
+    subcategories: [
+      'Teclados y Mouses',
+      'Auriculares, Diademas y Parlantes',
+      'Cámaras Web y Videoconferencia',
+      'Hubs USB y Adaptadores de Video'
+    ]
+  },
+  {
+    id: 'impresion',
+    name: 'Impresión y Puntos de Venta',
+    icon: 'printer',
+    keywords: [
+      'impresoras', 'impresora', 'escaneres', 'escaner', 'toner', 'cartuchos',
+      'pos', 'codigo de barras', 'termica', 'etiquetadora', 'gaveta de dinero', 'rollo termico'
+    ],
+    subcategories: [
+      'Impresoras de Tinta y Láser',
+      'Impresoras Térmicas de Tickets / POS',
+      'Lectores de Código de Barras',
+      'Consumibles, Tóner y Tintas'
+    ]
+  },
+  {
+    id: 'telefonia',
+    name: 'Telefonía y Móviles',
+    icon: 'phone-call',
+    keywords: [
+      'telefonia', 'celulares', 'celular', 'voip', 'telefonos', 'telefono',
+      'central telefonica', 'pbx', 'smartphones', 'smartphone', 'radios', 'walkie'
+    ],
+    subcategories: [
+      'Teléfonos IP y Sistemas VoIP',
+      'Centrales Telefónicas IP-PBX',
+      'Smartphones y Telefonía Celular'
+    ]
+  },
+  {
+    id: 'software',
+    name: 'Software y Licencias',
+    icon: 'file-code',
+    keywords: [
+      'software', 'licencias', 'licencia', 'antivirus', 'sistema operativo',
+      'windows', 'office', 'cloud', 'seguridad digital'
+    ],
+    subcategories: [
+      'Sistemas Operativos y Ofimática',
+      'Licencias Antivirus y Seguridad',
+      'Software de Red y Servidores'
+    ]
+  },
+  {
+    id: 'otros',
+    name: 'Otras Soluciones IT',
+    icon: 'package',
+    keywords: ['varios', 'general', 'otros', 'herramientas', 'insumos'],
+    subcategories: [
+      'Herramientas y Accesorios de Instalación',
+      'Artículos Varios de Tecnología'
+    ]
+  }
+];
+
+const ensureCategoriesTable = async database => {
+  await database.query(`CREATE TABLE IF NOT EXISTS categories_config (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    icon TEXT NOT NULL DEFAULT 'package',
+    keywords JSONB NOT NULL DEFAULT '[]',
+    subcategories JSONB NOT NULL DEFAULT '[]',
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
+};
+
+const getStoredCategories = async database => {
+  try {
+    await ensureCategoriesTable(database);
+    const result = await database.query('SELECT id, name, icon, keywords, subcategories, sort_order AS "sortOrder" FROM categories_config ORDER BY sort_order ASC, name ASC');
+    if (result.rows && result.rows.length > 0) {
+      return result.rows.map(r => ({
+        ...r,
+        keywords: Array.isArray(r.keywords) ? r.keywords : (typeof r.keywords === 'string' ? JSON.parse(r.keywords || '[]') : []),
+        subcategories: Array.isArray(r.subcategories) ? r.subcategories : (typeof r.subcategories === 'string' ? JSON.parse(r.subcategories || '[]') : [])
+      }));
+    }
+  } catch (e) {
+    console.warn('Error leyendo categories_config:', e.message);
+  }
+
+  try {
+    const sc = await database.query("SELECT content_value FROM site_content WHERE content_key = 'catalog_categories_json' LIMIT 1");
+    if (sc.rows[0]?.content_value) {
+      return JSON.parse(sc.rows[0].content_value);
+    }
+  } catch (e) {}
+
+  return DEFAULT_CATEGORIES;
+};
+
+const saveStoredCategories = async (categories, database) => {
+  if (!Array.isArray(categories)) throw new Error('El listado de categorías debe ser un arreglo válido.');
+  await ensureCategoriesTable(database);
+  await database.query('BEGIN');
+  try {
+    await database.query('DELETE FROM categories_config');
+    for (let i = 0; i < categories.length; i++) {
+      const cat = categories[i];
+      const id = String(cat.id || cat.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+      const name = String(cat.name || 'Sin nombre').trim();
+      const icon = String(cat.icon || 'package').trim();
+      const keywords = JSON.stringify(Array.isArray(cat.keywords) ? cat.keywords : []);
+      const subcategories = JSON.stringify(Array.isArray(cat.subcategories) ? cat.subcategories : []);
+      await database.query(
+        'INSERT INTO categories_config (id, name, icon, keywords, subcategories, sort_order, updated_at) VALUES ($1, $2, $3, $4, $5, $6, NOW())',
+        [id, name, icon, keywords, subcategories, i]
+      );
+    }
+    await database.query('COMMIT');
+  } catch (err) {
+    await database.query('ROLLBACK');
+    await database.query(
+      "INSERT INTO site_content (content_key, content_value, updated_at) VALUES ('catalog_categories_json', $1, NOW()) ON CONFLICT (content_key) DO UPDATE SET content_value = EXCLUDED.content_value, updated_at = NOW()",
+      [JSON.stringify(categories)]
+    );
+  }
+};
+
+const ensureProductsTable = async database => {
+  await database.query(`CREATE TABLE IF NOT EXISTS products (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    price NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    category TEXT NOT NULL DEFAULT '',
+    subcategory TEXT NOT NULL DEFAULT '',
+    image_url TEXT NOT NULL DEFAULT '',
+    external_url TEXT NOT NULL DEFAULT '',
+    sku TEXT NOT NULL DEFAULT '',
+    visible BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS external_url TEXT NOT NULL DEFAULT '';
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS sku TEXT NOT NULL DEFAULT '';
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS subcategory TEXT NOT NULL DEFAULT '';`);
+};
+
 export default async function handler(req, res) {
-  const action = req.query?.action || req.url?.split('?')[0].split('/').filter(Boolean).pop();
+  const rawAction = Array.isArray(req.query?.action)
+    ? req.query.action.join('/')
+    : String(req.query?.action || '');
+  const urlPath = (req.url || '').split('?')[0].replace(/^\/api\/auth\/?/, '');
+  const action = (rawAction || urlPath || '').toLowerCase().replace(/^\/+|\/+$/g, '');
+
+  const isAction = target => {
+    const t = target.toLowerCase().replace(/^\/+|\/+$/g, '');
+    if (action === t || action.endsWith('/' + t)) return true;
+    const actNorm = action.replace(/-/g, '/');
+    const tNorm = t.replace(/-/g, '/');
+    return actNorm === tNorm || actNorm.endsWith('/' + tNorm);
+  };
+
   try {
     await ensureDatabase();
     const database = getPool();
 
-    if (action === 'login' && req.method === 'POST') {
+    if (isAction('login') && req.method === 'POST') {
       const body = bodyOf(req);
       const email = String(body.email || '').trim().toLowerCase();
       const password = String(body.password || '');
@@ -695,7 +993,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ user: publicUser(user) });
     }
 
-    if (action === 'register' && req.method === 'POST') {
+    if (isAction('register') && req.method === 'POST') {
       const body = bodyOf(req);
       const name = String(body.name || '').trim();
       const surname = String(body.surname || '').trim();
@@ -715,7 +1013,7 @@ export default async function handler(req, res) {
       return res.status(201).json({ user: publicUser(user) });
     }
 
-    if (action === 'me' && req.method === 'GET') {
+    if (isAction('me') && req.method === 'GET') {
       const userId = getSessionUserId(req);
       if (!userId) return res.status(401).json({ error: 'No hay una sesión activa.' });
       const result = await database.query('SELECT id, email, name, surname, phone, role FROM users WHERE id = $1 LIMIT 1', [userId]);
@@ -723,22 +1021,24 @@ export default async function handler(req, res) {
       return res.status(200).json({ user: publicUser(result.rows[0]) });
     }
 
-    if (action === 'change-password' && req.method === 'POST') {
+    if (isAction('change-password') && req.method === 'POST') {
       const userId = getSessionUserId(req);
       if (!userId) return res.status(401).json({ error: 'Debes iniciar sesión.' });
       const body = bodyOf(req);
       const currentPassword = String(body.currentPassword || '');
       const newPassword = String(body.newPassword || '');
       const confirmation = String(body.confirmation || '');
-      if (newPassword.length < 8) return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 8 caracteres.' });
-      if (newPassword !== confirmation) return res.status(400).json({ error: 'La confirmación no coincide con la nueva contraseña.' });
+      if (newPassword.length < 6) return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres.' });
+      if (newPassword !== confirmation) return res.status(400).json({ error: 'Las contraseñas no coinciden.' });
       const result = await database.query('SELECT password_hash AS "passwordHash" FROM users WHERE id = $1 LIMIT 1', [userId]);
-      if (!result.rows[0] || !(await bcrypt.compare(currentPassword, result.rows[0].passwordHash))) return res.status(401).json({ error: 'La contraseña actual no es correcta.' });
+      if (!result.rows[0] || !(await bcrypt.compare(currentPassword, result.rows[0].passwordHash))) {
+        return res.status(400).json({ error: 'La contraseña actual no es correcta.' });
+      }
       await database.query('UPDATE users SET password_hash = $1 WHERE id = $2', [await bcrypt.hash(newPassword, 12), userId]);
       return res.status(200).json({ ok: true });
     }
 
-    if (action === 'request-password-reset' && req.method === 'POST') {
+    if (isAction('request-password-reset') && req.method === 'POST') {
       const email = String(bodyOf(req).email || '').trim().toLowerCase();
       const result = await database.query('SELECT id, email FROM users WHERE email = $1 LIMIT 1', [email]);
       if (!result.rows[0]) return res.status(200).json({ ok: true });
@@ -752,7 +1052,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
-    if (action === 'reset-password' && req.method === 'POST') {
+    if (isAction('reset-password') && req.method === 'POST') {
       const body = bodyOf(req);
       const token = String(body.token || '');
       const password = String(body.password || '');
@@ -769,7 +1069,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
-    if (action === 'customer-wishlist' && (req.method === 'GET' || req.method === 'POST' || req.method === 'DELETE')) {
+    if (isAction('customer-wishlist') && (req.method === 'GET' || req.method === 'POST' || req.method === 'DELETE')) {
       const userId = getSessionUserId(req);
       if (!userId) return res.status(401).json({ error: 'Debes iniciar sesión.' });
       await ensureCustomerTables(database);
@@ -795,7 +1095,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ saved: true });
     }
 
-    if (action === 'update-profile' && req.method === 'POST') {
+    if (isAction('update-profile') && req.method === 'POST') {
       const userId = getSessionUserId(req);
       if (!userId) return res.status(401).json({ error: 'Debes iniciar sesión.' });
       const body = bodyOf(req);
@@ -817,7 +1117,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, user: publicUser(result.rows[0]) });
     }
 
-    if (action === 'customer-orders' && (req.method === 'GET' || req.method === 'POST')) {
+    if (isAction('customer-orders') && (req.method === 'GET' || req.method === 'POST')) {
       const userId = getSessionUserId(req);
       await ensureCustomerTables(database);
       if (req.method === 'GET') {
@@ -943,25 +1243,52 @@ export default async function handler(req, res) {
       return res.status(201).json({ id: orderId, shortId, subtotal, total, status: 'received' });
     }
 
-    if (action === 'admin-products' && (req.method === 'GET' || req.method === 'POST' || req.method === 'DELETE')) {
+    if (isAction('categories') && req.method === 'GET') {
+      const categories = await getStoredCategories(database);
+      return res.status(200).json({ categories });
+    }
+
+    if (isAction('categories') && req.method === 'POST') {
       if (!await requireAdmin(req, res, database)) return;
-      await database.query(`CREATE TABLE IF NOT EXISTS products (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT NOT NULL DEFAULT '',
-        price NUMERIC(12, 2) NOT NULL DEFAULT 0,
-        category TEXT NOT NULL DEFAULT '',
-        image_url TEXT NOT NULL DEFAULT '',
-        external_url TEXT NOT NULL DEFAULT '',
-        sku TEXT NOT NULL DEFAULT '',
-        visible BOOLEAN NOT NULL DEFAULT TRUE,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      );
-      ALTER TABLE products ADD COLUMN IF NOT EXISTS external_url TEXT NOT NULL DEFAULT '';
-      ALTER TABLE products ADD COLUMN IF NOT EXISTS sku TEXT NOT NULL DEFAULT ''`);
+      const body = bodyOf(req);
+      const categories = body?.categories;
+      if (!Array.isArray(categories)) {
+        return res.status(400).json({ error: 'Debes enviar un arreglo de categorías válido.' });
+      }
+      await saveStoredCategories(categories, database);
+      return res.status(200).json({ ok: true, count: categories.length });
+    }
+
+    if ((isAction('categories/reset') || isAction('categories-reset')) && req.method === 'POST') {
+      if (!await requireAdmin(req, res, database)) return;
+      await saveStoredCategories(DEFAULT_CATEGORIES, database);
+      return res.status(200).json({ ok: true, categories: DEFAULT_CATEGORIES });
+    }
+
+    if ((isAction('categories/reassign') || isAction('categories-reassign')) && req.method === 'POST') {
+      if (!await requireAdmin(req, res, database)) return;
+      const body = bodyOf(req);
+      const { fromCategory, toCategory, fromSubcategory, toSubcategory } = body || {};
+      if (!fromCategory || !toCategory) {
+        return res.status(400).json({ error: 'Debes especificar la categoría origen y destino.' });
+      }
+      await ensureProductsTable(database);
+      let updatedCount = 0;
+      if (fromSubcategory && toSubcategory !== undefined) {
+        const r = await database.query('UPDATE products SET category = $1, subcategory = $2, updated_at = NOW() WHERE category = $3 AND subcategory = $4', [toCategory, toSubcategory, fromCategory, fromSubcategory]);
+        updatedCount = r.rowCount;
+      } else {
+        const r = await database.query('UPDATE products SET category = $1, updated_at = NOW() WHERE category = $2', [toCategory, fromCategory]);
+        updatedCount = r.rowCount;
+      }
+      return res.status(200).json({ ok: true, updatedCount });
+    }
+
+    if (isAction('admin-products') && (req.method === 'GET' || req.method === 'POST' || req.method === 'DELETE')) {
+      if (!await requireAdmin(req, res, database)) return;
+      await ensureProductsTable(database);
       if (req.method === 'GET') {
-        const result = await database.query('SELECT id, name, description, price, category, image_url AS "imageUrl", external_url AS "externalUrl", sku, visible FROM products ORDER BY created_at DESC');
+        const result = await database.query('SELECT id, name, description, price, category, subcategory, image_url AS "imageUrl", external_url AS "externalUrl", sku, visible FROM products ORDER BY created_at DESC');
         return res.status(200).json({ products: result.rows });
       }
       if (req.method === 'DELETE') {
@@ -976,51 +1303,25 @@ export default async function handler(req, res) {
       }
       const product = bodyOf(req);
       const id = String(product.id || crypto.randomUUID());
-      await database.query(`INSERT INTO products (id, name, description, price, category, image_url, external_url, sku, visible, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+      await database.query(`INSERT INTO products (id, name, description, price, category, subcategory, image_url, external_url, sku, visible, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
         ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description, price = EXCLUDED.price,
-        category = EXCLUDED.category, image_url = EXCLUDED.image_url, external_url = EXCLUDED.external_url, sku = EXCLUDED.sku,
+        category = EXCLUDED.category, subcategory = EXCLUDED.subcategory, image_url = EXCLUDED.image_url, external_url = EXCLUDED.external_url, sku = EXCLUDED.sku,
         visible = EXCLUDED.visible, updated_at = NOW()`,
-        [id, String(product.name || '').trim(), String(product.description || '').trim(), Number(product.price || 0), String(product.category || '').trim(), String(product.imageUrl || '').trim(), String(product.externalUrl || '').trim(), String(product.sku || '').trim(), product.visible !== false]);
+        [id, String(product.name || '').trim(), String(product.description || '').trim(), Number(product.price || 0), String(product.category || '').trim(), String(product.subcategory || '').trim(), String(product.imageUrl || '').trim(), String(product.externalUrl || '').trim(), String(product.sku || '').trim(), product.visible !== false]);
       return res.status(200).json({ ok: true, id });
     }
 
-    if (action === 'admin-products-clear' && req.method === 'POST') {
+    if (isAction('admin-products-clear') && req.method === 'POST') {
       if (!await requireAdmin(req, res, database)) return;
-      await database.query(`CREATE TABLE IF NOT EXISTS products (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT NOT NULL DEFAULT '',
-        price NUMERIC(12, 2) NOT NULL DEFAULT 0,
-        category TEXT NOT NULL DEFAULT '',
-        image_url TEXT NOT NULL DEFAULT '',
-        external_url TEXT NOT NULL DEFAULT '',
-        sku TEXT NOT NULL DEFAULT '',
-        visible BOOLEAN NOT NULL DEFAULT TRUE,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )`);
+      await ensureProductsTable(database);
       await database.query('DELETE FROM products');
       return res.status(200).json({ ok: true, cleared: true, message: 'Todos los productos han sido eliminados correctamente.' });
     }
 
-    if (action === 'admin-products-bulk' && req.method === 'POST') {
+    if (isAction('admin-products-bulk') && req.method === 'POST') {
       if (!await requireAdmin(req, res, database)) return;
-      await database.query(`CREATE TABLE IF NOT EXISTS products (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT NOT NULL DEFAULT '',
-        price NUMERIC(12, 2) NOT NULL DEFAULT 0,
-        category TEXT NOT NULL DEFAULT '',
-        image_url TEXT NOT NULL DEFAULT '',
-        external_url TEXT NOT NULL DEFAULT '',
-        sku TEXT NOT NULL DEFAULT '',
-        visible BOOLEAN NOT NULL DEFAULT TRUE,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      );
-      ALTER TABLE products ADD COLUMN IF NOT EXISTS external_url TEXT NOT NULL DEFAULT '';
-      ALTER TABLE products ADD COLUMN IF NOT EXISTS sku TEXT NOT NULL DEFAULT '';`);
+      await ensureProductsTable(database);
 
       const body = bodyOf(req);
       const rawItems = Array.isArray(body.products) ? body.products : [];
@@ -1047,11 +1348,15 @@ export default async function handler(req, res) {
           if (!existing.sku && raw.sku) {
             existing.sku = String(raw.sku).trim();
           }
+          if (!existing.subcategory && raw.subcategory) {
+            existing.subcategory = String(raw.subcategory).trim();
+          }
         } else {
           uniqueBatchMap.set(name, {
             ...raw,
             name,
-            imageUrl: img
+            imageUrl: img,
+            subcategory: String(raw.subcategory || '').trim()
           });
         }
       }
@@ -1066,13 +1371,14 @@ export default async function handler(req, res) {
           if (!name) continue;
 
           // Comprobar si ya existe un producto con el mismo nombre idéntico en base de datos
-          const existingRow = await database.query('SELECT id, image_url, description, price, sku FROM products WHERE name = $1 LIMIT 1', [name]);
+          const existingRow = await database.query('SELECT id, image_url, description, price, sku, subcategory FROM products WHERE name = $1 LIMIT 1', [name]);
           let id = '';
           let imageUrl = String(item.imageUrl || item.image_url || '').trim();
           let description = String(item.description || '').trim();
           const parsedPrice = Number(item.price);
           let price = !isNaN(parsedPrice) && parsedPrice > 0 ? parsedPrice : 0;
           let sku = String(item.sku || '').trim();
+          let subcategory = String(item.subcategory || '').trim();
 
           if (existingRow.rows && existingRow.rows.length > 0) {
             id = existingRow.rows[0].id;
@@ -1088,6 +1394,9 @@ export default async function handler(req, res) {
             if (!sku && existingRow.rows[0].sku) {
               sku = existingRow.rows[0].sku;
             }
+            if (!subcategory && existingRow.rows[0].subcategory) {
+              subcategory = existingRow.rows[0].subcategory;
+            }
           } else {
             id = String(item.id || (sku ? `sku:${sku.toUpperCase()}` : crypto.randomUUID()));
           }
@@ -1096,19 +1405,20 @@ export default async function handler(req, res) {
           const externalUrl = String(item.externalUrl || item.external_url || '').trim();
           const visible = item.visible !== false;
 
-          await database.query(`INSERT INTO products (id, name, description, price, category, image_url, external_url, sku, visible, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+          await database.query(`INSERT INTO products (id, name, description, price, category, subcategory, image_url, external_url, sku, visible, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
             ON CONFLICT (id) DO UPDATE SET
               name = EXCLUDED.name,
               description = CASE WHEN EXCLUDED.description <> '' THEN EXCLUDED.description ELSE products.description END,
               price = EXCLUDED.price,
               category = CASE WHEN EXCLUDED.category <> '' THEN EXCLUDED.category ELSE products.category END,
+              subcategory = CASE WHEN EXCLUDED.subcategory <> '' THEN EXCLUDED.subcategory ELSE products.subcategory END,
               image_url = CASE WHEN EXCLUDED.image_url <> '' THEN EXCLUDED.image_url ELSE products.image_url END,
               external_url = CASE WHEN EXCLUDED.external_url <> '' THEN EXCLUDED.external_url ELSE products.external_url END,
               sku = CASE WHEN EXCLUDED.sku <> '' THEN EXCLUDED.sku ELSE products.sku END,
               visible = EXCLUDED.visible,
               updated_at = NOW()`,
-            [id, name, description, price, category, imageUrl, externalUrl, sku, visible]);
+            [id, name, description, price, category, subcategory, imageUrl, externalUrl, sku, visible]);
           count++;
         }
         await database.query('COMMIT');
@@ -1119,7 +1429,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, count });
     }
 
-    if (action === 'admin-content' && (req.method === 'GET' || req.method === 'POST')) {
+    if (isAction('admin-content') && (req.method === 'GET' || req.method === 'POST')) {
       if (!await requireAdmin(req, res, database)) return;
       await database.query(`CREATE TABLE IF NOT EXISTS site_content (
         content_key TEXT PRIMARY KEY,
@@ -1138,7 +1448,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
-    if (action === 'landing-content' && (req.method === 'GET' || req.method === 'POST')) {
+    if (isAction('landing-content') && (req.method === 'GET' || req.method === 'POST')) {
       const sanitizeLandingGridHtml = html => {
         if (typeof html !== 'string') return '';
         return html
@@ -1178,7 +1488,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, message: 'Página de presentación guardada correctamente.' });
     }
 
-    if ((action === 'landing-content-reset' || action === 'landing-content/reset') && req.method === 'POST') {
+    if ((isAction('landing-content-reset') || isAction('landing-content/reset')) && req.method === 'POST') {
       if (!await requireAdmin(req, res, database)) return;
       await database.query(`CREATE TABLE IF NOT EXISTS landing_content (
         content_key TEXT PRIMARY KEY,
@@ -1189,7 +1499,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, message: 'Página de presentación restablecida.' });
     }
 
-    if (action === 'test-email' && req.method === 'POST') {
+    if (isAction('test-email') && req.method === 'POST') {
       if (!await requireAdmin(req, res, database)) return;
       const body = bodyOf(req);
       const targetEmail = String(body.to || '').trim();
@@ -1271,35 +1581,22 @@ export default async function handler(req, res) {
       }
     }
 
-    if (action === 'catalog' && req.method === 'GET') {
-      await database.query(`CREATE TABLE IF NOT EXISTS products (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT NOT NULL DEFAULT '',
-        price NUMERIC(12, 2) NOT NULL DEFAULT 0,
-        category TEXT NOT NULL DEFAULT '',
-        image_url TEXT NOT NULL DEFAULT '',
-        external_url TEXT NOT NULL DEFAULT '',
-        sku TEXT NOT NULL DEFAULT '',
-        visible BOOLEAN NOT NULL DEFAULT TRUE,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      );
-      ALTER TABLE products ADD COLUMN IF NOT EXISTS external_url TEXT NOT NULL DEFAULT '';
-      ALTER TABLE products ADD COLUMN IF NOT EXISTS sku TEXT NOT NULL DEFAULT ''`);
+    if (isAction('catalog') && req.method === 'GET') {
+      await ensureProductsTable(database);
       await database.query(`CREATE TABLE IF NOT EXISTS site_content (
         content_key TEXT PRIMARY KEY,
         content_value TEXT NOT NULL DEFAULT '',
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )`);
-      const [products, content] = await Promise.all([
-        database.query('SELECT id, name, description, price, category, image_url AS "imageUrl", external_url AS "externalUrl", sku FROM products WHERE visible = TRUE ORDER BY created_at DESC'),
-        database.query('SELECT content_key AS "key", content_value AS value FROM site_content')
+      const [products, content, categories] = await Promise.all([
+        database.query('SELECT id, name, description, price, category, subcategory, image_url AS "imageUrl", external_url AS "externalUrl", sku FROM products WHERE visible = TRUE ORDER BY created_at DESC'),
+        database.query('SELECT content_key AS "key", content_value AS value FROM site_content'),
+        getStoredCategories(database)
       ]);
-      return res.status(200).json({ products: products.rows, content: content.rows });
+      return res.status(200).json({ products: products.rows, content: content.rows, categories });
     }
 
-    if (action === 'search-product-image' && req.method === 'GET') {
+    if ((isAction('search-product-image') || isAction('search-images')) && req.method === 'GET') {
       const query = String(req.query?.q || '').trim();
       const category = String(req.query?.category || '').trim();
       const store = String(req.query?.store || 'all').trim().toLowerCase();
@@ -1308,7 +1605,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ images });
     }
 
-    if (action === 'proxy-image' && req.method === 'GET') {
+    if (isAction('proxy-image') && req.method === 'GET') {
       const targetUrl = String(req.query?.url || '').trim();
       if (!targetUrl || !/^https?:\/\//i.test(targetUrl)) {
         return res.status(400).json({ error: 'URL de imagen no válida.' });
@@ -1333,7 +1630,7 @@ export default async function handler(req, res) {
       }
     }
 
-    if (action === 'logout' && req.method === 'POST') {
+    if (isAction('logout') && req.method === 'POST') {
       clearSessionCookie(res);
       return res.status(200).json({ ok: true });
     }

@@ -1149,7 +1149,7 @@ app.post('/api/auth/categories', async (req, res) => {
   }
 });
 
-app.post('/api/auth/categories/reset', async (req, res) => {
+app.post(['/api/auth/categories/reset', '/api/auth/categories-reset'], async (req, res) => {
   if (!await requireAdminUser(req, res)) return;
   try {
     await saveStoredCategories(DEFAULT_CATEGORIES);
@@ -1159,7 +1159,7 @@ app.post('/api/auth/categories/reset', async (req, res) => {
   }
 });
 
-app.post('/api/auth/categories/reassign', async (req, res) => {
+app.post(['/api/auth/categories/reassign', '/api/auth/categories-reassign'], async (req, res) => {
   if (!await requireAdminUser(req, res)) return;
   const { fromCategory, toCategory, fromSubcategory, toSubcategory } = req.body || {};
   if (!fromCategory || !toCategory) {
@@ -1884,7 +1884,7 @@ const searchWebImages = async (query, limit = 12, category = '', store = 'all') 
   }];
 };
 
-app.get('/api/auth/search-product-image', async (req, res) => {
+app.get(['/api/auth/search-product-image', '/api/auth/search-images'], async (req, res) => {
   const query = String(req.query?.q || '').trim();
   const category = String(req.query?.category || '').trim();
   const store = String(req.query?.store || 'all').trim().toLowerCase();

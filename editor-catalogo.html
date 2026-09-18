@@ -2308,7 +2308,7 @@
       grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px;"><div class="spinner"></div> Buscando imágenes nítidas...</div>';
 
       try {
-        const res = await api(`search-images?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&store=${encodeURIComponent(store)}&limit=15`);
+        const res = await api(`search-product-image?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&store=${encodeURIComponent(store)}&limit=15`);
         const images = res.images || [];
 
         if (!images.length) {
@@ -2638,7 +2638,7 @@
         let fetchedCount = 0;
         for (const item of missingPhotos) {
           try {
-            const res = await api(`search-images?q=${encodeURIComponent(item.name)}&category=${encodeURIComponent(item.category)}&limit=1`);
+            const res = await api(`search-product-image?q=${encodeURIComponent(item.name)}&category=${encodeURIComponent(item.category)}&limit=1`);
             if (res.images && res.images.length > 0) {
               item.imageUrl = res.images[0].url;
               fetchedCount++;
