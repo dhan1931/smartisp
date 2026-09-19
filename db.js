@@ -34,3 +34,4 @@ async function checkConnection() {
 checkConnection();
 
 export default supabase;
+
