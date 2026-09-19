@@ -71,7 +71,25 @@ const users = new Map();
 const wishlists = new Map();
 const orders = new Map();
 const passwordResets = new Map();
-const pool = process.env.DATABASE_URL ? new Pool({ connectionString: process.env.DATABASE_URL, ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined }) : null;
+const getPool = () => {
+  const configuredUrl = process.env.DATABASE_URL || process.env.DATABASE_POSTGRES_URL || process.env.POSTGRES_URL;
+  if (!configuredUrl) return null;
+  try {
+    const connectionUrl = new URL(configuredUrl);
+    connectionUrl.searchParams.delete('sslmode');
+    const isLocalhost = connectionUrl.hostname === 'localhost' || connectionUrl.hostname === '127.0.0.1';
+    return new Pool({
+      connectionString: connectionUrl.toString(),
+      ssl: isLocalhost ? undefined : { rejectUnauthorized: false }
+    });
+  } catch {
+    return new Pool({
+      connectionString: configuredUrl,
+      ssl: { rejectUnauthorized: false }
+    });
+  }
+};
+const pool = getPool();
 
 const demoPasswordHash = await bcrypt.hash('pepe1234', 12);
 const demoUser = {
