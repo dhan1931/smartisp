@@ -3,6 +3,10 @@
   "outputDirectory": "dist/public",
   "rewrites": [
     {
+      "source": "/api/test-products",
+      "destination": "/api/test-products"
+    },
+    {
       "source": "/api/auth/:path*",
       "destination": "/api/auth/[action]?action=:path*"
     }

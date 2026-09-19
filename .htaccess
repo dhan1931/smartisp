@@ -1,0 +1,21 @@
+# ===================================================================
+# CONFIGURACIÓN DEL SERVIDOR WEB (LITESPEED / APACHE) - SMARTISP
+# ===================================================================
+
+DirectoryIndex index.html index.htm index.php
+
+<IfModule mod_authz_core.c>
+    Require all granted
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Proteger archivos sensibles
+    RewriteRule ^\.env - [F,L]
+    RewriteRule ^\.git - [F,L]
+
+    # Enrutamiento de diagnóstico para /api/test-products en Hostinger
+    RewriteRule ^api/test-products/?$ api/test-products/index.php [QSA,L]
+</IfModule>

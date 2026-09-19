@@ -981,15 +981,20 @@ export default async function handler(req, res) {
     await ensureDatabase();
     const database = getPool();
 
-    if (isAction('test-supabase') && req.method === 'GET') {
-      const result = await database.query('SELECT id, name, price, category, visible FROM products LIMIT 5');
-      return res.status(200).json({
-        ok: true,
-        source: 'supabase',
-        table: 'products',
-        count: result.rows.length,
-        data: result.rows
-      });
+    if ((isAction('test-products') || isAction('test-supabase')) && req.method === 'GET') {
+      try {
+        const result = await database.query('SELECT id, name, price FROM products LIMIT 100');
+        return res.status(200).json({
+          success: true,
+          rowsFound: result.rows ? result.rows.length : 0
+        });
+      } catch (err) {
+        return res.status(500).json({
+          success: false,
+          rowsFound: 0,
+          error: err.message || 'Error al consultar productos'
+        });
+      }
     }
 
     if (isAction('login') && req.method === 'POST') {

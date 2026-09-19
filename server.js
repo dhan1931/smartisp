@@ -156,6 +156,43 @@ app.use(session({
     secure: process.env.NODE_ENV === 'production'
   }
 }));
+// --- RUTA DE DIAGNÓSTICO DE PRODUCTOS SUPABASE (smart-isp.es) ---
+app.get(['/api/test-products', '/api/auth/test-products'], async (req, res) => {
+  if (!supabase) {
+    return res.status(503).json({
+      success: false,
+      rowsFound: 0,
+      error: 'Cliente de Supabase no configurado. Faltan variables de entorno SUPABASE_URL o SUPABASE_ANON_KEY.'
+    });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('id, name, price')
+      .limit(100);
+
+    if (error) {
+      return res.status(500).json({
+        success: false,
+        rowsFound: 0,
+        error: error.message || 'Error al consultar la tabla de productos'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      rowsFound: Array.isArray(data) ? data.length : 0
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      rowsFound: 0,
+      error: err.message || 'Error interno del servidor al consultar Supabase'
+    });
+  }
+});
+
 app.use(express.static(__dirname));
 
 app.post('/api/auth/login', async (req, res) => {
