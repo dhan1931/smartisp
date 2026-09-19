@@ -10,3 +10,4 @@ DirectoryIndex index.html index.htm index.php
     # Redireccionar /api/test-products al endpoint de diagnostico PHP si no hay reverse proxy a Node
     RewriteRule ^api/test-products/?$ api/test-products/index.php [QSA,L]
 </IfModule>
+

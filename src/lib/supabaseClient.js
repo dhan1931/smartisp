@@ -4,7 +4,7 @@ import path from 'node:path';
 
 /**
  * ===================================================================
- * CLIENTE REUTILIZABLE DE SUPABASE PARA SMARTISP (smart-isp.es)
+ * CLIENTE REUTILIZABLE DE SUPABASE PARA SMARTISP (smart-isp.com.ec)
  * ===================================================================
  * 
  * Lee las credenciales de Supabase inyectadas por el entorno de Hostinger,

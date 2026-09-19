@@ -156,7 +156,7 @@ app.use(session({
     secure: process.env.NODE_ENV === 'production'
   }
 }));
-// --- RUTA DE DIAGNÓSTICO DE PRODUCTOS SUPABASE (smart-isp.es) ---
+// --- RUTA DE DIAGNÓSTICO DE PRODUCTOS SUPABASE (smart-isp.com.ec) ---
 app.get(['/api/test-products', '/api/auth/test-products'], async (req, res) => {
   if (!supabase) {
     return res.status(503).json({
@@ -280,7 +280,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
   return res.json({ ok: true });
 });
 
-// --- ENDPOINT SEGURO DE PRUEBA DE SUPABASE (smart-isp.es) ---
+// --- ENDPOINT SEGURO DE PRUEBA DE SUPABASE (smart-isp.com.ec) ---
 app.get(['/api/test-supabase', '/api/auth/test-supabase'], async (req, res) => {
   if (!isSupabaseConfigured() || !supabase) {
     return res.status(503).json({
