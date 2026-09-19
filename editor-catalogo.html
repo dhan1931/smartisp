@@ -602,6 +602,68 @@
       margin-bottom: 12px;
     }
 
+    /* Multi-file chips & badges */
+    .import-file-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 12px;
+      background: #ffffff;
+      border: 1.5px solid #d0e3eb;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--ink);
+      cursor: pointer;
+      transition: all .15s ease;
+      user-select: none;
+    }
+    .import-file-chip:hover {
+      border-color: var(--blue);
+      background: #f0f9ff;
+    }
+    .import-file-chip.active {
+      background: #e0f2fe;
+      border-color: var(--blue);
+      color: var(--navy);
+      font-weight: 700;
+      box-shadow: 0 1px 4px rgba(8, 126, 164, 0.15);
+    }
+    .file-count-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #334155;
+    }
+    .import-file-chip.active .file-count-badge {
+      background: var(--blue);
+      color: #ffffff;
+    }
+    .btn-remove-file {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: bold;
+      transition: all .15s ease;
+      line-height: 1;
+      padding: 0;
+      margin-left: 2px;
+    }
+    .btn-remove-file:hover {
+      background: #fee2e2;
+      color: #ef4444;
+    }
+
     /* Affinity Badge */
     .affinity-badge {
       display: inline-flex;
@@ -977,28 +1039,43 @@
       <div class="dropzone-box" id="excelDropzone">
         <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display:none;" multiple>
         <i data-lucide="cloud-upload" class="dropzone-icon" width="48"></i>
-        <h3 style="font-size:16px; font-weight:700; color:var(--navy); margin-bottom:4px;">Haz clic o arrastra aquí tu archivo de Excel</h3>
-        <p style="font-size:13px; color:var(--muted); margin-bottom:12px;">Soporta archivos de distribuidores, listas de precios y formatos de inventario (.xlsx, .xls, .csv)</p>
+        <h3 style="font-size:16px; font-weight:700; color:var(--navy); margin-bottom:4px;">Haz clic o arrastra aquí tus archivos de Excel</h3>
+        <p style="font-size:13px; color:var(--muted); margin-bottom:12px;">Soporta uno o varios archivos simultáneamente (.xlsx, .xls, .csv)</p>
         <button type="button" class="btn btn-secondary" onclick="document.getElementById('excelFileInput').click()">
-          <i data-lucide="file" width="15"></i> Seleccionar archivo del equipo
+          <i data-lucide="files" width="15"></i> Seleccionar archivos del equipo
         </button>
       </div>
 
       <!-- Importer Workspace (Hidden until file selected) -->
       <div id="importerWorkspace" class="content-card" style="display:none;">
-        <div class="card-header">
+        <div class="card-header" style="flex-wrap:wrap; gap:12px;">
           <div>
-            <h3 class="card-title" id="importFileNameTitle"><i data-lucide="file-check" width="18"></i> Archivo cargado</h3>
+            <h3 class="card-title" id="importFileNameTitle"><i data-lucide="files" width="18"></i> Archivos cargados</h3>
             <span id="importFileStats" style="font-size:12.5px; color:var(--muted);"></span>
           </div>
-          <div style="display:flex; align-items:center; gap:10px;">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
             <div style="display:flex; align-items:center; gap:6px; background:#e8f4f8; padding:5px 12px; border-radius:8px; border:1px solid #cde5eb;">
               <label for="importPriceMargin" style="font-size:12px; font-weight:700; color:var(--blue); margin:0;">📈 Margen de Ganancia:</label>
               <input type="number" id="importPriceMargin" value="30" min="0" max="500" step="1" style="width:52px; padding:3px 6px; font-size:12px; font-weight:700; text-align:center; border:1px solid #90caf9; border-radius:4px; color:var(--blue);">
               <span style="font-size:12px; font-weight:700; color:var(--blue);">%</span>
               <span style="font-size:11px; color:var(--muted);">(Y + 30%)</span>
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="resetImportFile()">Elegir otro archivo</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('excelFileInput').click()">
+              <i data-lucide="plus" width="14"></i> Agregar más archivos
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="resetImportFile()" style="color:#ef4444; border-color:#fca5a5;">
+              <i data-lucide="trash-2" width="14"></i> Vaciar todo
+            </button>
+          </div>
+        </div>
+
+        <!-- Multi-file Chips / Selector Bar -->
+        <div style="margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px;">📁 Archivos en esta sesión (haz clic para ajustar columnas):</span>
+          </div>
+          <div id="importFilesChipsContainer" style="display:flex; gap:8px; flex-wrap:wrap; padding:10px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; min-height:46px; align-items:center;">
+            <!-- Rendered dynamically -->
           </div>
         </div>
 
@@ -1006,8 +1083,8 @@
         <div style="background:#f1f7f9; border:1px solid #cbe0e7; border-radius:10px; padding:16px; margin-bottom:18px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
             <div>
-              <strong style="font-size:13.5px; color:var(--navy);">⚙️ Asignación Inteligente de Columnas</strong>
-              <div style="font-size:11.5px; color:var(--muted);">Detectadas automáticamente. Puedes ajustar los encabezados según la estructura de tu archivo:</div>
+              <strong style="font-size:13.5px; color:var(--navy);">⚙️ Asignación Inteligente de Columnas: <span id="activeFileNameLabel" style="color:var(--blue);"></span></strong>
+              <div style="font-size:11.5px; color:var(--muted);">Ajusta los encabezados de este archivo si es necesario:</div>
             </div>
             <div style="display:flex; align-items:center; gap:6px;">
               <label for="selectHeaderRow" style="font-size:12px; font-weight:700; color:var(--ink);">Fila de Encabezados:</label>
@@ -1059,7 +1136,7 @@
                 <th>Nombre del Producto</th>
                 <th>SKU</th>
                 <th>Precio Final (+30%)</th>
-                <th>Texto en Excel</th>
+                <th style="min-width:160px;">Archivo / Texto Excel</th>
                 <th style="min-width:240px;">Macro-Categoría Asignada (Afinidad)</th>
                 <th style="min-width:180px;">Subcategoría</th>
               </tr>
@@ -2432,7 +2509,10 @@
       }
     };
 
-    // --- TAB 3: IMPORTADOR INTELIGENTE DE EXCEL ---
+    // --- TAB 3: IMPORTADOR INTELIGENTE DE MÚLTIPLES ARCHIVOS EXCEL ---
+    let importFilesList = [];
+    let activeImportFileIndex = 0;
+
     const dropzone = document.getElementById('excelDropzone');
     const fileInput = document.getElementById('excelFileInput');
 
@@ -2441,13 +2521,16 @@
     dropzone.addEventListener('drop', e => {
       e.preventDefault();
       dropzone.classList.remove('dragover');
-      if (e.dataTransfer?.files?.length) processExcelFile(e.dataTransfer.files[0]);
+      if (e.dataTransfer?.files?.length) processExcelFiles(Array.from(e.dataTransfer.files));
     });
     fileInput.addEventListener('change', e => {
-      if (e.target.files?.length) processExcelFile(e.target.files[0]);
+      if (e.target.files?.length) processExcelFiles(Array.from(e.target.files));
+      fileInput.value = '';
     });
 
     window.resetImportFile = () => {
+      importFilesList = [];
+      activeImportFileIndex = 0;
       currentImportState = null;
       document.getElementById('excelFileInput').value = '';
       document.getElementById('excelDropzone').style.display = 'block';
@@ -2455,39 +2538,86 @@
       document.getElementById('importProgressWrap').style.display = 'none';
     };
 
-    const processExcelFile = file => {
-      const reader = new FileReader();
-      reader.onload = e => {
-        try {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
-          const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+    const readExcelFileAsync = file => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            if (!workbook.SheetNames || !workbook.SheetNames.length) {
+              return reject(new Error(`El archivo "${file.name}" no contiene hojas de cálculo.`));
+            }
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
 
-          if (!rawRows || !rawRows.length) {
-            return alert('El archivo seleccionado no contiene filas legibles.');
+            if (!rawRows || !rawRows.length) {
+              return reject(new Error(`El archivo "${file.name}" no contiene filas legibles.`));
+            }
+
+            const headerRowIdx = detectHeaderRowIndex(rawRows);
+            const headers = (rawRows[headerRowIdx] || []).map((c, i) => String(c || '').trim() || `Columna ${i + 1}`);
+            const mapping = detectColumnsMapping(headers, rawRows.slice(headerRowIdx + 1, headerRowIdx + 20));
+
+            resolve({
+              id: 'file_' + Math.random().toString(36).substring(2, 9),
+              fileName: file.name,
+              fileSize: file.size,
+              matrix: rawRows,
+              headerRowIdx,
+              headers,
+              mapping,
+              parsedProducts: []
+            });
+          } catch (err) {
+            reject(new Error(`Error al leer "${file.name}": ${err.message}`));
           }
+        };
+        reader.onerror = () => reject(new Error(`No se pudo leer el archivo "${file.name}"`));
+        reader.readAsArrayBuffer(file);
+      });
+    };
 
-          const headerRowIdx = detectHeaderRowIndex(rawRows);
-          const headers = (rawRows[headerRowIdx] || []).map((c, i) => String(c || '').trim() || `Columna ${i + 1}`);
-          const mapping = detectColumnsMapping(headers, rawRows.slice(headerRowIdx + 1, headerRowIdx + 20));
+    const processExcelFiles = async files => {
+      if (!files || !files.length) return;
+      const validFiles = Array.from(files).filter(f => {
+        const name = (f.name || '').toLowerCase();
+        return name.endsWith('.xlsx') || name.endsWith('.xls') || name.endsWith('.csv');
+      });
 
-          currentImportState = {
-            fileName: file.name,
-            matrix: rawRows,
-            headerRowIdx,
-            headers,
-            mapping,
-            parsedProducts: []
-          };
+      if (!validFiles.length) {
+        return alert('Por favor selecciona archivos de Excel (.xlsx, .xls) o CSV (.csv).');
+      }
 
-          setupImporterUI();
+      const loadedStates = [];
+      const errors = [];
+
+      for (const file of validFiles) {
+        const alreadyLoaded = importFilesList.some(f => f.fileName === file.name && f.fileSize === file.size);
+        if (alreadyLoaded) continue;
+
+        try {
+          const state = await readExcelFileAsync(file);
+          parseProductsForFile(state);
+          loadedStates.push(state);
         } catch (err) {
-          alert('Error al leer el archivo Excel: ' + err.message);
+          errors.push(err.message);
         }
-      };
-      reader.readAsArrayBuffer(file);
+      }
+
+      if (errors.length) {
+        alert('Aviso al procesar archivos:\n' + errors.join('\n'));
+      }
+
+      if (loadedStates.length) {
+        importFilesList.push(...loadedStates);
+        activeImportFileIndex = importFilesList.length - 1;
+        currentImportState = importFilesList[activeImportFileIndex];
+        setupImporterUI();
+      } else if (!importFilesList.length) {
+        resetImportFile();
+      }
     };
 
     const detectHeaderRowIndex = rows => {
@@ -2536,13 +2666,115 @@
       return mapping;
     };
 
+    const parseProductsForFile = fileState => {
+      if (!fileState) return;
+      const margin = parseFloat(document.getElementById('importPriceMargin').value) || 30;
+      const startRow = fileState.headerRowIdx + 1;
+      const products = [];
+
+      for (let r = startRow; r < fileState.matrix.length; r++) {
+        const row = fileState.matrix[r];
+        if (!row || !Array.isArray(row)) continue;
+
+        const nameVal = fileState.mapping.name !== null ? row[fileState.mapping.name] : '';
+        const name = String(nameVal || '').trim();
+        if (!name) continue;
+
+        const skuVal = fileState.mapping.sku !== null ? String(row[fileState.mapping.sku] || '').trim() : '';
+        const rawPriceStr = fileState.mapping.price !== null ? String(row[fileState.mapping.price] || '0').replace(/[^0-9.,]/g, '').replace(',', '.') : '0';
+        const basePrice = parseFloat(rawPriceStr) || 0;
+        
+        // Fórmula obligatoria: Y + (Y)30% = precio total (o 0 si no tiene precio -> Solicitar cotización)
+        const finalPrice = basePrice > 0 ? Math.round((basePrice + (basePrice * (margin / 100))) * 100) / 100 : 0;
+
+        const rawCategory = fileState.mapping.category !== null ? String(row[fileState.mapping.category] || '').trim() : '';
+        const imageUrl = fileState.mapping.imageUrl !== null ? String(row[fileState.mapping.imageUrl] || '').trim() : '';
+        const description = fileState.mapping.description !== null ? String(row[fileState.mapping.description] || '').trim() : '';
+
+        // Análisis de Afinidad en tiempo real
+        const affinity = matchCategoryAffinity(rawCategory, name, categoriesList);
+
+        products.push({
+          name,
+          sku: skuVal,
+          price: finalPrice,
+          basePrice,
+          rawCategory,
+          category: affinity.category,
+          subcategory: affinity.subcategory,
+          affinityInfo: affinity,
+          imageUrl,
+          description,
+          visible: true,
+          fileName: fileState.fileName
+        });
+      }
+
+      fileState.parsedProducts = products;
+    };
+
     const setupImporterUI = () => {
       document.getElementById('excelDropzone').style.display = 'none';
       document.getElementById('importerWorkspace').style.display = 'block';
 
-      const s = currentImportState;
-      document.getElementById('importFileNameTitle').textContent = `📄 ${s.fileName}`;
-      document.getElementById('importFileStats').textContent = `${s.matrix.length} filas leídas en la hoja principal`;
+      renderFilesChips();
+      renderActiveFileMapping();
+      refreshCombinedPreview();
+    };
+
+    const renderFilesChips = () => {
+      const container = document.getElementById('importFilesChipsContainer');
+      if (!container) return;
+
+      container.innerHTML = importFilesList.map((f, idx) => {
+        const isActive = idx === activeImportFileIndex;
+        return `
+          <div class="import-file-chip ${isActive ? 'active' : ''}" onclick="selectActiveImportFile(${idx})" title="Clic para configurar columnas de este archivo">
+            <i data-lucide="file-spreadsheet" width="15" style="color:${isActive ? 'var(--blue)' : 'var(--muted)'};"></i>
+            <span style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${f.fileName}</span>
+            <span class="file-count-badge">${f.parsedProducts.length} prod.</span>
+            <button type="button" class="btn-remove-file" onclick="event.stopPropagation(); removeImportFile(${idx});" title="Descartar este archivo">✕</button>
+          </div>
+        `;
+      }).join('') + `
+        <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('excelFileInput').click()" style="padding:5px 10px; font-size:12px; margin-left:auto;">
+          <i data-lucide="plus" width="13"></i> Añadir otro archivo
+        </button>
+      `;
+
+      lucide.createIcons();
+    };
+
+    window.selectActiveImportFile = idx => {
+      if (idx < 0 || idx >= importFilesList.length) return;
+      activeImportFileIndex = idx;
+      currentImportState = importFilesList[idx];
+      renderFilesChips();
+      renderActiveFileMapping();
+    };
+
+    window.removeImportFile = idx => {
+      if (idx < 0 || idx >= importFilesList.length) return;
+      importFilesList.splice(idx, 1);
+      if (!importFilesList.length) {
+        resetImportFile();
+        return;
+      }
+      if (activeImportFileIndex >= importFilesList.length) {
+        activeImportFileIndex = importFilesList.length - 1;
+      }
+      currentImportState = importFilesList[activeImportFileIndex];
+      renderFilesChips();
+      renderActiveFileMapping();
+      refreshCombinedPreview();
+    };
+
+    const renderActiveFileMapping = () => {
+      const s = importFilesList[activeImportFileIndex];
+      if (!s) return;
+
+      const label = document.getElementById('activeFileNameLabel');
+      if (label) label.textContent = `"${s.fileName}"`;
 
       // Header row select
       const headerSel = document.getElementById('selectHeaderRow');
@@ -2557,15 +2789,18 @@
         s.headers = (s.matrix[newIdx] || []).map((c, i) => String(c || '').trim() || `Columna ${i + 1}`);
         s.mapping = detectColumnsMapping(s.headers, s.matrix.slice(newIdx + 1, newIdx + 20));
         renderColumnDropdowns();
-        refreshImportPreview();
+        parseProductsForFile(s);
+        renderFilesChips();
+        refreshCombinedPreview();
       };
 
       renderColumnDropdowns();
-      refreshImportPreview();
     };
 
     const renderColumnDropdowns = () => {
-      const s = currentImportState;
+      const s = importFilesList[activeImportFileIndex];
+      if (!s) return;
+
       const opts = `<option value="-1">-- No mapeada --</option>` + s.headers.map((h, i) => `<option value="${i}">[Col ${i + 1}] ${h}</option>`).join('');
 
       const mapElements = {
@@ -2584,70 +2819,53 @@
         el.value = s.mapping[key] !== null ? s.mapping[key] : -1;
         el.onchange = () => {
           s.mapping[key] = parseInt(el.value) >= 0 ? parseInt(el.value) : null;
-          refreshImportPreview();
+          parseProductsForFile(s);
+          renderFilesChips();
+          refreshCombinedPreview();
         };
       });
     };
 
     document.getElementById('importPriceMargin').addEventListener('input', () => {
-      refreshImportPreview();
+      importFilesList.forEach(fileState => parseProductsForFile(fileState));
+      renderFilesChips();
+      refreshCombinedPreview();
     });
 
-    const refreshImportPreview = () => {
-      const s = currentImportState;
-      if (!s) return;
-
-      const margin = parseFloat(document.getElementById('importPriceMargin').value) || 30;
-      const startRow = s.headerRowIdx + 1;
-      const products = [];
-
-      for (let r = startRow; r < s.matrix.length; r++) {
-        const row = s.matrix[r];
-        if (!row || !Array.isArray(row)) continue;
-
-        const nameVal = s.mapping.name !== null ? row[s.mapping.name] : '';
-        const name = String(nameVal || '').trim();
-        if (!name) continue;
-
-        const skuVal = s.mapping.sku !== null ? String(row[s.mapping.sku] || '').trim() : '';
-        const rawPriceStr = s.mapping.price !== null ? String(row[s.mapping.price] || '0').replace(/[^0-9.,]/g, '').replace(',', '.') : '0';
-        const basePrice = parseFloat(rawPriceStr) || 0;
-        
-        // Fórmula obligatoria: Y + (Y)30% = precio total
-        const finalPrice = basePrice > 0 ? Math.round((basePrice + (basePrice * (margin / 100))) * 100) / 100 : 0;
-
-        const rawCategory = s.mapping.category !== null ? String(row[s.mapping.category] || '').trim() : '';
-        const imageUrl = s.mapping.imageUrl !== null ? String(row[s.mapping.imageUrl] || '').trim() : '';
-        const description = s.mapping.description !== null ? String(row[s.mapping.description] || '').trim() : '';
-
-        // Análisis de Afinidad en tiempo real
-        const affinity = matchCategoryAffinity(rawCategory, name, categoriesList);
-
-        products.push({
-          name,
-          sku: skuVal,
-          price: finalPrice,
-          basePrice,
-          rawCategory,
-          category: affinity.category,
-          subcategory: affinity.subcategory,
-          affinityInfo: affinity,
-          imageUrl,
-          description,
-          visible: true
-        });
+    window.updateImportProductCategory = (fileIdx, prodIdx, val) => {
+      if (importFilesList[fileIdx]?.parsedProducts[prodIdx]) {
+        importFilesList[fileIdx].parsedProducts[prodIdx].category = val;
       }
+    };
 
-      s.parsedProducts = products;
-      document.getElementById('previewCountBadge').textContent = `Total detectados: ${products.length} productos listos`;
+    window.updateImportProductSubcategory = (fileIdx, prodIdx, val) => {
+      if (importFilesList[fileIdx]?.parsedProducts[prodIdx]) {
+        importFilesList[fileIdx].parsedProducts[prodIdx].subcategory = val;
+      }
+    };
+
+    const refreshCombinedPreview = () => {
+      const allProducts = [];
+      importFilesList.forEach((fileState, fIdx) => {
+        fileState.parsedProducts.forEach((prod, pIdx) => {
+          allProducts.push({
+            ...prod,
+            _fileIndex: fIdx,
+            _prodIndex: pIdx
+          });
+        });
+      });
+
+      const totalFiles = importFilesList.length;
+      document.getElementById('previewCountBadge').textContent = `Total detectados: ${allProducts.length} productos en ${totalFiles} ${totalFiles === 1 ? 'archivo' : 'archivos'}`;
+      document.getElementById('importFileStats').textContent = `${totalFiles} ${totalFiles === 1 ? 'archivo cargado' : 'archivos cargados'} • ${allProducts.length} productos listos`;
 
       const tbody = document.getElementById('importPreviewTableBody');
-      const previewItems = products.slice(0, 30);
+      const previewItems = allProducts.slice(0, 40);
 
-      const catSelectOptions = categoriesList.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-
-      tbody.innerHTML = previewItems.map((p, idx) => {
+      tbody.innerHTML = previewItems.map(p => {
         const badgeClass = p.affinityInfo.confidence.startsWith('exact') ? 'exact' : (p.affinityInfo.confidence === 'keyword' ? 'keyword' : (p.affinityInfo.confidence === 'product' ? 'product' : 'fallback'));
+        const isQuotation = p.price === 0;
 
         return `
           <tr>
@@ -2661,30 +2879,36 @@
               <strong class="prod-title" style="max-width:240px; font-size:12.5px;">${p.name}</strong>
             </td>
             <td><code>${p.sku || '—'}</code></td>
-            <td><strong>${formatMoney(p.price)}</strong></td>
             <td>
-              <span style="font-size:11.5px; color:var(--muted);">${p.rawCategory || '<em>(Vacío)</em>'}</span>
+              ${isQuotation 
+                ? '<span style="color:#d97706; font-size:11px; font-weight:700; background:#fef3c7; padding:2px 6px; border-radius:4px; white-space:nowrap;">Solicitar cotización</span>' 
+                : `<strong>${formatMoney(p.price)}</strong>`
+              }
+            </td>
+            <td>
+              <span class="file-count-badge" style="font-size:10px; margin-bottom:2px; display:inline-block; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${p.fileName}">📁 ${p.fileName}</span>
+              <div style="font-size:11px; color:var(--muted);">${p.rawCategory || '<em>(Vacío)</em>'}</div>
             </td>
             <td>
               <div style="display:flex; flex-direction:column; gap:4px;">
-                <select class="filter-select" style="padding:4px 8px; font-size:12px; font-weight:600;" onchange="currentImportState.parsedProducts[${idx}].category = this.value">
+                <select class="filter-select" style="padding:4px 8px; font-size:12px; font-weight:600;" onchange="updateImportProductCategory(${p._fileIndex}, ${p._prodIndex}, this.value)">
                   ${categoriesList.map(c => `<option value="${c.name}" ${c.name === p.category ? 'selected' : ''}>${c.name}</option>`).join('')}
                 </select>
                 <span class="affinity-badge ${badgeClass}">${p.affinityInfo.badgeText}</span>
               </div>
             </td>
             <td>
-              <input type="text" class="form-control" style="padding:4px 8px; font-size:12px;" value="${p.subcategory || ''}" placeholder="Opcional" onchange="currentImportState.parsedProducts[${idx}].subcategory = this.value">
+              <input type="text" class="form-control" style="padding:4px 8px; font-size:12px;" value="${p.subcategory || ''}" placeholder="Opcional" onchange="updateImportProductSubcategory(${p._fileIndex}, ${p._prodIndex}, this.value)">
             </td>
           </tr>
         `;
       }).join('');
 
-      if (products.length > 30) {
+      if (allProducts.length > 40) {
         tbody.innerHTML += `
           <tr>
             <td colspan="7" style="text-align:center; padding:12px; background:#f8fafb; color:var(--muted); font-size:12px;">
-              ... y ${products.length - 30} productos más que se importarán con este mismo mapeo de afinidad.
+              ... y ${allProducts.length - 40} productos más que se importarán con este mismo mapeo.
             </td>
           </tr>
         `;
@@ -2694,12 +2918,16 @@
 
     // --- EJECUTAR IMPORTACIÓN MASIVA EN LOTES ---
     document.getElementById('btnExecuteImport').addEventListener('click', async () => {
-      const s = currentImportState;
-      if (!s || !s.parsedProducts.length) return alert('No hay productos válidos para importar.');
+      const allProducts = [];
+      importFilesList.forEach(f => allProducts.push(...f.parsedProducts));
+
+      if (!allProducts.length) return alert('No hay productos válidos para importar en los archivos cargados.');
 
       const autoFetchPhotos = document.getElementById('chkAutoFetchImages').checked;
-      const total = s.parsedProducts.length;
-      if (!confirm(`¿Confirmas la importación de ${total} productos a la tienda SmartISP?`)) return;
+      const total = allProducts.length;
+      const totalFiles = importFilesList.length;
+
+      if (!confirm(`¿Confirmas la importación de ${total} productos provenientes de ${totalFiles} archivo(s) a la tienda SmartISP?`)) return;
 
       const progressWrap = document.getElementById('importProgressWrap');
       const progressBar = document.getElementById('importProgressBar');
@@ -2710,7 +2938,7 @@
       // 1. Auto-fetch de fotos si está activo para productos sin imagen
       if (autoFetchPhotos) {
         progressText.textContent = 'Buscando fotografías en internet para productos sin imagen...';
-        const missingPhotos = s.parsedProducts.filter(p => !p.imageUrl).slice(0, 40);
+        const missingPhotos = allProducts.filter(p => !p.imageUrl).slice(0, 50);
         let fetchedCount = 0;
         for (const item of missingPhotos) {
           try {
@@ -2728,7 +2956,7 @@
       let importedCount = 0;
 
       for (let i = 0; i < total; i += BATCH_SIZE) {
-        const batch = s.parsedProducts.slice(i, i + BATCH_SIZE);
+        const batch = allProducts.slice(i, i + BATCH_SIZE);
         progressText.textContent = `Guardando productos (${Math.min(i + BATCH_SIZE, total)} de ${total})...`;
         const pct = Math.round((Math.min(i + BATCH_SIZE, total) / total) * 100);
         progressBar.style.width = `${pct}%`;
@@ -2746,7 +2974,7 @@
         }
       }
 
-      showToast(`¡Éxito! Se importaron ${importedCount} productos correctamente.`);
+      showToast(`¡Éxito! Se importaron ${importedCount} productos correctamente de ${totalFiles} archivo(s).`);
       progressText.textContent = '¡Importación finalizada con éxito!';
       await loadAllData();
 
