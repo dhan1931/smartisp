@@ -7,7 +7,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { supabase } from './db.js';
+import { supabase, isSupabaseConfigured } from './src/lib/supabaseClient.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -241,6 +241,47 @@ app.post('/api/auth/reset-password', async (req, res) => {
   if (pool) await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [user.passwordHash, user.id]);
   passwordResets.delete(token);
   return res.json({ ok: true });
+});
+
+// --- ENDPOINT SEGURO DE PRUEBA DE SUPABASE (smart-isp.es) ---
+app.get(['/api/test-supabase', '/api/auth/test-supabase'], async (req, res) => {
+  if (!isSupabaseConfigured() || !supabase) {
+    return res.status(503).json({
+      ok: false,
+      error: 'Supabase no está configurado en el servidor. Faltan variables SUPABASE_URL o SUPABASE_ANON_KEY en Hostinger.',
+      configured: false
+    });
+  }
+
+  try {
+    // Consulta segura usando el SDK oficial sobre la tabla existente 'products'
+    const { data, error } = await supabase
+      .from('products')
+      .select('id, name, price, category, visible')
+      .limit(5);
+
+    if (error) {
+      console.error('⚠️ Error al consultar tabla products en Supabase:', error.message);
+      return res.status(500).json({
+        ok: false,
+        error: `Error al consultar la tabla 'products' en Supabase: ${error.message}`
+      });
+    }
+
+    return res.status(200).json({
+      ok: true,
+      source: 'supabase',
+      table: 'products',
+      count: data ? data.length : 0,
+      data: data || []
+    });
+  } catch (err) {
+    console.error('❌ Excepción al conectar con Supabase:', err.message);
+    return res.status(500).json({
+      ok: false,
+      error: 'Ocurrió un error inesperado al consultar la base de datos de Supabase.'
+    });
+  }
 });
 
 app.get('/api/auth/customer-wishlist', async (req, res) => {

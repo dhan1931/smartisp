@@ -981,6 +981,17 @@ export default async function handler(req, res) {
     await ensureDatabase();
     const database = getPool();
 
+    if (isAction('test-supabase') && req.method === 'GET') {
+      const result = await database.query('SELECT id, name, price, category, visible FROM products LIMIT 5');
+      return res.status(200).json({
+        ok: true,
+        source: 'supabase',
+        table: 'products',
+        count: result.rows.length,
+        data: result.rows
+      });
+    }
+
     if (isAction('login') && req.method === 'POST') {
       const body = bodyOf(req);
       const email = String(body.email || '').trim().toLowerCase();

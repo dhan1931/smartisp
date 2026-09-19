@@ -1,37 +1,5 @@
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-const { createClient } = require('@supabase/supabase-js');
+import { supabase, isSupabaseConfigured, getSupabaseClient } from './src/lib/supabaseClient.js';
 
-// Hostinger inyectará automáticamente SUPABASE_URL y SUPABASE_KEY
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || '';
-
-export const supabase = (supabaseUrl && supabaseKey)
-  ? createClient(supabaseUrl, supabaseKey)
-  : null;
-
-async function checkConnection() {
-  if (!supabase) {
-    console.log('⚡ Esperando que Hostinger inyecte SUPABASE_URL y SUPABASE_KEY...');
-    return;
-  }
-  try {
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .limit(1);
-
-    if (error) {
-      console.log('⚠️ Conectado a Supabase, respuesta:', error.message);
-    } else {
-      console.log('✅ Conexión exitosa con Supabase desde Hostinger:', data);
-    }
-  } catch (err) {
-    console.log('❌ Error al conectar con Supabase:', err.message);
-  }
-}
-
-checkConnection();
-
+// Re-exporta el cliente modular para mantener compatibilidad con el verificador de Hostinger
+export { supabase, isSupabaseConfigured, getSupabaseClient };
 export default supabase;
-
