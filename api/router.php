@@ -271,9 +271,9 @@ if ($action === 'import-products' || $action === 'import-excel') {
 }
 
 // -------------------------------------------------------------
-// 4. CONFIGURACIONES DEL PANEL DE CONTROL (/api/auth/landing-content)
+// 4. CONFIGURACIONES DEL PANEL DE CONTROL (/api/auth/admin-content, /api/auth/landing-content, /api/auth/site-content)
 // -------------------------------------------------------------
-if ($action === 'landing-content' || $action === 'site-content') {
+if ($action === 'landing-content' || $action === 'site-content' || $action === 'admin-content') {
     if ($method === 'GET') {
         $stmt = $pdo->query("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows");
         $rows = $stmt ? $stmt->fetchAll() : [];
@@ -308,6 +308,53 @@ if ($action === 'landing-content' || $action === 'site-content') {
         echo json_encode(['ok' => true]);
         exit;
     }
+}
+
+if ($action === 'landing-content-reset' || $action === 'landing-content/reset') {
+    $pdo->exec("DELETE FROM settings_rows WHERE setting_key LIKE 'landing_%' OR setting_key LIKE 'hero_%'");
+    echo json_encode(['ok' => true]);
+    exit;
+}
+
+// -------------------------------------------------------------
+// GESTIÓN DE CATEGORÍAS (/api/auth/categories)
+// -------------------------------------------------------------
+if ($action === 'categories') {
+    if ($method === 'GET') {
+        $stmt = $pdo->query("SELECT * FROM categories_rows");
+        $cats = $stmt ? $stmt->fetchAll() : [];
+        echo json_encode(['categories' => $cats]);
+        exit;
+    }
+
+    if ($method === 'POST') {
+        $cats = $body['categories'] ?? [];
+        if (is_array($cats)) {
+            $pdo->exec("DELETE FROM categories_rows");
+            $stmt = $pdo->prepare("INSERT INTO categories_rows (id, name, subcategories) VALUES (:id, :name, :sub)");
+            foreach ($cats as $c) {
+                $cId = $c['id'] ?? uniqid('cat_');
+                $cName = $c['name'] ?? 'General';
+                $sub = is_array($c['subcategories'] ?? null) ? json_encode($c['subcategories']) : (string)($c['subcategories'] ?? '');
+                $stmt->execute([':id' => $cId, ':name' => $cName, ':sub' => $sub]);
+            }
+        }
+        echo json_encode(['ok' => true]);
+        exit;
+    }
+}
+
+if ($action === 'categories-reset' || $action === 'categories/reset') {
+    $pdo->exec("DELETE FROM categories_rows");
+    echo json_encode(['ok' => true]);
+    exit;
+}
+
+if ($action === 'admin-products-clear') {
+    $pTable = getProductsTableName($pdo);
+    $pdo->exec("DELETE FROM `$pTable`");
+    echo json_encode(['ok' => true]);
+    exit;
 }
 
 // -------------------------------------------------------------
