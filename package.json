@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "build": "vite build --outDir dist/public",
+    "build": "vite build",
     "import:intcomex": "node scripts/import-intcomex-products.js"
   },
   "dependencies": {
