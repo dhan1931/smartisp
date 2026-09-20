@@ -8,6 +8,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { supabase, isSupabaseConfigured } from './src/lib/supabaseClient.js';
+import { getMysqlPool, isMysqlConfigured } from './src/lib/mysqlClient.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -189,6 +190,40 @@ app.get(['/api/test-products', '/api/auth/test-products'], async (req, res) => {
       success: false,
       rowsFound: 0,
       error: err.message || 'Error interno del servidor al consultar Supabase'
+    });
+  }
+});
+
+// --- RUTA DE DIAGNÓSTICO MYSQL / PHPMYADMIN (smart-isp.com.ec) ---
+app.get(['/api/test-db', '/api/auth/test-db'], async (req, res) => {
+  const mysqlPool = getMysqlPool();
+  if (!mysqlPool) {
+    return res.status(503).json({
+      success: false,
+      database: 'mysql',
+      rowsFound: 0,
+      error: 'Pool de MySQL no disponible o credenciales incompletas.'
+    });
+  }
+
+  try {
+    const [tRows] = await mysqlPool.query("SHOW TABLES LIKE '%products%'");
+    const pTable = tRows.length > 0 ? Object.values(tRows[0])[0] : 'products_rows';
+    const [cRows] = await mysqlPool.query(`SELECT COUNT(*) as cnt FROM \`${pTable}\``);
+    const count = cRows[0]?.cnt || 0;
+
+    return res.status(200).json({
+      success: true,
+      database: 'mysql',
+      tableUsed: pTable,
+      rowsFound: count
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      database: 'mysql',
+      rowsFound: 0,
+      error: err.message || 'Error consultando MySQL'
     });
   }
 });

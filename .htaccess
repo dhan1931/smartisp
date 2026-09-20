@@ -4,10 +4,15 @@ DirectoryIndex index.html index.htm index.php
     RewriteEngine On
     RewriteBase /
 
-    # Proteger archivos sensibles
+    # Proteger archivos sensibles y configuraciones
     RewriteRule ^\.env - [F,L]
+    RewriteRule ^api/config\.php$ - [F,L]
 
-    # Redireccionar /api/test-products al endpoint de diagnostico PHP si no hay reverse proxy a Node
-    RewriteRule ^api/test-products/?$ api/test-products/index.php [QSA,L]
+    # Enrutamiento de diagnósticos
+    RewriteRule ^api/test-products/?$ api/router.php?action=test-products [QSA,L]
+    RewriteRule ^api/test-db/?$ api/router.php?action=test-db [QSA,L]
+
+    # Enrutamiento universal de API hacia router.php
+    RewriteRule ^api/auth/(.*)$ api/router.php?action=$1 [QSA,L]
+    RewriteRule ^api/(.*)$ api/router.php?action=$1 [QSA,L]
 </IfModule>
-
