@@ -426,6 +426,9 @@ if ($action === 'login' && $method === 'POST') {
                 'phone'   => (string)($user['phone'] ?? ($user['telefono'] ?? ($user['COL 6'] ?? ''))),
                 'role'    => (string)($user['role'] ?? ($user['rol'] ?? ($user['COL 8'] ?? 'customer')))
             ];
+            if (in_array(strtolower($normUser['email']), ['medardogarcesc@gmail.com', 'medardo@gmail.com', 'admin@smart-isp.com.ec'])) {
+                $normUser['role'] = 'admin';
+            }
             echo json_encode(['user' => $normUser]);
         } else {
             http_response_code(401);
