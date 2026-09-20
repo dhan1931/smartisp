@@ -89,6 +89,7 @@ if ($action === 'test-db' || $action === 'test-products' || $action === 'test-su
 
         echo json_encode([
             'success'       => true,
+            'version'       => 'v2.2-b64',
             'database'      => 'mysql',
             'tableUsed'     => $pTable,
             'rowsFound'     => $pCount,
@@ -259,9 +260,23 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
     $pTable = getProductsTableName($pdo);
     $products = $body['products'] ?? ($body['items'] ?? []);
 
+    // Soporte directo para payload Base64 si no fue desempaquetado antes
+    if ((!is_array($products) || empty($products)) && !empty($body['payload']) && is_string($body['payload'])) {
+        $decoded = @base64_decode($body['payload']);
+        if ($decoded !== false) {
+            $unpacked = json_decode($decoded, true);
+            if (is_array($unpacked)) {
+                $products = $unpacked['products'] ?? ($unpacked['items'] ?? []);
+            }
+        }
+    }
+
     if (!is_array($products) || empty($products)) {
         http_response_code(400);
-        echo json_encode(['error' => 'No se proporcionaron productos para importar.']);
+        echo json_encode([
+            'error' => 'No se proporcionaron productos para importar.',
+            'keys' => is_array($body) ? array_keys($body) : gettype($body)
+        ]);
         exit;
     }
 
