@@ -26,8 +26,9 @@
 		body.dark-mode .hero { background-color: #163b51; }
 		body.dark-mode .hero::after { background: linear-gradient(90deg, rgba(22,59,81,.98) 0%, rgba(22,59,81,.91) 42%, rgba(22,59,81,.1) 78%); }
 		body.dark-mode .hero h1, body.dark-mode .section-heading h2, body.dark-mode .product h3, body.dark-mode .price, body.dark-mode .logo, body.dark-mode .nav-action, body.dark-mode .form-field { color: var(--ink); }
-		* { box-sizing: border-box; }
-		body { margin: 0; background: var(--pale); color: var(--ink); font-family: 'DM Sans', sans-serif; }
+		*, *::before, *::after { box-sizing: border-box; }
+		html { width: 100%; max-width: 100%; overflow-x: hidden; -webkit-text-size-adjust: 100%; }
+		body { width: 100%; max-width: 100%; overflow-x: hidden; position: relative; margin: 0; background: var(--pale); color: var(--ink); font-family: 'DM Sans', sans-serif; }
 		a { color: inherit; text-decoration: none; }
 		button, input { font: inherit; }
 		button { cursor: pointer; }
@@ -437,6 +438,12 @@
 
 		/* MEDIA QUERIES GENERALES PARA CELULARES Y TABLETS (<= 800px) */
 		@media (max-width: 800px) {
+			html, body {
+				width: 100% !important;
+				max-width: 100vw !important;
+				overflow-x: hidden !important;
+				position: relative !important;
+			}
 			body {
 				padding-bottom: calc(66px + env(safe-area-inset-bottom, 0px)) !important;
 			}
@@ -447,26 +454,35 @@
 				display: none !important;
 			}
 
+			/* Prevenir auto-zoom en iOS Safari */
+			input, select, textarea {
+				font-size: 16px !important;
+			}
+
 			/* Cabecera optimizada compacta */
 			.nav {
+				width: 100% !important;
+				max-width: 100% !important;
 				flex-wrap: wrap !important;
 				gap: 10px !important;
-				padding: 11px 4vw 12px !important;
+				padding: 12px 4vw !important;
 				box-shadow: 0 4px 14px rgba(16, 44, 61, 0.05) !important;
+				box-sizing: border-box !important;
+				overflow: hidden !important;
 			}
 			.logo {
 				font-size: 22px !important;
 			}
 			.nav-actions {
 				margin-left: auto !important;
-				gap: 10px !important;
+				gap: 8px !important;
 			}
 			.nav-action span {
 				display: none !important;
 			}
 			.admin-nav-link {
-				padding: 5px 9px !important;
-				font-size: 11px !important;
+				padding: 6px 10px !important;
+				font-size: 11.5px !important;
 			}
 			.admin-nav-link span {
 				display: none !important;
@@ -474,32 +490,45 @@
 			.search {
 				order: 3 !important;
 				flex-basis: 100% !important;
-				max-width: none !important;
+				width: 100% !important;
+				max-width: 100% !important;
 				margin-top: 2px !important;
 				border-radius: 20px !important;
 				background: #ffffff !important;
 				border: 1px solid var(--line) !important;
+				box-sizing: border-box !important;
 			}
 			body.dark-mode .search {
 				background: var(--white) !important;
 			}
 			.search input {
 				padding: 9px 14px !important;
-				font-size: 13.5px !important;
+				font-size: 15px !important;
+				min-width: 0 !important;
 			}
 			.search button {
 				width: 44px !important;
+				flex-shrink: 0 !important;
 			}
 
 			/* Banner Hero ultra compacto para celulares */
+			main {
+				width: 100% !important;
+				max-width: 100% !important;
+				overflow-x: hidden !important;
+			}
 			.hero {
 				margin: 12px 4vw 0 !important;
-				min-height: 165px !important;
+				width: auto !important;
+				max-width: calc(100% - 8vw) !important;
+				min-height: 155px !important;
 				height: auto !important;
-				padding: 20px 18px !important;
-				border-radius: 14px !important;
+				padding: 20px 16px !important;
+				border-radius: 12px !important;
 				background-position: 80% center !important;
 				box-shadow: 0 8px 24px rgba(16, 44, 61, 0.08) !important;
+				box-sizing: border-box !important;
+				overflow: hidden !important;
 			}
 			.hero::after {
 				background: linear-gradient(90deg, rgba(228, 245, 243, 0.98) 0%, rgba(228, 245, 243, 0.90) 58%, rgba(228, 245, 243, 0.45) 100%) !important;
@@ -508,7 +537,9 @@
 				background: linear-gradient(90deg, rgba(22, 59, 81, 0.98) 0%, rgba(22, 59, 81, 0.92) 58%, rgba(22, 59, 81, 0.45) 100%) !important;
 			}
 			.hero-content {
+				width: 100% !important;
 				max-width: 100% !important;
+				box-sizing: border-box !important;
 			}
 			.eyebrow {
 				font-size: 9.5px !important;
@@ -536,44 +567,73 @@
 				border-radius: 6px !important;
 			}
 
-			/* Contenido y Layout */
+			/* Contenido y Layout Estrictamente Delimitado a 100% */
 			.content {
-				padding: 18px 4vw 28px !important;
+				width: 100% !important;
+				max-width: 100% !important;
+				padding: 16px 4vw 24px !important;
+				box-sizing: border-box !important;
+				overflow: hidden !important;
 			}
 			.store-layout {
-				grid-template-columns: 1fr !important;
+				display: flex !important;
+				flex-direction: column !important;
+				width: 100% !important;
+				max-width: 100% !important;
+				min-width: 0 !important;
 				gap: 12px !important;
 			}
 			.store-sidebar {
 				position: static !important;
+				width: 100% !important;
+				max-width: 100% !important;
+				min-width: 0 !important;
 				margin-bottom: 2px !important;
+				overflow: hidden !important;
 			}
 			.sidebar-card {
+				width: 100% !important;
+				max-width: 100% !important;
+				min-width: 0 !important;
 				padding: 10px 12px !important;
 				border-radius: 12px !important;
+				overflow: hidden !important;
+				box-sizing: border-box !important;
 			}
 			.sidebar-header {
+				width: 100% !important;
+				max-width: 100% !important;
+				min-width: 0 !important;
 				margin-bottom: 6px !important;
 				padding-bottom: 6px !important;
 			}
 
-			/* Carrusel horizontal de categorías táctiles con scroll suave */
+			/* Carrusel horizontal de categorías táctiles con scroll suave contenido */
 			.sidebar-categories {
 				display: flex !important;
 				flex-direction: row !important;
+				width: 100% !important;
+				max-width: 100% !important;
+				min-width: 0 !important;
 				overflow-x: auto !important;
+				overflow-y: hidden !important;
 				-webkit-overflow-scrolling: touch !important;
 				gap: 8px !important;
 				padding: 4px 2px 8px !important;
 				scrollbar-width: none !important;
+				-ms-overflow-style: none !important;
 				scroll-snap-type: x mandatory !important;
+				box-sizing: border-box !important;
 			}
 			.sidebar-categories::-webkit-scrollbar {
 				display: none !important;
+				width: 0 !important;
+				height: 0 !important;
 			}
 			.sidebar-cat-btn, .sidebar-group-header {
 				flex: 0 0 auto !important;
 				width: auto !important;
+				max-width: none !important;
 				padding: 7px 13px !important;
 				border: 1px solid var(--line) !important;
 				border-radius: 22px !important;
@@ -611,11 +671,20 @@
 			}
 
 			/* Toolbar móvil */
+			.store-main {
+				width: 100% !important;
+				max-width: 100% !important;
+				min-width: 0 !important;
+			}
 			.toolbar {
+				width: 100% !important;
+				max-width: 100% !important;
+				min-width: 0 !important;
 				margin-bottom: 12px !important;
 				gap: 8px !important;
 				flex-direction: row !important;
 				align-items: center !important;
+				justify-content: space-between !important;
 			}
 			.toolbar-info {
 				flex: 1 !important;
@@ -628,29 +697,48 @@
 				text-overflow: ellipsis !important;
 			}
 			.select {
-				font-size: 11.5px !important;
+				font-size: 12px !important;
 				padding: 6px 10px !important;
 				border-radius: 8px !important;
+				flex-shrink: 0 !important;
 			}
 
 			/* Rejilla de productos en 2 columnas fluida */
 			.products {
+				width: 100% !important;
+				max-width: 100% !important;
+				min-width: 0 !important;
+				display: grid !important;
 				grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
 				gap: 10px !important;
 			}
 			.product {
+				width: 100% !important;
+				max-width: 100% !important;
+				min-width: 0 !important;
 				padding: 9px !important;
 				border-radius: 12px !important;
 				-webkit-tap-highlight-color: transparent !important;
+				box-sizing: border-box !important;
 			}
 			.product-image {
+				width: 100% !important;
+				max-width: 100% !important;
 				aspect-ratio: 1 / 1 !important;
 				padding: 8px !important;
 				border-radius: 9px !important;
+				overflow: hidden !important;
+				box-sizing: border-box !important;
+			}
+			.product-image img {
+				width: 100% !important;
+				height: 100% !important;
+				max-width: 100% !important;
+				object-fit: contain !important;
 			}
 			.heart {
-				width: 36px !important;
-				height: 36px !important;
+				width: 34px !important;
+				height: 34px !important;
 				top: 5px !important;
 				right: 5px !important;
 			}
@@ -662,13 +750,19 @@
 				border-radius: 3px !important;
 			}
 			.product-info {
-				padding: 9px 2px 2px !important;
+				padding: 8px 2px 2px !important;
+				width: 100% !important;
+				min-width: 0 !important;
 			}
 			.product-brand {
 				font-size: 9.5px !important;
+				display: block !important;
+				white-space: nowrap !important;
+				overflow: hidden !important;
+				text-overflow: ellipsis !important;
 			}
 			.product h3 {
-				font-size: 12.5px !important;
+				font-size: 12px !important;
 				line-height: 1.3 !important;
 				min-height: 32px !important;
 				margin: 3px 0 6px !important;
@@ -684,22 +778,46 @@
 				margin-top: 8px !important;
 			}
 			.price {
-				font-size: 16px !important;
+				font-size: 15px !important;
 			}
 			.price.is-quote {
 				font-size: 11px !important;
 				line-height: 1.2 !important;
 			}
 			.add {
-				width: 38px !important;
-				height: 38px !important;
+				width: 36px !important;
+				height: 36px !important;
 				border-radius: 8px !important;
+				flex-shrink: 0 !important;
+			}
+
+			/* Beneficios y Footer */
+			.benefits {
+				width: 100% !important;
+				max-width: 100% !important;
+				grid-template-columns: 1fr !important;
+				gap: 16px !important;
+				padding: 24px 5vw !important;
+				box-sizing: border-box !important;
+			}
+			footer {
+				width: 100% !important;
+				max-width: 100% !important;
+				flex-direction: column !important;
+				gap: 20px !important;
+				padding: 28px 5vw !important;
+				box-sizing: border-box !important;
+			}
+			.footer-links {
+				flex-direction: column !important;
+				gap: 10px !important;
 			}
 
 			/* Modal Detalle de Producto tipo Bottom Sheet */
 			.modal {
 				align-items: flex-end !important;
 				padding: 0 !important;
+				z-index: 200 !important;
 			}
 			.modal-panel {
 				width: 100% !important;
@@ -709,6 +827,7 @@
 				padding: 22px 18px 24px !important;
 				transform: translateY(100%) !important;
 				transition: transform .3s cubic-bezier(.2,.8,.2,1) !important;
+				box-sizing: border-box !important;
 			}
 			.modal-panel::before {
 				content: '';
@@ -740,7 +859,7 @@
 				border-radius: 12px !important;
 			}
 			.detail-copy h2 {
-				font-size: 21px !important;
+				font-size: 20px !important;
 				margin: 4px 0 8px !important;
 			}
 			.specs {
@@ -751,10 +870,14 @@
 			}
 
 			/* Drawer del Carrito en celulares */
+			.drawer {
+				z-index: 200 !important;
+			}
 			.drawer-panel {
 				width: 100% !important;
 				max-width: 100% !important;
 				padding: 20px 18px !important;
+				box-sizing: border-box !important;
 			}
 			.cart-item {
 				padding: 10px 0 !important;
@@ -770,20 +893,41 @@
 				border-radius: 10px !important;
 			}
 
-			/* Beneficios y Footer */
-			.benefits {
+			/* Sistema de Cuenta en celulares (Bottom Sheet Modal) */
+			.account-system {
+				padding: 0 !important;
+				align-items: flex-end !important;
+				z-index: 200 !important;
+			}
+			.account-shell {
+				width: 100% !important;
+				max-width: 100% !important;
+				max-height: 90vh !important;
+				border-radius: 22px 22px 0 0 !important;
+				transform: translateY(100%) scale(1) !important;
+				box-sizing: border-box !important;
+			}
+			.account-system.is-open .account-shell {
+				transform: translateY(0) scale(1) !important;
+			}
+			.account-layout {
 				grid-template-columns: 1fr !important;
-				gap: 16px !important;
-				padding: 24px 5vw !important;
+				min-height: auto !important;
 			}
-			footer {
-				flex-direction: column !important;
-				gap: 20px !important;
-				padding: 28px 5vw !important;
+			.account-aside {
+				display: none !important;
 			}
-			.footer-links {
-				flex-direction: column !important;
-				gap: 10px !important;
+			.account-main {
+				padding: 22px 18px 28px !important;
+			}
+			.account-main h2 {
+				font-size: 22px !important;
+			}
+			.account-grid {
+				grid-template-columns: 1fr !important;
+			}
+			.profile-actions {
+				grid-template-columns: 1fr !important;
 			}
 		}
 
@@ -796,14 +940,14 @@
 				padding: 7px !important;
 			}
 			.price {
-				font-size: 14.5px !important;
+				font-size: 14px !important;
 			}
 			.add {
 				width: 34px !important;
 				height: 34px !important;
 			}
 			.hero h1 {
-				font-size: 19px !important;
+				font-size: 18px !important;
 			}
 		}
 	</style>

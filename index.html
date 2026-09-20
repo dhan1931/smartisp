@@ -29,7 +29,7 @@
 			--shadow-lg: 0 20px 48px rgba(16, 44, 61, 0.14);
 		}
 
-		* {
+		*, *::before, *::after {
 			box-sizing: border-box;
 			margin: 0;
 			padding: 0;
@@ -37,6 +37,10 @@
 
 		html {
 			scroll-behavior: smooth;
+			width: 100%;
+			max-width: 100%;
+			overflow-x: hidden;
+			-webkit-text-size-adjust: 100%;
 		}
 
 		body {
@@ -44,7 +48,10 @@
 			color: var(--ink);
 			font-family: 'DM Sans', sans-serif;
 			line-height: 1.6;
+			width: 100%;
+			max-width: 100%;
 			overflow-x: hidden;
+			position: relative;
 		}
 
 		h1, h2, h3, h4, h5 {
