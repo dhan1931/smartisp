@@ -8,3 +8,4 @@ return [
     'password' => getenv('MYSQL_PASSWORD') ?: (getenv('DB_PASSWORD') ?: 'Dhan193111'),
     'charset'  => 'utf8mb4'
 ];
+

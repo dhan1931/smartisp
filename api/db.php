@@ -35,34 +35,38 @@ function getDbConnection() {
 
 // Crea las tablas complementarias si no existen todavía
 function ensureAuxiliaryTables(PDO $pdo) {
-    // 1. Tabla de configuraciones del panel de control y personalizaciones visuales
-    $pdo->exec("CREATE TABLE IF NOT EXISTS settings_rows (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        setting_key VARCHAR(191) NOT NULL UNIQUE,
-        setting_value LONGTEXT NULL,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    try {
+        // 1. Tabla de configuraciones del panel de control y personalizaciones visuales
+        $pdo->exec("CREATE TABLE IF NOT EXISTS settings_rows (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            setting_key VARCHAR(191) NOT NULL UNIQUE,
+            setting_value LONGTEXT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
-    // 2. Tabla de categorías y subcategorías
-    $pdo->exec("CREATE TABLE IF NOT EXISTS categories_rows (
-        id VARCHAR(191) PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        subcategories TEXT NULL,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+        // 2. Tabla de categorías y subcategorías
+        $pdo->exec("CREATE TABLE IF NOT EXISTS categories_rows (
+            id VARCHAR(191) PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            subcategories TEXT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
-    // 3. Asegurar tabla orders_rows si no existe
-    $pdo->exec("CREATE TABLE IF NOT EXISTS orders_rows (
-        id VARCHAR(191) PRIMARY KEY,
-        user_id VARCHAR(191) NULL,
-        customer_name VARCHAR(255) NULL,
-        customer_email VARCHAR(255) NULL,
-        customer_phone VARCHAR(50) NULL,
-        items LONGTEXT NULL,
-        total DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-        status VARCHAR(50) NOT NULL DEFAULT 'pending',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+        // 3. Asegurar tabla orders_rows si no existe
+        $pdo->exec("CREATE TABLE IF NOT EXISTS orders_rows (
+            id VARCHAR(191) PRIMARY KEY,
+            user_id VARCHAR(191) NULL,
+            customer_name VARCHAR(255) NULL,
+            customer_email VARCHAR(255) NULL,
+            customer_phone VARCHAR(50) NULL,
+            items LONGTEXT NULL,
+            total DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+            status VARCHAR(50) NOT NULL DEFAULT 'pending',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    } catch (Throwable $e) {
+        error_log('ensureAuxiliaryTables warning: ' . $e->getMessage());
+    }
 }
 
 // Detecta si la tabla se llama products_rows o products
@@ -83,20 +87,22 @@ function getProductsTableName(PDO $pdo) {
     }
 
     // Si ninguna existe, crear products_rows por defecto
-    $pdo->exec("CREATE TABLE IF NOT EXISTS products_rows (
-        id VARCHAR(191) PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        description TEXT NULL,
-        price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-        category VARCHAR(100) NULL,
-        subcategory VARCHAR(100) NULL,
-        image_url TEXT NULL,
-        external_url TEXT NULL,
-        sku VARCHAR(100) NULL,
-        visible TINYINT(1) NOT NULL DEFAULT 1,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS products_rows (
+            id VARCHAR(191) PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            description TEXT NULL,
+            price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+            category VARCHAR(100) NULL,
+            subcategory VARCHAR(100) NULL,
+            image_url TEXT NULL,
+            external_url TEXT NULL,
+            sku VARCHAR(100) NULL,
+            visible TINYINT(1) NOT NULL DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    } catch (Throwable $e) {}
 
     $tbl = 'products_rows';
     return $tbl;
@@ -120,33 +126,46 @@ function getUsersTableName(PDO $pdo) {
     }
 
     // Crear users_rows si no existe
-    $pdo->exec("CREATE TABLE IF NOT EXISTS users_rows (
-        id VARCHAR(191) PRIMARY KEY,
-        email VARCHAR(191) NOT NULL UNIQUE,
-        password_hash VARCHAR(255) NOT NULL,
-        name VARCHAR(100) NOT NULL,
-        surname VARCHAR(100) NULL,
-        phone VARCHAR(50) NULL,
-        role VARCHAR(50) NOT NULL DEFAULT 'customer',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS users_rows (
+            id VARCHAR(191) PRIMARY KEY,
+            email VARCHAR(191) NOT NULL UNIQUE,
+            password_hash VARCHAR(255) NOT NULL,
+            name VARCHAR(100) NOT NULL,
+            surname VARCHAR(100) NULL,
+            phone VARCHAR(50) NULL,
+            role VARCHAR(50) NOT NULL DEFAULT 'customer',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    } catch (Throwable $e) {}
 
     $tbl = 'users_rows';
     return $tbl;
 }
 
-// Normaliza los nombres de columnas de productos (snake_case / camelCase)
+// Normaliza los nombres de columnas de productos de forma flexible
 function normalizeProductRow(array $row): array {
+    $id = (string)($row['id'] ?? ($row['product_id'] ?? ($row['codigo'] ?? uniqid())));
+    $name = (string)($row['name'] ?? ($row['nombre'] ?? ($row['title'] ?? ($row['titulo'] ?? ($row['product_name'] ?? ($row['item'] ?? ($row['articulo'] ?? '')))))));
+    $desc = (string)($row['description'] ?? ($row['descripcion'] ?? ($row['detalles'] ?? ($row['detail'] ?? ''))));
+    $price = (float)($row['price'] ?? ($row['precio'] ?? ($row['pvp'] ?? ($row['costo'] ?? 0))));
+    $cat = (string)($row['category'] ?? ($row['categoria'] ?? ($row['tipo'] ?? ($row['linea'] ?? 'General'))));
+    $subcat = (string)($row['subcategory'] ?? ($row['subcategoria'] ?? ''));
+    $img = (string)($row['imageUrl'] ?? ($row['image_url'] ?? ($row['imagen'] ?? ($row['foto'] ?? ($row['url_imagen'] ?? '')))));
+    $ext = (string)($row['externalUrl'] ?? ($row['external_url'] ?? ($row['enlace'] ?? '')));
+    $sku = (string)($row['sku'] ?? ($row['codigo'] ?? ($row['part_number'] ?? '')));
+    $visible = !isset($row['visible']) || $row['visible'] == 1 || $row['visible'] === true || $row['visible'] === 'true' || $row['visible'] === '1';
+
     return [
-        'id'          => (string)($row['id'] ?? uniqid()),
-        'name'        => (string)($row['name'] ?? ($row['nombre'] ?? ($row['title'] ?? ''))),
-        'description' => (string)($row['description'] ?? ($row['descripcion'] ?? '')),
-        'price'       => (float)($row['price'] ?? ($row['precio'] ?? 0)),
-        'category'    => (string)($row['category'] ?? ($row['categoria'] ?? 'General')),
-        'subcategory' => (string)($row['subcategory'] ?? ($row['subcategoria'] ?? '')),
-        'imageUrl'    => (string)($row['imageUrl'] ?? ($row['image_url'] ?? ($row['imagen'] ?? ''))),
-        'externalUrl' => (string)($row['externalUrl'] ?? ($row['external_url'] ?? '')),
-        'sku'         => (string)($row['sku'] ?? ''),
-        'visible'     => !isset($row['visible']) || $row['visible'] == 1 || $row['visible'] === true || $row['visible'] === 'true'
+        'id'          => $id,
+        'name'        => $name,
+        'description' => $desc,
+        'price'       => $price,
+        'category'    => $cat,
+        'subcategory' => $subcat,
+        'imageUrl'    => $img,
+        'externalUrl' => $ext,
+        'sku'         => $sku,
+        'visible'     => $visible
     ];
 }
