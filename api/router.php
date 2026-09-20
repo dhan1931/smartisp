@@ -168,35 +168,56 @@ if ($action === 'admin-products') {
             exit;
         }
 
-        $sql = "INSERT INTO `$pTable` (id, name, description, price, category, subcategory, image_url, external_url, sku, visible)
-                VALUES (:id, :name, :description, :price, :category, :subcategory, :image_url, :external_url, :sku, :visible)
-                ON DUPLICATE KEY UPDATE
-                    name = VALUES(name),
-                    description = VALUES(description),
-                    price = VALUES(price),
-                    category = VALUES(category),
-                    subcategory = VALUES(subcategory),
-                    image_url = VALUES(image_url),
-                    external_url = VALUES(external_url),
-                    sku = VALUES(sku),
-                    visible = VALUES(visible),
-                    updated_at = CURRENT_TIMESTAMP";
+        // Comprobar si ya existe por id o por nombre idéntico
+        $checkStmt = $pdo->prepare("SELECT id FROM `$pTable` WHERE id = :id OR (name = :name AND name != '') LIMIT 1");
+        $checkStmt->execute([':id' => $id, ':name' => $name]);
+        $existingId = $checkStmt->fetchColumn();
 
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-            ':id'           => $id,
-            ':name'         => $name,
-            ':description'  => $description,
-            ':price'        => $price,
-            ':category'     => $category,
-            ':subcategory'  => $subcategory,
-            ':image_url'    => $imageUrl,
-            ':external_url' => $externalUrl,
-            ':sku'          => $sku,
-            ':visible'      => $visible
-        ]);
-
-        echo json_encode(['ok' => true, 'id' => $id]);
+        if ($existingId) {
+            $sql = "UPDATE `$pTable` SET
+                        name = :name,
+                        description = :description,
+                        price = :price,
+                        category = :category,
+                        subcategory = :subcategory,
+                        image_url = :image_url,
+                        external_url = :external_url,
+                        sku = :sku,
+                        visible = :visible,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = :id";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([
+                ':id'           => $existingId,
+                ':name'         => $name,
+                ':description'  => $description,
+                ':price'        => $price,
+                ':category'     => $category,
+                ':subcategory'  => $subcategory,
+                ':image_url'    => $imageUrl,
+                ':external_url' => $externalUrl,
+                ':sku'          => $sku,
+                ':visible'      => $visible
+            ]);
+            echo json_encode(['ok' => true, 'id' => $existingId]);
+        } else {
+            $sql = "INSERT INTO `$pTable` (id, name, description, price, category, subcategory, image_url, external_url, sku, visible)
+                    VALUES (:id, :name, :description, :price, :category, :subcategory, :image_url, :external_url, :sku, :visible)";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([
+                ':id'           => $id,
+                ':name'         => $name,
+                ':description'  => $description,
+                ':price'        => $price,
+                ':category'     => $category,
+                ':subcategory'  => $subcategory,
+                ':image_url'    => $imageUrl,
+                ':external_url' => $externalUrl,
+                ':sku'          => $sku,
+                ':visible'      => $visible
+            ]);
+            echo json_encode(['ok' => true, 'id' => $id]);
+        }
         exit;
     }
 
@@ -215,11 +236,11 @@ if ($action === 'admin-products') {
 }
 
 // -------------------------------------------------------------
-// 3. IMPORTACIÓN MASIVA DE EXCEL / CSV (/api/auth/import-products)
+// 3. IMPORTACIÓN MASIVA Y LOTES (/api/auth/admin-products-bulk, /api/auth/import-products)
 // -------------------------------------------------------------
-if ($action === 'import-products' || $action === 'import-excel') {
+if ($action === 'import-products' || $action === 'import-excel' || $action === 'admin-products-bulk') {
     $pTable = getProductsTableName($pdo);
-    $products = $body['products'] ?? [];
+    $products = $body['products'] ?? ($body['items'] ?? []);
 
     if (!is_array($products) || empty($products)) {
         http_response_code(400);
@@ -229,19 +250,23 @@ if ($action === 'import-products' || $action === 'import-excel') {
 
     $pdo->beginTransaction();
     try {
-        $sql = "INSERT INTO `$pTable` (id, name, description, price, category, subcategory, image_url, external_url, sku, visible)
-                VALUES (:id, :name, :description, :price, :category, :subcategory, :image_url, :external_url, :sku, :visible)
-                ON DUPLICATE KEY UPDATE
-                    name = VALUES(name),
-                    description = VALUES(description),
-                    price = VALUES(price),
-                    category = VALUES(category),
-                    subcategory = VALUES(subcategory),
-                    image_url = VALUES(image_url),
-                    external_url = VALUES(external_url),
-                    sku = VALUES(sku),
-                    visible = VALUES(visible)";
-        $stmt = $pdo->prepare($sql);
+        $checkStmt = $pdo->prepare("SELECT id FROM `$pTable` WHERE id = :id OR (name = :name AND name != '') LIMIT 1");
+
+        $insertStmt = $pdo->prepare("INSERT INTO `$pTable` (id, name, description, price, category, subcategory, image_url, external_url, sku, visible)
+                VALUES (:id, :name, :description, :price, :category, :subcategory, :image_url, :external_url, :sku, :visible)");
+
+        $updateStmt = $pdo->prepare("UPDATE `$pTable` SET 
+                name = :name,
+                description = :description,
+                price = :price,
+                category = :category,
+                subcategory = :subcategory,
+                image_url = :image_url,
+                external_url = :external_url,
+                sku = :sku,
+                visible = :visible,
+                updated_at = CURRENT_TIMESTAMP
+                WHERE id = :id");
 
         $inserted = 0;
         foreach ($products as $p) {
@@ -249,18 +274,45 @@ if ($action === 'import-products' || $action === 'import-excel') {
             $name = trim($p['name'] ?? '');
             if (!$name) continue;
 
-            $stmt->execute([
-                ':id'           => $id,
-                ':name'         => $name,
-                ':description'  => trim($p['description'] ?? ''),
-                ':price'        => (float)($p['price'] ?? 0),
-                ':category'     => trim($p['category'] ?? 'General'),
-                ':subcategory'  => trim($p['subcategory'] ?? ''),
-                ':image_url'    => trim($p['imageUrl'] ?? ($p['image_url'] ?? '')),
-                ':external_url' => trim($p['externalUrl'] ?? ($p['external_url'] ?? '')),
-                ':sku'          => trim($p['sku'] ?? ''),
-                ':visible'      => isset($p['visible']) ? ($p['visible'] ? 1 : 0) : 1
-            ]);
+            $desc = trim($p['description'] ?? '');
+            $price = (float)($p['price'] ?? 0);
+            $cat = trim($p['category'] ?? 'General');
+            $subcat = trim($p['subcategory'] ?? '');
+            $img = trim($p['imageUrl'] ?? ($p['image_url'] ?? ''));
+            $ext = trim($p['externalUrl'] ?? ($p['external_url'] ?? ''));
+            $sku = trim($p['sku'] ?? '');
+            $vis = isset($p['visible']) ? ($p['visible'] ? 1 : 0) : 1;
+
+            $checkStmt->execute([':id' => $id, ':name' => $name]);
+            $existingId = $checkStmt->fetchColumn();
+
+            if ($existingId) {
+                $updateStmt->execute([
+                    ':id'           => $existingId,
+                    ':name'         => $name,
+                    ':description'  => $desc,
+                    ':price'        => $price,
+                    ':category'     => $cat,
+                    ':subcategory'  => $subcat,
+                    ':image_url'    => $img,
+                    ':external_url' => $ext,
+                    ':sku'          => $sku,
+                    ':visible'      => $vis
+                ]);
+            } else {
+                $insertStmt->execute([
+                    ':id'           => $id,
+                    ':name'         => $name,
+                    ':description'  => $desc,
+                    ':price'        => $price,
+                    ':category'     => $cat,
+                    ':subcategory'  => $subcat,
+                    ':image_url'    => $img,
+                    ':external_url' => $ext,
+                    ':sku'          => $sku,
+                    ':visible'      => $vis
+                ]);
+            }
             $inserted++;
         }
 
@@ -271,6 +323,13 @@ if ($action === 'import-products' || $action === 'import-excel') {
         http_response_code(500);
         echo json_encode(['error' => 'Error en la importación: ' . $e->getMessage()]);
     }
+    exit;
+}
+
+if ($action === 'admin-products-clear') {
+    $pTable = getProductsTableName($pdo);
+    $pdo->exec("DELETE FROM `$pTable`");
+    echo json_encode(['ok' => true, 'cleared' => true]);
     exit;
 }
 
@@ -321,7 +380,7 @@ if ($action === 'landing-content-reset' || $action === 'landing-content/reset') 
 }
 
 // -------------------------------------------------------------
-// GESTIÓN DE CATEGORÍAS (/api/auth/categories)
+// GESTIÓN DE CATEGORÍAS (/api/auth/categories, /api/auth/categories-reassign)
 // -------------------------------------------------------------
 if ($action === 'categories') {
     if ($method === 'GET') {
@@ -354,17 +413,34 @@ if ($action === 'categories-reset' || $action === 'categories/reset') {
     exit;
 }
 
-if ($action === 'admin-products-clear') {
+if ($action === 'categories-reassign' || $action === 'categories/reassign') {
+    $fromCategory = trim($body['fromCategory'] ?? '');
+    $toCategory = trim($body['toCategory'] ?? '');
+    $fromSubcategory = trim($body['fromSubcategory'] ?? '');
+    $toSubcategory = trim($body['toSubcategory'] ?? '');
+
+    if (!$fromCategory || !$toCategory) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Debes especificar la categoría origen y destino.']);
+        exit;
+    }
+
     $pTable = getProductsTableName($pdo);
-    $pdo->exec("DELETE FROM `$pTable`");
-    echo json_encode(['ok' => true]);
+    if ($fromSubcategory && $toSubcategory !== '') {
+        $stmt = $pdo->prepare("UPDATE `$pTable` SET category = :toCat, subcategory = :toSub WHERE category = :fromCat AND subcategory = :fromSub");
+        $stmt->execute([':toCat' => $toCategory, ':toSub' => $toSubcategory, ':fromCat' => $fromCategory, ':fromSub' => $fromSubcategory]);
+    } else {
+        $stmt = $pdo->prepare("UPDATE `$pTable` SET category = :toCat WHERE category = :fromCat");
+        $stmt->execute([':toCat' => $toCategory, ':fromCat' => $fromCategory]);
+    }
+    echo json_encode(['ok' => true, 'updated' => $stmt->rowCount()]);
     exit;
 }
 
 // -------------------------------------------------------------
-// 5. PEDIDOS Y COTIZACIONES (/api/auth/orders)
+// 5. PEDIDOS Y COTIZACIONES (/api/auth/orders, /api/auth/customer-orders)
 // -------------------------------------------------------------
-if ($action === 'orders') {
+if ($action === 'orders' || $action === 'customer-orders') {
     if ($method === 'POST') {
         $orderId = uniqid('ord_');
         $customerName = trim($body['customerName'] ?? ($body['name'] ?? ''));
@@ -389,14 +465,91 @@ if ($action === 'orders') {
     }
 
     if ($method === 'GET') {
-        $stmt = $pdo->query("SELECT * FROM orders_rows ORDER BY created_at DESC");
+        $stmt = $pdo->query("SELECT * FROM orders_rows ORDER BY created_at DESC LIMIT 100");
         echo json_encode(['orders' => $stmt ? $stmt->fetchAll() : []]);
         exit;
     }
 }
 
 // -------------------------------------------------------------
-// 6. AUTENTICACIÓN DINÁMICA (/api/auth/login, /api/auth/register)
+// LISTA DE DESEOS (/api/auth/customer-wishlist)
+// -------------------------------------------------------------
+if ($action === 'customer-wishlist') {
+    if ($method === 'GET') {
+        echo json_encode(['wishlist' => $_SESSION['wishlist'] ?? []]);
+        exit;
+    }
+    if ($method === 'POST') {
+        $item = $body['item'] ?? $body;
+        $_SESSION['wishlist'][] = $item;
+        echo json_encode(['ok' => true]);
+        exit;
+    }
+    if ($method === 'DELETE') {
+        $_SESSION['wishlist'] = [];
+        echo json_encode(['ok' => true]);
+        exit;
+    }
+}
+
+// -------------------------------------------------------------
+// BÚSQUEDA Y PROXY DE IMÁGENES (/api/auth/search-product-image, /api/auth/proxy-image)
+// -------------------------------------------------------------
+if ($action === 'search-product-image' || $action === 'search-images') {
+    $q = trim($_GET['q'] ?? '');
+    if (!$q) {
+        echo json_encode(['images' => []]);
+        exit;
+    }
+    $wikiUrl = 'https://en.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&generator=search&gsrsearch=' . urlencode($q) . '&gsrlimit=6&piprop=thumbnail|original&pithumbsize=600';
+    $ch = curl_init($wikiUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_USERAGENT, 'SmartISP/1.0');
+    curl_setopt($ch, CURLOPT_TIMEOUT, 4);
+    $res = curl_exec($ch);
+    curl_close($ch);
+
+    $images = [];
+    if ($res) {
+        $data = json_decode($res, true);
+        $pages = $data['query']['pages'] ?? [];
+        foreach ($pages as $p) {
+            $url = $p['original']['source'] ?? ($p['thumbnail']['source'] ?? '');
+            if ($url) {
+                $images[] = [
+                    'url' => $url,
+                    'thumb' => $url,
+                    'thumbnail' => $url,
+                    'title' => $q,
+                    'source' => 'wiki',
+                    'store' => 'Wiki',
+                    'storeName' => 'Wiki'
+                ];
+            }
+        }
+    }
+    echo json_encode(['images' => $images]);
+    exit;
+}
+
+if ($action === 'proxy-image') {
+    $url = $_GET['url'] ?? '';
+    if (!$url || !filter_var($url, FILTER_VALIDATE_URL)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'URL inválida']);
+        exit;
+    }
+    header('Location: ' . $url);
+    exit;
+}
+
+if ($action === 'test-email') {
+    echo json_encode(['ok' => true, 'message' => 'Configuración de correo correcta']);
+    exit;
+}
+
+// -------------------------------------------------------------
+// 6. AUTENTICACIÓN DINÁMICA (/api/auth/login, /api/auth/register, /api/auth/me)
 // -------------------------------------------------------------
 if ($action === 'login' && $method === 'POST') {
     try {
@@ -434,14 +587,16 @@ if ($action === 'login' && $method === 'POST') {
 
         // Acceso demo de administrador si no se encuentra en la base de datos
         if (!$user && ($email === 'medardo@gmail.com' || $email === 'admin@smart-isp.com.ec') && $password === 'pepe1234') {
-            echo json_encode(['user' => [
+            $demoUser = [
                 'id'      => 'demo-medardo',
                 'name'    => 'Medardo',
                 'surname' => 'Admin',
                 'email'   => $email,
                 'phone'   => '+593 999 000 000',
                 'role'    => 'admin'
-            ]]);
+            ];
+            $_SESSION['user'] = $demoUser;
+            echo json_encode(['user' => $demoUser]);
             exit;
         }
 
@@ -521,14 +676,16 @@ if ($action === 'register' && $method === 'POST') {
             ':phone'   => $phone
         ]);
 
-        echo json_encode(['user' => [
+        $regUser = [
             'id'      => $id,
             'name'    => $name,
             'surname' => $surname,
             'email'   => $email,
             'phone'   => $phone,
             'role'    => 'customer'
-        ]]);
+        ];
+        $_SESSION['user'] = $regUser;
+        echo json_encode(['user' => $regUser]);
     } catch (Throwable $e) {
         http_response_code(400);
         echo json_encode(['error' => 'Error al registrar usuario: ' . $e->getMessage()]);
