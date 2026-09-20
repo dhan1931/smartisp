@@ -363,15 +363,19 @@ if ($action === 'login' && $method === 'POST') {
         $colsStmt = $pdo->query("DESCRIBE `$uTable`");
         $cols = $colsStmt ? $colsStmt->fetchAll(PDO::FETCH_COLUMN) : [];
 
-        $emailCol = 'email';
-        foreach (['email', 'correo', 'mail', 'user_email', 'username', 'usuario'] as $c) {
+        $emailCol = null;
+        foreach (['email', 'correo', 'mail', 'user_email', 'username', 'usuario', 'COL 2', 'col 2', 'COL_2', 'col_2'] as $c) {
             if (in_array($c, $cols, true)) { $emailCol = $c; break; }
         }
+        if (!$emailCol && isset($cols[1])) $emailCol = $cols[1];
+        if (!$emailCol) $emailCol = 'email';
 
-        $passCol = 'password_hash';
-        foreach (['password_hash', 'password', 'clave', 'pass', 'hash'] as $c) {
+        $passCol = null;
+        foreach (['password_hash', 'password', 'clave', 'pass', 'hash', 'COL 3', 'col 3', 'COL_3', 'col_3'] as $c) {
             if (in_array($c, $cols, true)) { $passCol = $c; break; }
         }
+        if (!$passCol && isset($cols[2])) $passCol = $cols[2];
+        if (!$passCol) $passCol = 'password_hash';
 
         $stmt = $pdo->prepare("SELECT * FROM `$uTable` WHERE `$emailCol` = :email LIMIT 1");
         $stmt->execute([':email' => $email]);
@@ -415,12 +419,12 @@ if ($action === 'login' && $method === 'POST') {
             if (isset($user['password_hash'])) unset($user['password_hash']);
 
             $normUser = [
-                'id'      => (string)($user['id'] ?? uniqid('usr_')),
-                'name'    => (string)($user['name'] ?? ($user['nombre'] ?? 'Usuario')),
-                'surname' => (string)($user['surname'] ?? ($user['apellido'] ?? '')),
-                'email'   => (string)($user[$emailCol] ?? $email),
-                'phone'   => (string)($user['phone'] ?? ($user['telefono'] ?? '')),
-                'role'    => (string)($user['role'] ?? ($user['rol'] ?? 'customer'))
+                'id'      => (string)($user['id'] ?? ($user['COL 1'] ?? uniqid('usr_'))),
+                'name'    => (string)($user['name'] ?? ($user['nombre'] ?? ($user['COL 4'] ?? 'Usuario'))),
+                'surname' => (string)($user['surname'] ?? ($user['apellido'] ?? ($user['COL 5'] ?? ''))),
+                'email'   => (string)($user[$emailCol] ?? ($user['COL 2'] ?? $email)),
+                'phone'   => (string)($user['phone'] ?? ($user['telefono'] ?? ($user['COL 6'] ?? ''))),
+                'role'    => (string)($user['role'] ?? ($user['rol'] ?? ($user['COL 8'] ?? 'customer')))
             ];
             echo json_encode(['user' => $normUser]);
         } else {
