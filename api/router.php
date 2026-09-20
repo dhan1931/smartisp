@@ -15,6 +15,10 @@ set_exception_handler(function (Throwable $e) {
     exit;
 });
 
+if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
@@ -476,6 +480,7 @@ if ($action === 'login' && $method === 'POST') {
             if (in_array(strtolower($normUser['email']), ['medardogarcesc@gmail.com', 'medardo@gmail.com', 'admin@smart-isp.com.ec'])) {
                 $normUser['role'] = 'admin';
             }
+            $_SESSION['user'] = $normUser;
             echo json_encode(['user' => $normUser]);
         } else {
             http_response_code(401);
@@ -532,7 +537,15 @@ if ($action === 'register' && $method === 'POST') {
 }
 
 if ($action === 'me' && $method === 'GET') {
-    echo json_encode(['user' => null]);
+    $user = $_SESSION['user'] ?? null;
+    echo json_encode(['user' => $user]);
+    exit;
+}
+
+if ($action === 'logout') {
+    $_SESSION['user'] = null;
+    @session_destroy();
+    echo json_encode(['ok' => true]);
     exit;
 }
 
