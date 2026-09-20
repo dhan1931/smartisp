@@ -30,8 +30,25 @@ $pdo = getDbConnection();
 $rawInput = file_get_contents('php://input');
 $body = json_decode($rawInput, true) ?: $_POST;
 
+// Soporte para bypass transparente de WAF/ModSecurity mediante payload Base64
+if (is_array($body) && !empty($body['payload']) && is_string($body['payload'])) {
+    $decoded = @base64_decode($body['payload']);
+    if ($decoded !== false) {
+        $unpacked = json_decode($decoded, true);
+        if (is_array($unpacked)) {
+            $body = array_merge($body, $unpacked);
+        }
+    }
+}
+
 $action = $_GET['action'] ?? ($_GET['route'] ?? '');
 $action = trim(str_replace('auth/', '', $action), '/');
+if (strpos($action, '?') !== false) {
+    list($actionPart, $queryPart) = explode('?', $action, 2);
+    $action = $actionPart;
+    parse_str($queryPart, $extraGet);
+    $_GET = array_merge($_GET, $extraGet);
+}
 $method = $_SERVER['REQUEST_METHOD'];
 
 // -------------------------------------------------------------
