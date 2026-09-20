@@ -207,8 +207,6 @@
 		.remove-item:hover { color: #9b3030; }
 		.cart-total { border-top: 1px solid var(--line); padding-top: 18px; display: flex; justify-content: space-between; font-weight: 700; }
 		.checkout { width: 100%; margin-top: 18px; justify-content: center; }
-		@media (max-width: 800px) { .nav { flex-wrap: wrap; gap: 15px; } .search { order: 3; flex-basis: 100%; max-width: none; } .nav-actions { gap: 8px; } .nav-action span { display: none; } .hero { margin-top: 18px; min-height: 390px; background-position: 68% center; } .hero::after { background: linear-gradient(90deg, rgba(223,243,255,.98), rgba(223,243,255,.7)); } .store-layout { grid-template-columns: 1fr; gap: 16px; } .store-sidebar { position: static; } .sidebar-card { padding: 9px 10px; } .sidebar-header { margin-bottom: 6px; padding-bottom: 6px; } .sidebar-categories { flex-direction: row; overflow-x: auto; gap: 6px; padding-bottom: 4px; scrollbar-width: none; } .sidebar-categories::-webkit-scrollbar { display: none; } .sidebar-cat-btn { flex: 0 0 auto; width: auto; padding: 6px 11px; border: 1px solid var(--line); border-radius: 20px; font-size: 12px; background: #ffffff; } .sidebar-cat-btn.active { border-color: var(--blue); } .products { grid-template-columns: repeat(2, minmax(0, 1fr)); } .benefits { grid-template-columns: 1fr; gap: 18px; } footer { flex-direction: column; } .detail-layout { grid-template-columns: 1fr; gap: 20px; } .detail-copy h2 { font-size: 25px; } }
-		@media (max-width: 430px) { .topbar { display: none; } .nav { padding: 14px 4vw; } .content { padding: 30px 4vw; } .hero { margin-left: 4vw; margin-right: 4vw; padding: 36px 25px; } .section-heading h2 { font-size: 24px; } .section-heading a { font-size: 11px; } .products { gap: 9px; } .product { padding: 8px; } .product h3 { font-size: 13px; } .price { font-size: 17px; } .footer-links { flex-wrap: wrap; gap: 14px; } }
 		/* Smart-ISP visual system */
 		:root { --navy: #102c3d; --blue: #087ea4; --sky: #e4f5f3; --pale: #f3f7f8; --ink: #163342; --muted: #6b7f88; --line: #d8e5e7; --orange: #f5a524; --mint: #d7f0e8; }
 		body { background: #f3f7f8; color: var(--ink); }
@@ -252,7 +250,6 @@
 		footer { padding-top: 42px; padding-bottom: 42px; }
 		.modal-panel, .drawer-panel { border-radius: 10px; box-shadow: 0 24px 70px rgba(16,44,61,.22); }
 		.modal-close { border-radius: 50%; }
-		@media (max-width: 800px) { .hero { border-radius: 10px; } .hero::after { background: linear-gradient(90deg, rgba(228,245,243,.99), rgba(228,245,243,.78)); } }
 		.account-switch { width: 100%; border: 0; background: transparent; color: var(--muted); padding: 17px 4px 2px; font-size: 12px; }
 		.account-switch strong { color: var(--blue); }
 		.account-switch:hover strong { text-decoration: underline; }
@@ -352,8 +349,463 @@
 		body[data-account-theme="night"] { --navy: #0d2632; --ink: #183845; --pale: #edf4f5; --line: #b8cdd0; }
 		body.account-compact .product-info { padding-top: 10px; }
 		body.account-compact .store-layout { gap: 16px; }
-		@media (max-width: 680px) { .account-layout { grid-template-columns: 1fr; } .account-aside { display: none; } .account-main { padding: 28px 23px; } }
-		@media (max-width: 430px) { .account-grid, .profile-actions { grid-template-columns: 1fr; } .account-main h2 { font-size: 26px; } }
+		/* =============================================================
+		   SISTEMA DE NAVEGACIÓN Y EXPERIENCIA MÓVIL OPTIMIZADA
+		   ============================================================= */
+
+		/* Barra de navegación inferior táctil para celulares (Bottom Nav App) */
+		.mobile-bottom-nav {
+			display: none;
+			position: fixed;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			height: calc(58px + env(safe-area-inset-bottom, 0px));
+			padding-bottom: env(safe-area-inset-bottom, 0px);
+			background: rgba(255, 255, 255, 0.95);
+			backdrop-filter: blur(16px);
+			-webkit-backdrop-filter: blur(16px);
+			border-top: 1px solid var(--line);
+			z-index: 100;
+			box-shadow: 0 -4px 20px rgba(16, 44, 61, 0.08);
+			justify-content: space-around;
+			align-items: center;
+		}
+		body.dark-mode .mobile-bottom-nav {
+			background: rgba(18, 40, 59, 0.96);
+			border-top-color: var(--line);
+			box-shadow: 0 -4px 22px rgba(0, 0, 0, 0.3);
+		}
+		.mobile-nav-item {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: 3px;
+			flex: 1;
+			height: 100%;
+			border: none;
+			background: transparent;
+			color: var(--muted);
+			font-family: inherit;
+			font-size: 11px;
+			font-weight: 600;
+			text-decoration: none;
+			cursor: pointer;
+			padding: 4px 0;
+			transition: color .15s ease, transform .15s ease;
+			-webkit-tap-highlight-color: transparent;
+		}
+		.mobile-nav-item:active {
+			transform: scale(0.92);
+		}
+		.mobile-nav-item.active, .mobile-nav-item:hover {
+			color: var(--blue);
+		}
+		.mobile-nav-item i {
+			transition: transform .2s ease;
+		}
+		.mobile-nav-item.active i {
+			transform: translateY(-1px);
+			color: var(--blue);
+		}
+		.m-cart-wrap {
+			position: relative;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+		}
+		.m-cart-count {
+			position: absolute;
+			top: -6px;
+			right: -9px;
+			background: var(--orange);
+			color: #172b3a;
+			font-size: 9.5px;
+			font-weight: 700;
+			min-width: 16px;
+			height: 16px;
+			border-radius: 10px;
+			display: grid;
+			place-items: center;
+			padding: 0 4px;
+			box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+		}
+		.m-cart-count.bump {
+			animation: cartBump .45s ease;
+		}
+
+		/* MEDIA QUERIES GENERALES PARA CELULARES Y TABLETS (<= 800px) */
+		@media (max-width: 800px) {
+			body {
+				padding-bottom: calc(66px + env(safe-area-inset-bottom, 0px)) !important;
+			}
+			.mobile-bottom-nav {
+				display: flex !important;
+			}
+			.topbar {
+				display: none !important;
+			}
+
+			/* Cabecera optimizada compacta */
+			.nav {
+				flex-wrap: wrap !important;
+				gap: 10px !important;
+				padding: 11px 4vw 12px !important;
+				box-shadow: 0 4px 14px rgba(16, 44, 61, 0.05) !important;
+			}
+			.logo {
+				font-size: 22px !important;
+			}
+			.nav-actions {
+				margin-left: auto !important;
+				gap: 10px !important;
+			}
+			.nav-action span {
+				display: none !important;
+			}
+			.admin-nav-link {
+				padding: 5px 9px !important;
+				font-size: 11px !important;
+			}
+			.admin-nav-link span {
+				display: none !important;
+			}
+			.search {
+				order: 3 !important;
+				flex-basis: 100% !important;
+				max-width: none !important;
+				margin-top: 2px !important;
+				border-radius: 20px !important;
+				background: #ffffff !important;
+				border: 1px solid var(--line) !important;
+			}
+			body.dark-mode .search {
+				background: var(--white) !important;
+			}
+			.search input {
+				padding: 9px 14px !important;
+				font-size: 13.5px !important;
+			}
+			.search button {
+				width: 44px !important;
+			}
+
+			/* Banner Hero ultra compacto para celulares */
+			.hero {
+				margin: 12px 4vw 0 !important;
+				min-height: 165px !important;
+				height: auto !important;
+				padding: 20px 18px !important;
+				border-radius: 14px !important;
+				background-position: 80% center !important;
+				box-shadow: 0 8px 24px rgba(16, 44, 61, 0.08) !important;
+			}
+			.hero::after {
+				background: linear-gradient(90deg, rgba(228, 245, 243, 0.98) 0%, rgba(228, 245, 243, 0.90) 58%, rgba(228, 245, 243, 0.45) 100%) !important;
+			}
+			body.dark-mode .hero::after {
+				background: linear-gradient(90deg, rgba(22, 59, 81, 0.98) 0%, rgba(22, 59, 81, 0.92) 58%, rgba(22, 59, 81, 0.45) 100%) !important;
+			}
+			.hero-content {
+				max-width: 100% !important;
+			}
+			.eyebrow {
+				font-size: 9.5px !important;
+				letter-spacing: .12em !important;
+				margin-bottom: 3px !important;
+			}
+			h1 {
+				font-size: 21px !important;
+				line-height: 1.15 !important;
+				margin: 4px 0 6px !important;
+			}
+			.hero p {
+				font-size: 12px !important;
+				line-height: 1.4 !important;
+				margin: 0 0 12px !important;
+				max-width: 300px !important;
+				display: -webkit-box !important;
+				-webkit-line-clamp: 2 !important;
+				-webkit-box-orient: vertical !important;
+				overflow: hidden !important;
+			}
+			.hero .primary {
+				padding: 8px 14px !important;
+				font-size: 12px !important;
+				border-radius: 6px !important;
+			}
+
+			/* Contenido y Layout */
+			.content {
+				padding: 18px 4vw 28px !important;
+			}
+			.store-layout {
+				grid-template-columns: 1fr !important;
+				gap: 12px !important;
+			}
+			.store-sidebar {
+				position: static !important;
+				margin-bottom: 2px !important;
+			}
+			.sidebar-card {
+				padding: 10px 12px !important;
+				border-radius: 12px !important;
+			}
+			.sidebar-header {
+				margin-bottom: 6px !important;
+				padding-bottom: 6px !important;
+			}
+
+			/* Carrusel horizontal de categorías táctiles con scroll suave */
+			.sidebar-categories {
+				display: flex !important;
+				flex-direction: row !important;
+				overflow-x: auto !important;
+				-webkit-overflow-scrolling: touch !important;
+				gap: 8px !important;
+				padding: 4px 2px 8px !important;
+				scrollbar-width: none !important;
+				scroll-snap-type: x mandatory !important;
+			}
+			.sidebar-categories::-webkit-scrollbar {
+				display: none !important;
+			}
+			.sidebar-cat-btn, .sidebar-group-header {
+				flex: 0 0 auto !important;
+				width: auto !important;
+				padding: 7px 13px !important;
+				border: 1px solid var(--line) !important;
+				border-radius: 22px !important;
+				font-size: 12px !important;
+				background: var(--pale) !important;
+				scroll-snap-align: start !important;
+				white-space: nowrap !important;
+			}
+			.sidebar-cat-btn.active, .sidebar-group.is-active-group > .sidebar-group-header {
+				background: #e8f4fc !important;
+				border-color: var(--blue) !important;
+				color: var(--blue) !important;
+				font-weight: 700 !important;
+			}
+			body.dark-mode .sidebar-cat-btn, body.dark-mode .sidebar-group-header {
+				background: rgba(255, 255, 255, 0.05) !important;
+			}
+			body.dark-mode .sidebar-cat-btn.active, body.dark-mode .sidebar-group.is-active-group > .sidebar-group-header {
+				background: rgba(17, 119, 201, 0.25) !important;
+				border-color: var(--blue) !important;
+			}
+			.sidebar-group {
+				flex: 0 0 auto !important;
+				margin-bottom: 0 !important;
+			}
+			.sidebar-group-btn {
+				padding: 0 !important;
+				font-size: 12px !important;
+			}
+			.sidebar-group-toggle {
+				padding: 0 0 0 4px !important;
+			}
+			.sidebar-subcat-list {
+				display: none !important;
+			}
+
+			/* Toolbar móvil */
+			.toolbar {
+				margin-bottom: 12px !important;
+				gap: 8px !important;
+				flex-direction: row !important;
+				align-items: center !important;
+			}
+			.toolbar-info {
+				flex: 1 !important;
+				min-width: 0 !important;
+			}
+			.result-count {
+				font-size: 11.5px !important;
+				white-space: nowrap !important;
+				overflow: hidden !important;
+				text-overflow: ellipsis !important;
+			}
+			.select {
+				font-size: 11.5px !important;
+				padding: 6px 10px !important;
+				border-radius: 8px !important;
+			}
+
+			/* Rejilla de productos en 2 columnas fluida */
+			.products {
+				grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+				gap: 10px !important;
+			}
+			.product {
+				padding: 9px !important;
+				border-radius: 12px !important;
+				-webkit-tap-highlight-color: transparent !important;
+			}
+			.product-image {
+				aspect-ratio: 1 / 1 !important;
+				padding: 8px !important;
+				border-radius: 9px !important;
+			}
+			.heart {
+				width: 36px !important;
+				height: 36px !important;
+				top: 5px !important;
+				right: 5px !important;
+			}
+			.tag {
+				font-size: 8px !important;
+				padding: 3px 5px !important;
+				top: 5px !important;
+				left: 5px !important;
+				border-radius: 3px !important;
+			}
+			.product-info {
+				padding: 9px 2px 2px !important;
+			}
+			.product-brand {
+				font-size: 9.5px !important;
+			}
+			.product h3 {
+				font-size: 12.5px !important;
+				line-height: 1.3 !important;
+				min-height: 32px !important;
+				margin: 3px 0 6px !important;
+				display: -webkit-box !important;
+				-webkit-line-clamp: 2 !important;
+				-webkit-box-orient: vertical !important;
+				overflow: hidden !important;
+			}
+			.stars, .reviews {
+				font-size: 10px !important;
+			}
+			.price-row {
+				margin-top: 8px !important;
+			}
+			.price {
+				font-size: 16px !important;
+			}
+			.price.is-quote {
+				font-size: 11px !important;
+				line-height: 1.2 !important;
+			}
+			.add {
+				width: 38px !important;
+				height: 38px !important;
+				border-radius: 8px !important;
+			}
+
+			/* Modal Detalle de Producto tipo Bottom Sheet */
+			.modal {
+				align-items: flex-end !important;
+				padding: 0 !important;
+			}
+			.modal-panel {
+				width: 100% !important;
+				max-width: 100% !important;
+				max-height: 88vh !important;
+				border-radius: 22px 22px 0 0 !important;
+				padding: 22px 18px 24px !important;
+				transform: translateY(100%) !important;
+				transition: transform .3s cubic-bezier(.2,.8,.2,1) !important;
+			}
+			.modal-panel::before {
+				content: '';
+				display: block;
+				width: 44px;
+				height: 4px;
+				border-radius: 4px;
+				background: #cbd5e1;
+				margin: -6px auto 14px;
+			}
+			body.dark-mode .modal-panel::before {
+				background: #334e68;
+			}
+			.modal.open .modal-panel {
+				transform: translateY(0) !important;
+			}
+			.modal-close {
+				top: 14px !important;
+				right: 14px !important;
+				width: 34px !important;
+				height: 34px !important;
+			}
+			.detail-layout {
+				grid-template-columns: 1fr !important;
+				gap: 16px !important;
+			}
+			.detail-image {
+				aspect-ratio: 1.15 !important;
+				border-radius: 12px !important;
+			}
+			.detail-copy h2 {
+				font-size: 21px !important;
+				margin: 4px 0 8px !important;
+			}
+			.specs {
+				grid-template-columns: 1fr !important;
+				gap: 8px !important;
+				margin-top: 16px !important;
+				padding-top: 12px !important;
+			}
+
+			/* Drawer del Carrito en celulares */
+			.drawer-panel {
+				width: 100% !important;
+				max-width: 100% !important;
+				padding: 20px 18px !important;
+			}
+			.cart-item {
+				padding: 10px 0 !important;
+			}
+			.cart-item img {
+				width: 48px !important;
+				height: 48px !important;
+				border-radius: 6px !important;
+			}
+			.checkout {
+				height: 46px !important;
+				font-size: 14.5px !important;
+				border-radius: 10px !important;
+			}
+
+			/* Beneficios y Footer */
+			.benefits {
+				grid-template-columns: 1fr !important;
+				gap: 16px !important;
+				padding: 24px 5vw !important;
+			}
+			footer {
+				flex-direction: column !important;
+				gap: 20px !important;
+				padding: 28px 5vw !important;
+			}
+			.footer-links {
+				flex-direction: column !important;
+				gap: 10px !important;
+			}
+		}
+
+		/* Adaptación ultra fina para pantallas muy angostas (iPhone SE / <= 380px) */
+		@media (max-width: 380px) {
+			.products {
+				gap: 7px !important;
+			}
+			.product {
+				padding: 7px !important;
+			}
+			.price {
+				font-size: 14.5px !important;
+			}
+			.add {
+				width: 34px !important;
+				height: 34px !important;
+			}
+			.hero h1 {
+				font-size: 19px !important;
+			}
+		}
 	</style>
 </head>
 <body>
@@ -404,6 +856,34 @@
 		<section class="benefits"><div class="benefit"><i data-lucide="shield-check" width="25"></i><div><strong>Compra segura</strong><span>Protegemos cada transacción</span></div></div><div class="benefit"><i data-lucide="headphones" width="25"></i><div><strong>Asesoría especializada</strong><span>Personas reales, respuestas claras</span></div></div><div class="benefit"><i data-lucide="package-check" width="25"></i><div><strong>Despacho a todo Ecuador</strong><span>Recibe donde estés</span></div></div></section>
 	</main>
 	<footer><div><div class="logo">smart<b>isp</b><span style="color:#f5a524">.</span></div><div>Infraestructura que mantiene tu red en movimiento.</div></div><div class="footer-links"><a href="index.html">Sobre la Empresa</a><a href="index.html#contacto">Contacto y Soporte</a><a href="#">Despachos</a><a href="#">Garantías</a></div><div>© 2026 SmartISP</div></footer>
+
+	<!-- Barra de Navegación Inferior Móvil (Estilo App Nativa) -->
+	<nav class="mobile-bottom-nav" aria-label="Navegación rápida móvil">
+		<button type="button" class="mobile-nav-item active" id="mNavHome" title="Ir al catálogo completo">
+			<i data-lucide="store" width="20"></i>
+			<span>Tienda</span>
+		</button>
+		<button type="button" class="mobile-nav-item" id="mNavCategories" title="Ver categorías">
+			<i data-lucide="layout-grid" width="20"></i>
+			<span>Categorías</span>
+		</button>
+		<button type="button" class="mobile-nav-item" id="mNavSearch" title="Buscar productos">
+			<i data-lucide="search" width="20"></i>
+			<span>Buscar</span>
+		</button>
+		<button type="button" class="mobile-nav-item" id="mNavCart" title="Ver carrito">
+			<span class="m-cart-wrap">
+				<i data-lucide="shopping-cart" width="20"></i>
+				<b class="m-cart-count" id="mCartCount">0</b>
+			</span>
+			<span>Carrito</span>
+		</button>
+		<button type="button" class="mobile-nav-item" id="mNavAccount" title="Mi cuenta">
+			<i data-lucide="user" width="20"></i>
+			<span id="mAccountLabel">Cuenta</span>
+		</button>
+	</nav>
+
 		<aside class="drawer" id="drawer"><div class="drawer-panel"><div class="drawer-head"><h2>Tu carrito</h2><button class="icon-button" id="closeCart" aria-label="Cerrar carrito"><i data-lucide="x"></i></button></div><div class="cart-items" id="cartItems">Tu carrito está vacío.</div><div class="cart-total"><span>Total</span><span id="cartTotal">$0</span></div><button class="primary checkout">Finalizar compra <i data-lucide="arrow-up-right" width="16"></i></button></div></aside>
 		<div class="modal" id="productModal" role="dialog" aria-modal="true" aria-labelledby="detailTitle"><div class="modal-panel"><button class="icon-button modal-close" data-close-modal="productModal" aria-label="Cerrar especificaciones"><i data-lucide="x"></i></button><div id="productDetail"></div></div></div>
 		<div class="modal" id="accountModal" style="display:none;" aria-hidden="true"></div>
@@ -839,11 +1319,20 @@
 		const updateCart = (animate = true) => {
 			localStorage.setItem('smartisp.cart', JSON.stringify(cart));
 			const count = document.querySelector('#cartCount');
-			count.textContent = cart.length;
+			if (count) count.textContent = cart.length;
+			const mCount = document.querySelector('#mCartCount');
+			if (mCount) mCount.textContent = cart.length;
 			if (animate) {
-				count.classList.remove('bump');
-				void count.offsetWidth;
-				count.classList.add('bump');
+				if (count) {
+					count.classList.remove('bump');
+					void count.offsetWidth;
+					count.classList.add('bump');
+				}
+				if (mCount) {
+					mCount.classList.remove('bump');
+					void mCount.offsetWidth;
+					mCount.classList.add('bump');
+				}
 			}
 			document.querySelector('#cartItems').innerHTML = cart.length ? cart.map((item, index) => `<div class="cart-item"><img src="${item.image}" alt=""><div class="cart-item-copy"><strong>${item.name}</strong><small>${money(item.price)}</small></div><button class="remove-item" data-remove-index="${index}" aria-label="Eliminar ${item.name} del carrito"><i data-lucide="trash-2" width="16"></i></button></div>`).join('') : 'Tu carrito está vacío.';
 			const totalNum = cart.reduce((total, item) => total + Number(item.price || 0), 0);
@@ -1053,6 +1542,62 @@
 		render();
 		lucide.createIcons();
 		applyRemoteSite();
+
+		// =============================================================
+		// CONTROLADORES DE LA BARRA INFERIOR MÓVIL (BOTTOM NAV)
+		// =============================================================
+		const mNavHome = document.querySelector('#mNavHome');
+		if (mNavHome) {
+			mNavHome.addEventListener('click', () => {
+				selectedFilter = 'all';
+				if (typeof renderSidebarCategories === 'function') renderSidebarCategories();
+				const searchInput = document.querySelector('#searchInput');
+				if (searchInput) searchInput.value = '';
+				render();
+				window.scrollTo({ top: 0, behavior: 'smooth' });
+				document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
+				mNavHome.classList.add('active');
+			});
+		}
+
+		const mNavCategories = document.querySelector('#mNavCategories');
+		if (mNavCategories) {
+			mNavCategories.addEventListener('click', () => {
+				const sidebar = document.querySelector('.store-sidebar');
+				if (sidebar) {
+					sidebar.scrollIntoView({ behavior: 'smooth', block: 'start' });
+				}
+				document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
+				mNavCategories.classList.add('active');
+			});
+		}
+
+		const mNavSearch = document.querySelector('#mNavSearch');
+		if (mNavSearch) {
+			mNavSearch.addEventListener('click', () => {
+				const searchInput = document.querySelector('#searchInput');
+				if (searchInput) {
+					searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+					setTimeout(() => searchInput.focus(), 300);
+				}
+			});
+		}
+
+		const mNavCart = document.querySelector('#mNavCart');
+		if (mNavCart) {
+			mNavCart.addEventListener('click', () => {
+				const openCart = document.querySelector('#openCart');
+				if (openCart) openCart.click();
+			});
+		}
+
+		const mNavAccount = document.querySelector('#mNavAccount');
+		if (mNavAccount) {
+			mNavAccount.addEventListener('click', () => {
+				const openAccount = document.querySelector('#openAccount');
+				if (openAccount) openAccount.click();
+			});
+		}
 	</script>
 
 	<script>
@@ -1504,6 +2049,8 @@
 			signedIn = true;
 			const label = document.querySelector('#accountLabel');
 			if (label) label.textContent = user.name || 'Mi cuenta';
+			const mLabel = document.querySelector('#mAccountLabel');
+			if (mLabel) mLabel.textContent = user.name ? user.name.split(' ')[0] : 'Cuenta';
 			updateAdminAccess(user);
 			accountAuthView.hidden = true;
 			accountProfileView.hidden = false;
@@ -1521,6 +2068,8 @@
 			updateAdminAccess(null);
 			const label = document.querySelector('#accountLabel');
 			if (label) label.textContent = 'Mi cuenta';
+			const mLabel = document.querySelector('#mAccountLabel');
+			if (mLabel) mLabel.textContent = 'Cuenta';
 			accountAuthView.hidden = false;
 			accountProfileView.hidden = true;
 			accountSystem.querySelectorAll('form').forEach(form => form.reset());

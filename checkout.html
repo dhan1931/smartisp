@@ -520,15 +520,22 @@
     .btn-primary:hover { background: var(--blue-hover); }
 
     @media (max-width: 860px) {
-      .process-steps { grid-template-columns: 1fr; gap: 12px; }
-      .layout { grid-template-columns: 1fr; }
+      header { padding: 14px 4vw; }
+      main { width: 94vw; margin: 18px auto 40px; }
+      .process-banner { padding: 16px 18px; margin-bottom: 18px; border-radius: 10px; }
+      .process-steps { grid-template-columns: 1fr; gap: 10px; }
+      .layout { grid-template-columns: 1fr; gap: 18px; }
       .summary-column { order: -1; }
       .success-cards { grid-template-columns: 1fr; }
+      input, textarea, select { font-size: 16px !important; }
+      .btn-primary { height: 48px; font-size: 15px; }
     }
     @media (max-width: 480px) {
-      section.card { padding: 18px; }
+      section.card { padding: 16px 14px; border-radius: 10px; }
       .two-columns { grid-template-columns: 1fr; gap: 0; }
       .success-actions { flex-direction: column; }
+      h1 { font-size: 22px; margin-bottom: 16px; }
+      .cart-item-row img { width: 44px; height: 44px; }
     }
     @media print {
       header, .process-banner, .success-actions, .guarantee-note { display: none !important; }
