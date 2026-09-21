@@ -121,16 +121,26 @@
 <body>
   <header class="top"><div><h1>SmartISP Administracion</h1><span>Gestiona tu tienda sin editar el codigo</span></div><div style="display:flex;gap:8px;"><a class="button secondary" href="/">Ver presentación</a><a class="button secondary" href="/tienda.html">Ver tienda</a></div></header>
   <main class="shell">
+    <section id="accessDeniedPanel" class="login hidden">
+      <div style="text-align: center; padding: 10px 0;">
+        <div style="font-size: 42px; line-height: 1; margin-bottom: 12px;">🚫</div>
+        <h2 style="color: #c2410c; margin-bottom: 6px;">Acceso Restringido</h2>
+        <p style="color: var(--muted); font-size: 13.5px; line-height: 1.5; margin-bottom: 18px;">
+          Has iniciado sesión como <strong id="deniedUserEmail" style="color: var(--ink);"></strong>.<br>
+          Esta cuenta de cliente no posee permisos para gestionar el panel de administración.
+        </p>
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+          <a class="button" href="/tienda.html" style="text-decoration:none;">Ir a la tienda</a>
+          <button id="switchAccountBtn" class="button secondary" type="button">Cambiar de cuenta</button>
+        </div>
+      </div>
+    </section>
     <section id="loginPanel" class="login hidden">
       <h2>Acceso de administrador</h2>
-      <p>Usa la cuenta autorizada por el propietario del proyecto.</p>
-      <div style="background:#eaf7f5;border:1px solid #b2dfdb;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12.5px;color:#004d40;line-height:1.45;">
-        <strong>Credenciales de Administrador:</strong><br>
-        Correo: <code>medardo@gmail.com</code> | Contraseña: <code>pepe1234</code>
-      </div>
+      <p>Ingresa con tu cuenta autorizada para gestionar la tienda.</p>
       <form id="loginForm">
-        <label>Correo<input name="email" type="email" value="medardo@gmail.com" required autocomplete="email"></label>
-        <label>Contraseña<input name="password" type="password" value="pepe1234" required autocomplete="current-password"></label>
+        <label>Correo electrónico<input name="email" type="email" placeholder="admin@smart-isp.com.ec" required autocomplete="email"></label>
+        <label>Contraseña<input name="password" type="password" placeholder="••••••••" required autocomplete="current-password"></label>
         <label class="remember-option"><input name="remember" type="checkbox" checked> Recordarme en este dispositivo</label>
         <button class="button" type="submit">Entrar al Panel</button>
         <div id="loginMessage" class="message"></div>
@@ -1768,8 +1778,27 @@
       await loadContent();
       await loadCategories();
       await loadProducts();
+    const isUserAdmin = u => {
+      if (!u) return false;
+      const adminEmails = ['medardo@gmail.com', 'medardogarcesc@gmail.com', 'admin@smart-isp.com.ec'];
+      return u.role === 'admin' || adminEmails.includes(String(u.email || '').toLowerCase().trim());
     };
-    $('#loginForm').addEventListener('submit', async event => { event.preventDefault(); try { const values = Object.fromEntries(new FormData(event.currentTarget)); const remember = values.remember === 'on'; const result = await api('login', { method: 'POST', body: JSON.stringify(values) }); if (result.user.role !== 'admin') throw new Error('Esta cuenta no tiene permisos de administrador.'); (remember ? localStorage : sessionStorage).setItem('smartisp.accountUser', JSON.stringify(result.user)); if (remember) localStorage.setItem('smartisp.accountRemembered', 'true'); else localStorage.removeItem('smartisp.accountRemembered'); await openPanel(result.user); } catch (error) { showMessage($('#loginMessage'), error.message, true); } });
+
+    $('#loginForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      try {
+        const values = Object.fromEntries(new FormData(event.currentTarget));
+        const remember = values.remember === 'on';
+        const result = await api('login', { method: 'POST', body: JSON.stringify(values) });
+        if (!isUserAdmin(result.user)) throw new Error('Esta cuenta no tiene permisos de administrador.');
+        (remember ? localStorage : sessionStorage).setItem('smartisp.accountUser', JSON.stringify(result.user));
+        if (remember) localStorage.setItem('smartisp.accountRemembered', 'true');
+        else localStorage.removeItem('smartisp.accountRemembered');
+        await openPanel(result.user);
+      } catch (error) {
+        showMessage($('#loginMessage'), error.message, true);
+      }
+    });
     $('#contentForm').addEventListener('submit', async event => { event.preventDefault(); try { await saveForm(event.currentTarget, $('#contentMessage'), 'Apariencia guardada correctamente.'); } catch (error) { showMessage($('#contentMessage'), error.message, true); } });
     $('#contentForm').addEventListener('input', updateDesignPreview);
     $('#contentForm').addEventListener('change', updateDesignPreview);
@@ -2910,12 +2939,55 @@
       });
     }
 
-    $('#logoutButton').addEventListener('click', async () => { await api('logout', { method: 'POST' }); localStorage.removeItem('smartisp.accountUser'); localStorage.removeItem('smartisp.accountRemembered'); sessionStorage.removeItem('smartisp.accountUser'); location.reload(); });
-    const savedAccount = (() => { try { const stored = sessionStorage.getItem('smartisp.accountUser') || (localStorage.getItem('smartisp.accountRemembered') === 'true' ? localStorage.getItem('smartisp.accountUser') : null); return JSON.parse(stored || 'null'); } catch { return null; } })();
-    if (savedAccount?.role === 'admin') {
+    $('#logoutButton').addEventListener('click', async () => {
+      await api('logout', { method: 'POST' });
+      localStorage.removeItem('smartisp.accountUser');
+      localStorage.removeItem('smartisp.accountRemembered');
+      sessionStorage.removeItem('smartisp.accountUser');
+      location.reload();
+    });
+
+    $('#switchAccountBtn')?.addEventListener('click', async () => {
+      try { await api('logout', { method: 'POST' }); } catch (e) {}
+      localStorage.removeItem('smartisp.accountUser');
+      localStorage.removeItem('smartisp.accountRemembered');
+      sessionStorage.removeItem('smartisp.accountUser');
+      $('#accessDeniedPanel').classList.add('hidden');
+      $('#loginPanel').classList.remove('hidden');
+    });
+
+    const showDenied = (email) => {
+      $('#deniedUserEmail').textContent = email || 'cliente';
+      $('#loginPanel').classList.add('hidden');
+      $('#adminPanel').classList.add('hidden');
+      $('#accessDeniedPanel').classList.remove('hidden');
+    };
+
+    const savedAccount = (() => {
+      try {
+        const stored = sessionStorage.getItem('smartisp.accountUser') || (localStorage.getItem('smartisp.accountRemembered') === 'true' ? localStorage.getItem('smartisp.accountUser') : null);
+        return JSON.parse(stored || 'null');
+      } catch {
+        return null;
+      }
+    })();
+
+    if (savedAccount && isUserAdmin(savedAccount)) {
       openPanel(savedAccount).catch(() => {});
+    } else if (savedAccount && !isUserAdmin(savedAccount)) {
+      showDenied(savedAccount.email);
     } else {
-      api('me').then(result => { if (result.user.role === 'admin') return openPanel(result.user); throw new Error('No es administrador.'); }).catch(() => { $('#loginPanel').classList.remove('hidden'); });
+      api('me').then(result => {
+        if (result?.user && isUserAdmin(result.user)) {
+          return openPanel(result.user);
+        } else if (result?.user) {
+          showDenied(result.user.email);
+        } else {
+          $('#loginPanel').classList.remove('hidden');
+        }
+      }).catch(() => {
+        $('#loginPanel').classList.remove('hidden');
+      });
     }
   </script>
 </body>

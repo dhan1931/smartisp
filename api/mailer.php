@@ -697,3 +697,4 @@ function testEmailConnection(PDO $pdo, ?array $overrideConfig = null, ?string $t
 
     return sendSmartEmail($pdo, $recipient, $subject, $html, $overrideConfig);
 }
+

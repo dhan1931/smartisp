@@ -3083,8 +3083,19 @@
       }
 
       // Asegurar permisos para configurar el catálogo
+      const adminEmails = ['medardo@gmail.com', 'medardogarcesc@gmail.com', 'admin@smart-isp.com.ec'];
+      const userEmail = (user && user.email) ? String(user.email).toLowerCase().trim() : '';
+      const isAdmin = Boolean(user && (user.role === 'admin' || adminEmails.includes(userEmail)));
+
+      if (user && !isAdmin) {
+        alert('Acceso restringido: Esta cuenta no posee permisos de administrador.');
+        window.location.href = '/tienda.html';
+        return;
+      }
+
       if (!user) {
-        user = { id: 'admin', name: 'Administrador', email: 'admin@smart-isp.com.ec', role: 'admin' };
+        window.location.href = '/admin.html';
+        return;
       }
 
       currentAdminUser = user;

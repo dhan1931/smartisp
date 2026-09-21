@@ -16,7 +16,53 @@ set_exception_handler(function (Throwable $e) {
 });
 
 if (session_status() === PHP_SESSION_NONE) {
+    if (!headers_sent()) {
+        @session_set_cookie_params([
+            'lifetime' => 86400 * 30,
+            'path'     => '/',
+            'domain'   => '',
+            'secure'   => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
+            'httponly' => true,
+            'samesite' => 'Lax'
+        ]);
+    }
     @session_start();
+}
+
+function getAuthUser(): ?array {
+    if (session_status() === PHP_SESSION_NONE) {
+        @session_start();
+    }
+    $user = $_SESSION['user'] ?? null;
+    if (is_array($user) && !empty($user['email'])) {
+        return $user;
+    }
+    return null;
+}
+
+function isAdminUser(?array $user = null): bool {
+    if ($user === null) {
+        $user = getAuthUser();
+    }
+    if (!$user || !is_array($user)) {
+        return false;
+    }
+    $role = strtolower(trim((string)($user['role'] ?? '')));
+    $email = strtolower(trim((string)($user['email'] ?? '')));
+    $adminEmails = ['medardo@gmail.com', 'medardogarcesc@gmail.com', 'admin@smart-isp.com.ec'];
+    return ($role === 'admin' || in_array($email, $adminEmails, true));
+}
+
+function requireAdminAuth(): void {
+    if (!isAdminUser()) {
+        http_response_code(403);
+        echo json_encode([
+            'ok' => false,
+            'error' => 'Acceso denegado: Se requieren permisos de administrador.',
+            'unauthorized' => true
+        ]);
+        exit;
+    }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -159,6 +205,7 @@ if ($action === 'catalog' && $method === 'GET') {
 // 2. GESTIÓN DE PRODUCTOS PARA EL EDITOR (/api/auth/admin-products)
 // -------------------------------------------------------------
 if ($action === 'admin-products') {
+    requireAdminAuth();
     $pTable = getProductsTableName($pdo);
 
     if ($method === 'GET') {
@@ -258,6 +305,7 @@ if ($action === 'admin-products') {
 // 3. IMPORTACIÓN MASIVA Y LOTES (/api/auth/admin-products-bulk, /api/auth/import-products)
 // -------------------------------------------------------------
 if ($action === 'import-products' || $action === 'import-excel' || $action === 'admin-products-bulk') {
+    requireAdminAuth();
     $pTable = getProductsTableName($pdo);
     $products = $body['products'] ?? ($body['items'] ?? []);
 
@@ -360,6 +408,7 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
 }
 
 if ($action === 'admin-products-clear') {
+    requireAdminAuth();
     $pTable = getProductsTableName($pdo);
     $pdo->exec("DELETE FROM `$pTable`");
     echo json_encode(['ok' => true, 'cleared' => true]);
@@ -378,6 +427,7 @@ if ($action === 'landing-content' || $action === 'site-content' || $action === '
     }
 
     if ($method === 'POST') {
+        requireAdminAuth();
         $items = $body['content'] ?? ($body['items'] ?? null);
 
         if (!is_array($items) && is_array($body)) {
@@ -407,6 +457,7 @@ if ($action === 'landing-content' || $action === 'site-content' || $action === '
 }
 
 if ($action === 'landing-content-reset' || $action === 'landing-content/reset') {
+    requireAdminAuth();
     $pdo->exec("DELETE FROM settings_rows WHERE setting_key LIKE 'landing_%' OR setting_key LIKE 'hero_%'");
     echo json_encode(['ok' => true]);
     exit;
@@ -424,6 +475,7 @@ if ($action === 'categories') {
     }
 
     if ($method === 'POST') {
+        requireAdminAuth();
         $cats = $body['categories'] ?? [];
         if (is_array($cats)) {
             $pdo->exec("DELETE FROM categories_rows");
@@ -441,12 +493,14 @@ if ($action === 'categories') {
 }
 
 if ($action === 'categories-reset' || $action === 'categories/reset') {
+    requireAdminAuth();
     $pdo->exec("DELETE FROM categories_rows");
     echo json_encode(['ok' => true]);
     exit;
 }
 
 if ($action === 'categories-reassign' || $action === 'categories/reassign') {
+    requireAdminAuth();
     $fromCategory = trim($body['fromCategory'] ?? '');
     $toCategory = trim($body['toCategory'] ?? '');
     $fromSubcategory = trim($body['fromSubcategory'] ?? '');
@@ -581,7 +635,23 @@ if ($action === 'orders' || $action === 'customer-orders') {
     }
 
     if ($method === 'GET') {
-        $stmt = $pdo->query("SELECT * FROM orders_rows ORDER BY created_at DESC, id DESC LIMIT 100");
+        $user = getAuthUser();
+        if (!$user) {
+            http_response_code(401);
+            echo json_encode(['orders' => [], 'error' => 'No autorizado']);
+            exit;
+        }
+
+        if (isAdminUser($user)) {
+            $stmt = $pdo->query("SELECT * FROM orders_rows ORDER BY created_at DESC, id DESC LIMIT 100");
+            echo json_encode(['orders' => $stmt ? $stmt->fetchAll() : []]);
+            exit;
+        }
+
+        $userId = $user['id'] ?? '';
+        $userEmail = $user['email'] ?? '';
+        $stmt = $pdo->prepare("SELECT * FROM orders_rows WHERE (user_id = :uid OR customer_email = :email) ORDER BY created_at DESC, id DESC LIMIT 50");
+        $stmt->execute([':uid' => $userId, ':email' => $userEmail]);
         echo json_encode(['orders' => $stmt ? $stmt->fetchAll() : []]);
         exit;
     }
@@ -660,6 +730,7 @@ if ($action === 'proxy-image') {
 }
 
 if ($action === 'test-email') {
+    requireAdminAuth();
     $targetEmail = trim($body['to'] ?? ($body['admin_email'] ?? ''));
     $testResult = testEmailConnection($pdo, $body, $targetEmail);
     if ($testResult['ok']) {

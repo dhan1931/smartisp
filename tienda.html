@@ -957,7 +957,7 @@
 	<header class="nav">
 		<a class="logo" href="index.html" title="SmartISP - Volver a la presentación">smart<b>isp</b><span style="color:#f5a524">.</span></a>
 		<form class="search" id="searchForm"><input id="searchInput" type="search" placeholder="¿Qué estás buscando hoy?" aria-label="Buscar productos"><button aria-label="Buscar"><i data-lucide="search" width="18"></i></button></form>
-		<div class="nav-actions"><a class="nav-action" href="index.html" title="Conocer sobre la empresa"><i data-lucide="building-2" width="16"></i><span>Empresa</span></a><button class="nav-action" id="openAccount"><i data-lucide="user" width="16"></i><span id="accountLabel">Mi cuenta</span></button><a class="admin-nav-link" id="adminNavLink" href="admin.html"><i data-lucide="layout-dashboard" width="16"></i><span>Panel admin</span></a><button class="nav-action cart-button" id="openCart"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="cart-count" id="cartCount">0</b></button></div>
+		<div class="nav-actions"><a class="nav-action" href="index.html" title="Conocer sobre la empresa"><i data-lucide="building-2" width="16"></i><span>Empresa</span></a><button class="nav-action" id="openAccount"><i data-lucide="user" width="16"></i><span id="accountLabel">Mi cuenta</span></button><a class="admin-nav-link" id="adminNavLink" href="admin.html" style="display: none;"><i data-lucide="layout-dashboard" width="16"></i><span>Panel admin</span></a><button class="nav-action cart-button" id="openCart"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="cart-count" id="cartCount">0</b></button></div>
 	</header>
 	<main>
 		<section class="hero"><div class="hero-content"><div class="eyebrow" id="heroEyebrow">Infraestructura para proveedores de internet</div><h1 id="heroTitle">Conecta más. Opera mejor.</h1><p id="heroText">Equipamiento confiable para redes, servidores y equipos de trabajo que mantienen tu servicio siempre en línea.</p><a class="primary" id="heroButton" href="#catalogo"><span id="heroButtonText">Explorar soluciones</span> <i data-lucide="arrow-right" width="17"></i></a></div></section>
@@ -2132,7 +2132,9 @@
 		};
 
 		const updateAdminAccess = user => {
-			const isAdmin = Boolean(user && (user.role === 'admin' || user.email === 'medardo@gmail.com'));
+			const adminEmails = ['medardo@gmail.com', 'medardogarcesc@gmail.com', 'admin@smart-isp.com.ec'];
+			const userEmail = (user && user.email) ? String(user.email).toLowerCase().trim() : '';
+			const isAdmin = Boolean(user && (user.role === 'admin' || adminEmails.includes(userEmail)));
 			const adminNav = document.querySelector('#adminNavLink');
 			if (adminNav) {
 				adminNav.classList.toggle('is-visible', isAdmin);
