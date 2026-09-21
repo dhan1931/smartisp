@@ -875,7 +875,8 @@
             image: item.image || '',
             category: item.category || ''
           })),
-          shipping: values
+          shipping: values,
+          total: totalAmount
         };
 
         const response = await fetch('/api/auth/customer-orders', {

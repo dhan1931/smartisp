@@ -25,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/mailer.php';
 
 $pdo = getDbConnection();
 $rawInput = file_get_contents('php://input');
@@ -474,12 +475,43 @@ if ($action === 'categories-reassign' || $action === 'categories/reassign') {
 // -------------------------------------------------------------
 if ($action === 'orders' || $action === 'customer-orders') {
     if ($method === 'POST') {
-        $orderId = uniqid('ord_');
-        $customerName = trim($body['customerName'] ?? ($body['name'] ?? ''));
-        $customerEmail = trim($body['customerEmail'] ?? ($body['email'] ?? ''));
-        $customerPhone = trim($body['customerPhone'] ?? ($body['phone'] ?? ''));
-        $items = json_encode($body['items'] ?? []);
+        $shipping = is_array($body['shipping'] ?? null) ? $body['shipping'] : [];
+        $customerName = trim($body['customerName'] ?? ($body['name'] ?? ($shipping['name'] ?? '')));
+        $customerEmail = trim($body['customerEmail'] ?? ($body['email'] ?? ($shipping['email'] ?? '')));
+        $customerPhone = trim($body['customerPhone'] ?? ($body['phone'] ?? ($shipping['phone'] ?? '')));
+        $customerAddress = trim($body['address'] ?? ($shipping['address'] ?? ''));
+        $customerCity = trim($body['city'] ?? ($shipping['city'] ?? ''));
+        $customerNotes = trim($body['notes'] ?? ($shipping['notes'] ?? ''));
+
+        $rawItems = is_array($body['items'] ?? null) ? $body['items'] : [];
+        $calculatedTotal = 0;
+        foreach ($rawItems as $it) {
+            $qty = (int)($it['quantity'] ?? 1);
+            $prc = (float)($it['price'] ?? 0);
+            $calculatedTotal += ($qty * $prc);
+        }
         $total = (float)($body['total'] ?? 0);
+        if ($total <= 0 && $calculatedTotal > 0) {
+            $total = $calculatedTotal;
+        }
+
+        // Generar un ID legible de pedido, ej: PED-A1B2C3
+        $cleanShort = strtoupper(substr(md5(uniqid((string)microtime(true), true)), 0, 6));
+        $orderId = 'PED-' . $cleanShort;
+
+        // Empaquetar datos de envío junto con los ítems para persistencia completa
+        $orderPayload = [
+            'items'    => $rawItems,
+            'shipping' => [
+                'name'    => $customerName,
+                'email'   => $customerEmail,
+                'phone'   => $customerPhone,
+                'address' => $customerAddress,
+                'city'    => $customerCity,
+                'notes'   => $customerNotes
+            ],
+            'total'    => $total
+        ];
 
         $stmt = $pdo->prepare("INSERT INTO orders_rows (id, customer_name, customer_email, customer_phone, items, total, status)
                                VALUES (:id, :name, :email, :phone, :items, :total, 'pending')");
@@ -488,11 +520,32 @@ if ($action === 'orders' || $action === 'customer-orders') {
             ':name'  => $customerName,
             ':email' => $customerEmail,
             ':phone' => $customerPhone,
-            ':items' => $items,
+            ':items' => json_encode($orderPayload, JSON_UNESCAPED_UNICODE),
             ':total' => $total
         ]);
 
-        echo json_encode(['ok' => true, 'orderId' => $orderId]);
+        // Despachar correos automáticos (Comprobante al cliente y Alerta con WhatsApp al admin)
+        $orderDataForMail = [
+            'id'            => $orderId,
+            'customerName'  => $customerName,
+            'customerEmail' => $customerEmail,
+            'customerPhone' => $customerPhone,
+            'address'       => $customerAddress,
+            'city'          => $customerCity,
+            'notes'         => $customerNotes,
+            'items'         => $rawItems,
+            'total'         => $total
+        ];
+
+        $emailResults = sendOrderEmails($pdo, $orderDataForMail);
+
+        echo json_encode([
+            'ok'           => true,
+            'orderId'      => $orderId,
+            'id'           => $orderId,
+            'shortId'      => $cleanShort,
+            'emailResults' => $emailResults
+        ]);
         exit;
     }
 
@@ -576,7 +629,21 @@ if ($action === 'proxy-image') {
 }
 
 if ($action === 'test-email') {
-    echo json_encode(['ok' => true, 'message' => 'Configuración de correo correcta']);
+    $targetEmail = trim($body['to'] ?? ($body['admin_email'] ?? ''));
+    $testResult = testEmailConnection($pdo, $body, $targetEmail);
+    if ($testResult['ok']) {
+        echo json_encode([
+            'ok'        => true,
+            'message'   => '¡Correo de prueba enviado exitosamente a ' . ($testResult['recipient'] ?? $targetEmail) . '!',
+            'transport' => $testResult['transport'] ?? 'smtp'
+        ]);
+    } else {
+        http_response_code(400);
+        echo json_encode([
+            'ok'    => false,
+            'error' => $testResult['error'] ?? 'No se pudo enviar el correo de prueba. Revisa las credenciales SMTP.'
+        ]);
+    }
     exit;
 }
 
