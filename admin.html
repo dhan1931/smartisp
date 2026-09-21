@@ -377,6 +377,7 @@
               <div>
                 <label style="font-weight:700;">2. Proveedor para Enviar Correos Reales por Internet
                   <select name="smtp_provider" id="smtpProviderSelect">
+                    <option value="hostinger">Hostinger Correo Corporativo (@smart-isp.com.ec)</option>
                     <option value="gmail" selected>Gmail (Recomendado - Gratuito con Contraseña de Aplicación)</option>
                     <option value="custom">Servidor SMTP Personalizado (Outlook, Yahoo, cPanel, etc.)</option>
                     <option value="resend">Resend API (Producción / Vercel)</option>
@@ -385,6 +386,29 @@
                 <small style="color:var(--muted);display:block;margin-top:4px;font-size:12px;line-height:1.45;">
                   Garantiza que los correos salgan del servidor y lleguen a la bandeja de entrada real de cualquier usuario.
                 </small>
+              </div>
+            </div>
+
+            <!-- Panel de Configuración para Hostinger Correo Corporativo -->
+            <div id="hostingerConfigSection" class="hidden" style="background:#f0faf8;border:1px solid #a7e0d4;border-radius:10px;padding:16px;margin-bottom:16px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                <span style="font-size:20px;">🌐</span>
+                <strong style="color:#065f46;font-size:14px;">Correo Corporativo de Hostinger (smtp.hostinger.com)</strong>
+              </div>
+              <p style="font-size:12.5px;color:#047857;line-height:1.5;margin:0 0 12px;">
+                Usa cualquier cuenta de correo creada en el panel de Hostinger (ejemplo: <code>pedidos@smart-isp.com.ec</code> o <code>ventas@smart-isp.com.ec</code>):
+                <br>• Servidor SMTP: <strong>smtp.hostinger.com</strong> | Puerto: <strong>465 (SSL)</strong>
+              </p>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:14px;">
+                <label>Tu Correo de Hostinger
+                  <input name="hostinger_user" id="hostingerUser" type="email" placeholder="pedidos@smart-isp.com.ec">
+                </label>
+                <label>Contraseña del Correo
+                  <div style="position:relative;">
+                    <input name="hostinger_pass" id="hostingerPass" type="password" placeholder="••••••••" autocomplete="new-password">
+                    <button type="button" id="toggleHostingerPass" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;font-size:14px;color:var(--muted);" title="Ver u ocultar contraseña">👁️</button>
+                  </div>
+                </label>
               </div>
             </div>
 
@@ -1262,9 +1286,11 @@
     
     const updateProviderPanels = provider => {
       const p = provider || 'gmail';
+      const h = $('#hostingerConfigSection');
       const g = $('#gmailConfigSection');
       const c = $('#customSmtpSection');
       const r = $('#resendSection');
+      if (h) h.classList.toggle('hidden', p !== 'hostinger');
       if (g) g.classList.toggle('hidden', p !== 'gmail');
       if (c) c.classList.toggle('hidden', p !== 'custom');
       if (r) r.classList.toggle('hidden', p !== 'resend');
@@ -1284,10 +1310,15 @@
         if (sel) sel.value = prov;
         updateProviderPanels(prov);
 
+        const hUser = notifForm.querySelector('#hostingerUser');
+        const hPass = notifForm.querySelector('#hostingerPass');
+        if (hUser) hUser.value = (prov === 'hostinger' ? (values.smtp_user || '') : '');
+        if (hPass) hPass.value = (prov === 'hostinger' ? (values.smtp_pass || '') : '');
+
         const gUser = notifForm.querySelector('#gmailUser');
         const gPass = notifForm.querySelector('#gmailPass');
-        if (gUser) gUser.value = values.smtp_user || '';
-        if (gPass) gPass.value = values.smtp_pass || '';
+        if (gUser) gUser.value = (prov === 'gmail' ? (values.smtp_user || '') : '');
+        if (gPass) gPass.value = (prov === 'gmail' ? (values.smtp_pass || '') : '');
 
         const sHost = notifForm.querySelector('[name="smtp_host"]');
         const sPort = notifForm.querySelector('[name="smtp_port"]');
@@ -1756,6 +1787,14 @@
       $('#toggleGmailPass').textContent = isPass ? '🔒' : '👁️';
     });
 
+    $('#toggleHostingerPass')?.addEventListener('click', () => {
+      const input = $('#hostingerPass');
+      if (!input) return;
+      const isPass = input.type === 'password';
+      input.type = isPass ? 'text' : 'password';
+      $('#toggleHostingerPass').textContent = isPass ? '🔒' : '👁️';
+    });
+
     const getNotificationPayload = () => {
       const form = $('#notificationsForm');
       if (!form) return {};
@@ -1766,7 +1805,14 @@
         smtp_provider: provider
       };
 
-      if (provider === 'gmail') {
+      if (provider === 'hostinger') {
+        payload.smtp_user = String($('#hostingerUser')?.value || '').trim();
+        payload.smtp_pass = String($('#hostingerPass')?.value || '').trim();
+        payload.smtp_host = 'smtp.hostinger.com';
+        payload.smtp_port = '465';
+        payload.smtp_secure = 'true';
+        payload.smtp_from = payload.smtp_user ? `SmartISP <${payload.smtp_user}>` : '';
+      } else if (provider === 'gmail') {
         payload.smtp_user = String($('#gmailUser')?.value || '').trim();
         payload.smtp_pass = String($('#gmailPass')?.value || '').replace(/\s+/g, '');
         payload.smtp_host = 'smtp.gmail.com';
