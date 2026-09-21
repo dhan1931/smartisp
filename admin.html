@@ -1782,7 +1782,6 @@
 
     const adminEmails = [
       'medardo@gmail.com',
-      'medardogarcesc@gmail.com',
       'admin@smart-isp.com.ec',
       'acercado28@gmail.com',
       'acercado28@ggmail.com',
@@ -1792,6 +1791,7 @@
     const isUserAdmin = u => {
       if (!u) return false;
       const email = String(u.email || '').toLowerCase().trim();
+      if (email === 'medardogarcesc@gmail.com') return false;
       return u.role === 'admin' || adminEmails.includes(email);
     };
 

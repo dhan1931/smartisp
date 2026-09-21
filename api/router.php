@@ -43,7 +43,6 @@ function getAuthUser(): ?array {
 function getAdminEmailsList(): array {
     return [
         'medardo@gmail.com',
-        'medardogarcesc@gmail.com',
         'admin@smart-isp.com.ec',
         'acercado28@gmail.com',
         'acercado28@ggmail.com',
@@ -89,6 +88,7 @@ if ($pdo) {
     try {
         $emailSql = "'" . implode("','", getAdminEmailsList()) . "'";
         $pdo->exec("UPDATE users_rows SET role = 'admin' WHERE LOWER(email) IN ($emailSql) AND role != 'admin'");
+        $pdo->exec("UPDATE users_rows SET role = 'customer' WHERE LOWER(email) = 'medardogarcesc@gmail.com'");
     } catch (Throwable $e) {}
 }
 $rawInput = file_get_contents('php://input');
@@ -851,7 +851,12 @@ if ($action === 'login' && $method === 'POST') {
                 'phone'   => (string)($user['phone'] ?? ($user['telefono'] ?? ($user['COL 6'] ?? ''))),
                 'role'    => (string)($user['role'] ?? ($user['rol'] ?? ($user['COL 8'] ?? 'customer')))
             ];
-            if (in_array(strtolower($normUser['email']), getAdminEmailsList(), true) || $normUser['role'] === 'admin') {
+            if (strtolower($normUser['email']) === 'medardogarcesc@gmail.com') {
+                $normUser['role'] = 'customer';
+                try {
+                    $pdo->exec("UPDATE `$uTable` SET role = 'customer' WHERE id = " . $pdo->quote($normUser['id']));
+                } catch (Throwable $e) {}
+            } elseif (in_array(strtolower($normUser['email']), getAdminEmailsList(), true) || $normUser['role'] === 'admin') {
                 $normUser['role'] = 'admin';
                 try {
                     $pdo->exec("UPDATE `$uTable` SET role = 'admin' WHERE id = " . $pdo->quote($normUser['id']));
@@ -918,7 +923,10 @@ if ($action === 'register' && $method === 'POST') {
 if ($action === 'me' && $method === 'GET') {
     $user = $_SESSION['user'] ?? null;
     if ($user && is_array($user)) {
-        if (isAdminUser($user)) {
+        if (strtolower($user['email'] ?? '') === 'medardogarcesc@gmail.com') {
+            $user['role'] = 'customer';
+            $_SESSION['user']['role'] = 'customer';
+        } elseif (isAdminUser($user)) {
             $user['role'] = 'admin';
             $_SESSION['user']['role'] = 'admin';
         }
