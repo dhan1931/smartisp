@@ -542,6 +542,12 @@ if ($action === 'orders' || $action === 'customer-orders') {
         if (in_array('payment_provider', $existingCols, true)) {
             $insertData['payment_provider'] = 'manual';
         }
+        if (in_array('created_at', $existingCols, true)) {
+            $insertData['created_at'] = date('Y-m-d H:i:s');
+        }
+        if (in_array('updated_at', $existingCols, true)) {
+            $insertData['updated_at'] = date('Y-m-d H:i:s');
+        }
 
         $fields = array_keys($insertData);
         $placeholders = array_map(fn($f) => ':' . $f, $fields);
@@ -575,7 +581,7 @@ if ($action === 'orders' || $action === 'customer-orders') {
     }
 
     if ($method === 'GET') {
-        $stmt = $pdo->query("SELECT * FROM orders_rows ORDER BY created_at DESC LIMIT 100");
+        $stmt = $pdo->query("SELECT * FROM orders_rows ORDER BY created_at DESC, id DESC LIMIT 100");
         echo json_encode(['orders' => $stmt ? $stmt->fetchAll() : []]);
         exit;
     }
