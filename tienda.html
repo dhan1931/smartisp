@@ -147,8 +147,13 @@
 		.stars { color: #e99824; font-size: 12px; letter-spacing: 1px; }
 		.reviews { color: var(--muted); font-size: 11px; margin-left: 4px; letter-spacing: 0; }
 		.price-row { display: flex; justify-content: space-between; align-items: center; margin-top: 13px; }
-		.price { color: var(--navy); font-family: 'Space Grotesk', sans-serif; font-size: 21px; font-weight: 700; }
+		.price-block { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
+		.price { color: var(--navy); font-family: 'Space Grotesk', sans-serif; font-size: 21px; font-weight: 700; line-height: 1.15; }
 		.price.is-quote { color: var(--blue); font-size: 13.5px; font-weight: 700; line-height: 1.25; }
+		.price-tax-label { font-size: 10px; color: var(--muted); font-weight: 500; letter-spacing: .02em; line-height: 1.2; text-transform: none; }
+		.modal-price-block { margin: 16px 0; }
+		.modal-price-block .price { margin: 0; }
+		.modal-price-block .price-tax-label { font-size: 12px; margin-top: 2px; }
 		.add { color: var(--blue); border: 1px solid #9acfe9; background: #effaff; width: 35px; height: 35px; display: grid; place-items: center; border-radius: 4px; }
 		.add:hover { background: var(--blue); color: white; }
 		.benefits { background: var(--navy); color: white; display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; padding: 25px 5vw; }
@@ -784,6 +789,10 @@
 				font-size: 11px !important;
 				line-height: 1.2 !important;
 			}
+			.price-tax-label {
+				font-size: 9.5px !important;
+				line-height: 1.15 !important;
+			}
 			.add {
 				width: 36px !important;
 				height: 36px !important;
@@ -861,6 +870,12 @@
 			.detail-copy h2 {
 				font-size: 20px !important;
 				margin: 4px 0 8px !important;
+			}
+			.modal-price-block {
+				margin: 10px 0 14px !important;
+			}
+			.modal-price-block .price-tax-label {
+				font-size: 11px !important;
 			}
 			.specs {
 				grid-template-columns: 1fr !important;
@@ -1435,7 +1450,7 @@
 			document.querySelector('#products').innerHTML = shown.length ? shown.map(product => {
 				const pImg = product.image || fallbackImage(product);
 				const fbImg = fallbackImage(product);
-				return `<article class="product" data-index="${products.indexOf(product)}" tabindex="0" role="group" aria-label="Ver especificaciones de ${product.name}"><div class="product-image">${product.tag ? `<span class="tag">${product.tag}</span>` : ''}<button class="heart" aria-label="Agregar a favoritos"><i data-lucide="heart" width="16"></i></button><img src="${pImg}" alt="${product.name}" loading="lazy" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></div><div class="product-info"><div class="product-brand">${product.brand}</div><h3>${product.name}</h3><div><span class="stars">★★★★★</span><span class="reviews">(${product.reviews})</span></div><div class="price-row"><span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span><button class="add" data-index="${products.indexOf(product)}" aria-label="Agregar ${product.name} al carrito"><i data-lucide="plus" width="18"></i></button></div></div></article>`;
+				return `<article class="product" data-index="${products.indexOf(product)}" tabindex="0" role="group" aria-label="Ver especificaciones de ${product.name}"><div class="product-image">${product.tag ? `<span class="tag">${product.tag}</span>` : ''}<button class="heart" aria-label="Agregar a favoritos"><i data-lucide="heart" width="16"></i></button><img src="${pImg}" alt="${product.name}" loading="lazy" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></div><div class="product-info"><div class="product-brand">${product.brand}</div><h3>${product.name}</h3><div><span class="stars">★★★★★</span><span class="reviews">(${product.reviews})</span></div><div class="price-row"><div class="price-block"><span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span>${Number(product.price || 0) > 0 ? '<span class="price-tax-label">Precios incluye iva</span>' : ''}</div><button class="add" data-index="${products.indexOf(product)}" aria-label="Agregar ${product.name} al carrito"><i data-lucide="plus" width="18"></i></button></div></div></article>`;
 			}).join('') : '<div class="empty">No encontramos productos con esa búsqueda.</div>';
 			lucide.createIcons();
 			document.querySelectorAll('.add').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); cart.push(products[button.dataset.index]); updateCart(); }));
@@ -1458,7 +1473,7 @@
 				card.addEventListener('keydown', event => { if ((event.key === 'Enter' || event.key === ' ') && !event.target.closest('button')) { event.preventDefault(); open(); } });
 			});
 		};
-		const openProduct = product => { const pImg = product.image || fallbackImage(product); const fbImg = fallbackImage(product); document.querySelector('#productDetail').innerHTML = `<div class="detail-layout"><div class="detail-image"><img src="${pImg}" alt="${product.name}" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></div><div class="detail-copy"><div class="product-brand">${product.brand} · ${product.category}</div><h2 id="detailTitle">${product.name}</h2><div><span class="stars">★★★★★</span><span class="reviews">${product.reviews} opiniones</span></div><span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span><p class="detail-description">${product.description}</p><div class="specs">${product.specs.map(spec => `<div class="spec"><span>${spec[0]}</span><strong>${spec[1]}</strong></div>`).join('')}</div><button class="primary" data-detail-add="${products.indexOf(product)}" style="margin-top:22px">Agregar al carrito <i data-lucide="shopping-cart" width="16"></i></button></div></div>`; document.querySelector('#productModal').classList.add('open'); lucide.createIcons(); document.querySelector('[data-detail-add]').addEventListener('click', () => addToCart(product)); };
+		const openProduct = product => { const pImg = product.image || fallbackImage(product); const fbImg = fallbackImage(product); document.querySelector('#productDetail').innerHTML = `<div class="detail-layout"><div class="detail-image"><img src="${pImg}" alt="${product.name}" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></div><div class="detail-copy"><div class="product-brand">${product.brand} · ${product.category}</div><h2 id="detailTitle">${product.name}</h2><div><span class="stars">★★★★★</span><span class="reviews">${product.reviews} opiniones</span></div><div class="price-block modal-price-block"><span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span>${Number(product.price || 0) > 0 ? '<span class="price-tax-label">Precios incluye iva</span>' : ''}</div><p class="detail-description">${product.description}</p><div class="specs">${product.specs.map(spec => `<div class="spec"><span>${spec[0]}</span><strong>${spec[1]}</strong></div>`).join('')}</div><button class="primary" data-detail-add="${products.indexOf(product)}" style="margin-top:22px">Agregar al carrito <i data-lucide="shopping-cart" width="16"></i></button></div></div>`; document.querySelector('#productModal').classList.add('open'); lucide.createIcons(); document.querySelector('[data-detail-add]').addEventListener('click', () => addToCart(product)); };
 		const addToCart = product => { cart.push(product); updateCart(true); };
 		const updateCart = (animate = true) => {
 			localStorage.setItem('smartisp.cart', JSON.stringify(cart));
