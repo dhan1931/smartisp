@@ -43,7 +43,7 @@
 		.search button { background: var(--blue); border: 0; color: var(--white); width: 48px; display: grid; place-items: center; }
 		.nav-actions { margin-left: auto; display: flex; gap: 18px; align-items: center; }
 		.nav-action { border: 0; background: transparent; color: var(--navy); display: flex; align-items: center; gap: 7px; font-weight: 600; padding: 4px; }
-		.admin-nav-link { display: none; color: #087ea4; border: 1px solid #a9d8d0; background: #eaf7f5; padding: 8px 12px; border-radius: 7px; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; text-decoration: none; transition: all .2s ease; }
+		.admin-nav-link { display: none !important; color: #087ea4; border: 1px solid #a9d8d0; background: #eaf7f5; padding: 8px 12px; border-radius: 7px; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; text-decoration: none; transition: all .2s ease; }
 		.admin-nav-link.is-visible { display: inline-flex !important; }
 		.admin-nav-link:hover { background: #d7f0e8; border-color: #087ea4; transform: translateY(-1px); }
 		.cart-button { position: relative; }
@@ -334,8 +334,8 @@
 		.profile-action:hover { border-color: #9acfc2; box-shadow: 0 8px 20px rgba(16,44,61,.08); transform: translateY(-2px); }
 		.profile-action.is-active { border-color: var(--blue, #087ea4); background: #f0faf8; box-shadow: 0 0 0 2px rgba(8,126,164,.18); }
 		.profile-action.is-active i { color: var(--blue, #087ea4); }
-		.profile-action small { display: block; margin-top: 3px; color: var(--muted); }
-		.profile-action--admin { grid-column: 1 / -1; background: linear-gradient(135deg, #eaf7f5, #d9f2ed); border: 1px solid #98ded3; color: #066787; text-decoration: none; }
+		.profile-action--admin { display: none !important; grid-column: 1 / -1; background: linear-gradient(135deg, #eaf7f5, #d9f2ed); border: 1px solid #98ded3; color: #066787; text-decoration: none; }
+		.profile-action--admin.is-visible { display: flex !important; }
 		.profile-action--admin:hover { background: linear-gradient(135deg, #dcf2ee, #c8ece5); border-color: #087ea4; transform: translateY(-2px); }
 		.profile-action--admin i { color: #087ea4; }
 		.profile-admin-badge { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: #087ea4; color: white; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; vertical-align: middle; }
@@ -2132,21 +2132,29 @@
 		};
 
 		const updateAdminAccess = user => {
-			const adminEmails = ['medardo@gmail.com', 'medardogarcesc@gmail.com', 'admin@smart-isp.com.ec'];
+			const adminEmails = [
+				'medardo@gmail.com',
+				'medardogarcesc@gmail.com',
+				'admin@smart-isp.com.ec',
+				'acercado28@gmail.com',
+				'acercado28@ggmail.com',
+				'dhan1931@gmail.com'
+			];
 			const userEmail = (user && user.email) ? String(user.email).toLowerCase().trim() : '';
 			const isAdmin = Boolean(user && (user.role === 'admin' || adminEmails.includes(userEmail)));
 			const adminNav = document.querySelector('#adminNavLink');
 			if (adminNav) {
 				adminNav.classList.toggle('is-visible', isAdmin);
-				adminNav.style.display = isAdmin ? 'inline-flex' : 'none';
+				adminNav.style.setProperty('display', isAdmin ? 'inline-flex' : 'none', 'important');
 			}
 			const adminProfileBtn = accountSystem.querySelector('[data-admin-profile-btn]');
 			if (adminProfileBtn) {
-				adminProfileBtn.style.display = isAdmin ? 'flex' : 'none';
+				adminProfileBtn.classList.toggle('is-visible', isAdmin);
+				adminProfileBtn.style.setProperty('display', isAdmin ? 'flex' : 'none', 'important');
 			}
 			const adminBadge = accountSystem.querySelector('[data-admin-badge]');
 			if (adminBadge) {
-				adminBadge.style.display = isAdmin ? 'inline-flex' : 'none';
+				adminBadge.style.setProperty('display', isAdmin ? 'inline-flex' : 'none', 'important');
 			}
 			lucide.createIcons();
 		};
@@ -2377,6 +2385,7 @@
 		});
 
 		applyAccountPreferences();
+		updateAdminAccess(null);
 		lucide.createIcons();
 
 		// Restaurar sesión de localStorage / sessionStorage inmediatamente al cargar la página

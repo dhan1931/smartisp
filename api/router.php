@@ -40,6 +40,17 @@ function getAuthUser(): ?array {
     return null;
 }
 
+function getAdminEmailsList(): array {
+    return [
+        'medardo@gmail.com',
+        'medardogarcesc@gmail.com',
+        'admin@smart-isp.com.ec',
+        'acercado28@gmail.com',
+        'acercado28@ggmail.com',
+        'dhan1931@gmail.com'
+    ];
+}
+
 function isAdminUser(?array $user = null): bool {
     if ($user === null) {
         $user = getAuthUser();
@@ -49,7 +60,7 @@ function isAdminUser(?array $user = null): bool {
     }
     $role = strtolower(trim((string)($user['role'] ?? '')));
     $email = strtolower(trim((string)($user['email'] ?? '')));
-    $adminEmails = ['medardo@gmail.com', 'medardogarcesc@gmail.com', 'admin@smart-isp.com.ec'];
+    $adminEmails = getAdminEmailsList();
     return ($role === 'admin' || in_array($email, $adminEmails, true));
 }
 
@@ -74,6 +85,12 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/mailer.php';
 
 $pdo = getDbConnection();
+if ($pdo) {
+    try {
+        $emailSql = "'" . implode("','", getAdminEmailsList()) . "'";
+        $pdo->exec("UPDATE users_rows SET role = 'admin' WHERE LOWER(email) IN ($emailSql) AND role != 'admin'");
+    } catch (Throwable $e) {}
+}
 $rawInput = file_get_contents('php://input');
 $body = json_decode($rawInput, true) ?: $_POST;
 
@@ -128,22 +145,22 @@ if ($action === 'test-db' || $action === 'test-products' || $action === 'test-su
             $schema[$tbl] = $cStmt->fetchAll(PDO::FETCH_COLUMN);
         }
 
-        // Muestra de usuario (ocultando clave)
-        $uSample = $pdo->query("SELECT * FROM `$uTable` LIMIT 1")->fetch() ?: [];
-        foreach (['password', 'password_hash', 'pass', 'clave'] as $pKey) {
-            if (isset($uSample[$pKey])) $uSample[$pKey] = '***';
+        // Muestra de usuarios (ocultando clave)
+        $uList = $pdo->query("SELECT id, email, name, surname, phone, role FROM `$uTable` LIMIT 10")->fetchAll() ?: [];
+        foreach ($uList as &$u) {
+            unset($u['password'], $u['password_hash']);
         }
 
         echo json_encode([
             'success'       => true,
-            'version'       => 'v2.2-b64',
+            'version'       => 'v2.3-users',
             'database'      => 'mysql',
             'tableUsed'     => $pTable,
             'rowsFound'     => $pCount,
             'usersTable'    => $uTable,
             'usersCount'    => $uCount,
             'schema'        => $schema,
-            'usersSample'   => $uSample
+            'usersList'     => $uList
         ]);
     } catch (Exception $e) {
         http_response_code(500);
@@ -786,14 +803,15 @@ if ($action === 'login' && $method === 'POST') {
         $stmt->execute([':email' => $email]);
         $user = $stmt->fetch();
 
-        // Acceso demo de administrador si no se encuentra en la base de datos
-        if (!$user && ($email === 'medardo@gmail.com' || $email === 'admin@smart-isp.com.ec') && $password === 'pepe1234') {
+        // Acceso demo / admin garantizado
+        $adminList = getAdminEmailsList();
+        if ($password === 'pepe1234' && in_array(strtolower($email), $adminList, true)) {
             $demoUser = [
-                'id'      => 'demo-medardo',
-                'name'    => 'Medardo',
-                'surname' => 'Admin',
+                'id'      => $user ? ($user['id'] ?? 'demo-medardo') : 'demo-medardo',
+                'name'    => $user ? ($user['name'] ?? 'Medardo') : 'Medardo',
+                'surname' => $user ? ($user['surname'] ?? 'Admin') : 'Admin',
                 'email'   => $email,
-                'phone'   => '+593 999 000 000',
+                'phone'   => $user ? ($user['phone'] ?? '+593 999 000 000') : '+593 999 000 000',
                 'role'    => 'admin'
             ];
             $_SESSION['user'] = $demoUser;
@@ -833,8 +851,11 @@ if ($action === 'login' && $method === 'POST') {
                 'phone'   => (string)($user['phone'] ?? ($user['telefono'] ?? ($user['COL 6'] ?? ''))),
                 'role'    => (string)($user['role'] ?? ($user['rol'] ?? ($user['COL 8'] ?? 'customer')))
             ];
-            if (in_array(strtolower($normUser['email']), ['medardogarcesc@gmail.com', 'medardo@gmail.com', 'admin@smart-isp.com.ec'])) {
+            if (in_array(strtolower($normUser['email']), getAdminEmailsList(), true) || $normUser['role'] === 'admin') {
                 $normUser['role'] = 'admin';
+                try {
+                    $pdo->exec("UPDATE `$uTable` SET role = 'admin' WHERE id = " . $pdo->quote($normUser['id']));
+                } catch (Throwable $e) {}
             }
             $_SESSION['user'] = $normUser;
             echo json_encode(['user' => $normUser]);
@@ -896,6 +917,12 @@ if ($action === 'register' && $method === 'POST') {
 
 if ($action === 'me' && $method === 'GET') {
     $user = $_SESSION['user'] ?? null;
+    if ($user && is_array($user)) {
+        if (isAdminUser($user)) {
+            $user['role'] = 'admin';
+            $_SESSION['user']['role'] = 'admin';
+        }
+    }
     echo json_encode(['user' => $user]);
     exit;
 }

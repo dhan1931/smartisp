@@ -3083,7 +3083,14 @@
       }
 
       // Asegurar permisos para configurar el catálogo
-      const adminEmails = ['medardo@gmail.com', 'medardogarcesc@gmail.com', 'admin@smart-isp.com.ec'];
+      const adminEmails = [
+        'medardo@gmail.com',
+        'medardogarcesc@gmail.com',
+        'admin@smart-isp.com.ec',
+        'acercado28@gmail.com',
+        'acercado28@ggmail.com',
+        'dhan1931@gmail.com'
+      ];
       const userEmail = (user && user.email) ? String(user.email).toLowerCase().trim() : '';
       const isAdmin = Boolean(user && (user.role === 'admin' || adminEmails.includes(userEmail)));
 
