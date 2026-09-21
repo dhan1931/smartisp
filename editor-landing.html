@@ -1449,6 +1449,85 @@
 			border-color: #fff;
 		}
 
+		/* ICON PICKER POPOVER */
+		.icon-picker-popover {
+			position: fixed;
+			z-index: 100010;
+			background: #081722;
+			border: 1px solid #1e425e;
+			border-radius: 12px;
+			padding: 14px;
+			width: 290px;
+			box-shadow: 0 16px 36px rgba(0,0,0,0.65);
+			display: none;
+		}
+		.icon-picker-popover.open {
+			display: block;
+		}
+		.icon-picker-head {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 10px;
+			padding-bottom: 6px;
+			border-bottom: 1px solid rgba(255,255,255,0.08);
+		}
+		.icon-picker-head span {
+			font-size: 11.5px;
+			font-weight: 700;
+			color: #8cd3f5;
+		}
+		.icon-picker-close {
+			background: transparent;
+			border: 0;
+			color: #94a3b8;
+			cursor: pointer;
+			font-size: 16px;
+			line-height: 1;
+			padding: 2px 5px;
+		}
+		.icon-picker-close:hover {
+			color: #fff;
+		}
+		.icon-picker-grid {
+			display: grid;
+			grid-template-columns: repeat(5, 1fr);
+			gap: 8px;
+			max-height: 220px;
+			overflow-y: auto;
+			padding-right: 2px;
+		}
+		.icon-picker-item {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			height: 42px;
+			background: rgba(255,255,255,0.05);
+			border: 1px solid rgba(255,255,255,0.08);
+			border-radius: 8px;
+			color: #7dd3fc;
+			cursor: pointer;
+			transition: background 0.15s, transform 0.15s, color 0.15s, border-color 0.15s;
+		}
+		.icon-picker-item:hover {
+			background: #087ea4;
+			border-color: #38bdf8;
+			color: #fff;
+			transform: scale(1.1);
+		}
+		.value-box i, .value-box svg.lucide,
+		.advantage-icon i, .advantage-icon svg.lucide,
+		.solution-icon-wrap i, .solution-icon-wrap svg.lucide {
+			cursor: pointer;
+			transition: transform 0.2s, filter 0.2s;
+		}
+		.value-box i:hover, .value-box svg.lucide:hover,
+		.advantage-icon:hover,
+		.solution-icon-wrap:hover {
+			transform: scale(1.15);
+			filter: drop-shadow(0 2px 8px rgba(8,126,164,0.45));
+		}
+
 		/* SELECTABLE & DELETABLE BOXES */
 		.selectable-box {
 			position: relative;
@@ -1889,6 +1968,15 @@
 				<button type="button" class="color-swatch-btn" style="background:#ffffff; border:2px solid #cbd5e1;" data-color="#ffffff" title="Blanco"></button>
 			</div>
 		</div>
+	</div>
+
+	<!-- ICON PICKER POPOVER -->
+	<div class="icon-picker-popover" id="iconPickerPopover">
+		<div class="icon-picker-head">
+			<span>🎨 Cambiar Icono del Cuadro</span>
+			<button type="button" class="icon-picker-close" id="closeIconPickerBtn" title="Cerrar">&times;</button>
+		</div>
+		<div class="icon-picker-grid" id="iconPickerGrid"></div>
 	</div>
 
 	<!-- MODAL LOGOTIPO EXCLUSIVO DE LA PÁGINA DE PRESENTACIÓN -->
@@ -2606,6 +2694,10 @@
 		// Listen to all contenteditable edits
 		const bindEditableEvents = () => {
 			document.querySelectorAll('[data-landing-key]').forEach(el => {
+				if (el.tagName !== 'BUTTON' && !el.closest('.card-action-floating-bar') && !el.closest('.add-card-slot')) {
+					el.contentEditable = 'true';
+					el.spellcheck = false;
+				}
 				if (el._bound) return;
 				el._bound = true;
 				el.addEventListener('input', () => { markDirty(true); });
@@ -2820,11 +2912,25 @@
 
 			box.addEventListener('click', e => {
 				// Don't select box if user is actively clicking to edit text inside
-				if (e.target.closest('[data-landing-key]')) {
+				if (e.target.closest('[data-landing-key]') || e.target.isContentEditable || e.target.closest('[contenteditable="true"]')) {
+					return;
+				}
+				// Don't select box if user clicked on icon or floating actions
+				if (e.target.closest('i, svg.lucide, .solution-icon-wrap, .advantage-icon, .card-action-floating-bar')) {
 					return;
 				}
 				e.stopPropagation();
 				setSelectedCardBox(box);
+			});
+
+			// Icon click to change
+			box.querySelectorAll('i, svg.lucide, .solution-icon-wrap, .advantage-icon').forEach(iconEl => {
+				iconEl.setAttribute('title', 'Haz clic para cambiar el icono');
+				iconEl.addEventListener('click', e => {
+					e.stopPropagation();
+					e.preventDefault();
+					openIconPicker(box, iconEl);
+				});
 			});
 
 			const delBtn = box.querySelector('.delete-btn');
@@ -2840,11 +2946,79 @@
 			});
 		};
 
+		// ICON PICKER LOGIC
+		const iconPicker = document.querySelector('#iconPickerPopover');
+		const iconPickerGrid = document.querySelector('#iconPickerGrid');
+		let activeIconTarget = null;
+
+		const AVAILABLE_ICONS = [
+			'award', 'zap', 'users', 'shield-alert', 'shield-check',
+			'check-circle-2', 'cpu', 'clock', 'heart', 'star',
+			'headphones', 'rocket', 'globe', 'truck', 'credit-card',
+			'network', 'server', 'radio', 'laptop', 'activity',
+			'lock', 'eye', 'target', 'map-pin', 'phone'
+		];
+
+		if (iconPickerGrid) {
+			iconPickerGrid.innerHTML = AVAILABLE_ICONS.map(name => `
+				<button type="button" class="icon-picker-item" data-icon-name="${name}" title="${name}">
+					<i data-lucide="${name}" width="20"></i>
+				</button>
+			`).join('');
+			if (window.lucide) lucide.createIcons();
+
+			iconPickerGrid.addEventListener('click', e => {
+				const item = e.target.closest('.icon-picker-item');
+				if (!item || !activeIconTarget) return;
+				const iconName = item.dataset.iconName;
+				const curIcon = activeIconTarget.querySelector('i, svg.lucide') || activeIconTarget;
+				const width = curIcon.getAttribute('width') || '28';
+				
+				const newI = document.createElement('i');
+				newI.dataset.lucide = iconName;
+				newI.setAttribute('width', width);
+				curIcon.replaceWith(newI);
+				lucide.createIcons();
+				
+				const createdSvg = activeIconTarget.querySelector('svg.lucide') || newI;
+				createdSvg.setAttribute('title', 'Haz clic para cambiar el icono');
+				createdSvg.addEventListener('click', ev => {
+					ev.stopPropagation();
+					ev.preventDefault();
+					openIconPicker(activeIconTarget, createdSvg);
+				});
+
+				markDirty(true);
+				showToast(`Icono cambiado a "${iconName}"`);
+				iconPicker.classList.remove('open');
+				activeIconTarget = null;
+			});
+		}
+
+		document.querySelector('#closeIconPickerBtn')?.addEventListener('click', () => {
+			iconPicker?.classList.remove('open');
+			activeIconTarget = null;
+		});
+
+		const openIconPicker = (targetContainer, clickedEl) => {
+			if (!iconPicker) return;
+			activeIconTarget = targetContainer;
+			const rect = clickedEl.getBoundingClientRect();
+			const top = Math.min(window.innerHeight - 280, Math.max(70, rect.bottom + 8));
+			const left = Math.min(window.innerWidth - 310, Math.max(10, rect.left - 20));
+			iconPicker.style.top = top + 'px';
+			iconPicker.style.left = left + 'px';
+			iconPicker.classList.add('open');
+		};
+
 		document.querySelectorAll('.selectable-box').forEach(bindBoxEvents);
 
 		// Global click outside to deselect
 		document.addEventListener('click', e => {
-			if (!e.target.closest('.selectable-box') && !e.target.closest('#editorTopBar') && !e.target.closest('#floatingFormatBar')) {
+			if (!e.target.closest('#iconPickerPopover') && !e.target.closest('i, svg.lucide, .solution-icon-wrap, .advantage-icon')) {
+				iconPicker?.classList.remove('open');
+			}
+			if (!e.target.closest('.selectable-box') && !e.target.closest('#editorTopBar') && !e.target.closest('#floatingFormatBar') && !e.target.closest('#iconPickerPopover')) {
 				setSelectedCardBox(null);
 			}
 		});
@@ -2866,7 +3040,7 @@
 		// ADD NEW CARDS ("➕ AGREGAR CUADRO")
 		// =========================================================================
 
-		document.querySelector('#addSolutionCardBtn')?.addEventListener('click', () => {
+		const handleAddSolutionCard = () => {
 			const id = Date.now().toString().slice(-4);
 			const card = document.createElement('div');
 			card.className = 'solution-card selectable-box';
@@ -2874,88 +3048,110 @@
 			card.innerHTML = `${floatingBarHtml}
 				<div>
 					<div class="solution-icon-wrap"><i data-lucide="network" width="26"></i></div>
-					<h3 data-landing-key="custom_sol_${id}_h3" contenteditable="true">Nueva Línea de Solución</h3>
-					<p data-landing-key="custom_sol_${id}_p" contenteditable="true">Describe aquí los detalles y beneficios de esta solución de conectividad.</p>
+					<h3 data-landing-key="custom_sol_${id}_h3" contenteditable="true" spellcheck="false">Nueva Línea de Solución</h3>
+					<p data-landing-key="custom_sol_${id}_p" contenteditable="true" spellcheck="false">Describe aquí los detalles y beneficios de esta solución de conectividad.</p>
 					<ul>
-						<li><i data-lucide="check-circle-2" width="14"></i> <span data-landing-key="custom_sol_${id}_li1" contenteditable="true">Característica destacada 1</span></li>
-						<li><i data-lucide="check-circle-2" width="14"></i> <span data-landing-key="custom_sol_${id}_li2" contenteditable="true">Característica destacada 2</span></li>
-						<li><i data-lucide="check-circle-2" width="14"></i> <span data-landing-key="custom_sol_${id}_li3" contenteditable="true">Característica destacada 3</span></li>
+						<li><i data-lucide="check-circle-2" width="14"></i> <span data-landing-key="custom_sol_${id}_li1" contenteditable="true" spellcheck="false">Característica destacada 1</span></li>
+						<li><i data-lucide="check-circle-2" width="14"></i> <span data-landing-key="custom_sol_${id}_li2" contenteditable="true" spellcheck="false">Característica destacada 2</span></li>
+						<li><i data-lucide="check-circle-2" width="14"></i> <span data-landing-key="custom_sol_${id}_li3" contenteditable="true" spellcheck="false">Característica destacada 3</span></li>
 					</ul>
 				</div>
 				<a href="tienda.html" class="btn-solution-link">
-					<span data-landing-key="custom_sol_${id}_btn" contenteditable="true">Ver en la Tienda</span>
+					<span data-landing-key="custom_sol_${id}_btn" contenteditable="true" spellcheck="false">Ver en la Tienda</span>
 					<i data-lucide="arrow-up-right" width="14"></i>
 				</a>`;
 			const slot = document.querySelector('.solutions-grid .add-card-slot');
 			if (slot) slot.before(card);
-			else document.querySelector('.solutions-grid').appendChild(card);
+			else document.querySelector('.solutions-grid')?.appendChild(card);
 			bindBoxEvents(card);
 			bindSolutionCardFeatures(card);
 			bindEditableEvents();
 			lucide.createIcons();
 			setSelectedCardBox(card);
+			card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 			markDirty(true);
 			showToast('➕ Nueva solución agregada. Haz clic en el texto para editar.');
-		});
+		};
 
-		document.querySelector('#addAdvantageCardBtn')?.addEventListener('click', () => {
+		const handleAddAdvantageCard = () => {
 			const id = Date.now().toString().slice(-4);
 			const card = document.createElement('div');
 			card.className = 'advantage-card selectable-box';
 			card.dataset.deletableBox = 'true';
 			card.innerHTML = `${floatingBarHtml}
 				<div class="advantage-icon"><i data-lucide="shield-check" width="28"></i></div>
-				<h4 data-landing-key="custom_adv_${id}_h4" contenteditable="true">Nueva Ventaja Competitiva</h4>
-				<p data-landing-key="custom_adv_${id}_p" contenteditable="true">Describe aquí la razón por la que tus clientes deben elegir tu empresa.</p>`;
+				<h4 data-landing-key="custom_adv_${id}_h4" contenteditable="true" spellcheck="false">Nueva Ventaja Competitiva</h4>
+				<p data-landing-key="custom_adv_${id}_p" contenteditable="true" spellcheck="false">Describe aquí la razón por la que tus clientes deben elegir tu empresa.</p>`;
 			const slot = document.querySelector('.advantages-grid .add-card-slot');
 			if (slot) slot.before(card);
-			else document.querySelector('.advantages-grid').appendChild(card);
+			else document.querySelector('.advantages-grid')?.appendChild(card);
 			bindBoxEvents(card);
 			bindEditableEvents();
 			lucide.createIcons();
 			setSelectedCardBox(card);
+			card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 			markDirty(true);
 			showToast('➕ Nueva ventaja agregada.');
-		});
+		};
 
-		document.querySelector('#addValueBoxBtn')?.addEventListener('click', () => {
+		const handleAddValueBox = () => {
 			const id = Date.now().toString().slice(-4);
 			const card = document.createElement('div');
 			card.className = 'value-box selectable-box';
 			card.dataset.deletableBox = 'true';
 			card.innerHTML = `${floatingBarHtml}
 				<i data-lucide="award" width="28"></i>
-				<h5 data-landing-key="custom_val_${id}_h5" contenteditable="true">Nuevo Pilar Corporativo</h5>
-				<p data-landing-key="custom_val_${id}_p" contenteditable="true">Describe el compromiso, garantía o diferencial técnico de la empresa.</p>`;
+				<h5 data-landing-key="custom_val_${id}_h5" contenteditable="true" spellcheck="false">Nuevo Pilar Corporativo</h5>
+				<p data-landing-key="custom_val_${id}_p" contenteditable="true" spellcheck="false">Describe el compromiso, garantía o diferencial técnico de la empresa.</p>`;
 			const slot = document.querySelector('.about-visual .add-card-slot');
 			if (slot) slot.before(card);
-			else document.querySelector('.about-visual').appendChild(card);
+			else document.querySelector('.about-visual')?.appendChild(card);
 			bindBoxEvents(card);
 			bindEditableEvents();
 			lucide.createIcons();
 			setSelectedCardBox(card);
+			card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 			markDirty(true);
 			showToast('➕ Nuevo pilar agregado.');
-		});
+		};
 
-		document.querySelector('#addStatItemBtn')?.addEventListener('click', () => {
+		const handleAddStatItem = () => {
 			const id = Date.now().toString().slice(-4);
 			const card = document.createElement('div');
 			card.className = 'stat-item selectable-box';
 			card.dataset.deletableBox = 'true';
 			card.innerHTML = `${floatingBarHtml}
-				<span class="stat-number" data-landing-key="custom_stat_${id}_num" contenteditable="true">+100</span>
-				<span class="stat-label" data-landing-key="custom_stat_${id}_label" contenteditable="true">Título de Estadística</span>
-				<span class="stat-desc" data-landing-key="custom_stat_${id}_desc" contenteditable="true">Descripción de este logro o métrica.</span>`;
+				<span class="stat-number" data-landing-key="custom_stat_${id}_num" contenteditable="true" spellcheck="false">+100</span>
+				<span class="stat-label" data-landing-key="custom_stat_${id}_label" contenteditable="true" spellcheck="false">Título de Estadística</span>
+				<span class="stat-desc" data-landing-key="custom_stat_${id}_desc" contenteditable="true" spellcheck="false">Descripción de este logro o métrica.</span>`;
 			const slot = document.querySelector('.stats-grid .add-card-slot');
 			if (slot) slot.before(card);
-			else document.querySelector('.stats-grid').appendChild(card);
+			else document.querySelector('.stats-grid')?.appendChild(card);
 			bindBoxEvents(card);
 			bindEditableEvents();
 			lucide.createIcons();
 			setSelectedCardBox(card);
+			card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 			markDirty(true);
 			showToast('➕ Nueva estadística agregada.');
+		};
+
+		// Event delegation for all add-grid-item buttons (robust against innerHTML recreation)
+		document.addEventListener('click', e => {
+			const addBtn = e.target.closest('.btn-add-grid-item');
+			if (!addBtn) return;
+			e.preventDefault();
+			e.stopPropagation();
+
+			if (addBtn.id === 'addValueBoxBtn' || addBtn.closest('.about-visual')) {
+				handleAddValueBox();
+			} else if (addBtn.id === 'addSolutionCardBtn' || addBtn.closest('.solutions-grid')) {
+				handleAddSolutionCard();
+			} else if (addBtn.id === 'addAdvantageCardBtn' || addBtn.closest('.advantages-grid')) {
+				handleAddAdvantageCard();
+			} else if (addBtn.id === 'addStatItemBtn' || addBtn.closest('.stats-grid')) {
+				handleAddStatItem();
+			}
 		});
 
 		// =========================================================================
@@ -3419,11 +3615,10 @@
 					container.insertAdjacentHTML('beforeend', `<div class="add-card-slot"><button type="button" class="btn-add-grid-item" id="${addBtnId}"><i data-lucide="plus-circle" width="18"></i> <span>${addBtnText}</span></button></div>`);
 					// Re-arm each card for editor interactivity
 					container.querySelectorAll('.solution-card, .advantage-card, .value-box, .stat-item').forEach(card => {
-						card.querySelectorAll('h3, h4, p, span, strong, a').forEach(textEl => {
-							if (textEl.dataset.landingKey || textEl.classList.contains('stat-number') || textEl.classList.contains('stat-label') || textEl.classList.contains('stat-desc')) {
-								textEl.contentEditable = 'true';
-								textEl.spellcheck = false;
-							}
+						card.querySelectorAll('[data-landing-key], h1, h2, h3, h4, h5, h6, p, span, strong, a, li, .stat-number, .stat-label, .stat-desc').forEach(textEl => {
+							if (textEl.closest('.card-action-floating-bar') || textEl.closest('.add-card-slot') || textEl.tagName === 'BUTTON' || textEl.tagName === 'I') return;
+							textEl.contentEditable = 'true';
+							textEl.spellcheck = false;
 						});
 						bindBoxEvents(card);
 						if (card.classList.contains('solution-card')) {
