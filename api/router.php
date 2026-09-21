@@ -499,30 +499,55 @@ if ($action === 'orders' || $action === 'customer-orders') {
         $cleanShort = strtoupper(substr(md5(uniqid((string)microtime(true), true)), 0, 6));
         $orderId = 'PED-' . $cleanShort;
 
-        // Empaquetar datos de envío junto con los ítems para persistencia completa
-        $orderPayload = [
-            'items'    => $rawItems,
-            'shipping' => [
-                'name'    => $customerName,
-                'email'   => $customerEmail,
-                'phone'   => $customerPhone,
-                'address' => $customerAddress,
-                'city'    => $customerCity,
-                'notes'   => $customerNotes
-            ],
-            'total'    => $total
+        $shippingData = [
+            'name'    => $customerName,
+            'email'   => $customerEmail,
+            'phone'   => $customerPhone,
+            'address' => $customerAddress,
+            'city'    => $customerCity,
+            'notes'   => $customerNotes
         ];
 
-        $stmt = $pdo->prepare("INSERT INTO orders_rows (id, customer_name, customer_email, customer_phone, items, total, status)
-                               VALUES (:id, :name, :email, :phone, :items, :total, 'pending')");
-        $stmt->execute([
-            ':id'    => $orderId,
-            ':name'  => $customerName,
-            ':email' => $customerEmail,
-            ':phone' => $customerPhone,
-            ':items' => json_encode($orderPayload, JSON_UNESCAPED_UNICODE),
-            ':total' => $total
-        ]);
+        // Obtener columnas reales de orders_rows para inserción 100% compatible
+        $colsStmt = $pdo->query("SHOW COLUMNS FROM orders_rows");
+        $existingCols = $colsStmt ? $colsStmt->fetchAll(PDO::FETCH_COLUMN) : [];
+
+        $insertData = [
+            'id'     => $orderId,
+            'status' => 'pending',
+            'total'  => $total
+        ];
+
+        if (in_array('user_id', $existingCols, true)) {
+            $insertData['user_id'] = $_SESSION['user']['id'] ?? null;
+        }
+        if (in_array('items', $existingCols, true)) {
+            $insertData['items'] = json_encode($rawItems, JSON_UNESCAPED_UNICODE);
+        }
+        if (in_array('shipping', $existingCols, true)) {
+            $insertData['shipping'] = json_encode($shippingData, JSON_UNESCAPED_UNICODE);
+        }
+        if (in_array('customer_name', $existingCols, true)) {
+            $insertData['customer_name'] = $customerName;
+        }
+        if (in_array('customer_email', $existingCols, true)) {
+            $insertData['customer_email'] = $customerEmail;
+        }
+        if (in_array('customer_phone', $existingCols, true)) {
+            $insertData['customer_phone'] = $customerPhone;
+        }
+        if (in_array('payment_status', $existingCols, true)) {
+            $insertData['payment_status'] = 'pending';
+        }
+        if (in_array('payment_provider', $existingCols, true)) {
+            $insertData['payment_provider'] = 'manual';
+        }
+
+        $fields = array_keys($insertData);
+        $placeholders = array_map(fn($f) => ':' . $f, $fields);
+        $sql = "INSERT INTO orders_rows (" . implode(', ', $fields) . ") VALUES (" . implode(', ', $placeholders) . ")";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($insertData);
 
         // Despachar correos automáticos (Comprobante al cliente y Alerta con WhatsApp al admin)
         $orderDataForMail = [
