@@ -572,8 +572,112 @@ if ($action === 'landing-content-reset' || $action === 'landing-content/reset') 
 // -------------------------------------------------------------
 if ($action === 'categories') {
     if ($method === 'GET') {
+        $pTable = getProductsTableName($pdo);
+        // 1. Obtener todas las macrocategorías, subcategorías y conteo real de productos
+        $prodCatsStmt = $pdo->query("SELECT category, subcategory, COUNT(*) as p_count FROM `$pTable` WHERE category IS NOT NULL AND TRIM(category) != '' GROUP BY category, subcategory");
+        $prodCatRows = $prodCatsStmt ? $prodCatsStmt->fetchAll() : [];
+
+        $catMap = []; // [category => ['subcategories' => [...], 'count' => N]]
+        foreach ($prodCatRows as $r) {
+            $cName = trim((string)$r['category']);
+            if (!$cName) continue;
+            if (!isset($catMap[$cName])) {
+                $catMap[$cName] = [
+                    'count'         => 0,
+                    'subcategories' => []
+                ];
+            }
+            $catMap[$cName]['count'] += (int)($r['p_count'] ?? 1);
+            $sName = trim((string)($r['subcategory'] ?? ''));
+            if ($sName && !in_array($sName, $catMap[$cName]['subcategories'], true)) {
+                $catMap[$cName]['subcategories'][] = $sName;
+            }
+        }
+
+        // 2. Asegurar y obtener categorías existentes en categories_rows
+        try {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `categories_rows` (
+                `id` VARCHAR(100) NOT NULL PRIMARY KEY,
+                `name` VARCHAR(255) NOT NULL,
+                `subcategories` LONGTEXT NULL,
+                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        } catch (Throwable $e) {}
+
         $stmt = $pdo->query("SELECT * FROM categories_rows");
-        $cats = $stmt ? $stmt->fetchAll() : [];
+        $dbCats = $stmt ? $stmt->fetchAll() : [];
+        $existingNames = [];
+
+        $cats = [];
+        foreach ($dbCats as $row) {
+            $name = trim((string)$row['name']);
+            if (!$name) continue;
+            $existingNames[strtolower($name)] = true;
+            $subs = [];
+            if (!empty($row['subcategories'])) {
+                $decoded = json_decode($row['subcategories'], true);
+                if (is_array($decoded)) {
+                    $subs = $decoded;
+                } else {
+                    $subs = array_filter(array_map('trim', explode(',', $row['subcategories'])));
+                }
+            }
+            // Fusionar con subcategorías encontradas en productos
+            if (isset($catMap[$name])) {
+                foreach ($catMap[$name]['subcategories'] as $ps) {
+                    if (!in_array($ps, $subs, true)) {
+                        $subs[] = $ps;
+                    }
+                }
+            }
+            $cats[] = [
+                'id'            => (string)($row['id'] ?? uniqid('cat_')),
+                'name'          => $name,
+                'subcategories' => array_values($subs),
+                'productCount'  => $catMap[$name]['count'] ?? 0,
+                'updated_at'    => $row['updated_at'] ?? null
+            ];
+        }
+
+        // 3. Sincronizar automáticamente cualquier categoría de productos que falte en categories_rows
+        $toInsert = [];
+        foreach ($catMap as $cName => $info) {
+            if (!isset($existingNames[strtolower($cName)])) {
+                $cId = preg_replace('/[^a-z0-9_-]/', '-', strtolower($cName));
+                $cId = trim(preg_replace('/-+/', '-', $cId), '-');
+                if (!$cId) $cId = uniqid('cat_');
+                $newCat = [
+                    'id'            => $cId,
+                    'name'          => $cName,
+                    'subcategories' => array_values($info['subcategories']),
+                    'productCount'  => $info['count'],
+                    'updated_at'    => date('Y-m-d H:i:s')
+                ];
+                $cats[] = $newCat;
+                $toInsert[] = $newCat;
+            }
+        }
+
+        // Guardar las nuevas categorías en categories_rows para persistencia
+        if (!empty($toInsert)) {
+            try {
+                $ins = $pdo->prepare("INSERT INTO categories_rows (id, name, subcategories) VALUES (:id, :name, :sub) ON DUPLICATE KEY UPDATE name = VALUES(name), subcategories = VALUES(sub)");
+                foreach ($toInsert as $tc) {
+                    $ins->execute([
+                        ':id'   => $tc['id'],
+                        ':name' => $tc['name'],
+                        ':sub'  => json_encode($tc['subcategories'], JSON_UNESCAPED_UNICODE)
+                    ]);
+                }
+            } catch (Throwable $e) {}
+        }
+
+        // Ordenar alfabéticamente por nombre
+        usort($cats, function($a, $b) {
+            return strcasecmp($a['name'] ?? '', $b['name'] ?? '');
+        });
+
         echo json_encode(['categories' => $cats]);
         exit;
     }

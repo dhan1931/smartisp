@@ -3130,8 +3130,13 @@
       await loadAllData();
 
       const urlParams = new URLSearchParams(window.location.search);
-      const initialCat = urlParams.get('category');
+      const requestedTab = urlParams.get('tab');
+      if (requestedTab && document.getElementById(requestedTab)) {
+        switchTab(requestedTab);
+      }
+      const initialCat = urlParams.get('category') || urlParams.get('macro');
       if (initialCat) {
+        if (!requestedTab) switchTab('tab-products');
         const filterMacro = document.getElementById('filterMacroCat');
         if (filterMacro) {
           filterMacro.value = initialCat;
