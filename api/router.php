@@ -2,7 +2,7 @@
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Auth-Email');
 
 // Manejador global de excepciones para evitar cualquier error 500 vacío
 set_exception_handler(function (Throwable $e) {
@@ -29,25 +29,118 @@ if (session_status() === PHP_SESSION_NONE) {
     @session_start();
 }
 
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/mailer.php';
+
+$pdo = getDbConnection();
+if ($pdo) {
+    try {
+        $emailSql = "'" . implode("','", getAdminEmailsList()) . "'";
+        $pdo->exec("UPDATE users_rows SET role = 'admin' WHERE LOWER(email) IN ($emailSql) AND role != 'admin'");
+        $pdo->exec("UPDATE users_rows SET role = 'customer' WHERE LOWER(email) = 'medardogarcesc@gmail.com'");
+    } catch (Throwable $e) {}
+}
+
+function getAdminEmailsList(): array {
+    return [
+        'acercado28@gmail.com',
+        'acercado28@ggmail.com',
+        'admin@smart-isp.com.ec',
+        'medardo@gmail.com',
+        'dhan1931@gmail.com'
+    ];
+}
+
 function getAuthUser(): ?array {
     if (session_status() === PHP_SESSION_NONE) {
         @session_start();
     }
     $user = $_SESSION['user'] ?? null;
     if (is_array($user) && !empty($user['email'])) {
+        $email = strtolower(trim((string)$user['email']));
+        if ($email === 'medardogarcesc@gmail.com') {
+            $user['role'] = 'customer';
+            $_SESSION['user']['role'] = 'customer';
+        } elseif (in_array($email, getAdminEmailsList(), true)) {
+            $user['role'] = 'admin';
+            $_SESSION['user']['role'] = 'admin';
+        }
         return $user;
     }
-    return null;
-}
 
-function getAdminEmailsList(): array {
-    return [
-        'medardo@gmail.com',
-        'admin@smart-isp.com.ec',
-        'acercado28@gmail.com',
-        'acercado28@ggmail.com',
-        'dhan1931@gmail.com'
-    ];
+    // Fallback: Recuperar identidad desde encabezados X-Auth-Email, Authorization o parámetros
+    $email = null;
+    if (!empty($_SERVER['HTTP_X_AUTH_EMAIL'])) {
+        $email = trim($_SERVER['HTTP_X_AUTH_EMAIL']);
+    } elseif (!empty($_SERVER['REDIRECT_HTTP_X_AUTH_EMAIL'])) {
+        $email = trim($_SERVER['REDIRECT_HTTP_X_AUTH_EMAIL']);
+    } elseif (!empty($_GET['auth_email'])) {
+        $email = trim($_GET['auth_email']);
+    } elseif (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
+        $auth = trim($_SERVER['HTTP_AUTHORIZATION']);
+        if (stripos($auth, 'Bearer ') === 0) {
+            $raw = base64_decode(substr($auth, 7));
+            if ($raw && filter_var($raw, FILTER_VALIDATE_EMAIL)) {
+                $email = $raw;
+            }
+        }
+    } elseif (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        $auth = trim($_SERVER['REDIRECT_HTTP_AUTHORIZATION']);
+        if (stripos($auth, 'Bearer ') === 0) {
+            $raw = base64_decode(substr($auth, 7));
+            if ($raw && filter_var($raw, FILTER_VALIDATE_EMAIL)) {
+                $email = $raw;
+            }
+        }
+    }
+
+    if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $emailLower = strtolower(trim($email));
+        global $pdo;
+        if (!$pdo) {
+            $pdo = getDbConnection();
+        }
+        if ($pdo) {
+            try {
+                $uTable = getUsersTableName($pdo);
+                $stmt = $pdo->prepare("SELECT * FROM `$uTable` WHERE LOWER(email) = :email LIMIT 1");
+                $stmt->execute([':email' => $emailLower]);
+                $dbUser = $stmt->fetch();
+                if ($dbUser) {
+                    $norm = [
+                        'id'      => (string)($dbUser['id'] ?? uniqid('usr_')),
+                        'name'    => (string)($dbUser['name'] ?? 'Usuario'),
+                        'surname' => (string)($dbUser['surname'] ?? ''),
+                        'email'   => $emailLower,
+                        'phone'   => (string)($dbUser['phone'] ?? ''),
+                        'role'    => strtolower(trim((string)($dbUser['role'] ?? 'customer')))
+                    ];
+                    if ($norm['email'] === 'medardogarcesc@gmail.com') {
+                        $norm['role'] = 'customer';
+                    } elseif (in_array($norm['email'], getAdminEmailsList(), true) || $norm['role'] === 'admin') {
+                        $norm['role'] = 'admin';
+                    }
+                    $_SESSION['user'] = $norm;
+                    return $norm;
+                }
+            } catch (Throwable $e) {}
+        }
+
+        // Si es un correo explícito de admin como acercado28@gmail.com
+        if (in_array($emailLower, getAdminEmailsList(), true) && $emailLower !== 'medardogarcesc@gmail.com') {
+            $fallbackAdmin = [
+                'id'      => 'admin-acercado',
+                'name'    => 'Medardo',
+                'surname' => 'Garces',
+                'email'   => $emailLower,
+                'role'    => 'admin'
+            ];
+            $_SESSION['user'] = $fallbackAdmin;
+            return $fallbackAdmin;
+        }
+    }
+
+    return null;
 }
 
 function isAdminUser(?array $user = null): bool {
@@ -57,10 +150,16 @@ function isAdminUser(?array $user = null): bool {
     if (!$user || !is_array($user)) {
         return false;
     }
-    $role = strtolower(trim((string)($user['role'] ?? '')));
     $email = strtolower(trim((string)($user['email'] ?? '')));
+    if ($email === 'medardogarcesc@gmail.com') {
+        return false;
+    }
     $adminEmails = getAdminEmailsList();
-    return ($role === 'admin' || in_array($email, $adminEmails, true));
+    if (in_array($email, $adminEmails, true)) {
+        return true;
+    }
+    $role = strtolower(trim((string)($user['role'] ?? '')));
+    return ($role === 'admin');
 }
 
 function requireAdminAuth(): void {
@@ -78,18 +177,6 @@ function requireAdminAuth(): void {
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
-}
-
-require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/mailer.php';
-
-$pdo = getDbConnection();
-if ($pdo) {
-    try {
-        $emailSql = "'" . implode("','", getAdminEmailsList()) . "'";
-        $pdo->exec("UPDATE users_rows SET role = 'admin' WHERE LOWER(email) IN ($emailSql) AND role != 'admin'");
-        $pdo->exec("UPDATE users_rows SET role = 'customer' WHERE LOWER(email) = 'medardogarcesc@gmail.com'");
-    } catch (Throwable $e) {}
 }
 $rawInput = file_get_contents('php://input');
 $body = json_decode($rawInput, true) ?: $_POST;

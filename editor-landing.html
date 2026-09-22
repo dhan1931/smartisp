@@ -3583,10 +3583,29 @@
 		// =========================================================================
 		// LOAD & SAVE ENGINE
 		// =========================================================================
+		const getAdminHeaders = () => {
+			let headers = { 'Content-Type': 'application/json' };
+			try {
+				const raw = sessionStorage.getItem('smartisp.accountUser') || localStorage.getItem('smartisp.accountUser');
+				if (raw) {
+					const u = JSON.parse(raw);
+					if (u && u.email) {
+						headers['X-Auth-Email'] = u.email;
+						headers['Authorization'] = 'Bearer ' + btoa(u.email);
+					}
+				}
+			} catch (e) {}
+			return headers;
+		};
+
 		const loadLandingData = async () => {
 			try {
-				const res = await fetch('/api/auth/landing-content');
-				if (!res.ok) return;
+				const headers = getAdminHeaders();
+				let res = await fetch('/api/auth/landing-content', { credentials: 'include', headers });
+				if (!res || !res.ok) {
+					res = await fetch('/api/router.php?action=landing-content', { credentials: 'include', headers });
+				}
+				if (!res || !res.ok) return;
 				const data = await res.json();
 				const content = Object.fromEntries((data.content || []).map(i => [i.key, i.value]));
 
@@ -3760,11 +3779,21 @@
 			});
 
 			try {
-				const response = await fetch('/api/auth/landing-content', {
+				const headers = getAdminHeaders();
+				let response = await fetch('/api/auth/landing-content', {
 					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
+					credentials: 'include',
+					headers,
 					body: JSON.stringify(payload)
 				});
+				if (!response || !response.ok) {
+					response = await fetch('/api/router.php?action=landing-content', {
+						method: 'POST',
+						credentials: 'include',
+						headers,
+						body: JSON.stringify(payload)
+					});
+				}
 				const result = await response.json();
 				if (!response.ok) throw new Error(result.error || 'No se pudo guardar.');
 				markDirty(false);

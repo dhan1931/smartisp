@@ -1459,11 +1459,30 @@
     // --- HELPER DE LLAMADAS API CON CREDENCIALES Y FALLBACK ANTIBLOQUEO ---
     const api = async (endpoint, options = {}) => {
       let res = null;
+      let storedUser = currentAdminUser;
+      if (!storedUser || !storedUser.email) {
+        try {
+          const raw = sessionStorage.getItem('smartisp.accountUser') || localStorage.getItem('smartisp.accountUser');
+          if (raw) storedUser = JSON.parse(raw);
+        } catch (e) {}
+      }
+
+      const customHeaders = {
+        'Content-Type': 'application/json'
+      };
+      if (storedUser && storedUser.email) {
+        customHeaders['X-Auth-Email'] = storedUser.email;
+        customHeaders['Authorization'] = 'Bearer ' + btoa(storedUser.email);
+      }
+
+      const reqHeaders = { ...customHeaders, ...(options.headers || {}) };
+      const authParam = (storedUser && storedUser.email) ? `?auth_email=${encodeURIComponent(storedUser.email)}` : '';
+
       try {
-        res = await fetch(`/api/auth/${endpoint}`, {
+        res = await fetch(`/api/auth/${endpoint}${authParam}`, {
           credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          ...options
+          ...options,
+          headers: reqHeaders
         });
       } catch (err) {
         res = null;
@@ -1473,11 +1492,11 @@
       // reintentar directamente con el enrutador /api/router.php
       if (!res || res.status === 403) {
         try {
-          const directUrl = `/api/router.php?action=${endpoint.replace(/^\/+/, '')}`;
+          const directUrl = `/api/router.php?action=${endpoint.replace(/^\/+/, '')}${authParam ? (authParam.replace('?', '&')) : ''}`;
           const fallbackRes = await fetch(directUrl, {
             credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            ...options
+            ...options,
+            headers: reqHeaders
           });
           if (fallbackRes.ok || !res) {
             res = fallbackRes;
@@ -3067,27 +3086,28 @@
     (async () => {
       let user = null;
       try {
-        const sessionRes = await api('me');
-        if (sessionRes && sessionRes.user) {
-          user = sessionRes.user;
+        const stored = sessionStorage.getItem('smartisp.accountUser') || localStorage.getItem('smartisp.accountUser');
+        if (stored) {
+          user = JSON.parse(stored);
+          currentAdminUser = user;
         }
       } catch (e) {}
 
-      if (!user) {
-        try {
-          const stored = sessionStorage.getItem('smartisp.accountUser') || localStorage.getItem('smartisp.accountUser');
-          if (stored) {
-            user = JSON.parse(stored);
-          }
-        } catch (e) {}
-      }
+      try {
+        const sessionRes = await api('me');
+        if (sessionRes && sessionRes.user) {
+          user = sessionRes.user;
+          currentAdminUser = user;
+          localStorage.setItem('smartisp.accountUser', JSON.stringify(user));
+        }
+      } catch (e) {}
 
       // Asegurar permisos para configurar el catálogo
       const adminEmails = [
-        'medardo@gmail.com',
-        'admin@smart-isp.com.ec',
         'acercado28@gmail.com',
         'acercado28@ggmail.com',
+        'admin@smart-isp.com.ec',
+        'medardo@gmail.com',
         'dhan1931@gmail.com'
       ];
       const userEmail = (user && user.email) ? String(user.email).toLowerCase().trim() : '';

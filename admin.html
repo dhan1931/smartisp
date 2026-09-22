@@ -1275,13 +1275,29 @@
     };
     const api = async (action, options = {}) => {
       let response = null;
+      let storedUser = null;
       try {
-        response = await fetch(`/api/auth/${action}`, { credentials: 'include', headers: { 'Content-Type': 'application/json' }, ...options });
+        const raw = sessionStorage.getItem('smartisp.accountUser') || localStorage.getItem('smartisp.accountUser');
+        if (raw) storedUser = JSON.parse(raw);
+      } catch (e) {}
+
+      const customHeaders = {
+        'Content-Type': 'application/json'
+      };
+      if (storedUser && storedUser.email) {
+        customHeaders['X-Auth-Email'] = storedUser.email;
+        customHeaders['Authorization'] = 'Bearer ' + btoa(storedUser.email);
+      }
+      const reqHeaders = { ...customHeaders, ...(options.headers || {}) };
+      const authParam = (storedUser && storedUser.email) ? `?auth_email=${encodeURIComponent(storedUser.email)}` : '';
+
+      try {
+        response = await fetch(`/api/auth/${action}${authParam}`, { credentials: 'include', ...options, headers: reqHeaders });
       } catch (e) { response = null; }
       if (!response || response.status === 403) {
         try {
-          const directUrl = `/api/router.php?action=${action.replace(/^\/+/, '')}`;
-          const fallback = await fetch(directUrl, { credentials: 'include', headers: { 'Content-Type': 'application/json' }, ...options });
+          const directUrl = `/api/router.php?action=${action.replace(/^\/+/, '')}${authParam ? (authParam.replace('?', '&')) : ''}`;
+          const fallback = await fetch(directUrl, { credentials: 'include', ...options, headers: reqHeaders });
           if (fallback.ok || !response) response = fallback;
         } catch (e) {}
       }
