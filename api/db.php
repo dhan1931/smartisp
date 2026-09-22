@@ -135,6 +135,17 @@ function ensureAuxiliaryTables(PDO $pdo) {
             status VARCHAR(50) NOT NULL DEFAULT 'pending',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+        // 4. Tabla de restablecimiento y recuperación de contraseñas
+        $pdo->exec("CREATE TABLE IF NOT EXISTS password_resets (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            email VARCHAR(191) NOT NULL,
+            token VARCHAR(191) NOT NULL UNIQUE,
+            expires_at DATETIME NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_token (token),
+            INDEX idx_email (email)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
     } catch (Throwable $e) {
         error_log('ensureAuxiliaryTables warning: ' . $e->getMessage());
     }

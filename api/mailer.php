@@ -698,3 +698,84 @@ function testEmailConnection(PDO $pdo, ?array $overrideConfig = null, ?string $t
     return sendSmartEmail($pdo, $recipient, $subject, $html, $overrideConfig);
 }
 
+// ------------------------------------------------------------------
+// 8. PLANTILLA HTML: RECUPERACIÓN DE CONTRASEÑA
+// ------------------------------------------------------------------
+function buildPasswordResetHtml(string $email, string $resetUrl): string {
+    $safeEmail = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
+    $safeUrl = htmlspecialchars($resetUrl, ENT_QUOTES, 'UTF-8');
+    $year = date('Y');
+
+    return "
+    <div style=\"background-color: #eef5f6; padding: 36px 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;\">
+        <table align=\"center\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" style=\"max-width: 580px; background-color: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(16, 44, 61, 0.08); border: 1px solid #d8e5e7;\">
+            <!-- HEADER -->
+            <tr>
+                <td style=\"background-color: #102c3d; padding: 28px 32px; text-align: center;\">
+                    <h1 style=\"margin: 0; font-size: 26px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px;\">
+                        smart<span style=\"color: #087ea4;\">isp</span><span style=\"color: #25D366;\">.</span>
+                    </h1>
+                    <p style=\"margin: 6px 0 0; color: #9bbcd0; font-size: 13px; font-weight: 500;\">Infraestructura Tecnológica y Telecomunicaciones</p>
+                </td>
+            </tr>
+
+            <!-- BODY -->
+            <tr>
+                <td style=\"padding: 36px 32px 28px;\">
+                    <h2 style=\"margin: 0 0 14px; color: #163342; font-size: 20px; font-weight: 700;\">
+                        Recuperación de Contraseña
+                    </h2>
+                    <p style=\"margin: 0 0 18px; color: #475569; font-size: 15px; line-height: 1.6;\">
+                        Hola, recibimos una solicitud para restablecer la contraseña asociada a tu cuenta de SmartISP (<strong>$safeEmail</strong>).
+                    </p>
+                    <p style=\"margin: 0 0 24px; color: #475569; font-size: 15px; line-height: 1.6;\">
+                        Haz clic en el siguiente botón seguro para definir una nueva contraseña:
+                    </p>
+
+                    <!-- BOTÓN CTA -->
+                    <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" style=\"margin: 10px 0 26px;\">
+                        <tr>
+                            <td align=\"center\">
+                                <a href=\"$safeUrl\" target=\"_blank\" style=\"display: inline-block; background-color: #087ea4; color: #ffffff; font-size: 15px; font-weight: 700; text-decoration: none; padding: 14px 34px; border-radius: 8px; box-shadow: 0 4px 12px rgba(8, 126, 164, 0.25);\">
+                                    Restablecer mi contraseña &rarr;
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- AVISO DE CADUCIDAD -->
+                    <div style=\"background-color: #f8fafc; border-left: 4px solid #087ea4; padding: 14px 16px; border-radius: 6px; margin-bottom: 24px;\">
+                        <p style=\"margin: 0; font-size: 13px; color: #334155; line-height: 1.5;\">
+                            ⏱️ <strong>Aviso de seguridad:</strong> Este enlace tiene una validez de <strong>60 minutos</strong> y solo puede ser utilizado una única vez.
+                        </p>
+                    </div>
+
+                    <!-- ENLACE DE TEXTO POR SI FALLA EL BOTON -->
+                    <p style=\"margin: 0 0 8px; font-size: 12px; color: #64748b;\">
+                        Si tienes problemas con el botón, copia y pega el siguiente enlace directamente en tu navegador:
+                    </p>
+                    <div style=\"background-color: #f1f5f9; padding: 10px 12px; border-radius: 6px; word-break: break-all; font-size: 12px; color: #087ea4;\">
+                        <a href=\"$safeUrl\" target=\"_blank\" style=\"color: #087ea4; text-decoration: underline;\">$safeUrl</a>
+                    </div>
+
+                    <p style=\"margin: 26px 0 0; font-size: 13px; color: #94a3b8; line-height: 1.5;\">
+                        Si tú no solicitaste este cambio, puedes ignorar este mensaje de forma segura. Tu contraseña actual permanecerá intacta y nadie podrá acceder a tu cuenta sin este enlace.
+                    </p>
+                </td>
+            </tr>
+
+            <!-- FOOTER -->
+            <tr>
+                <td style=\"background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px 32px; text-align: center;\">
+                    <p style=\"margin: 0; font-size: 12px; color: #64748b;\">
+                        © $year SmartISP. Todos los derechos reservados.
+                    </p>
+                    <p style=\"margin: 4px 0 0; font-size: 11px; color: #94a3b8;\">
+                        Ecuador · <a href=\"mailto:contacto@smart-isp.com.ec\" style=\"color: #087ea4; text-decoration: none;\">contacto@smart-isp.com.ec</a>
+                    </p>
+                </td>
+            </tr>
+        </table>
+    </div>";
+}
+

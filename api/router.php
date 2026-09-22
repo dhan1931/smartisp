@@ -1029,6 +1029,185 @@ if ($action === 'logout') {
     exit;
 }
 
+// -------------------------------------------------------------
+// 7. RECUPERACIÓN Y RESTABLECIMIENTO DE CONTRASEÑA
+// -------------------------------------------------------------
+if ($action === 'request-password-reset' && $method === 'POST') {
+    try {
+        $email = trim(strtolower($body['email'] ?? ''));
+        if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Por favor ingresa un correo electrónico válido.']);
+            exit;
+        }
+
+        $uTable = getUsersTableName($pdo);
+        $colsStmt = $pdo->query("DESCRIBE `$uTable`");
+        $cols = $colsStmt ? $colsStmt->fetchAll(PDO::FETCH_COLUMN) : [];
+        $emailCol = null;
+        foreach (['email', 'correo', 'mail', 'user_email', 'username', 'usuario', 'COL 2', 'col 2', 'COL_2', 'col_2'] as $c) {
+            if (in_array($c, $cols, true)) { $emailCol = $c; break; }
+        }
+        if (!$emailCol && isset($cols[1])) $emailCol = $cols[1];
+        if (!$emailCol) $emailCol = 'email';
+
+        $stmt = $pdo->prepare("SELECT * FROM `$uTable` WHERE LOWER(`$emailCol`) = :email LIMIT 1");
+        $stmt->execute([':email' => $email]);
+        $user = $stmt->fetch();
+
+        // Para evitar enumeración maliciosa de cuentas, si no existe devolvemos ok: true
+        if (!$user) {
+            echo json_encode([
+                'ok' => true,
+                'message' => 'Si el correo está registrado, recibirás un enlace para recuperar tu contraseña.'
+            ]);
+            exit;
+        }
+
+        // Generar token criptográfico seguro
+        $token = bin2hex(random_bytes(32));
+        $expiresAt = date('Y-m-d H:i:s', time() + 3600); // 1 hora de validez
+
+        // Eliminar tokens previos de este correo
+        try {
+            $delStmt = $pdo->prepare("DELETE FROM password_resets WHERE LOWER(email) = :email");
+            $delStmt->execute([':email' => $email]);
+        } catch (Throwable $e) {}
+
+        // Guardar nuevo token en password_resets
+        $insStmt = $pdo->prepare("INSERT INTO password_resets (email, token, expires_at) VALUES (:email, :token, :expires_at)");
+        $insStmt->execute([
+            ':email'      => $email,
+            ':token'      => $token,
+            ':expires_at' => $expiresAt
+        ]);
+
+        // Construir URL base dinámica
+        $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443) || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'smart-isp.com.ec';
+        if (!empty($_SERVER['HTTP_ORIGIN'])) {
+            $baseUrl = rtrim($_SERVER['HTTP_ORIGIN'], '/');
+        } elseif (!empty($_SERVER['HTTP_REFERER'])) {
+            $parsed = parse_url($_SERVER['HTTP_REFERER']);
+            if (!empty($parsed['scheme']) && !empty($parsed['host'])) {
+                $baseUrl = $parsed['scheme'] . '://' . $parsed['host'] . (!empty($parsed['port']) && !in_array((int)$parsed['port'], [80, 443], true) ? ':' . $parsed['port'] : '');
+            } else {
+                $baseUrl = "$proto://$host";
+            }
+        } else {
+            $baseUrl = "$proto://$host";
+        }
+
+        $resetUrl = "$baseUrl/reset-password.html?token=" . urlencode($token);
+        $resetHtml = buildPasswordResetHtml($email, $resetUrl);
+
+        $mailRes = sendSmartEmail($pdo, $email, '🔐 Restablece tu contraseña - SmartISP', $resetHtml);
+        if (!$mailRes['ok']) {
+            error_log("Fallo al enviar correo de recuperación a $email: " . ($mailRes['error'] ?? ''));
+            http_response_code(500);
+            echo json_encode([
+                'ok'    => false,
+                'error' => 'No se pudo enviar el correo de recuperación: ' . ($mailRes['error'] ?? 'Error de despacho SMTP/mail.')
+            ]);
+            exit;
+        }
+
+        echo json_encode([
+            'ok'      => true,
+            'message' => 'Si el correo está registrado, recibirás un enlace para recuperar tu contraseña.'
+        ]);
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Error al procesar la solicitud: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($action === 'reset-password' && $method === 'POST') {
+    try {
+        $token = trim((string)($body['token'] ?? ''));
+        $password = (string)($body['password'] ?? '');
+        $confirmation = (string)($body['confirmation'] ?? '');
+
+        if (!$token) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Token de seguridad no proporcionado o inválido.']);
+            exit;
+        }
+
+        if (strlen($password) < 6) {
+            http_response_code(400);
+            echo json_encode(['error' => 'La contraseña debe tener al menos 6 caracteres.']);
+            exit;
+        }
+
+        if ($password !== $confirmation) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Las contraseñas no coinciden.']);
+            exit;
+        }
+
+        // Buscar token en password_resets
+        $stmt = $pdo->prepare("SELECT * FROM password_resets WHERE token = :token LIMIT 1");
+        $stmt->execute([':token' => $token]);
+        $resetRow = $stmt->fetch();
+
+        if (!$resetRow) {
+            http_response_code(400);
+            echo json_encode(['error' => 'El enlace no es válido o ya fue utilizado. Por favor solicita uno nuevo.']);
+            exit;
+        }
+
+        // Verificar expiración
+        $expiresAt = strtotime($resetRow['expires_at'] ?? '2000-01-01');
+        if ($expiresAt < time()) {
+            http_response_code(400);
+            echo json_encode(['error' => 'El enlace de recuperación ha expirado. Por favor solicita uno nuevo.']);
+            exit;
+        }
+
+        $email = strtolower(trim($resetRow['email']));
+        $uTable = getUsersTableName($pdo);
+        $colsStmt = $pdo->query("DESCRIBE `$uTable`");
+        $cols = $colsStmt ? $colsStmt->fetchAll(PDO::FETCH_COLUMN) : [];
+
+        $emailCol = null;
+        foreach (['email', 'correo', 'mail', 'user_email', 'username', 'usuario', 'COL 2', 'col 2', 'COL_2', 'col_2'] as $c) {
+            if (in_array($c, $cols, true)) { $emailCol = $c; break; }
+        }
+        if (!$emailCol && isset($cols[1])) $emailCol = $cols[1];
+        if (!$emailCol) $emailCol = 'email';
+
+        $passCol = null;
+        foreach (['password_hash', 'password', 'clave', 'pass', 'hash', 'COL 3', 'col 3', 'COL_3', 'col_3'] as $c) {
+            if (in_array($c, $cols, true)) { $passCol = $c; break; }
+        }
+        if (!$passCol && isset($cols[2])) $passCol = $cols[2];
+        if (!$passCol) $passCol = 'password_hash';
+
+        // Actualizar contraseña con BCRYPT
+        $hash = password_hash($password, PASSWORD_BCRYPT);
+        $updateStmt = $pdo->prepare("UPDATE `$uTable` SET `$passCol` = :hash WHERE LOWER(`$emailCol`) = :email");
+        $updateStmt->execute([
+            ':hash'  => $hash,
+            ':email' => $email
+        ]);
+
+        // Consumir token para que no se pueda reutilizar
+        $delStmt = $pdo->prepare("DELETE FROM password_resets WHERE token = :token OR LOWER(email) = :email");
+        $delStmt->execute([':token' => $token, ':email' => $email]);
+
+        echo json_encode([
+            'ok'      => true,
+            'message' => 'Contraseña actualizada exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.'
+        ]);
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Error al restablecer la contraseña: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
 // Acción no encontrada
 http_response_code(404);
 echo json_encode(['error' => 'Endpoint no encontrado: ' . $action]);
