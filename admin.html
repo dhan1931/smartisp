@@ -483,7 +483,7 @@
             <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;margin-bottom:14px;">
               <div>
                 <label style="font-weight:700;">1. Correo del Administrador (Para recibir compras y celular del cliente)
-                  <input name="admin_email" type="email" placeholder="admin@smartisp.com" required>
+                  <input name="admin_email" type="email" placeholder="gestion@smart-isp.es" value="gestion@smart-isp.es" required>
                 </label>
                 <small style="color:var(--muted);display:block;margin-top:4px;font-size:12px;line-height:1.45;">
                   A este correo te llegará la alerta inmediata con el <strong>número de celular del cliente, botón directo de WhatsApp y llamada</strong> para coordinar la atención y el pago.
@@ -493,14 +493,14 @@
               <div>
                 <label style="font-weight:700;">2. Proveedor para Enviar Correos Reales por Internet
                   <select name="smtp_provider" id="smtpProviderSelect">
-                    <option value="hostinger">Hostinger Correo Corporativo (@smart-isp.com.ec)</option>
+                    <option value="hostinger">Hostinger Correo Corporativo (@smart-isp.es / @smart-isp.com.ec)</option>
                     <option value="gmail" selected>Gmail (Recomendado - Gratuito con Contraseña de Aplicación)</option>
+                    <option value="resend">Resend API (Ultra-rápido ~250ms, la mejor calidad de entrega)</option>
                     <option value="custom">Servidor SMTP Personalizado (Outlook, Yahoo, cPanel, etc.)</option>
-                    <option value="resend">Resend API (Producción / Vercel)</option>
                   </select>
                 </label>
                 <small style="color:var(--muted);display:block;margin-top:4px;font-size:12px;line-height:1.45;">
-                  Garantiza que los correos salgan del servidor y lleguen a la bandeja de entrada real de cualquier usuario.
+                  Garantiza que los correos salgan del servidor y lleguen enseguida a la bandeja de entrada real de cualquier usuario.
                 </small>
               </div>
             </div>
@@ -512,14 +512,15 @@
                 <strong style="color:#065f46;font-size:14px;">Correo Corporativo de Hostinger (smtp.hostinger.com)</strong>
               </div>
               <p style="font-size:12.5px;color:#047857;line-height:1.5;margin:0 0 12px;">
-                Usa cualquier cuenta de correo creada en el panel de Hostinger (ejemplo: <code>pedidos@smart-isp.com.ec</code> o <code>ventas@smart-isp.com.ec</code>):
+                Usa tu cuenta de correo creada en el panel de Hostinger (ejemplo: <code>gestion@smart-isp.es</code> o <code>admin@smart-isp.com.ec</code>):
                 <br>• Servidor SMTP: <strong>smtp.hostinger.com</strong> | Puerto: <strong>465 (SSL)</strong>
+                <br>• ⚠️ <strong>Importante:</strong> Debes ingresar la <strong>contraseña real de ese correo en Hostinger</strong> (con la que entras al Webmail de Hostinger).
               </p>
               <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:14px;">
                 <label>Tu Correo de Hostinger
-                  <input name="hostinger_user" id="hostingerUser" type="email" placeholder="pedidos@smart-isp.com.ec">
+                  <input name="hostinger_user" id="hostingerUser" type="email" placeholder="gestion@smart-isp.es">
                 </label>
-                <label>Contraseña del Correo
+                <label>Contraseña REAL del Correo en Hostinger
                   <div style="position:relative;">
                     <input name="hostinger_pass" id="hostingerPass" type="password" placeholder="••••••••" autocomplete="new-password">
                     <button type="button" id="toggleHostingerPass" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;font-size:14px;color:var(--muted);" title="Ver u ocultar contraseña">👁️</button>
@@ -583,13 +584,21 @@
 
             <!-- Panel de Configuración para Resend -->
             <div id="resendSection" class="hidden" style="background:#fdf2f8;border:1px solid #fbcfe8;border-radius:10px;padding:16px;margin-bottom:16px;">
-              <strong style="color:#9d174d;font-size:14px;display:block;margin-bottom:12px;">🚀 Integración con Resend API</strong>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                <span style="font-size:20px;">🚀</span>
+                <strong style="color:#9d174d;font-size:14px;">Integración con Resend API (Opción de máxima velocidad y entrega inmediata)</strong>
+              </div>
+              <p style="font-size:12.5px;color:#831843;line-height:1.5;margin:0 0 12px;">
+                Resend entrega los correos en <strong>menos de 300ms</strong> vía HTTPS directo sin depender de puertos SMTP bloqueados:
+                <br>1. Crea una cuenta gratuita en <a href="https://resend.com" target="_blank" style="color:#be185d;font-weight:700;text-decoration:underline;">resend.com</a> (gratis 3,000 correos al mes).
+                <br>2. Ve a <strong>API Keys &gt; Create API Key</strong>, copia el código que empieza con <code>re_</code> y pégalo abajo:
+              </p>
               <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:14px;">
                 <label>API Key de Resend
-                  <input name="resend_api_key" placeholder="re_123456789...">
+                  <input name="resend_api_key" id="resendApiKey" placeholder="re_123456789...">
                 </label>
                 <label>Correo Remitente Autorizado
-                  <input name="email_from" placeholder="SmartISP &lt;onboarding@resend.dev&gt;">
+                  <input name="email_from" id="emailFromInput" placeholder="SmartISP &lt;onboarding@resend.dev&gt;">
                 </label>
               </div>
             </div>
@@ -2094,17 +2103,16 @@
     };
 
     const adminEmails = [
+      'gestion@smart-isp.es',
       'medardo@gmail.com',
       'admin@smart-isp.com.ec',
-      'acercado28@gmail.com',
-      'acercado28@ggmail.com',
       'dhan1931@gmail.com'
     ];
 
     const isUserAdmin = u => {
       if (!u) return false;
       const email = String(u.email || '').toLowerCase().trim();
-      if (email === 'medardogarcesc@gmail.com') return false;
+      if (email === 'medardogarcesc@gmail.com' || email === 'acercado28@gmail.com' || email === 'acercado28@ggmail.com') return false;
       return u.role === 'admin' || adminEmails.includes(email);
     };
 
@@ -2196,8 +2204,8 @@
         payload.smtp_secure = form.querySelector('[name="smtp_secure"]')?.checked ? 'true' : 'false';
         payload.smtp_from = String(raw.smtp_from || '').trim();
       } else if (provider === 'resend') {
-        payload.resend_api_key = String(raw.resend_api_key || '').trim();
-        payload.email_from = String(raw.email_from || '').trim();
+        payload.resend_api_key = String($('#resendApiKey')?.value || raw.resend_api_key || '').trim();
+        payload.email_from = String($('#emailFromInput')?.value || raw.email_from || '').trim();
       }
       return payload;
     };
@@ -2236,6 +2244,23 @@
           $('#gmailPass')?.focus();
           return;
         }
+      } else if (payload.smtp_provider === 'hostinger') {
+        if (!payload.smtp_user) {
+          showMessage($('#notificationsMessage'), 'Para Hostinger, ingresa tu cuenta de correo corporativo (ej: gestion@smart-isp.es).', true);
+          $('#hostingerUser')?.focus();
+          return;
+        }
+        if (!payload.smtp_pass) {
+          showMessage($('#notificationsMessage'), 'Ingresa la contraseña real con la que entras al correo de Hostinger (no una contraseña inventada).', true);
+          $('#hostingerPass')?.focus();
+          return;
+        }
+      } else if (payload.smtp_provider === 'resend') {
+        if (!payload.resend_api_key) {
+          showMessage($('#notificationsMessage'), 'Ingresa tu API Key de Resend (inicia con re_). Es gratuita en resend.com.', true);
+          $('#resendApiKey')?.focus();
+          return;
+        }
       }
 
       const btn = $('#testEmailButton');
@@ -2256,7 +2281,13 @@
             ...payload
           })
         });
-        showMessage($('#notificationsMessage'), result.message || `¡Correo de prueba enviado exitosamente a ${adminEmail}! Revisa tu bandeja de entrada o spam.`);
+        let successNote = result.message || `¡Correo de prueba enviado exitosamente a ${adminEmail}! Revisa tu bandeja de entrada o spam.`;
+        if (result.transport === 'resend') {
+          successNote = `🚀 ¡Excelente! Correo de prueba despachado de inmediato vía Resend REST API a ${adminEmail}. Revisa tu bandeja de entrada.`;
+        } else if (result.transport === 'smtp') {
+          successNote = `⚡ ¡Excelente! Conexión SMTP verificada y correo despachado con éxito a ${adminEmail}.`;
+        }
+        showMessage($('#notificationsMessage'), successNote);
       } catch (error) {
         showMessage($('#notificationsMessage'), error.message || 'Error al enviar correo de prueba.', true);
       } finally {

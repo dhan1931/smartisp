@@ -2448,14 +2448,13 @@
 
 		const updateAdminAccess = user => {
 			const adminEmails = [
+				'gestion@smart-isp.es',
 				'medardo@gmail.com',
 				'admin@smart-isp.com.ec',
-				'acercado28@gmail.com',
-				'acercado28@ggmail.com',
 				'dhan1931@gmail.com'
 			];
 			const userEmail = (user && user.email) ? String(user.email).toLowerCase().trim() : '';
-			const isAdmin = Boolean(user && userEmail !== 'medardogarcesc@gmail.com' && (user.role === 'admin' || adminEmails.includes(userEmail)));
+			const isAdmin = Boolean(user && userEmail !== 'medardogarcesc@gmail.com' && userEmail !== 'acercado28@gmail.com' && userEmail !== 'acercado28@ggmail.com' && (user.role === 'admin' || adminEmails.includes(userEmail)));
 			const adminNav = document.querySelector('#adminNavLink');
 			if (adminNav) {
 				adminNav.classList.toggle('is-visible', isAdmin);

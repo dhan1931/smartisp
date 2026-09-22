@@ -37,14 +37,14 @@ if ($pdo) {
     try {
         $emailSql = "'" . implode("','", getAdminEmailsList()) . "'";
         $pdo->exec("UPDATE users_rows SET role = 'admin' WHERE LOWER(email) IN ($emailSql) AND role != 'admin'");
-        $pdo->exec("UPDATE users_rows SET role = 'customer' WHERE LOWER(email) = 'medardogarcesc@gmail.com'");
+        $pdo->exec("UPDATE users_rows SET role = 'customer' WHERE LOWER(email) IN ('medardogarcesc@gmail.com', 'acercado28@gmail.com', 'acercado28@ggmail.com')");
+        $pdo->exec("UPDATE settings_rows SET setting_value = 'gestion@smart-isp.es' WHERE setting_key = 'admin_email'");
     } catch (Throwable $e) {}
 }
 
 function getAdminEmailsList(): array {
     return [
-        'acercado28@gmail.com',
-        'acercado28@ggmail.com',
+        'gestion@smart-isp.es',
         'admin@smart-isp.com.ec',
         'medardo@gmail.com',
         'dhan1931@gmail.com'
@@ -126,12 +126,12 @@ function getAuthUser(): ?array {
             } catch (Throwable $e) {}
         }
 
-        // Si es un correo explícito de admin como acercado28@gmail.com
-        if (in_array($emailLower, getAdminEmailsList(), true) && $emailLower !== 'medardogarcesc@gmail.com') {
+        // Si es un correo explícito de admin como gestion@smart-isp.es
+        if (in_array($emailLower, getAdminEmailsList(), true) && !in_array($emailLower, ['medardogarcesc@gmail.com', 'acercado28@gmail.com', 'acercado28@ggmail.com'], true)) {
             $fallbackAdmin = [
-                'id'      => 'admin-acercado',
-                'name'    => 'Medardo',
-                'surname' => 'Garces',
+                'id'      => 'admin-gestion',
+                'name'    => 'Administrador',
+                'surname' => 'SmartISP',
                 'email'   => $emailLower,
                 'role'    => 'admin'
             ];

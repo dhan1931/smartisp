@@ -14,18 +14,20 @@
 // ------------------------------------------------------------------
 function getMailSettings(PDO $pdo, ?array $override = null): array {
     $defaults = [
-        'admin_email'   => 'admin@smart-isp.com.ec',
-        'smtp_provider' => 'hostinger',
-        'smtp_host'     => 'smtp.hostinger.com',
-        'smtp_port'     => 465,
-        'smtp_user'     => '',
-        'smtp_pass'     => '',
-        'smtp_from'     => 'SmartISP <notificaciones@smart-isp.com.ec>',
-        'smtp_secure'   => 'true'
+        'admin_email'    => 'gestion@smart-isp.es',
+        'smtp_provider'  => 'hostinger',
+        'smtp_host'      => 'smtp.hostinger.com',
+        'smtp_port'      => 465,
+        'smtp_user'      => '',
+        'smtp_pass'      => '',
+        'smtp_from'      => 'SmartISP <notificaciones@smart-isp.com.ec>',
+        'smtp_secure'    => 'true',
+        'resend_api_key' => '',
+        'email_from'     => ''
     ];
 
     try {
-        $stmt = $pdo->query("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows WHERE setting_key LIKE 'smtp_%' OR setting_key = 'admin_email' OR setting_key = 'email_from'");
+        $stmt = $pdo->query("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows WHERE setting_key LIKE 'smtp_%' OR setting_key = 'admin_email' OR setting_key = 'email_from' OR setting_key LIKE 'resend_%' OR setting_key = 'topbar_email'");
         $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
         foreach ($rows as $r) {
             $k = $r['key'] ?? '';
@@ -235,14 +237,72 @@ function smtpSendSocket(
 }
 
 // ------------------------------------------------------------------
-// 3. DESPACHADOR UNIVERSAL (SMTP CON FALLBACK A PHP MAIL)
+// 3. CONECTOR REST API PARA RESEND (MÁXIMA CALIDAD Y VELOCIDAD)
+// ------------------------------------------------------------------
+function resendSendApi(string $apiKey, string $from, string $to, string $subject, string $htmlBody): array {
+    $apiKey = trim($apiKey);
+    if (!$apiKey) {
+        return ['ok' => false, 'error' => 'Falta configurar la clave API de Resend (resend_api_key).'];
+    }
+
+    $fromClean = trim($from);
+    if (!$fromClean || strpos($fromClean, '@') === false) {
+        $fromClean = 'SmartISP <onboarding@resend.dev>';
+    }
+
+    $payload = json_encode([
+        'from'    => $fromClean,
+        'to'      => [$to],
+        'subject' => $subject,
+        'html'    => $htmlBody
+    ]);
+
+    $ch = curl_init('https://api.resend.com/emails');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: Bearer ' . $apiKey,
+        'Content-Type: application/json',
+        'User-Agent: SmartISP-Mailer/2.1'
+    ]);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 12);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    if ($curlErr) {
+        return ['ok' => false, 'error' => "Error de conexión cURL con Resend API: $curlErr"];
+    }
+
+    $json = json_decode($response, true);
+    if ($httpCode >= 200 && $httpCode < 300 && !empty($json['id'])) {
+        return [
+            'ok'        => true,
+            'messageId' => $json['id'],
+            'transport' => 'resend',
+            'provider'  => 'resend',
+            'recipient' => $to
+        ];
+    }
+
+    $msg = $json['message'] ?? ($json['error'] ?? "Respuesta HTTP $httpCode: " . substr((string)$response, 0, 200));
+    return ['ok' => false, 'error' => "Resend API error: $msg"];
+}
+
+// ------------------------------------------------------------------
+// 4. DESPACHADOR UNIVERSAL (RESEND / SMTP DIRECTO CON FALLBACK LOCAL)
 // ------------------------------------------------------------------
 function sendSmartEmail(
     PDO $pdo,
     string $to,
     string $subject,
     string $htmlBody,
-    ?array $overrideConfig = null
+    ?array $overrideConfig = null,
+    bool $isTest = false
 ): array {
     $to = trim($to);
     if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
@@ -250,6 +310,23 @@ function sendSmartEmail(
     }
 
     $cfg = getMailSettings($pdo, $overrideConfig);
+    $provider = $cfg['smtp_provider'] ?? 'hostinger';
+
+    // A. Si se eligió Resend o hay API Key explícita configurada
+    if ($provider === 'resend' || (!empty($cfg['resend_api_key']) && $provider !== 'gmail' && $provider !== 'hostinger' && $provider !== 'custom')) {
+        $resendKey = trim($cfg['resend_api_key'] ?? '');
+        $resendFrom = trim($cfg['email_from'] ?? ($cfg['smtp_from'] ?? 'SmartISP <onboarding@resend.dev>'));
+        $resendRes = resendSendApi($resendKey, $resendFrom, $to, $subject, $htmlBody);
+        if ($resendRes['ok']) {
+            return $resendRes;
+        }
+        if ($isTest) {
+            return $resendRes;
+        }
+        error_log("SmartISP Resend warning para $to: " . ($resendRes['error'] ?? ''));
+    }
+
+    // B. Conexión SMTP Directa
     $host = trim($cfg['smtp_host'] ?? '');
     $user = trim($cfg['smtp_user'] ?? '');
     $pass = trim($cfg['smtp_pass'] ?? '');
@@ -257,7 +334,6 @@ function sendSmartEmail(
     $from = trim($cfg['smtp_from'] ?? 'SmartISP <notificaciones@smart-isp.com.ec>');
     $isSecure = ($cfg['smtp_secure'] === 'true' || $cfg['smtp_secure'] === true || $port === 465);
 
-    // Si hay usuario y host configurados, intentar SMTP directo
     if ($host !== '' && $user !== '') {
         $smtpResult = smtpSendSocket($host, $port, $user, $pass, $from, $to, $subject, $htmlBody, $isSecure);
         if ($smtpResult['ok']) {
@@ -265,24 +341,44 @@ function sendSmartEmail(
                 'ok'        => true,
                 'transport' => 'smtp',
                 'recipient' => $to,
-                'provider'  => $cfg['smtp_provider'] ?? 'custom'
+                'provider'  => $provider
             ];
         }
+
+        // Si es una prueba del panel admin, no ocultar el error
+        if ($isTest) {
+            return [
+                'ok'        => false,
+                'error'     => "Fallo al enviar vía SMTP ($provider - $host): " . ($smtpResult['error'] ?? 'Error de autenticación'),
+                'transport' => 'smtp'
+            ];
+        }
+
         error_log("SmartISP SMTP warning para $to: " . ($smtpResult['error'] ?? ''));
+    } elseif ($isTest && ($provider === 'gmail' || $provider === 'hostinger' || $provider === 'custom')) {
+        return [
+            'ok'    => false,
+            'error' => "Faltan credenciales SMTP: Ingresa el usuario y la contraseña del correo para $provider."
+        ];
     }
 
-    // Fallback a mail() nativo de PHP
+    // C. Fallback a mail() nativo de PHP con envelope seguro
     $b64Subject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+    $senderDomain = 'smart-isp.com.ec';
+    $fallbackSender = "notificaciones@$senderDomain";
+    $fromHeader = $from ?: "SmartISP <$fallbackSender>";
+
     $headers = [
         'MIME-Version: 1.0',
         'Content-Type: text/html; charset=UTF-8',
         'Content-Transfer-Encoding: 8bit',
-        'From: ' . $from,
-        'Reply-To: ' . ($cfg['admin_email'] ?: $from),
-        'X-Mailer: SmartISP Fallback Mailer/1.0'
+        'From: ' . $fromHeader,
+        'Reply-To: ' . ($cfg['admin_email'] ?: $fromHeader),
+        'Return-Path: <' . $fallbackSender . '>',
+        'X-Mailer: SmartISP DirectMailer/2.1'
     ];
 
-    $mailOk = @mail($to, $b64Subject, $htmlBody, implode("\r\n", $headers));
+    $mailOk = @mail($to, $b64Subject, $htmlBody, implode("\r\n", $headers), "-f" . $fallbackSender);
     if ($mailOk) {
         return [
             'ok'        => true,
@@ -671,31 +767,31 @@ function testEmailConnection(PDO $pdo, ?array $overrideConfig = null, ?string $t
 
     $subject = '🧪 Correo de Prueba - Sistema de Notificaciones SmartISP';
     $date = date('d/m/Y H:i:s');
-    $provider = htmlspecialchars($cfg['smtp_provider'] ?? 'personalizado', ENT_QUOTES, 'UTF-8');
-    $host = htmlspecialchars($cfg['smtp_host'] ?? 'localhost', ENT_QUOTES, 'UTF-8');
-    $user = htmlspecialchars($cfg['smtp_user'] ?? 'No configurado', ENT_QUOTES, 'UTF-8');
+    $channelInfo = $provider === 'resend' 
+        ? "Resend REST API (HTTPS Directo)" 
+        : "$host (Usuario: $user)";
 
     $html = "
     <div style=\"font-family: 'Segoe UI', Roboto, sans-serif; padding: 24px; max-width: 560px; margin: 0 auto; background: #ffffff; border: 1px solid #d8e5e7; border-radius: 12px;\">
         <div style=\"background: #102c3d; padding: 18px 20px; border-radius: 8px; color: #ffffff; text-align: center;\">
             <h2 style=\"margin: 0; font-size: 20px;\">smart<span style=\"color:#087ea4;\">isp</span>.</h2>
-            <div style=\"font-size: 13px; color: #d6ecf7; margin-top: 4px;\">Prueba de Conectividad de Correo</div>
+            <div style=\"font-size: 13px; color: #d6ecf7; margin-top: 4px;\">Prueba de Conectividad de Correo Inmediato</div>
         </div>
         <div style=\"padding: 20px 0;\">
-            <p style=\"color: #163342; font-size: 14.5px;\">¡Felicitaciones! Si estás leyendo este correo, la configuración de despacho de SmartISP está funcionando correctamente.</p>
+            <p style=\"color: #163342; font-size: 14.5px;\">¡Felicitaciones! La configuración de despacho de SmartISP está funcionando correctamente y los pedidos de tus clientes te llegarán de inmediato a este buzón (<strong>$recipient</strong>).</p>
             <div style=\"background: #f0faf8; border-left: 4px solid #087ea4; padding: 12px 16px; border-radius: 6px; font-size: 13px; color: #163342;\">
-                <b>Proveedor:</b> $provider<br>
-                <b>Servidor SMTP:</b> $host<br>
-                <b>Usuario remitente:</b> $user<br>
+                <b>Destinatario Administrador:</b> $recipient<br>
+                <b>Proveedor de Envío:</b> $provider<br>
+                <b>Canal de Despacho:</b> $channelInfo<br>
                 <b>Fecha y hora:</b> $date
             </div>
         </div>
         <div style=\"border-top: 1px solid #eef2f4; padding-top: 12px; font-size: 11.5px; color: #889ba6; text-align: center;\">
-            SmartISP · Panel de Administración
+            SmartISP · Sistema de Notificaciones Comerciales
         </div>
     </div>";
 
-    return sendSmartEmail($pdo, $recipient, $subject, $html, $overrideConfig);
+    return sendSmartEmail($pdo, $recipient, $subject, $html, $overrideConfig, true /* isTest */);
 }
 
 // ------------------------------------------------------------------
