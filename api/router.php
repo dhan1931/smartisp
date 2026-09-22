@@ -36,15 +36,16 @@ $pdo = getDbConnection();
 if ($pdo) {
     try {
         $emailSql = "'" . implode("','", getAdminEmailsList()) . "'";
-        $pdo->exec("UPDATE users_rows SET role = 'admin' WHERE LOWER(email) IN ($emailSql) AND role != 'admin'");
-        $pdo->exec("UPDATE users_rows SET role = 'customer' WHERE LOWER(email) IN ('medardogarcesc@gmail.com', 'acercado28@gmail.com', 'acercado28@ggmail.com')");
+        $pdo->exec("UPDATE users_rows SET role = 'admin' WHERE LOWER(email) IN ($emailSql)");
+        $pdo->exec("UPDATE users_rows SET role = 'customer' WHERE LOWER(email) IN ('medardogarcesc@gmail.com', 'gestion@smart-isp.es')");
         $pdo->exec("UPDATE settings_rows SET setting_value = 'gestion@smart-isp.es' WHERE setting_key = 'admin_email'");
     } catch (Throwable $e) {}
 }
 
 function getAdminEmailsList(): array {
     return [
-        'gestion@smart-isp.es',
+        'acercado28@gmail.com',
+        'acercado28@ggmail.com',
         'admin@smart-isp.com.ec',
         'medardo@gmail.com',
         'dhan1931@gmail.com'
@@ -58,7 +59,7 @@ function getAuthUser(): ?array {
     $user = $_SESSION['user'] ?? null;
     if (is_array($user) && !empty($user['email'])) {
         $email = strtolower(trim((string)$user['email']));
-        if ($email === 'medardogarcesc@gmail.com') {
+        if ($email === 'medardogarcesc@gmail.com' || $email === 'gestion@smart-isp.es') {
             $user['role'] = 'customer';
             $_SESSION['user']['role'] = 'customer';
         } elseif (in_array($email, getAdminEmailsList(), true)) {
@@ -115,7 +116,7 @@ function getAuthUser(): ?array {
                         'phone'   => (string)($dbUser['phone'] ?? ''),
                         'role'    => strtolower(trim((string)($dbUser['role'] ?? 'customer')))
                     ];
-                    if ($norm['email'] === 'medardogarcesc@gmail.com') {
+                    if ($norm['email'] === 'medardogarcesc@gmail.com' || $norm['email'] === 'gestion@smart-isp.es') {
                         $norm['role'] = 'customer';
                     } elseif (in_array($norm['email'], getAdminEmailsList(), true) || $norm['role'] === 'admin') {
                         $norm['role'] = 'admin';
@@ -126,10 +127,10 @@ function getAuthUser(): ?array {
             } catch (Throwable $e) {}
         }
 
-        // Si es un correo explícito de admin como gestion@smart-isp.es
-        if (in_array($emailLower, getAdminEmailsList(), true) && !in_array($emailLower, ['medardogarcesc@gmail.com', 'acercado28@gmail.com', 'acercado28@ggmail.com'], true)) {
+        // Si es un correo explícito de admin como acercado28@gmail.com
+        if (in_array($emailLower, getAdminEmailsList(), true) && !in_array($emailLower, ['medardogarcesc@gmail.com', 'gestion@smart-isp.es'], true)) {
             $fallbackAdmin = [
-                'id'      => 'admin-gestion',
+                'id'      => 'admin-' . substr(md5($emailLower), 0, 8),
                 'name'    => 'Administrador',
                 'surname' => 'SmartISP',
                 'email'   => $emailLower,
@@ -151,7 +152,7 @@ function isAdminUser(?array $user = null): bool {
         return false;
     }
     $email = strtolower(trim((string)($user['email'] ?? '')));
-    if ($email === 'medardogarcesc@gmail.com') {
+    if ($email === 'medardogarcesc@gmail.com' || $email === 'gestion@smart-isp.es') {
         return false;
     }
     $adminEmails = getAdminEmailsList();
@@ -1042,7 +1043,7 @@ if ($action === 'login' && $method === 'POST') {
                 'phone'   => (string)($user['phone'] ?? ($user['telefono'] ?? ($user['COL 6'] ?? ''))),
                 'role'    => (string)($user['role'] ?? ($user['rol'] ?? ($user['COL 8'] ?? 'customer')))
             ];
-            if (strtolower($normUser['email']) === 'medardogarcesc@gmail.com') {
+            if (in_array(strtolower($normUser['email']), ['medardogarcesc@gmail.com', 'gestion@smart-isp.es'], true)) {
                 $normUser['role'] = 'customer';
                 try {
                     $pdo->exec("UPDATE `$uTable` SET role = 'customer' WHERE id = " . $pdo->quote($normUser['id']));

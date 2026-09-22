@@ -3104,13 +3104,14 @@
 
       // Asegurar permisos para configurar el catálogo
       const adminEmails = [
-        'gestion@smart-isp.es',
+        'acercado28@gmail.com',
+        'acercado28@ggmail.com',
         'admin@smart-isp.com.ec',
         'medardo@gmail.com',
         'dhan1931@gmail.com'
       ];
       const userEmail = (user && user.email) ? String(user.email).toLowerCase().trim() : '';
-      const isAdmin = Boolean(user && userEmail !== 'medardogarcesc@gmail.com' && userEmail !== 'acercado28@gmail.com' && userEmail !== 'acercado28@ggmail.com' && (user.role === 'admin' || adminEmails.includes(userEmail)));
+      const isAdmin = Boolean(user && userEmail !== 'medardogarcesc@gmail.com' && userEmail !== 'gestion@smart-isp.es' && (user.role === 'admin' || adminEmails.includes(userEmail)));
 
       if (user && !isAdmin) {
         alert('Acceso restringido: Esta cuenta no posee permisos de administrador.');

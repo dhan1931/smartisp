@@ -482,11 +482,11 @@
           <form id="notificationsForm" style="margin-top:16px;">
             <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;margin-bottom:14px;">
               <div>
-                <label style="font-weight:700;">1. Correo del Administrador (Para recibir compras y celular del cliente)
+                <label style="font-weight:700;">1. Correo de Destino de Notificaciones (Para recibir compras y datos del cliente)
                   <input name="admin_email" type="email" placeholder="gestion@smart-isp.es" value="gestion@smart-isp.es" required>
                 </label>
                 <small style="color:var(--muted);display:block;margin-top:4px;font-size:12px;line-height:1.45;">
-                  A este correo te llegará la alerta inmediata con el <strong>número de celular del cliente, botón directo de WhatsApp y llamada</strong> para coordinar la atención y el pago.
+                  A este correo (<code>gestion@smart-isp.es</code>) llegará la alerta inmediata con el <strong>número de celular del cliente, botón directo de WhatsApp y llamada</strong> para coordinar la atención y el pago. (Solo recepción de información, no otorga acceso de administrador).
                 </small>
               </div>
 
@@ -2103,7 +2103,8 @@
     };
 
     const adminEmails = [
-      'gestion@smart-isp.es',
+      'acercado28@gmail.com',
+      'acercado28@ggmail.com',
       'medardo@gmail.com',
       'admin@smart-isp.com.ec',
       'dhan1931@gmail.com'
@@ -2112,7 +2113,7 @@
     const isUserAdmin = u => {
       if (!u) return false;
       const email = String(u.email || '').toLowerCase().trim();
-      if (email === 'medardogarcesc@gmail.com' || email === 'acercado28@gmail.com' || email === 'acercado28@ggmail.com') return false;
+      if (email === 'medardogarcesc@gmail.com' || email === 'gestion@smart-isp.es') return false;
       return u.role === 'admin' || adminEmails.includes(email);
     };
 
