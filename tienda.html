@@ -3,6 +3,9 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+	<meta http-equiv="Pragma" content="no-cache">
+	<meta http-equiv="Expires" content="0">
 	<meta name="description" content="SmartISP: infraestructura de red y tecnología para proveedores de internet.">
 	<title>SmartISP | Tienda Online & Equipamiento TI</title>
 	<link rel="preconnect" href="https://fonts.googleapis.com">
@@ -655,6 +658,15 @@
 			}
 			.logo {
 				font-size: 22px !important;
+				max-width: 160px !important;
+				min-width: 0 !important;
+				overflow: hidden !important;
+			}
+			.logo img {
+				max-height: 38px !important;
+				max-width: 140px !important;
+				width: auto !important;
+				object-fit: contain !important;
 			}
 			.nav-actions {
 				margin-left: auto !important;
@@ -1568,6 +1580,8 @@
 			});
 		};
 
+		let visibleProductLimit = 36;
+
 		const render = () => {
 			const query = document.querySelector('#searchInput').value.toLowerCase();
 			const sort = document.querySelector('#sortSelect').value;
@@ -1625,12 +1639,35 @@
 				}
 			}
 
-			document.querySelector('#products').innerHTML = shown.length ? shown.map(product => {
+			const toDisplay = shown.slice(0, visibleProductLimit);
+			const hasMore = shown.length > toDisplay.length;
+
+			const productsHtml = toDisplay.map(product => {
 				const pImg = product.image || fallbackImage(product);
 				const fbImg = fallbackImage(product);
 				return `<article class="product" data-index="${products.indexOf(product)}" tabindex="0" role="group" aria-label="Ver especificaciones de ${product.name}"><div class="product-image">${product.tag ? `<span class="tag">${product.tag}</span>` : ''}<button class="heart" aria-label="Agregar a favoritos"><i data-lucide="heart" width="16"></i></button><img src="${pImg}" alt="${product.name}" loading="lazy" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></div><div class="product-info"><div class="product-brand">${product.brand}</div><h3>${product.name}</h3><div><span class="stars">★★★★★</span><span class="reviews">(${product.reviews})</span></div><div class="price-row"><div class="price-block"><span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span>${Number(product.price || 0) > 0 ? '<span class="price-tax-label">Precios incluye iva</span>' : ''}</div><button class="add" data-index="${products.indexOf(product)}" aria-label="Agregar ${product.name} al carrito"><i data-lucide="plus" width="18"></i></button></div></div></article>`;
-			}).join('') : '<div class="empty">No encontramos productos con esa búsqueda.</div>';
+			}).join('');
+
+			const loadMoreHtml = hasMore ? `
+				<div class="load-more-container" style="grid-column: 1 / -1; display:flex; justify-content:center; padding: 24px 0 16px;">
+					<button type="button" id="loadMoreProductsBtn" class="primary" style="padding: 12px 28px; border-radius: 99px; font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; box-shadow: 0 4px 14px rgba(17, 119, 201, 0.25);">
+						<span>Ver más productos (+${Math.min(36, shown.length - toDisplay.length)} de ${shown.length - toDisplay.length} restantes)</span>
+						<i data-lucide="arrow-down" width="16"></i>
+					</button>
+				</div>
+			` : '';
+
+			document.querySelector('#products').innerHTML = shown.length ? (productsHtml + loadMoreHtml) : '<div class="empty">No encontramos productos con esa búsqueda.</div>';
 			lucide.createIcons();
+
+			const loadMoreBtn = document.querySelector('#loadMoreProductsBtn');
+			if (loadMoreBtn) {
+				loadMoreBtn.addEventListener('click', () => {
+					visibleProductLimit += 36;
+					render();
+				});
+			}
+
 			document.querySelectorAll('.add').forEach(button => button.addEventListener('click', event => {
 				event.stopPropagation();
 				const prod = products[button.dataset.index];
@@ -1804,6 +1841,7 @@
 			}));
 		};
 		const setCategoryFilter = filter => {
+			visibleProductLimit = 36;
 			if (!filter || filter === 'all' || (typeof filter === 'string' && filter.toLowerCase() === 'all')) {
 				selectedFilter = 'all';
 			} else if (typeof filter === 'string') {
@@ -1825,21 +1863,18 @@
 				event.preventDefault();
 				event.stopPropagation();
 				const macroId = toggleBtn.dataset.toggleMacro;
-				const groupEl = document.querySelector(`.sidebar-group[data-macro-id="${macroId}"]`);
-				if (groupEl) {
-					groupEl.classList.toggle('is-expanded');
-					if (groupEl.classList.contains('is-expanded')) {
-						expandedGroups.add(macroId);
-					} else {
-						expandedGroups.delete(macroId);
-					}
+				const group = document.querySelector(`.sidebar-macro-group[data-macro-id="${macroId}"]`);
+				if (group) {
+					const isExp = group.classList.toggle('is-expanded');
+					if (isExp) expandedGroups.add(macroId);
+					else expandedGroups.delete(macroId);
 				}
 				return;
 			}
 
 			// Macro category click
-			const macroBtn = event.target.closest('[data-filter-action="macro"]');
-			if (macroBtn) {
+			const macroBtn = event.target.closest('[data-macro-id]');
+			if (macroBtn && !macroBtn.closest('.sidebar-subcategories')) {
 				event.preventDefault();
 				const macroId = macroBtn.dataset.macroId;
 				setCategoryFilter({ type: 'macro', id: macroId });
@@ -1851,7 +1886,7 @@
 			}
 
 			// Subcategory click
-			const subBtn = event.target.closest('[data-filter-action="sub"]');
+			const subBtn = event.target.closest('.sidebar-subcat-btn');
 			if (subBtn) {
 				event.preventDefault();
 				const macroId = subBtn.dataset.macroId;
@@ -1864,15 +1899,18 @@
 				return;
 			}
 
-			// Filter All click
-			const allBtn = event.target.closest('[data-filter-action="all"]');
-			if (allBtn) {
+			// "All products" click
+			if (event.target.closest('#sidebarAllBtn') || event.target.closest('[data-filter="all"]')) {
 				event.preventDefault();
 				setCategoryFilter('all');
+				const catEl = document.querySelector('#catalogo');
+				if (catEl && window.scrollY > catEl.offsetTop + 120) {
+					catEl.scrollIntoView({ behavior: 'smooth' });
+				}
 				return;
 			}
 
-			// Legacy data-filter fallback
+			// Legacy filters support if any remains
 			const legacyFilter = event.target.closest('[data-filter]');
 			if (legacyFilter && (legacyFilter.closest('#catalogo') || legacyFilter.closest('.store-sidebar'))) {
 				event.preventDefault();
@@ -1891,20 +1929,22 @@
 				return;
 			}
 		});
-		document.querySelector('#searchForm').addEventListener('submit', event => { event.preventDefault(); render(); document.querySelector('#catalogo').scrollIntoView({ behavior: 'smooth' }); }); document.querySelector('#searchInput').addEventListener('input', render); document.querySelector('#sortSelect').addEventListener('change', render);
+		document.querySelector('#searchForm').addEventListener('submit', event => { event.preventDefault(); visibleProductLimit = 36; render(); document.querySelector('#catalogo').scrollIntoView({ behavior: 'smooth' }); });
+		document.querySelector('#searchInput').addEventListener('input', () => { visibleProductLimit = 36; render(); });
+		document.querySelector('#sortSelect').addEventListener('change', () => { visibleProductLimit = 36; render(); });
 		document.querySelector('#openCart').addEventListener('click', () => document.querySelector('#drawer').classList.add('open')); document.querySelector('#closeCart').addEventListener('click', () => document.querySelector('#drawer').classList.remove('open')); document.querySelector('#drawer').addEventListener('click', event => { if (event.target.id === 'drawer') event.target.classList.remove('open'); });
 		document.querySelectorAll('[data-close-modal]').forEach(button => button.addEventListener('click', () => document.querySelector(`#${button.dataset.closeModal}`)?.classList.remove('open')));
 		document.querySelectorAll('.modal').forEach(modal => modal.addEventListener('click', event => { if (event.target === modal) modal.classList.remove('open'); }));
 		const applySiteLogo = content => {
 			if (!content) return;
-			const mode = content.logo_type || (content.logo_image ? 'image' : 'text');
-			const brand = content.brand_name || 'SmartISP';
-			const lightHeight = parseInt(content.logo_height, 10) || 38;
-			const darkHeight = parseInt(content.logo_dark_height, 10) || 42;
-			const darkInvert = content.logo_dark_invert === 'true' || content.logo_dark_invert === true;
-			const lightImg = content.logo_image || '';
-			const darkImg = content.logo_dark_image || lightImg;
-			const text = (content.logo_text || brand || 'smartisp').trim();
+			const mode = content.logo_type || content.landing_logo_type || ((content.logo_image || content.landing_logo_image) ? 'image' : 'text');
+			const brand = content.brand_name || content.landing_logo_text || 'SmartISP';
+			const lightHeight = parseInt(content.logo_height || content.landing_logo_height, 10) || 38;
+			const darkHeight = parseInt(content.logo_dark_height || content.landing_logo_dark_height, 10) || 42;
+			const darkInvert = (content.logo_dark_invert === 'true' || content.logo_dark_invert === true || content.landing_logo_dark_invert === 'true' || content.landing_logo_dark_invert === true);
+			const lightImg = content.logo_image || content.landing_logo_image || '';
+			const darkImg = content.logo_dark_image || content.landing_logo_dark_image || lightImg;
+			const text = (content.logo_text || content.landing_logo_text || brand || 'smartisp').trim();
 
 			// 1. Barra superior / Navbar claro (.nav .logo)
 			const navLogo = document.querySelector('.nav .logo');
@@ -1948,7 +1988,7 @@
 
 		const applyRemoteSite = async () => {
 			try {
-				const response = await fetch('/api/auth/catalog');
+				const response = await fetch('/api/auth/catalog?_t=' + Date.now(), { cache: 'no-store' });
 				if (!response.ok) return;
 				const remote = await response.json();
 				if (Array.isArray(remote.categories) && remote.categories.length) {
@@ -1976,8 +2016,25 @@
 				if (content.catalog_visible === 'false') document.querySelector('#catalogo').hidden = true;
 				if (content.hero_visible === 'false') document.querySelector('.hero').hidden = true;
 				if (content.benefits_visible === 'false') document.querySelector('.benefits').hidden = true;
+
+				// Aplicar diseño avanzado del hero directamente desde el mismo payload sin segunda petición
+				const hero = document.querySelector('.hero');
+				if (hero) {
+					const setText = (selector, key) => { if (content[key]) { const el = document.querySelector(selector); if (el) el.textContent = content[key]; } };
+					const hexToRgba = (hex, opacity) => { const value = String(hex || '').replace('#', ''); if (!/^[\da-f]{6}$/i.test(value)) return `rgba(228,245,243,${opacity})`; return `rgba(${parseInt(value.slice(0, 2), 16)},${parseInt(value.slice(2, 4), 16)},${parseInt(value.slice(4, 6), 16)},${opacity})`; };
+					setText('#heroEyebrow', 'hero_eyebrow');
+					setText('#heroTitle', 'hero_title');
+					setText('#heroText', 'hero_text');
+					setText('#heroButtonText', 'hero_button_text');
+					if (content.hero_button_link) { const btn = document.querySelector('#heroButton'); if (btn) btn.href = content.hero_button_link; }
+					if (content.hero_image_position) hero.style.setProperty('--hero-image-position', content.hero_image_position);
+					if (content.hero_height) hero.style.setProperty('--hero-height', `${Math.max(280, Math.min(700, Number(content.hero_height) || 370))}px`);
+					if (content.hero_content_width) hero.style.setProperty('--hero-content-width', `${Math.max(320, Math.min(900, Number(content.hero_content_width) || 510))}px`);
+					if (content.hero_text_color) hero.style.setProperty('--hero-text-color', content.hero_text_color);
+					if (content.hero_overlay_opacity || content.primary_color) hero.style.setProperty('--hero-overlay', hexToRgba(content.hero_overlay_color || '#e4f5f3', Math.max(0, Math.min(1, Number(content.hero_overlay_opacity || 96) / 100))));
+				}
 			} catch (error) {
-				console.warn('Contenido remoto no disponible.');
+				console.warn('Contenido remoto no disponible:', error);
 			}
 		};
 		// Soporte de parámetros de URL para filtrar categorías al cargar
@@ -2727,10 +2784,6 @@
 				}
 			})
 			.catch(() => {});
-	</script>
-	<script>
-		const applyHeroDesign = async () => { try { const response = await fetch('/api/auth/catalog'); if (!response.ok) return; const content = Object.fromEntries((await response.json()).content.map(item => [item.key, item.value])); const hero = document.querySelector('.hero'); const setText = (selector, key) => { if (content[key]) document.querySelector(selector).textContent = content[key]; }; const hexToRgba = (hex, opacity) => { const value = String(hex || '').replace('#', ''); if (!/^[\da-f]{6}$/i.test(value)) return `rgba(228,245,243,${opacity})`; return `rgba(${parseInt(value.slice(0, 2), 16)},${parseInt(value.slice(2, 4), 16)},${parseInt(value.slice(4, 6), 16)},${opacity})`; }; setText('#heroEyebrow', 'hero_eyebrow'); setText('#heroTitle', 'hero_title'); setText('#heroText', 'hero_text'); setText('#heroButtonText', 'hero_button_text'); if (content.hero_button_link) document.querySelector('#heroButton').href = content.hero_button_link; if (content.hero_image_position) hero.style.setProperty('--hero-image-position', content.hero_image_position); if (content.hero_height) hero.style.setProperty('--hero-height', `${Math.max(280, Math.min(700, Number(content.hero_height) || 370))}px`); if (content.hero_content_width) hero.style.setProperty('--hero-content-width', `${Math.max(320, Math.min(900, Number(content.hero_content_width) || 510))}px`); if (content.hero_text_color) hero.style.setProperty('--hero-text-color', content.hero_text_color); if (content.primary_color) { hero.style.setProperty('--blue', content.primary_color); document.documentElement.style.setProperty('--blue', content.primary_color); } if (content.hero_overlay_opacity || content.primary_color) hero.style.setProperty('--hero-overlay', hexToRgba(content.hero_overlay_color || '#e4f5f3', Math.max(0, Math.min(1, Number(content.hero_overlay_opacity || 96) / 100)))); } catch (error) { console.warn('Diseño del hero no disponible.'); } };
-		applyHeroDesign();
 	</script>
 
 </body>

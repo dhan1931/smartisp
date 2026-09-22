@@ -16,3 +16,13 @@ DirectoryIndex index.html index.htm index.php
     RewriteRule ^api/auth/(.*)$ api/router.php?action=$1 [QSA,L]
     RewriteRule ^api/(.*)$ api/router.php?action=$1 [QSA,L]
 </IfModule>
+
+<IfModule mod_headers.c>
+    # Prevenir que navegadores móviles (iOS / Android) guarden en caché páginas HTML desactualizadas
+    <FilesMatch "\.(html|htm)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
+</IfModule>
+

@@ -3,6 +3,9 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+	<meta http-equiv="Pragma" content="no-cache">
+	<meta http-equiv="Expires" content="0">
 	<meta name="description" content="SmartISP: Conoce nuestra empresa de infraestructura TI, redes de fibra óptica, servidores y telecomunicaciones. Contactos y tienda online oficial.">
 	<title>SmartISP | Presentación Corporativa & Infraestructura TI</title>
 	<link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1095,7 +1098,45 @@
 				display: none;
 			}
 			.navbar {
-				padding: 14px 5vw;
+				padding: 12px 4vw;
+				gap: 10px;
+			}
+			.landing-logo-container {
+				max-width: 170px;
+				min-width: 0;
+				flex-shrink: 1;
+				overflow: hidden;
+			}
+			.landing-logo-container img {
+				max-height: 40px !important;
+				max-width: 140px !important;
+				width: auto !important;
+				object-fit: contain !important;
+			}
+			.landing-badge-view {
+				display: none !important;
+			}
+			.nav-cta {
+				gap: 8px;
+				flex-shrink: 0;
+			}
+			.hero {
+				padding: 45px 5vw 55px;
+			}
+			.hero-container {
+				grid-template-columns: 1fr;
+				gap: 32px;
+			}
+			.hero-card {
+				width: 100% !important;
+				max-width: 100% !important;
+			}
+			h1, [data-landing-key="hero_title"] {
+				font-size: clamp(24px, 7vw, 38px) !important;
+				line-height: 1.2 !important;
+			}
+			h2, [data-landing-key$="_title"] {
+				font-size: clamp(20px, 6vw, 28px) !important;
 			}
 			.nav-menu {
 				display: none;
@@ -1116,26 +1157,15 @@
 			.mobile-menu-btn {
 				display: block;
 			}
-			.contact-grid {
-				grid-template-columns: 1fr;
+			.contact-grid, .form-grid-2, .mission-vision-cards, .about-visual, .solutions-grid, .advantages-grid, .stats-grid {
+				grid-template-columns: 1fr !important;
+				width: 100% !important;
+				max-width: 100% !important;
 			}
-			.form-grid-2 {
-				grid-template-columns: 1fr;
-			}
-			.mission-vision-cards {
-				grid-template-columns: 1fr;
-			}
-			.about-visual {
-				grid-template-columns: 1fr;
-			}
-			.solutions-grid {
-				grid-template-columns: 1fr;
-			}
-			.advantages-grid {
-				grid-template-columns: 1fr;
-			}
-			.stats-grid {
-				grid-template-columns: 1fr;
+			.solution-card, .advantage-card, .value-box, .stat-card, .mv-card {
+				width: 100% !important;
+				max-width: 100% !important;
+				box-sizing: border-box !important;
 			}
 			.footer-top {
 				grid-template-columns: 1fr;
@@ -1144,6 +1174,23 @@
 				flex-direction: column;
 				gap: 10px;
 				text-align: center;
+			}
+		}
+
+		@media (max-width: 520px) {
+			.btn-tienda {
+				padding: 8px 12px;
+				font-size: 13px;
+			}
+			.btn-tienda span {
+				display: none !important;
+			}
+			.landing-logo-container {
+				max-width: 145px;
+			}
+			.landing-logo-container img {
+				max-height: 36px !important;
+				max-width: 130px !important;
 			}
 		}
 
@@ -1754,22 +1801,22 @@
 		syncWhatsAppLink();
 		document.querySelector('.btn-whatsapp-direct')?.addEventListener('click', syncWhatsAppLink);
 
-		// Sincronizar contenido dinámico, cuadrículas y logotipo exclusivo de la página de presentación
+		// Sincronizar contenido dinámico, cuadrículas y logotipo con anti-caché y soporte móvil
 		(async () => {
 			try {
-				const res = await fetch('/api/auth/landing-content');
+				const res = await fetch('/api/auth/landing-content?_t=' + Date.now(), { cache: 'no-store' });
 				if (!res.ok) return;
 				const data = await res.json();
 				const content = Object.fromEntries((data.content || []).map(i => [i.key, i.value]));
 
-				// 1. Aplicar logotipo exclusivo de la presentación (no afecta la tienda)
-				const logoMode = content.landing_logo_type || (content.landing_logo_image ? 'image' : 'text');
-				const logoImg = content.landing_logo_image || '';
-				const logoHeight = parseInt(content.landing_logo_height, 10) || 38;
-				const logoDarkImg = content.landing_logo_dark_image || logoImg;
-				const logoDarkHeight = parseInt(content.landing_logo_dark_height, 10) || 42;
-				const logoDarkInvert = content.landing_logo_dark_invert === 'true' || content.landing_logo_dark_invert === true;
-				const logoText = (content.landing_logo_text || '').trim();
+				// 1. Aplicar logotipo con sincronización y fallback bidireccional
+				const logoMode = content.landing_logo_type || content.logo_type || ((content.landing_logo_image || content.logo_image) ? 'image' : 'text');
+				const logoImg = content.landing_logo_image || content.logo_image || '';
+				const logoHeight = parseInt(content.landing_logo_height || content.logo_height, 10) || 38;
+				const logoDarkImg = content.landing_logo_dark_image || content.logo_dark_image || logoImg;
+				const logoDarkHeight = parseInt(content.landing_logo_dark_height || content.logo_dark_height, 10) || 42;
+				const logoDarkInvert = (content.landing_logo_dark_invert === 'true' || content.landing_logo_dark_invert === true || content.logo_dark_invert === 'true' || content.logo_dark_invert === true);
+				const logoText = (content.landing_logo_text || content.logo_text || content.brand_name || '').trim();
 				const logoBadge = (content.landing_logo_badge || '').trim();
 
 				const navLogoWrap = document.querySelector('.navbar .landing-logo-container');
@@ -1778,10 +1825,10 @@
 				if (logoMode === 'image') {
 					if (navLogoWrap) {
 						if (logoImg) {
-							navLogoWrap.innerHTML = `<img src="${logoImg}" alt="Logo" style="height:${logoHeight}px; max-height:140px; width:auto; object-fit:contain; vertical-align:middle; display:inline-block;">${logoBadge ? `<span class="logo-badge" style="margin-left:8px;">${logoBadge}</span>` : ''}`;
+							navLogoWrap.innerHTML = `<img src="${logoImg}" alt="Logo" class="landing-nav-logo-img" style="height:${logoHeight}px; max-height:140px; width:auto; object-fit:contain; vertical-align:middle; display:inline-block;">${logoBadge ? `<span class="logo-badge landing-badge-view" style="margin-left:8px;">${logoBadge}</span>` : ''}`;
 						} else if (logoText) {
 							const mid = Math.ceil(logoText.length / 2);
-							navLogoWrap.innerHTML = `${logoText.slice(0, mid)}<b style="color:var(--blue, #087ea4);">${logoText.slice(mid)}</b><span style="color:#f5a524;">.</span> ${logoBadge ? `<span class="logo-badge" style="margin-left:8px;">${logoBadge}</span>` : ''}`;
+							navLogoWrap.innerHTML = `${logoText.slice(0, mid)}<b style="color:var(--blue, #087ea4);">${logoText.slice(mid)}</b><span style="color:#f5a524;">.</span> ${logoBadge ? `<span class="logo-badge landing-badge-view" style="margin-left:8px;">${logoBadge}</span>` : ''}`;
 						}
 					}
 					if (footLogoWrap) {
@@ -1799,7 +1846,7 @@
 					const part2 = logoText.slice(mid);
 					const formatted = `${part1}<b style="color:var(--blue, #087ea4);">${part2}</b><span style="color:#f5a524;">.</span>`;
 					if (navLogoWrap) {
-						navLogoWrap.innerHTML = `${formatted} ${logoBadge ? `<span class="logo-badge">${logoBadge}</span>` : ''}`;
+						navLogoWrap.innerHTML = `${formatted} ${logoBadge ? `<span class="logo-badge landing-badge-view">${logoBadge}</span>` : ''}`;
 					}
 					if (footLogoWrap) {
 						footLogoWrap.innerHTML = formatted;
@@ -1850,6 +1897,7 @@
 				cleanPublicGrid(document.body);
 
 				// 3. Aplicar estilos y textos dinámicos
+				const isDesktop = window.innerWidth > 768;
 				document.querySelectorAll('[data-landing-key]').forEach(el => {
 					const k = el.dataset.landingKey;
 					if (content[k] !== undefined && content[k] !== '') {
@@ -1868,8 +1916,8 @@
 							}
 						}
 					}
-					// Restaurar tamaño de fuente guardado si existe
-					if (content[k + '_size']) {
+					// Restaurar tamaño de fuente guardado si existe (solo en desktop para no romper pantallas de celular)
+					if (content[k + '_size'] && isDesktop) {
 						el.style.fontSize = content[k + '_size'];
 					}
 					if (content[k + '_color']) {
