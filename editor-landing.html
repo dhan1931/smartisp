@@ -756,6 +756,15 @@
 			flex-shrink: 0;
 		}
 
+		.advantage-icon svg,
+		.advantage-icon i {
+			width: 26px;
+			height: 26px;
+			stroke: #0d8471;
+			stroke-width: 2.2px;
+			display: block;
+		}
+
 		.advantage-card h4 {
 			font-size: 16.5px;
 			line-height: 1.3;
@@ -2971,12 +2980,13 @@
 			});
 
 			// Icon click to change
-			box.querySelectorAll('i, svg.lucide, .solution-icon-wrap, .advantage-icon').forEach(iconEl => {
+			box.querySelectorAll('i, svg.lucide, .solution-icon-wrap, .advantage-icon, .mv-card-icon, .contact-icon').forEach(iconEl => {
 				iconEl.setAttribute('title', 'Haz clic para cambiar el icono');
 				iconEl.addEventListener('click', e => {
 					e.stopPropagation();
 					e.preventDefault();
-					openIconPicker(box, iconEl);
+					const targetWrap = iconEl.closest('.advantage-icon, .solution-icon-wrap, .mv-card-icon, .contact-icon') || iconEl;
+					openIconPicker(targetWrap, iconEl);
 				});
 			});
 
@@ -3018,21 +3028,28 @@
 				const item = e.target.closest('.icon-picker-item');
 				if (!item || !activeIconTarget) return;
 				const iconName = item.dataset.iconName;
-				const curIcon = activeIconTarget.querySelector('i, svg.lucide') || activeIconTarget;
+				const isWrap = activeIconTarget.classList.contains('advantage-icon') || activeIconTarget.classList.contains('solution-icon-wrap') || activeIconTarget.classList.contains('mv-card-icon') || activeIconTarget.classList.contains('contact-icon');
+				const curIcon = isWrap ? (activeIconTarget.querySelector('i, svg.lucide') || activeIconTarget) : activeIconTarget;
 				const width = curIcon.getAttribute('width') || '28';
 				
 				const newI = document.createElement('i');
 				newI.dataset.lucide = iconName;
 				newI.setAttribute('width', width);
-				curIcon.replaceWith(newI);
+				
+				if (isWrap) {
+					activeIconTarget.innerHTML = '';
+					activeIconTarget.appendChild(newI);
+				} else {
+					curIcon.replaceWith(newI);
+				}
 				lucide.createIcons();
 				
-				const createdSvg = activeIconTarget.querySelector('svg.lucide') || newI;
+				const createdSvg = (isWrap ? activeIconTarget.querySelector('svg.lucide') : null) || newI;
 				createdSvg.setAttribute('title', 'Haz clic para cambiar el icono');
 				createdSvg.addEventListener('click', ev => {
 					ev.stopPropagation();
 					ev.preventDefault();
-					openIconPicker(activeIconTarget, createdSvg);
+					openIconPicker(isWrap ? activeIconTarget : createdSvg, createdSvg);
 				});
 
 				markDirty(true);
@@ -3670,6 +3687,27 @@
 
 				renderLandingLogo();
 
+				const healAdvantageIcons = (grid) => {
+					const targetGrid = grid || document.querySelector('.advantages-grid');
+					if (!targetGrid) return;
+					const defaultIcons = ['shield-check', 'truck', 'cpu', 'credit-card', 'shield-check'];
+					targetGrid.querySelectorAll('.advantage-card').forEach((card, idx) => {
+						let iconWrap = card.querySelector('.advantage-icon');
+						if (!iconWrap) {
+							iconWrap = document.createElement('div');
+							iconWrap.className = 'advantage-icon';
+							const firstHeader = card.querySelector('h1, h2, h3, h4, h5, h6');
+							if (firstHeader) firstHeader.before(iconWrap);
+							else card.prepend(iconWrap);
+						}
+						const hasIcon = iconWrap.querySelector('svg, i[data-lucide]');
+						if (!hasIcon) {
+							const iconName = defaultIcons[idx % defaultIcons.length] || 'shield-check';
+							iconWrap.innerHTML = `<i data-lucide="${iconName}" width="28"></i>`;
+						}
+					});
+				};
+
 				// Restore dynamic grids if saved
 				const restoreGrid = (selector, htmlContent, addBtnId, addBtnText) => {
 					if (!htmlContent) return;
@@ -3680,6 +3718,9 @@
 					container.querySelectorAll('.card-action-floating-bar, .add-card-slot, .card-action-btn').forEach(el => el.remove());
 					// Add the add button slot at the end
 					container.insertAdjacentHTML('beforeend', `<div class="add-card-slot"><button type="button" class="btn-add-grid-item" id="${addBtnId}"><i data-lucide="plus-circle" width="18"></i> <span>${addBtnText}</span></button></div>`);
+					if (selector === '.advantages-grid') {
+						healAdvantageIcons(container);
+					}
 					// Re-arm each card for editor interactivity
 					container.querySelectorAll('.solution-card, .advantage-card, .value-box, .stat-item').forEach(card => {
 						card.querySelectorAll('[data-landing-key], h1, h2, h3, h4, h5, h6, p, span, strong, a, li, .stat-number, .stat-label, .stat-desc').forEach(textEl => {
@@ -3703,6 +3744,7 @@
 				document.querySelectorAll('.selectable-box').forEach(bindBoxEvents);
 				document.querySelectorAll('.solution-card').forEach(bindSolutionCardFeatures);
 				bindEditableEvents();
+				healAdvantageIcons();
 				lucide.createIcons();
 				updateAdvGridCols();
 				window.addEventListener('resize', updateAdvGridCols);
