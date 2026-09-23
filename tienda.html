@@ -67,7 +67,7 @@
 		.section-heading h2 { font-size: 29px; color: var(--navy); }
 		.section-heading a { color: var(--blue); font-size: 13px; font-weight: 700; }
 		/* Barra lateral compacta y layout de tienda */
-		.store-layout { display: grid; grid-template-columns: 250px 1fr; gap: 26px; align-items: start; }
+		.store-layout { display: grid; grid-template-columns: 280px 1fr; gap: 26px; align-items: start; }
 		.store-sidebar { position: sticky; top: 80px; z-index: 5; }
 		.sidebar-card { background: #ffffff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 12px; box-shadow: 0 4px 16px rgba(16,44,61,.04); }
 		.sidebar-header { display: flex; align-items: center; justify-content: space-between; padding: 2px 4px 10px; border-bottom: 1px solid #edf4f6; margin-bottom: 8px; }
@@ -84,47 +84,50 @@
 		.sidebar-search-box input::placeholder { color: #8ea4b5; }
 
 		/* Contenedor con scroll vertical limpio */
-		.sidebar-categories { display: flex; flex-direction: column; gap: 3px; max-height: calc(85vh - 150px); overflow-y: auto; overflow-x: hidden; padding-right: 4px; box-sizing: border-box; }
+		.sidebar-categories { display: flex; flex-direction: column; gap: 3px; max-height: calc(85vh - 120px); overflow-y: auto; overflow-x: hidden; padding-right: 4px; box-sizing: border-box; }
 		.sidebar-categories::-webkit-scrollbar { width: 5px; }
 		.sidebar-categories::-webkit-scrollbar-thumb { background: #cde0ec; border-radius: 5px; }
 		.sidebar-categories::-webkit-scrollbar-thumb:hover { background: #abc9dc; }
 
 		/* Botones de categoría estándar y "Todo el catálogo" */
-		.sidebar-cat-btn { display: flex; align-items: center; width: 100%; min-height: 38px; flex-shrink: 0; padding: 8px 10px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--ink); font-size: 12.5px; font-weight: 500; font-family: inherit; text-align: left; cursor: pointer; transition: all .15s ease; gap: 9px; line-height: 1.35; box-sizing: border-box; }
+		.sidebar-cat-btn { display: flex; align-items: center; width: 100%; min-height: 38px; height: auto; flex-shrink: 0; padding: 8px 10px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--ink); font-size: 12.5px; font-weight: 500; font-family: inherit; text-align: left; cursor: pointer; transition: all .15s ease; gap: 9px; line-height: 1.35; box-sizing: border-box; }
 		.sidebar-cat-btn:hover { background: #f3f8fc; color: var(--blue); }
 		.sidebar-cat-btn.active { background: #e8f4fc; color: var(--blue); font-weight: 700; border-color: #bee0f3; }
 		.sidebar-cat-icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; color: var(--muted); flex-shrink: 0; }
 		.sidebar-cat-btn:hover .sidebar-cat-icon, .sidebar-cat-btn.active .sidebar-cat-icon { color: var(--blue); }
-		.sidebar-cat-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
-		.sidebar-cat-count { font-size: 11px; color: var(--muted); background: #eff4f7; padding: 2px 7px; border-radius: 10px; font-weight: 600; flex-shrink: 0; line-height: 1.2; transition: all .15s ease; }
+		.sidebar-cat-name { flex: 1; min-width: 0; line-height: 1.35; word-break: break-word; overflow-wrap: break-word; }
+		.sidebar-cat-count { font-size: 11px; color: var(--muted); background: #eff4f7; padding: 2px 7px; border-radius: 10px; font-weight: 600; flex-shrink: 0; line-height: 1.2; margin-left: auto; transition: all .15s ease; }
 		.sidebar-cat-btn:hover .sidebar-cat-count { background: #e0eff8; color: var(--blue); }
 		.sidebar-cat-btn.active .sidebar-cat-count { background: var(--blue); color: #ffffff; }
 
 		/* Grupos y acordeones de macro-categorías */
 		.sidebar-group { display: flex; flex-direction: column; width: 100%; flex-shrink: 0; border-radius: 8px; margin-bottom: 2px; box-sizing: border-box; }
-		.sidebar-group-header { display: flex; align-items: center; width: 100%; min-height: 38px; flex-shrink: 0; border-radius: 8px; background: transparent; transition: all .15s ease; border: 1px solid transparent; box-sizing: border-box; }
+		.sidebar-group-header { display: flex; align-items: center; width: 100%; min-height: 38px; height: auto; flex-shrink: 0; border-radius: 8px; background: transparent; transition: all .15s ease; border: 1px solid transparent; box-sizing: border-box; }
 		.sidebar-group-header:hover { background: #f3f8fc; }
 		.sidebar-group.is-active-group > .sidebar-group-header { background: #e8f4fc; border-color: #bee0f3; }
-		.sidebar-group-btn { flex: 1; min-width: 0; display: flex; align-items: center; gap: 9px; padding: 8px 4px 8px 10px; border: 0; background: transparent; color: var(--ink); font-size: 12.5px; font-weight: 500; font-family: inherit; text-align: left; cursor: pointer; line-height: 1.35; box-sizing: border-box; }
+		.sidebar-group.has-active-child > .sidebar-group-header { background: #f0f7fc; border-color: #d8eaf6; }
+		.sidebar-group.has-active-child .sidebar-group-btn { color: var(--blue); font-weight: 600; }
+		.sidebar-group.has-active-child .sidebar-cat-icon { color: var(--blue); }
+		.sidebar-group-btn { flex: 1; min-width: 0; display: flex; align-items: center; gap: 9px; padding: 8px 6px 8px 10px; min-height: 38px; height: auto; border: 0; background: transparent; color: var(--ink); font-size: 12.5px; font-weight: 500; font-family: inherit; text-align: left; cursor: pointer; line-height: 1.35; box-sizing: border-box; }
 		.sidebar-group-btn:hover { color: var(--blue); }
 		.sidebar-group.is-active-group .sidebar-group-btn { color: var(--blue); font-weight: 700; }
 		.sidebar-group.is-active-group .sidebar-cat-icon { color: var(--blue); }
-		.sidebar-group-toggle { border: 0; background: transparent; color: var(--muted); width: 32px; height: 34px; padding: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; transition: color .15s ease, background .15s ease; flex-shrink: 0; }
+		.sidebar-group-toggle { border: 0; background: transparent; color: var(--muted); width: 34px; min-height: 38px; height: 100%; padding: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; transition: color .15s ease, background .15s ease; flex-shrink: 0; }
 		.sidebar-group-toggle:hover { color: var(--navy); background: rgba(17,119,201,.08); }
 		.sidebar-group-toggle i, .sidebar-group-toggle svg { transition: transform .22s cubic-bezier(0.16, 1, 0.3, 1); }
 		.sidebar-group.is-expanded .sidebar-group-toggle i, .sidebar-group.is-expanded .sidebar-group-toggle svg { transform: rotate(180deg); }
 
 		/* Lista de subcategorías anidadas */
-		.sidebar-subcat-list { display: none; flex-direction: column; gap: 2px; padding: 4px 2px 4px 12px; margin: 2px 0 4px 12px; border-left: 2px solid #e1edf5; box-sizing: border-box; }
+		.sidebar-subcat-list { display: none; flex-direction: column; gap: 3px; padding: 4px 2px 6px 10px; margin: 2px 0 6px 8px; border-left: 2px solid #d9e9f2; box-sizing: border-box; }
 		.sidebar-group.is-expanded .sidebar-subcat-list { display: flex; }
-		.sidebar-subcat-btn { display: flex; align-items: center; width: 100%; min-height: 30px; flex-shrink: 0; padding: 5px 8px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: #435b71; font-size: 12px; font-family: inherit; text-align: left; cursor: pointer; transition: all .15s ease; gap: 7px; line-height: 1.3; box-sizing: border-box; }
+		.sidebar-subcat-btn { display: flex; align-items: center; width: 100%; min-height: 34px; height: auto; flex-shrink: 0; padding: 6px 9px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: #435b71; font-size: 12px; font-family: inherit; text-align: left; cursor: pointer; transition: all .15s ease; gap: 8px; line-height: 1.35; box-sizing: border-box; }
 		.sidebar-subcat-btn:hover { background: #f0f7fb; color: var(--blue); }
 		.sidebar-subcat-btn.active { background: #e0effa; color: var(--blue); font-weight: 700; border-color: #bee0f3; }
 		.sidebar-subcat-bullet { width: 5px; height: 5px; border-radius: 50%; background: #9bb3c3; flex-shrink: 0; transition: background .15s ease, transform .15s ease; }
 		.sidebar-subcat-btn:hover .sidebar-subcat-bullet { background: var(--blue); }
 		.sidebar-subcat-btn.active .sidebar-subcat-bullet { background: var(--blue); transform: scale(1.3); }
-		.sidebar-subcat-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
-		.sidebar-subcat-count { font-size: 10.5px; color: var(--muted); background: #eef3f6; padding: 1px 6px; border-radius: 8px; font-weight: 600; flex-shrink: 0; line-height: 1.2; }
+		.sidebar-subcat-name { flex: 1; min-width: 0; line-height: 1.35; word-break: break-word; overflow-wrap: break-word; }
+		.sidebar-subcat-count { font-size: 10.5px; color: var(--muted); background: #eef3f6; padding: 1px 6px; border-radius: 8px; font-weight: 600; flex-shrink: 0; line-height: 1.2; margin-left: auto; }
 		.sidebar-subcat-btn:hover .sidebar-subcat-count { background: #dcebf5; color: var(--blue); }
 		.sidebar-subcat-btn.active .sidebar-subcat-count { background: var(--blue); color: #ffffff; }
 
@@ -141,6 +144,8 @@
 		body.dark-mode .sidebar-cat-btn, body.dark-mode .sidebar-group-btn { color: var(--ink); }
 		body.dark-mode .sidebar-cat-btn:hover, body.dark-mode .sidebar-group-header:hover { background: rgba(255,255,255,.05); color: #5dade2; }
 		body.dark-mode .sidebar-cat-btn.active, body.dark-mode .sidebar-group.is-active-group > .sidebar-group-header { background: rgba(17,119,201,.22); border-color: rgba(17,119,201,.4); color: #5dade2; }
+		body.dark-mode .sidebar-group.has-active-child > .sidebar-group-header { background: rgba(17,119,201,.14); border-color: rgba(17,119,201,.3); }
+		body.dark-mode .sidebar-group.has-active-child .sidebar-group-btn { color: #5dade2; }
 		body.dark-mode .sidebar-group-toggle { color: var(--muted); }
 		body.dark-mode .sidebar-group-toggle:hover { color: var(--ink); background: rgba(255,255,255,.08); }
 		body.dark-mode .sidebar-cat-count { background: rgba(255,255,255,.08); color: var(--muted); }
@@ -1303,82 +1308,81 @@
 		/* Relación de Categorías Afines y Macro-Categorías Jerárquicas */
 		let MACRO_CATEGORIES = [
 			{
-				id: 'redes',
-				name: 'Redes y Telecomunicaciones',
-				icon: 'network',
-				keywords: ['red', 'redes', 'router', 'switch', 'comunicaciones', 'access point', 'antena', 'mikrotik', 'ubiquiti', 'cisco', 'olt', 'onu', 'gpon', 'wireless', 'wi-fi', 'wifi', 'networking', 'radioenlace', 'mimo']
-			},
-			{
-				id: 'fibra-cableado',
-				name: 'Fibra Óptica y Cableado',
-				icon: 'cable',
-				keywords: ['fibra optica', 'fibra', 'cable', 'cableado', 'utp', 'patch cord', 'patch panel', 'conector', 'odf', 'sfp', 'transceiver', 'manga', 'splitter', 'bobina', 'drop']
-			},
-			{
-				id: 'servidores',
-				name: 'Servidores e Infraestructura',
-				icon: 'server',
-				keywords: ['servidor', 'servidores', 'server', 'rack', 'racks', 'gabinete', 'gabinetes', 'datacenter', 'infraestructura', 'pdu', 'nas', 'san', 'almacenamiento en red']
-			},
-			{
 				id: 'computacion',
-				name: 'Computación y Portátiles',
+				name: 'Computación y Equipos',
 				icon: 'laptop',
-				keywords: ['tecnologia portatil', 'computadores', 'computador', 'notebooks', 'notebook', 'laptops', 'laptop', 'pc', 'portatil', 'portatiles', 'all-in-one', 'workstation', 'computacion']
-			},
-			{
-				id: 'monitores',
-				name: 'Monitores y Proyección',
-				icon: 'monitor',
-				keywords: ['pantalla', 'pantallas', 'display', 'displays', 'proyectores', 'proyector', 'monitores', 'monitor']
+				subcategories: ['Computadores Portátiles', 'Computadores de Escritorio', 'Tabletas Digitales'],
+				keywords: ['computador', 'computadores', 'notebook', 'notebooks', 'laptop', 'laptops', 'portatil', 'portatiles', 'desktop', 'escritorio', 'tableta', 'tabletas', 'tablet', 'all-in-one', 'workstation']
 			},
 			{
 				id: 'componentes',
 				name: 'Componentes y Almacenamiento',
 				icon: 'hard-drive',
-				keywords: ['componentes informaticos', 'componentes', 'almacenamiento', 'memorias', 'memoria', 'ram', 'disco', 'discos', 'ssd', 'hdd', 'nvme', 'procesador', 'procesadores', 'placa madre', 'tarjeta madre', 'tarjeta de video', 'gpu', 'tarjetas']
+				subcategories: ['Componentes Informáticos', 'Memorias RAM', 'Almacenamiento'],
+				keywords: ['componente', 'componentes', 'disco', 'discos', 'ssd', 'hdd', 'nvme', 'ram', 'memoria', 'memorias', 'procesador', 'procesadores', 'tarjeta madre', 'placa', 'motherboard', 'gpu', 'almacenamiento']
+			},
+			{
+				id: 'redes',
+				name: 'Redes y Conectividad',
+				icon: 'network',
+				subcategories: ['Redes y Comunicaciones', 'Cables y Adaptadores'],
+				keywords: ['red', 'redes', 'comunicaciones', 'router', 'switch', 'cables', 'cable', 'adaptador', 'adaptadores', 'wifi', 'access point', 'fibra', 'patch cord', 'conector', 'mikrotik', 'ubiquiti']
+			},
+			{
+				id: 'monitores',
+				name: 'Monitores y Pantallas',
+				icon: 'monitor',
+				subcategories: ['Monitores', 'Televisores y Pantallas'],
+				keywords: ['monitor', 'monitores', 'pantalla', 'pantallas', 'tv', 'televisor', 'televisores', 'display', 'proyector', 'proyectores']
 			},
 			{
 				id: 'perifericos',
 				name: 'Periféricos y Accesorios',
-				icon: 'headphones',
-				keywords: ['accesorios para computadores', 'audio y video', 'perifericos', 'periferico', 'accesorios', 'accesorio', 'teclados', 'teclado', 'mouse', 'raton', 'auriculares', 'auricular', 'diademas', 'diadema', 'parlantes', 'parlante', 'webcam', 'camara web', 'hub', 'adaptadores', 'adaptador', 'maletines', 'muebles']
-			},
-			{
-				id: 'seguridad',
-				name: 'Seguridad y Videovigilancia',
-				icon: 'shield-check',
-				keywords: ['vigilancia de video', 'camaras videocamaras', 'control de acceso', 'seguridad', 'vigilancia', 'camaras', 'cctv', 'nvr', 'dvr', 'intrusion', 'alarmas', 'alarma', 'biometrico', 'sensores']
-			},
-			{
-				id: 'energia',
-				name: 'Energía y Protección Eléctrica',
-				icon: 'zap',
-				keywords: ['proteccion de poder', 'energia', 'ups', 'baterias', 'bateria', 'fuentes', 'fuente', 'reguladores', 'regulador', 'inversores', 'inversor', 'poe', 'banco de baterias', 'solar']
+				icon: 'mouse',
+				subcategories: ['Periféricos de Entrada', 'Audio y Auriculares', 'Accesorios Generales', 'Mochilas y Soportes'],
+				keywords: ['periferico', 'perifericos', 'teclado', 'teclados', 'mouse', 'raton', 'audio', 'auricular', 'auriculares', 'audifono', 'audifonos', 'parlante', 'parlantes', 'mochila', 'mochilas', 'soporte', 'soportes', 'accesorio', 'accesorios', 'funda', 'maletin', 'webcam']
 			},
 			{
 				id: 'impresion',
 				name: 'Impresión y Puntos de Venta',
 				icon: 'printer',
-				keywords: ['impresoras y escaneres', 'consumibles y media', 'puntos de venta', 'impresoras', 'impresora', 'escaneres', 'escaner', 'toner', 'cartuchos', 'pos', 'codigo de barras']
+				subcategories: ['Impresoras y Multifuncionales', 'Consumibles de Impresión', 'Puntos de Venta'],
+				keywords: ['impresora', 'impresoras', 'multifuncional', 'multifuncionales', 'toner', 'cartucho', 'cartuchos', 'tinta', 'consumible', 'consumibles', 'pos', 'punto de venta', 'puntos de venta', 'codigo de barras', 'escaner', 'escaneres']
+			},
+			{
+				id: 'seguridad',
+				name: 'Seguridad y Vigilancia',
+				icon: 'shield-check',
+				subcategories: ['Seguridad y Vigilancia'],
+				keywords: ['seguridad', 'vigilancia', 'camara', 'camaras', 'cctv', 'dvr', 'nvr', 'alarma', 'alarmas', 'biometrico', 'sensor', 'sensores', 'control de acceso']
+			},
+			{
+				id: 'energia',
+				name: 'Energía y Climatización',
+				icon: 'zap',
+				subcategories: ['Protección de Energía', 'Climatización y Ventilación'],
+				keywords: ['energia', 'ups', 'bateria', 'baterias', 'regulador', 'reguladores', 'inversor', 'inversores', 'proteccion de poder', 'clima', 'climatizacion', 'ventilacion', 'ventilador', 'aire']
 			},
 			{
 				id: 'telefonia',
 				name: 'Telefonía y Móviles',
-				icon: 'phone-call',
-				keywords: ['telefonia', 'celulares', 'celular', 'voip', 'telefonos', 'telefono', 'central telefonica', 'pbx', 'smartphones', 'smartphone']
+				icon: 'smartphone',
+				subcategories: ['Celulares y Smartphones', 'Dispositivos Vestibles'],
+				keywords: ['celular', 'celulares', 'smartphone', 'smartphones', 'telefono', 'telefonos', 'reloj', 'smartwatch', 'vestible', 'vestibles', 'wearable']
+			},
+			{
+				id: 'gaming',
+				name: 'Gaming y Hogar',
+				icon: 'gamepad-2',
+				subcategories: ['Gaming y Videojuegos', 'Consolas de Videojuegos', 'Sillas Gaming', 'Audio y Sonido para Hogar', 'Electrodomésticos y Línea Blanca'],
+				keywords: ['gaming', 'videojuegos', 'videojuego', 'consola', 'consolas', 'playstation', 'xbox', 'nintendo', 'silla gaming', 'sillas', 'linea blanca', 'electrodomesticos', 'electrodomestico', 'hogar']
 			},
 			{
 				id: 'software',
 				name: 'Software y Licencias',
 				icon: 'file-code',
-				keywords: ['descargas digitales esd', 'descargas digitales', 'software', 'licencias', 'licencia', 'antivirus', 'sistema operativo']
-			},
-			{
-				id: 'otros',
-				name: 'Otras Soluciones IT',
-				icon: 'package',
-				keywords: []
+				subcategories: ['Software y Licencias'],
+				keywords: ['software', 'licencia', 'licencias', 'antivirus', 'sistema operativo', 'office', 'windows']
 			}
 		];
 
@@ -1419,7 +1423,7 @@
 
 		const getMacroCategory = categoryName => {
 			const norm = normalizeCategoryText(categoryName);
-			if (!norm) return MACRO_CATEGORIES.find(m => m.id === 'otros') || MACRO_CATEGORIES[0];
+			if (!norm) return MACRO_CATEGORIES[0];
 
 			// 0. Coincidencia directa con id o nombre de macro-categoría
 			for (const macro of MACRO_CATEGORIES) {
@@ -1464,7 +1468,7 @@
 				}
 			}
 
-			return MACRO_CATEGORIES.find(m => m.id === 'otros') || MACRO_CATEGORIES[0];
+			return { id: 'otros', name: 'Otras Soluciones IT', icon: 'package', subcategories: [] };
 		};
 
 		const productMatchesFilter = (product, filter) => {
@@ -1472,17 +1476,22 @@
 			const prodCat = String(product.category || '').trim();
 			const prodSub = String(product.subcategory || '').trim();
 			if (filter.type === 'macro') {
-				const macro = getMacroCategory(prodCat);
-				return (macro && macro.id === filter.id) || (prodCat.toLowerCase() === filter.id.toLowerCase());
+				const macro = getMacroCategory(prodCat) || getMacroCategory(prodSub);
+				return macro && (macro.id === filter.id || normalizeCategoryText(macro.name) === normalizeCategoryText(filter.id));
 			}
 			if (filter.type === 'sub') {
-				const target = String(filter.category || '').toLowerCase();
-				return (prodSub && prodSub.toLowerCase() === target) || (prodCat.toLowerCase() === target);
+				const target = normalizeCategoryText(filter.category);
+				return normalizeCategoryText(prodCat) === target || normalizeCategoryText(prodSub) === target;
 			}
 			if (typeof filter === 'string') {
 				if (filter.toLowerCase() === 'all') return true;
-				const target = filter.toLowerCase();
-				return prodCat.toLowerCase() === target || (prodSub && prodSub.toLowerCase() === target);
+				const target = normalizeCategoryText(filter);
+				const macro = getMacroCategory(filter);
+				if (macro && (macro.id === target || normalizeCategoryText(macro.name) === target)) {
+					const prodMacro = getMacroCategory(prodCat);
+					return prodMacro && prodMacro.id === macro.id;
+				}
+				return normalizeCategoryText(prodCat) === target || normalizeCategoryText(prodSub) === target;
 			}
 			return true;
 		};
@@ -1490,19 +1499,28 @@
 		const buildCategoryTree = () => {
 			const usedMacros = new Map();
 
+			// Inicializar en el orden de las macrocategorías predefinidas
+			MACRO_CATEGORIES.forEach(m => {
+				usedMacros.set(m.id, {
+					id: m.id,
+					name: m.name,
+					icon: m.icon,
+					totalCount: 0,
+					subcategoriesMap: new Map()
+				});
+			});
+
 			products.forEach(p => {
 				const cat = String(p.category || 'Otros').trim();
 				const sub = String(p.subcategory || '').trim();
-				const macro = getMacroCategory(cat);
+				const macro = getMacroCategory(cat) || getMacroCategory(sub);
 				const macroId = macro ? macro.id : 'otros';
-				const macroName = macro ? macro.name : formatCategoryName(cat);
-				const macroIcon = (macro && macro.icon && macro.icon !== 'package') ? macro.icon : getCategoryIcon(macroName, macroId);
 
 				if (!usedMacros.has(macroId)) {
 					usedMacros.set(macroId, {
 						id: macroId,
-						name: macroName,
-						icon: macroIcon,
+						name: macro ? macro.name : 'Otras Soluciones IT',
+						icon: macro ? macro.icon : 'package',
 						totalCount: 0,
 						subcategoriesMap: new Map()
 					});
@@ -1510,12 +1528,9 @@
 				const group = usedMacros.get(macroId);
 				group.totalCount++;
 
-				// Solo registrar subcategoría si es diferente al nombre del grupo macro
-				if (sub && normalizeCategoryText(sub) !== normalizeCategoryText(group.name)) {
-					group.subcategoriesMap.set(sub, (group.subcategoriesMap.get(sub) || 0) + 1);
-				} else if (cat && normalizeCategoryText(cat) !== normalizeCategoryText(group.name)) {
-					group.subcategoriesMap.set(cat, (group.subcategoriesMap.get(cat) || 0) + 1);
-				}
+				// La subcategoría a mostrar es la categoría específica de producto en el catálogo
+				const subName = cat || sub || 'General';
+				group.subcategoriesMap.set(subName, (group.subcategoriesMap.get(subName) || 0) + 1);
 			});
 
 			const groups = [];
@@ -1526,30 +1541,30 @@
 						rawName,
 						displayName: formatCategoryName(rawName),
 						count
-					})).sort((a, b) => a.displayName.localeCompare(b.displayName, 'es'));
+					})).sort((a, b) => b.count - a.count || a.displayName.localeCompare(b.displayName, 'es'));
 
 					groups.push({
 						id: g.id,
 						name: g.name,
-						icon: g.icon || getCategoryIcon(g.name, g.id),
+						icon: g.icon,
 						totalCount: g.totalCount,
 						subcategories
 					});
 				}
 			});
 
-			// Agregar grupos de productos huérfanos que no estén en MACRO_CATEGORIES
+			// Agregar posibles huérfanos que hayan caído fuera de MACRO_CATEGORIES
 			usedMacros.forEach((g, key) => {
 				if (!MACRO_CATEGORIES.some(m => m.id === key) && g.totalCount > 0) {
 					const subcategories = Array.from(g.subcategoriesMap.entries()).map(([rawName, count]) => ({
 						rawName,
 						displayName: formatCategoryName(rawName),
 						count
-					})).sort((a, b) => a.displayName.localeCompare(b.displayName, 'es'));
+					})).sort((a, b) => b.count - a.count || a.displayName.localeCompare(b.displayName, 'es'));
 					groups.push({
 						id: g.id,
 						name: g.name,
-						icon: g.icon || getCategoryIcon(g.name, g.id),
+						icon: g.icon || 'package',
 						totalCount: g.totalCount,
 						subcategories
 					});
@@ -1578,48 +1593,35 @@
 				const isMacroActive = !isAllActive && selectedFilter.type === 'macro' && String(selectedFilter.id).toLowerCase() === String(group.id).toLowerCase();
 				const hasActiveChild = !isAllActive && selectedFilter.type === 'sub' && String(selectedFilter.macroId).toLowerCase() === String(group.id).toLowerCase();
 				const isExpanded = expandedGroups.has(group.id) || isMacroActive || hasActiveChild;
-				const hasSubcats = Array.isArray(group.subcategories) && group.subcategories.length > 0;
 				const iconName = group.icon || getCategoryIcon(group.name, group.id);
 
-				if (hasSubcats) {
-					html += `
-						<div class="sidebar-group ${isExpanded ? 'is-expanded' : ''} ${isMacroActive ? 'is-active-group' : ''} ${hasActiveChild ? 'has-active-child' : ''}" data-macro-id="${group.id}">
-							<div class="sidebar-group-header">
-								<button type="button" class="sidebar-group-btn" data-filter-action="macro" data-macro-id="${group.id}" title="Filtrar por ${group.name}">
-									<span class="sidebar-cat-icon"><i data-lucide="${iconName}" width="16" height="16"></i></span>
-									<span class="sidebar-cat-name">${group.name}</span>
-									<span class="sidebar-cat-count">${group.totalCount}</span>
-								</button>
-								<button type="button" class="sidebar-group-toggle" data-toggle-macro="${group.id}" aria-label="Expandir o contraer ${group.name}" title="Expandir/Contraer">
-									<i data-lucide="chevron-down" width="15" height="15"></i>
-								</button>
-							</div>
-							<div class="sidebar-subcat-list" id="subcat-list-${group.id}">
-								${group.subcategories.map(sub => {
-									const isSubActive = !isAllActive && selectedFilter.type === 'sub' &&
-										String(selectedFilter.category || '').toLowerCase() === String(sub.rawName || '').toLowerCase();
-									return `
-										<button type="button" class="sidebar-subcat-btn ${isSubActive ? 'active' : ''}" data-filter-action="sub" data-macro-id="${group.id}" data-category="${sub.rawName}" title="Filtrar por ${sub.displayName}">
-											<span class="sidebar-subcat-bullet"></span>
-											<span class="sidebar-subcat-name">${sub.displayName}</span>
-											<span class="sidebar-subcat-count">${sub.count}</span>
-										</button>
-									`;
-								}).join('')}
-							</div>
-						</div>
-					`;
-				} else {
-					html += `
-						<div class="sidebar-group ${isMacroActive ? 'is-active-group' : ''}" data-macro-id="${group.id}">
-							<button type="button" class="sidebar-cat-btn ${isMacroActive ? 'active' : ''}" data-filter-action="macro" data-macro-id="${group.id}" title="Filtrar por ${group.name}">
+				html += `
+					<div class="sidebar-group ${isExpanded ? 'is-expanded' : ''} ${isMacroActive ? 'is-active-group' : ''} ${hasActiveChild ? 'has-active-child' : ''}" data-macro-id="${group.id}">
+						<div class="sidebar-group-header">
+							<button type="button" class="sidebar-group-btn" data-filter-action="macro" data-macro-id="${group.id}" title="Ver todos los productos de ${group.name}">
 								<span class="sidebar-cat-icon"><i data-lucide="${iconName}" width="16" height="16"></i></span>
 								<span class="sidebar-cat-name">${group.name}</span>
 								<span class="sidebar-cat-count">${group.totalCount}</span>
 							</button>
+							<button type="button" class="sidebar-group-toggle" data-toggle-macro="${group.id}" aria-label="Expandir o contraer subcategorías de ${group.name}" title="Expandir/Contraer">
+								<i data-lucide="chevron-down" width="15" height="15"></i>
+							</button>
 						</div>
-					`;
-				}
+						<div class="sidebar-subcat-list" id="subcat-list-${group.id}">
+							${group.subcategories.map(sub => {
+								const isSubActive = !isAllActive && selectedFilter.type === 'sub' &&
+									normalizeCategoryText(selectedFilter.category) === normalizeCategoryText(sub.rawName);
+								return `
+									<button type="button" class="sidebar-subcat-btn ${isSubActive ? 'active' : ''}" data-filter-action="sub" data-macro-id="${group.id}" data-category="${sub.rawName}" title="Filtrar por ${sub.displayName}">
+										<span class="sidebar-subcat-bullet"></span>
+										<span class="sidebar-subcat-name">${sub.displayName}</span>
+										<span class="sidebar-subcat-count">${sub.count}</span>
+									</button>
+								`;
+							}).join('')}
+						</div>
+					</div>
+				`;
 			});
 
 			container.innerHTML = html;
@@ -1641,8 +1643,8 @@
 				group.classList.toggle('is-active-group', isMacroActive);
 				group.classList.toggle('has-active-child', hasActiveChild);
 
-				const directBtn = group.querySelector(':scope > .sidebar-cat-btn');
-				if (directBtn) directBtn.classList.toggle('active', isMacroActive);
+				const groupBtn = group.querySelector('.sidebar-group-btn') || group.querySelector(':scope > .sidebar-cat-btn');
+				if (groupBtn) groupBtn.classList.toggle('active', isMacroActive);
 
 				if (isMacroActive || hasActiveChild) {
 					group.classList.add('is-expanded');
@@ -1652,7 +1654,7 @@
 
 			document.querySelectorAll('.sidebar-subcat-btn').forEach(btn => {
 				const isSubActive = !isAllActive && selectedFilter.type === 'sub' &&
-					String(btn.dataset.category || '').toLowerCase() === String(selectedFilter.category || '').toLowerCase();
+					normalizeCategoryText(btn.dataset.category || '') === normalizeCategoryText(selectedFilter.category || '');
 				btn.classList.toggle('active', isSubActive);
 			});
 		};
@@ -1987,7 +1989,18 @@
 			if (macroBtn) {
 				event.preventDefault();
 				const macroId = macroBtn.dataset.macroId;
-				setCategoryFilter({ type: 'macro', id: macroId });
+				const groupEl = document.querySelector(`.sidebar-group[data-macro-id="${macroId}"]`);
+				if (selectedFilter && selectedFilter.type === 'macro' && String(selectedFilter.id).toLowerCase() === String(macroId).toLowerCase()) {
+					if (groupEl) {
+						const isExp = groupEl.classList.toggle('is-expanded');
+						if (isExp) expandedGroups.add(macroId);
+						else expandedGroups.delete(macroId);
+					}
+				} else {
+					expandedGroups.add(macroId);
+					if (groupEl) groupEl.classList.add('is-expanded');
+					setCategoryFilter({ type: 'macro', id: macroId });
+				}
 				const catEl = document.querySelector('#catalogo');
 				if (catEl && window.scrollY > catEl.offsetTop + 120) {
 					catEl.scrollIntoView({ behavior: 'smooth' });
@@ -2015,7 +2028,11 @@
 				const q = String(e.target.value || '').toLowerCase().trim();
 				document.querySelectorAll('.sidebar-group').forEach(group => {
 					const text = group.textContent.toLowerCase();
-					group.style.display = (!q || text.includes(q)) ? '' : 'none';
+					const matches = !q || text.includes(q);
+					group.style.display = matches ? '' : 'none';
+					if (q && matches) {
+						group.classList.add('is-expanded');
+					}
 				});
 				const allBtn = document.querySelector('[data-filter-action="all"]');
 				if (allBtn) {
@@ -2086,7 +2103,10 @@
 				if (!response.ok) return;
 				const remote = await response.json();
 				if (Array.isArray(remote.categories) && remote.categories.length) {
-					MACRO_CATEGORIES = remote.categories;
+					const hasCustomHierarchy = remote.categories.some(c => Array.isArray(c.subcategories) && c.subcategories.length > 0 && c.subcategories.some(s => s !== c.name));
+					if (hasCustomHierarchy) {
+						MACRO_CATEGORIES = remote.categories;
+					}
 				}
 				if (remote.products && remote.products.length) {
 					products = remote.products.map(product => ({
