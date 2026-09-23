@@ -150,3 +150,4 @@ generate().catch(err => {
   console.error('Error generating favicons:', err);
   process.exit(1);
 });
+
