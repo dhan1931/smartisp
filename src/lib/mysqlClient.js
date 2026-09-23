@@ -35,4 +35,3 @@ export const isMysqlConfigured = () => {
     process.env.MYSQL_DATABASE || process.env.DB_NAME || 'u606699314_smart_isp'
   );
 };
-

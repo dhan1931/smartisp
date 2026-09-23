@@ -2,7 +2,7 @@
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Auth-Email');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
@@ -70,78 +70,6 @@ function getAuthUser(): ?array {
             $_SESSION['user']['role'] = 'admin';
         }
         return $user;
-    }
-
-    // Fallback: Recuperar identidad desde encabezados X-Auth-Email, Authorization o parámetros
-    $email = null;
-    if (!empty($_SERVER['HTTP_X_AUTH_EMAIL'])) {
-        $email = trim($_SERVER['HTTP_X_AUTH_EMAIL']);
-    } elseif (!empty($_SERVER['REDIRECT_HTTP_X_AUTH_EMAIL'])) {
-        $email = trim($_SERVER['REDIRECT_HTTP_X_AUTH_EMAIL']);
-    } elseif (!empty($_GET['auth_email'])) {
-        $email = trim($_GET['auth_email']);
-    } elseif (!empty($_SERVER['HTTP_AUTHORIZATION'])) {
-        $auth = trim($_SERVER['HTTP_AUTHORIZATION']);
-        if (stripos($auth, 'Bearer ') === 0) {
-            $raw = base64_decode(substr($auth, 7));
-            if ($raw && filter_var($raw, FILTER_VALIDATE_EMAIL)) {
-                $email = $raw;
-            }
-        }
-    } elseif (!empty($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
-        $auth = trim($_SERVER['REDIRECT_HTTP_AUTHORIZATION']);
-        if (stripos($auth, 'Bearer ') === 0) {
-            $raw = base64_decode(substr($auth, 7));
-            if ($raw && filter_var($raw, FILTER_VALIDATE_EMAIL)) {
-                $email = $raw;
-            }
-        }
-    }
-
-    if ($email && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $emailLower = strtolower(trim($email));
-        global $pdo;
-        if (!$pdo) {
-            $pdo = getDbConnection();
-        }
-        if ($pdo) {
-            try {
-                $uTable = getUsersTableName($pdo);
-                $stmt = $pdo->prepare("SELECT * FROM `$uTable` WHERE LOWER(email) = :email LIMIT 1");
-                $stmt->execute([':email' => $emailLower]);
-                $dbUser = $stmt->fetch();
-                if ($dbUser) {
-                    $norm = [
-                        'id'      => (string)($dbUser['id'] ?? uniqid('usr_')),
-                        'name'    => (string)($dbUser['name'] ?? 'Usuario'),
-                        'surname' => (string)($dbUser['surname'] ?? ''),
-                        'email'   => $emailLower,
-                        'phone'   => (string)($dbUser['phone'] ?? ''),
-                        'role'    => strtolower(trim((string)($dbUser['role'] ?? 'customer')))
-                    ];
-                    if ($norm['email'] === 'medardogarcesc@gmail.com' || $norm['email'] === 'gestion@smart-isp.es') {
-                        $norm['role'] = 'customer';
-                    } elseif (in_array($norm['email'], getAdminEmailsList(), true) || $norm['role'] === 'admin') {
-                        $norm['role'] = 'admin';
-                    }
-                    $_SESSION['user'] = $norm;
-                    return $norm;
-                }
-            } catch (Throwable $e) {}
-        }
-
-        // Si es un correo explícito de admin como acercado28@gmail.com
-        if (in_array($emailLower, getAdminEmailsList(), true) && !in_array($emailLower, ['medardogarcesc@gmail.com', 'gestion@smart-isp.es'], true)) {
-            $fallbackAdmin = [
-                'id'      => 'admin-' . substr(md5($emailLower), 0, 8),
-                'name'    => 'Administrador',
-                'surname' => 'SmartISP',
-                'email'   => $emailLower,
-                'role'    => 'admin'
-            ];
-            $_SESSION['user'] = $fallbackAdmin;
-            return $fallbackAdmin;
-        }
     }
 
     return null;
@@ -657,25 +585,100 @@ if ($action === 'admin-products-clear') {
 }
 
 // -------------------------------------------------------------
-// 4. CONFIGURACIONES DEL PANEL DE CONTROL (/api/auth/admin-content, /api/auth/landing-content, /api/auth/site-content)
+// 4. CONFIGURACIONES DEL PANEL DE CONTROL (/api/auth/admin-content)
 // -------------------------------------------------------------
-if ($action === 'landing-content' || $action === 'site-content' || $action === 'admin-content') {
+if ($action === 'admin-content') {
+    requireAdminAuth();
+
     if ($method === 'GET') {
         $stmt = $pdo->query("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows");
-        $rows = $stmt ? $stmt->fetchAll() : [];
-        if ($action === 'landing-content') {
-            $hasLandingLogo = false;
-            foreach ($rows as $r) {
-                if (($r['key'] ?? '') === 'landing_logo_image' && !empty($r['value'])) {
-                    $hasLandingLogo = true;
-                    break;
-                }
+        $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+        $maskedRows = [];
+        $hasSmtpPass = false;
+        $hasResendKey = false;
+        foreach ($rows as $r) {
+            $k = $r['key'] ?? '';
+            $v = $r['value'] ?? '';
+            if ($k === 'smtp_pass') {
+                if (!empty($v)) $hasSmtpPass = true;
+                $v = !empty($v) ? '••••••••' : '';
+            } elseif ($k === 'resend_api_key') {
+                if (!empty($v)) $hasResendKey = true;
+                $v = !empty($v) ? '••••••••' : '';
             }
-            if ($hasLandingLogo) {
-                $rows = array_values(array_filter($rows, fn($r) => ($r['key'] ?? '') !== 'logo_image'));
+            $maskedRows[] = ['key' => $k, 'value' => $v];
+        }
+        $maskedRows[] = ['key' => 'smtp_has_pass', 'value' => $hasSmtpPass ? 'true' : 'false'];
+        $maskedRows[] = ['key' => 'resend_has_key', 'value' => $hasResendKey ? 'true' : 'false'];
+        echo json_encode(['content' => $maskedRows]);
+        exit;
+    }
+
+    if ($method === 'POST') {
+        $items = $body['content'] ?? ($body['items'] ?? null);
+
+        if (!is_array($items) && is_array($body)) {
+            $items = [];
+            foreach ($body as $k => $v) {
+                if ($k === 'content' || $k === 'items') continue;
+                $items[] = ['key' => $k, 'value' => is_string($v) ? $v : json_encode($v)];
             }
         }
-        echo json_encode(['content' => $rows]);
+
+        if (is_array($items)) {
+            $stmt = $pdo->prepare("INSERT INTO settings_rows (setting_key, setting_value)
+                                   VALUES (:key, :value)
+                                   ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = CURRENT_TIMESTAMP");
+            foreach ($items as $item) {
+                $k = $item['key'] ?? '';
+                $v = $item['value'] ?? '';
+                if ($k) {
+                    // Si el valor de contraseña es viñetas '••••••••' o vacío al enviar sin cambios, NO sobreescribir la contraseña existente
+                    if (($k === 'smtp_pass' || $k === 'resend_api_key') && ($v === '••••••••' || $v === '')) {
+                        continue;
+                    }
+                    $stmt->execute([':key' => $k, ':value' => (string)$v]);
+                }
+            }
+        }
+
+        echo json_encode(['ok' => true]);
+        exit;
+    }
+}
+
+// -------------------------------------------------------------
+// CONTENIDO PÚBLICO DE PORTADA Y TIENDA (/api/auth/landing-content, /api/auth/site-content)
+// -------------------------------------------------------------
+if ($action === 'landing-content' || $action === 'site-content') {
+    if ($method === 'GET') {
+        $stmt = $pdo->query("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows");
+        $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+
+        // SANITIZACIÓN ESTRICTA DE SEGURIDAD (QA-024 / QA-025):
+        // Jamás devolver secretos o credenciales en endpoints públicos
+        $sensitiveKeys = [
+            'smtp_pass', 'smtp_user', 'smtp_host', 'smtp_port', 'smtp_secure',
+            'smtp_provider', 'smtp_from', 'resend_api_key', 'admin_email', 'email_from'
+        ];
+        $safeRows = [];
+        $hasLandingLogo = false;
+        foreach ($rows as $r) {
+            $k = $r['key'] ?? '';
+            if (in_array($k, $sensitiveKeys, true) || stripos($k, 'pass') !== false || stripos($k, 'secret') !== false) {
+                continue;
+            }
+            if ($k === 'landing_logo_image' && !empty($r['value'])) {
+                $hasLandingLogo = true;
+            }
+            $safeRows[] = $r;
+        }
+
+        if ($action === 'landing-content' && $hasLandingLogo) {
+            $safeRows = array_values(array_filter($safeRows, fn($r) => ($r['key'] ?? '') !== 'logo_image'));
+        }
+
+        echo json_encode(['content' => $safeRows]);
         exit;
     }
 
@@ -790,16 +793,48 @@ if ($action === 'orders' || $action === 'customer-orders') {
         $customerNotes = trim($body['notes'] ?? ($shipping['notes'] ?? ''));
 
         $rawItems = is_array($body['items'] ?? null) ? $body['items'] : [];
+        if (empty($rawItems)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'El carrito está vacío.']);
+            exit;
+        }
+
         $calculatedTotal = 0;
+        $totalUnits = 0;
+        $hasPrice = false;
+        $validItems = [];
+
         foreach ($rawItems as $it) {
             $qty = (int)($it['quantity'] ?? 1);
-            $prc = (float)($it['price'] ?? 0);
+            if ($qty < 1 || $qty > 99) {
+                http_response_code(400);
+                echo json_encode(['error' => 'La cantidad por producto debe estar entre 1 y 99 unidades.']);
+                exit;
+            }
+            $totalUnits += $qty;
+            $prc = max(0, (float)($it['price'] ?? 0));
+            if ($prc > 0) {
+                $hasPrice = true;
+            }
             $calculatedTotal += ($qty * $prc);
+            $it['quantity'] = $qty;
+            $it['price'] = $prc;
+            $validItems[] = $it;
         }
+
+        if ($totalUnits > 500) {
+            http_response_code(400);
+            echo json_encode(['error' => 'El pedido supera el límite máximo permitido de 500 unidades en total.']);
+            exit;
+        }
+
         $total = (float)($body['total'] ?? 0);
         if ($total <= 0 && $calculatedTotal > 0) {
             $total = $calculatedTotal;
         }
+
+        $isQuote = !$hasPrice || $total <= 0;
+        $orderStatus = $isQuote ? 'quote_requested' : 'pending';
 
         // Generar un ID legible de pedido, ej: PED-A1B2C3
         $cleanShort = strtoupper(substr(md5(uniqid((string)microtime(true), true)), 0, 6));
@@ -820,7 +855,7 @@ if ($action === 'orders' || $action === 'customer-orders') {
 
         $insertData = [
             'id'     => $orderId,
-            'status' => 'pending',
+            'status' => $orderStatus,
             'total'  => $total
         ];
 
@@ -828,7 +863,7 @@ if ($action === 'orders' || $action === 'customer-orders') {
             $insertData['user_id'] = $_SESSION['user']['id'] ?? null;
         }
         if (in_array('items', $existingCols, true)) {
-            $insertData['items'] = json_encode($rawItems, JSON_UNESCAPED_UNICODE);
+            $insertData['items'] = json_encode($validItems, JSON_UNESCAPED_UNICODE);
         }
         if (in_array('shipping', $existingCols, true)) {
             $insertData['shipping'] = json_encode($shippingData, JSON_UNESCAPED_UNICODE);
@@ -843,7 +878,7 @@ if ($action === 'orders' || $action === 'customer-orders') {
             $insertData['customer_phone'] = $customerPhone;
         }
         if (in_array('payment_status', $existingCols, true)) {
-            $insertData['payment_status'] = 'pending';
+            $insertData['payment_status'] = $isQuote ? 'quote_pending' : 'pending';
         }
         if (in_array('payment_provider', $existingCols, true)) {
             $insertData['payment_provider'] = 'manual';
@@ -870,8 +905,9 @@ if ($action === 'orders' || $action === 'customer-orders') {
             'address'       => $customerAddress,
             'city'          => $customerCity,
             'notes'         => $customerNotes,
-            'items'         => $rawItems,
-            'total'         => $total
+            'items'         => $validItems,
+            'total'         => $total,
+            'isQuote'       => $isQuote
         ];
 
         $emailResults = sendOrderEmails($pdo, $orderDataForMail);
@@ -881,6 +917,7 @@ if ($action === 'orders' || $action === 'customer-orders') {
             'orderId'      => $orderId,
             'id'           => $orderId,
             'shortId'      => $cleanShort,
+            'isQuote'      => $isQuote,
             'emailResults' => $emailResults
         ]);
         exit;
@@ -1177,10 +1214,39 @@ if ($action === 'logout') {
     exit;
 }
 
-// -------------------------------------------------------------
-// 7. RECUPERACIÓN Y RESTABLECIMIENTO DE CONTRASEÑA
-// -------------------------------------------------------------
 if ($action === 'request-password-reset' && $method === 'POST') {
+    // QA-034: Rate Limiting estricto por IP (máximo 3 solicitudes por ventana de 15 minutos)
+    $clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+    if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+        $clientIp = $_SERVER['HTTP_CF_CONNECTING_IP'];
+    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $clientIp = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
+    }
+    $rateKey = 'pwd_reset_' . md5($clientIp);
+    $rateFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $rateKey . '.json';
+    $now = time();
+    $window = 900; // 15 minutos
+    $maxAttempts = 3;
+    $history = [];
+    if (file_exists($rateFile)) {
+        $data = json_decode(@file_get_contents($rateFile), true);
+        if (is_array($data)) {
+            $history = array_filter($data, fn($t) => ($now - (int)$t) < $window);
+        }
+    }
+    if (count($history) >= $maxAttempts) {
+        http_response_code(429);
+        header('Retry-After: ' . $window);
+        echo json_encode([
+            'ok' => false,
+            'error' => 'Has excedido el límite de solicitudes de recuperación de contraseña. Por favor intenta de nuevo en 15 minutos.',
+            'retry_after' => $window
+        ]);
+        exit;
+    }
+    $history[] = $now;
+    @file_put_contents($rateFile, json_encode(array_values($history)));
+
     try {
         $email = trim(strtolower($body['email'] ?? ''));
         if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {

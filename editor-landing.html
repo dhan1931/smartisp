@@ -3658,18 +3658,7 @@
 		// LOAD & SAVE ENGINE
 		// =========================================================================
 		const getAdminHeaders = () => {
-			let headers = { 'Content-Type': 'application/json' };
-			try {
-				const raw = sessionStorage.getItem('smartisp.accountUser') || localStorage.getItem('smartisp.accountUser');
-				if (raw) {
-					const u = JSON.parse(raw);
-					if (u && u.email) {
-						headers['X-Auth-Email'] = u.email;
-						headers['Authorization'] = 'Bearer ' + btoa(u.email);
-					}
-				}
-			} catch (e) {}
-			return headers;
+			return { 'Content-Type': 'application/json' };
 		};
 
 		const loadLandingData = async () => {

@@ -1465,52 +1465,22 @@
       }
     };
 
-    // --- HELPER DE LLAMADAS API CON CREDENCIALES Y FALLBACK ANTIBLOQUEO ---
+    // --- HELPER DE LLAMADAS API CON CREDENCIALES ---
     const api = async (endpoint, options = {}) => {
-      let res = null;
-      let storedUser = currentAdminUser;
-      if (!storedUser || !storedUser.email) {
-        try {
-          const raw = sessionStorage.getItem('smartisp.accountUser') || localStorage.getItem('smartisp.accountUser');
-          if (raw) storedUser = JSON.parse(raw);
-        } catch (e) {}
-      }
-
       const customHeaders = {
         'Content-Type': 'application/json'
       };
-      if (storedUser && storedUser.email) {
-        customHeaders['X-Auth-Email'] = storedUser.email;
-        customHeaders['Authorization'] = 'Bearer ' + btoa(storedUser.email);
-      }
-
       const reqHeaders = { ...customHeaders, ...(options.headers || {}) };
-      const authParam = (storedUser && storedUser.email) ? `?auth_email=${encodeURIComponent(storedUser.email)}` : '';
 
+      let res = null;
       try {
-        res = await fetch(`/api/auth/${endpoint}${authParam}`, {
+        res = await fetch(`/api/auth/${endpoint}`, {
           credentials: 'include',
           ...options,
           headers: reqHeaders
         });
       } catch (err) {
         res = null;
-      }
-
-      // Si el servidor devuelve 403 Forbidden por reglas LiteSpeed/ModSecurity en /api/auth/,
-      // reintentar directamente con el enrutador /api/router.php
-      if (!res || res.status === 403) {
-        try {
-          const directUrl = `/api/router.php?action=${endpoint.replace(/^\/+/, '')}${authParam ? (authParam.replace('?', '&')) : ''}`;
-          const fallbackRes = await fetch(directUrl, {
-            credentials: 'include',
-            ...options,
-            headers: reqHeaders
-          });
-          if (fallbackRes.ok || !res) {
-            res = fallbackRes;
-          }
-        } catch (fbErr) {}
       }
 
       if (!res) throw new Error('No se pudo conectar con el servidor.');
@@ -3112,15 +3082,8 @@
       } catch (e) {}
 
       // Asegurar permisos para configurar el catálogo
-      const adminEmails = [
-        'acercado28@gmail.com',
-        'acercado28@ggmail.com',
-        'admin@smart-isp.com.ec',
-        'medardo@gmail.com',
-        'dhan1931@gmail.com'
-      ];
       const userEmail = (user && user.email) ? String(user.email).toLowerCase().trim() : '';
-      const isAdmin = Boolean(user && userEmail !== 'medardogarcesc@gmail.com' && userEmail !== 'gestion@smart-isp.es' && (user.role === 'admin' || adminEmails.includes(userEmail)));
+      const isAdmin = Boolean(user && userEmail !== 'medardogarcesc@gmail.com' && userEmail !== 'gestion@smart-isp.es' && user.role === 'admin');
 
       if (user && !isAdmin) {
         alert('Acceso restringido: Esta cuenta no posee permisos de administrador.');

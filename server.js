@@ -288,7 +288,27 @@ app.post('/api/auth/change-password', async (req, res) => {
   return res.json({ ok: true });
 });
 
+const passwordResetRateLimits = new Map(); // ip -> [timestamps]
+
 app.post('/api/auth/request-password-reset', async (req, res) => {
+  // QA-034: Rate Limiting estricto por IP (máx 3 intentos cada 15 min)
+  const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || req.socket.remoteAddress || '127.0.0.1';
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000; // 15 minutos
+  const maxAttempts = 3;
+
+  const userAttempts = (passwordResetRateLimits.get(clientIp) || []).filter(ts => (now - ts) < windowMs);
+  if (userAttempts.length >= maxAttempts) {
+    res.setHeader('Retry-After', '900');
+    return res.status(429).json({
+      ok: false,
+      error: 'Has excedido el límite de solicitudes de recuperación de contraseña. Por favor intenta de nuevo en 15 minutos.',
+      retryAfter: 900
+    });
+  }
+  userAttempts.push(now);
+  passwordResetRateLimits.set(clientIp, userAttempts);
+
   const email = String(req.body.email || '').trim().toLowerCase();
   const user = await findUserByEmail(email);
   if (!user) return res.json({ ok: true });
@@ -747,6 +767,18 @@ app.post('/api/auth/customer-orders', async (req, res) => {
     return res.status(400).json({ error: 'El carrito está vacío.' });
   }
 
+  for (const it of requestedItems) {
+    const qty = Number(it.quantity || 1);
+    if (!Number.isInteger(qty) || qty < 1 || qty > 99) {
+      return res.status(400).json({ error: 'La cantidad por producto debe estar entre 1 y 99 unidades.' });
+    }
+  }
+
+  const totalUnits = requestedItems.reduce((acc, it) => acc + Number(it.quantity || 1), 0);
+  if (totalUnits > 500) {
+    return res.status(400).json({ error: 'El pedido supera el límite máximo permitido de 500 unidades en total.' });
+  }
+
   // Determine customer contact info
   let customerName = String(shipping.name || '').trim();
   let customerEmail = String(shipping.email || '').trim().toLowerCase();
@@ -781,14 +813,15 @@ app.post('/api/auth/customer-orders', async (req, res) => {
   const items = requestedItems.map(item => ({
     id: String(item.id || item.name),
     name: String(item.name || 'Producto'),
-    price: Number(item.price || 0),
-    quantity: Math.max(1, Number(item.quantity || 1)),
+    price: Math.max(0, Number(item.price || 0)),
+    quantity: Math.max(1, Math.min(99, Number(item.quantity || 1))),
     image: String(item.image || ''),
     category: String(item.category || '')
   }));
 
   const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const total = subtotal;
+  const isQuote = items.every(i => i.price <= 0) || total <= 0;
   const shortId = Date.now().toString().slice(-6).toUpperCase();
   const orderId = 'PED-' + shortId;
 
@@ -804,7 +837,8 @@ app.post('/api/auth/customer-orders', async (req, res) => {
     items,
     subtotal,
     total,
-    status: 'received',
+    isQuote,
+    status: isQuote ? 'quote_requested' : 'received',
     createdAt: new Date().toISOString()
   };
 
@@ -833,7 +867,7 @@ app.post('/api/auth/customer-orders', async (req, res) => {
     }
   }
 
-  // 1. Send Receipt Email to Customer AND to User Profile Email (TAMBIÉN al correo del perfil)
+  // 1. Send Receipt Email to Customer AND to User Profile Email
   const customerRecipients = new Set();
   if (customerEmail && customerEmail.includes('@')) customerRecipients.add(customerEmail);
   if (profileEmail && profileEmail.includes('@')) customerRecipients.add(profileEmail);
@@ -849,20 +883,25 @@ app.post('/api/auth/customer-orders', async (req, res) => {
       shipping
     });
 
+    const customerSubject = isQuote ? `📋 Solicitud de Cotización #${orderId} - SmartISP` : `🧾 Comprobante de Compra #${orderId} - SmartISP`;
+    const customerText = isQuote
+      ? `¡Hola ${customerName}! Tu solicitud de cotización #${orderId} ha sido recibida. Uno de nuestros asesores se contactará a tu celular (${customerPhone}) para brindarte la propuesta comercial.`
+      : `¡Hola ${customerName}! Tu pedido #${orderId} por un total de ${moneyFormat(total)} ha sido recibido. Uno de nuestros asesores se contactará a tu celular (${customerPhone}) para coordinar pago y entrega.`;
+
     for (const recipient of customerRecipients) {
       const isProfile = Boolean(profileEmail && recipient === profileEmail);
       sendEmail({
         to: recipient,
-        subject: `🧾 Comprobante de Compra #${orderId} - SmartISP`,
+        subject: customerSubject,
         html: customerHtml,
-        text: `¡Hola ${customerName}! Tu pedido #${orderId} por un total de ${moneyFormat(total)} ha sido recibido. Uno de nuestros asesores se contactará a tu celular (${customerPhone}) para coordinar pago y entrega.`
+        text: customerText
       }).then(() => {
         console.log(`📨 Comprobante despachado con éxito a: ${recipient} ${isProfile ? '(correo agregado en perfil de usuario)' : ''}`);
       }).catch(err => console.warn(`Error al despachar correo al cliente (${recipient}):`, err.message));
     }
   }
 
-  // 2. Send Notification Email to Admin / Company with User's Phone (Requirement 4)
+  // 2. Send Notification Email to Admin / Company with User's Phone
   let adminRecipient = '';
   if (pool) {
     try {
@@ -887,11 +926,17 @@ app.post('/api/auth/customer-orders', async (req, res) => {
     total,
     shipping
   });
+
+  const adminSubject = isQuote ? `📋 NUEVA SOLICITUD DE COTIZACIÓN #${orderId} - Asesoría Requerida: ${customerName}` : `🚨 NUEVO PEDIDO #${orderId} - Asesoría Requerida: ${customerName}`;
+  const adminText = isQuote
+    ? `NUEVA COTIZACIÓN #${orderId}: Cliente ${customerName}, Celular: ${customerPhone}, Correo: ${customerEmail}. Un asesor debe contactarlo para cotizar los ítems solicitados.`
+    : `NUEVO PEDIDO #${orderId}: Cliente ${customerName}, Celular de contacto: ${customerPhone}, Correo: ${customerEmail}, Total: ${moneyFormat(total)}. Un asesor debe contactarlo a la brevedad.`;
+
   sendEmail({
     to: adminRecipient,
-    subject: `🚨 NUEVO PEDIDO #${orderId} - Asesoría Requerida: ${customerName}`,
+    subject: adminSubject,
     html: adminHtml,
-    text: `NUEVO PEDIDO #${orderId}: Cliente ${customerName}, Celular de contacto: ${customerPhone}, Correo: ${customerEmail}, Total: ${moneyFormat(total)}. Un asesor debe contactarlo a la brevedad.`
+    text: adminText
   }).catch(err => console.warn('Error al despachar correo al administrador:', err.message));
 
   return res.status(201).json(order);
@@ -1566,6 +1611,7 @@ app.post('/api/auth/admin-products-bulk', async (req, res) => {
 
 app.get('/api/auth/admin-content', async (req, res) => {
   if (!await requireAdminUser(req, res)) return;
+  let rows = [];
   if (pool) {
     await pool.query(`CREATE TABLE IF NOT EXISTS site_content (
       content_key TEXT PRIMARY KEY,
@@ -1573,14 +1619,41 @@ app.get('/api/auth/admin-content', async (req, res) => {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`);
     const result = await pool.query('SELECT content_key AS "key", content_value AS value FROM site_content ORDER BY content_key');
-    return res.json({ content: result.rows });
+    rows = result.rows;
+  } else {
+    rows = [...inMemoryContent.entries()].map(([key, value]) => ({ key, value }));
   }
-  return res.json({ content: [...inMemoryContent.entries()].map(([key, value]) => ({ key, value })) });
+
+  let hasSmtpPass = false;
+  let hasResendKey = false;
+  const maskedRows = rows.map(r => {
+    if (r.key === 'smtp_pass') {
+      if (r.value) hasSmtpPass = true;
+      return { key: r.key, value: r.value ? '••••••••' : '' };
+    }
+    if (r.key === 'resend_api_key') {
+      if (r.value) hasResendKey = true;
+      return { key: r.key, value: r.value ? '••••••••' : '' };
+    }
+    return r;
+  });
+  maskedRows.push({ key: 'smtp_has_pass', value: hasSmtpPass ? 'true' : 'false' });
+  maskedRows.push({ key: 'resend_has_key', value: hasResendKey ? 'true' : 'false' });
+  return res.json({ content: maskedRows });
 });
 
 app.post('/api/auth/admin-content', async (req, res) => {
   if (!await requireAdminUser(req, res)) return;
   const content = req.body || {};
+
+  // Don't overwrite existing passwords with bullets
+  if (content.smtp_pass === '••••••••' || content.smtp_pass === '') {
+    delete content.smtp_pass;
+  }
+  if (content.resend_api_key === '••••••••' || content.resend_api_key === '') {
+    delete content.resend_api_key;
+  }
+
   if (pool) {
     for (const [key, value] of Object.entries(content)) {
       await pool.query(`INSERT INTO site_content (content_key, content_value, updated_at) VALUES ($1, $2, NOW())
@@ -1623,12 +1696,23 @@ const sanitizeLandingGridHtml = html => {
     .replace(/\s*data-deletable-box="[^"]*"/gi, '');
 };
 
-const sanitizeLandingRows = rows => (rows || []).map(r => {
-  if (r.key && r.key.endsWith('_grid_html') && typeof r.value === 'string') {
-    return { key: r.key, value: sanitizeLandingGridHtml(r.value) };
-  }
-  return r;
-});
+const SENSITIVE_CONFIG_KEYS = new Set([
+  'smtp_pass', 'smtp_user', 'smtp_host', 'smtp_port', 'smtp_secure',
+  'smtp_provider', 'smtp_from', 'resend_api_key', 'admin_email', 'email_from'
+]);
+
+const sanitizeLandingRows = rows => (rows || [])
+  .filter(r => {
+    const k = String(r.key || '').toLowerCase();
+    if (SENSITIVE_CONFIG_KEYS.has(k) || k.includes('pass') || k.includes('secret')) return false;
+    return true;
+  })
+  .map(r => {
+    if (r.key && r.key.endsWith('_grid_html') && typeof r.value === 'string') {
+      return { key: r.key, value: sanitizeLandingGridHtml(r.value) };
+    }
+    return r;
+  });
 
 app.get('/api/auth/landing-content', async (req, res) => {
   if (pool) {

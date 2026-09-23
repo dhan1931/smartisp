@@ -1455,38 +1455,20 @@
       } catch { return null; }
     };
     const api = async (action, options = {}) => {
-      let response = null;
-      let storedUser = null;
-      try {
-        const raw = sessionStorage.getItem('smartisp.accountUser') || localStorage.getItem('smartisp.accountUser');
-        if (raw) storedUser = JSON.parse(raw);
-      } catch (e) {}
-
       const customHeaders = {
         'Content-Type': 'application/json'
       };
-      if (storedUser && storedUser.email) {
-        customHeaders['X-Auth-Email'] = storedUser.email;
-        customHeaders['Authorization'] = 'Bearer ' + btoa(storedUser.email);
-      }
       const reqHeaders = { ...customHeaders, ...(options.headers || {}) };
-      const authParam = (storedUser && storedUser.email) ? `?auth_email=${encodeURIComponent(storedUser.email)}` : '';
 
+      let response = null;
       try {
-        response = await fetch(`/api/auth/${action}${authParam}`, { credentials: 'include', ...options, headers: reqHeaders });
+        response = await fetch(`/api/auth/${action}`, { credentials: 'include', ...options, headers: reqHeaders });
       } catch (e) { response = null; }
-      if (!response || response.status === 403) {
-        try {
-          const directUrl = `/api/router.php?action=${action.replace(/^\/+/, '')}${authParam ? (authParam.replace('?', '&')) : ''}`;
-          const fallback = await fetch(directUrl, { credentials: 'include', ...options, headers: reqHeaders });
-          if (fallback.ok || !response) response = fallback;
-        } catch (e) {}
-      }
       if (!response) throw new Error('No se pudo conectar con el servidor.');
       const text = await response.text();
       let result = {};
-      try { result = text ? JSON.parse(text) : {}; } catch { result = { error: text || `Respuesta invalida (${response.status})` }; }
-      if (!response.ok) throw new Error(result.error || 'No se pudo completar la operacion.');
+      try { result = text ? JSON.parse(text) : {}; } catch { result = { error: text || `Respuesta inválida (${response.status})` }; }
+      if (!response.ok) throw new Error(result.error || 'No se pudo completar la operación.');
       return result;
     };
     const updateDesignPreview = () => { const form = $('#contentForm'); const values = formValues(form); const preview = $('.design-preview-hero'); preview.style.setProperty('--preview-image', values.hero_image ? `url("${values.hero_image}")` : 'none'); preview.style.setProperty('--preview-accent', values.primary_color || '#087ea4'); preview.style.setProperty('--preview-text', values.hero_text_color || '#102c3d'); preview.style.setProperty('--preview-width', `${values.hero_content_width || 510}px`); preview.style.setProperty('--preview-overlay', `rgba(228,245,243,${Number(values.hero_overlay_opacity || 0) / 100})`); preview.style.minHeight = `${values.hero_height || 370}px`; preview.style.backgroundPosition = values.hero_image_position || 'center'; form.querySelectorAll('[data-preview]').forEach(element => { element.textContent = values[element.dataset.preview] || ''; }); form.querySelectorAll('[data-range-value]').forEach(element => { element.textContent = `${values[element.dataset.rangeValue] || 0}%`; }); };
@@ -2111,19 +2093,11 @@
       await loadProducts();
     };
 
-    const adminEmails = [
-      'acercado28@gmail.com',
-      'acercado28@ggmail.com',
-      'medardo@gmail.com',
-      'admin@smart-isp.com.ec',
-      'dhan1931@gmail.com'
-    ];
-
     const isUserAdmin = u => {
       if (!u) return false;
       const email = String(u.email || '').toLowerCase().trim();
       if (email === 'medardogarcesc@gmail.com' || email === 'gestion@smart-isp.es') return false;
-      return u.role === 'admin' || adminEmails.includes(email);
+      return u.role === 'admin';
     };
 
     $('#loginForm').addEventListener('submit', async event => {
@@ -3340,8 +3314,12 @@
     const showDenied = (email) => {
       $('#deniedUserEmail').textContent = email || 'cliente';
       $('#loginPanel').classList.add('hidden');
-      $('#adminPanel').classList.add('hidden');
+      const ap = $('#adminPanel');
+      if (ap) ap.remove(); // Elimina el dashboard del DOM para evitar exposición por manipulación de CSS (QA-027)
       $('#accessDeniedPanel').classList.remove('hidden');
+      setTimeout(() => {
+        window.location.replace('tienda.html');
+      }, 2500);
     };
 
     const checkAuthAndInit = async () => {
@@ -3363,6 +3341,8 @@
       } else if (activeUser && !isUserAdmin(activeUser)) {
         showDenied(activeUser.email);
       } else {
+        const ap = $('#adminPanel');
+        if (ap) ap.classList.add('hidden');
         $('#loginPanel').classList.remove('hidden');
       }
     };

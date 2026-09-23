@@ -710,6 +710,10 @@ function sendOrderEmails(PDO $pdo, array $orderData): array {
     $customerName  = trim($orderData['customerName'] ?? ($orderData['name'] ?? 'Cliente'));
     $orderId       = trim($orderData['id'] ?? 'PED-001');
 
+    $isQuote = !empty($orderData['isQuote']) || (float)($orderData['total'] ?? 0) <= 0;
+    $subjCustomer = $isQuote ? "📋 Solicitud de Cotización #$orderId - SmartISP" : "🧾 Comprobante de Compra #$orderId - SmartISP";
+    $subjAdmin = $isQuote ? "📋 NUEVA SOLICITUD DE COTIZACIÓN #$orderId - Asesoría Requerida: $customerName" : "🚨 NUEVO PEDIDO #$orderId - Asesoría Requerida: $customerName";
+
     // 1. Envío al Cliente
     if ($customerEmail !== '' && filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) {
         try {
@@ -717,7 +721,7 @@ function sendOrderEmails(PDO $pdo, array $orderData): array {
             $results['customer'] = sendSmartEmail(
                 $pdo,
                 $customerEmail,
-                "🧾 Comprobante de Compra #$orderId - SmartISP",
+                $subjCustomer,
                 $customerHtml
             );
         } catch (Throwable $e) {
@@ -737,7 +741,7 @@ function sendOrderEmails(PDO $pdo, array $orderData): array {
             $results['admin'] = sendSmartEmail(
                 $pdo,
                 $adminEmail,
-                "🚨 NUEVO PEDIDO #$orderId - Asesoría Requerida: $customerName",
+                $subjAdmin,
                 $adminHtml
             );
         } catch (Throwable $e) {

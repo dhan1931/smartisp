@@ -779,13 +779,14 @@
     const cartMap = new Map();
     rawCart.forEach(item => {
       const key = productKey(item);
+      const qty = Math.max(1, Math.min(99, Number(item.quantity) || 1));
       if (cartMap.has(key)) {
-        cartMap.get(key).quantity += 1;
+        cartMap.get(key).quantity = Math.min(99, cartMap.get(key).quantity + qty);
       } else {
         cartMap.set(key, {
           ...item,
-          quantity: 1,
-          price: Number(item.price || 0),
+          quantity: qty,
+          price: Math.max(0, Number(item.price || 0)),
           image: item.image || item.imageUrl || 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=300&q=80'
         });
       }
@@ -793,6 +794,13 @@
     const groupedItems = [...cartMap.values()];
     const totalAmount = groupedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const hasQuoteOnly = groupedItems.length > 0 && groupedItems.every(i => !Number(i.price || 0));
+
+    if (hasQuoteOnly) {
+      const submitBtn = document.querySelector('#submitButton');
+      if (submitBtn) submitBtn.innerHTML = `<i data-lucide="send" width="18"></i> Solicitar cotización y asesor comercial`;
+      const advisorCallout = document.querySelector('.advisor-callout strong');
+      if (advisorCallout) advisorCallout.textContent = 'Atención personalizada para cotización:';
+    }
 
     // Render Summary
     const cartItemsList = document.querySelector('#cartItemsList');
@@ -904,8 +912,9 @@
         localStorage.removeItem('smartisp.cart');
 
         // Render Success View
-        const orderIdDisplay = String(result.id || result.shortId || Date.now()).slice(0, 8).toUpperCase();
-        document.querySelector('#confirmedOrderId').textContent = '#' + orderIdDisplay;
+        const rawOrderId = String(result.id || result.shortId || Date.now()).trim();
+        const orderIdDisplay = rawOrderId.startsWith('#') ? rawOrderId : ('#' + rawOrderId);
+        document.querySelector('#confirmedOrderId').textContent = orderIdDisplay;
         const profileEmail = activeUser?.email ? String(activeUser.email).trim().toLowerCase() : '';
         const shippingEmail = String(values.email).trim().toLowerCase();
         let confirmedEmailNotice = values.email;
@@ -914,6 +923,13 @@
         }
         document.querySelector('#confirmedEmailText').textContent = confirmedEmailNotice;
         document.querySelector('#confirmedPhoneText').textContent = values.phone;
+
+        if (hasQuoteOnly || result.isQuote) {
+          const successTitle = document.querySelector('#confirmationSuccessView h2');
+          if (successTitle) successTitle.textContent = '¡Solicitud de cotización enviada con éxito!';
+          const successDesc = document.querySelector('#confirmationSuccessView > p');
+          if (successDesc) successDesc.textContent = 'Tu requerimiento ha sido registrado en nuestro sistema comercial. Un asesor se comunicará a tu celular para entregarte la propuesta personalizada.';
+        }
 
         const tbody = document.querySelector('#successItemsBody');
         tbody.innerHTML = groupedItems.map(item => `
