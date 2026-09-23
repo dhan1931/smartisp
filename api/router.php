@@ -400,12 +400,22 @@ if ($action === 'catalog' && $method === 'GET') {
         $stmtContent = $pdo->query("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows");
         $allContent = $stmtContent ? $stmtContent->fetchAll() : [];
         $content = [];
+        $hasLogoImage = false;
+        foreach ($allContent as $item) {
+            if (($item['key'] ?? '') === 'logo_image' && !empty($item['value'])) {
+                $hasLogoImage = true;
+                break;
+            }
+        }
         $excludePrefixes = [
             'solutions_grid_html', 'advantages_grid_html', 'about_visual_html', 'stats_grid_html',
             'landing_logo_dark_image', 'about_', 'contact_', 'mission_', 'vision_', 'value', 'sol', 'adv', 'stat'
         ];
         foreach ($allContent as $item) {
             $k = (string)($item['key'] ?? '');
+            if ($k === 'landing_logo_image' && $hasLogoImage) {
+                continue; // Evitar duplicar 1MB en la tienda
+            }
             $shouldExclude = false;
             foreach ($excludePrefixes as $prefix) {
                 if (str_starts_with($k, $prefix)) {
@@ -653,6 +663,18 @@ if ($action === 'landing-content' || $action === 'site-content' || $action === '
     if ($method === 'GET') {
         $stmt = $pdo->query("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows");
         $rows = $stmt ? $stmt->fetchAll() : [];
+        if ($action === 'landing-content') {
+            $hasLandingLogo = false;
+            foreach ($rows as $r) {
+                if (($r['key'] ?? '') === 'landing_logo_image' && !empty($r['value'])) {
+                    $hasLandingLogo = true;
+                    break;
+                }
+            }
+            if ($hasLandingLogo) {
+                $rows = array_values(array_filter($rows, fn($r) => ($r['key'] ?? '') !== 'logo_image'));
+            }
+        }
         echo json_encode(['content' => $rows]);
         exit;
     }
