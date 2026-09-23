@@ -717,17 +717,36 @@
 
 		.advantages-grid {
 			display: grid;
-			grid-template-columns: repeat(4, 1fr);
-			gap: 24px;
+			grid-template-columns: repeat(var(--adv-cols, 5), minmax(0, 1fr));
+			gap: 18px;
+			align-items: stretch;
+		}
+
+		.advantages-grid:has(> .advantage-card:last-of-type:nth-child(4)),
+		.advantages-grid:has(> .advantage-card:nth-child(4):last-child) {
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+		}
+
+		.advantages-grid:has(> .advantage-card:last-of-type:nth-child(5)),
+		.advantages-grid:has(> .advantage-card:nth-child(5):last-child) {
+			grid-template-columns: repeat(5, minmax(0, 1fr));
+		}
+
+		.advantages-grid:has(> .advantage-card:nth-child(6)) {
+			grid-template-columns: repeat(6, minmax(0, 1fr));
 		}
 
 		.advantage-card {
 			border: 1px solid var(--line);
 			border-radius: 14px;
-			padding: 26px 20px;
+			padding: 24px 16px;
 			background: #fafdfd;
 			text-align: center;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
 			transition: transform 0.2s, box-shadow 0.2s;
+			box-sizing: border-box;
 		}
 
 		.advantage-card:hover {
@@ -736,24 +755,30 @@
 		}
 
 		.advantage-icon {
-			width: 58px;
-			height: 58px;
-			margin: 0 auto 16px;
+			width: 52px;
+			height: 52px;
+			margin: 0 auto 14px;
 			border-radius: 50%;
 			background: #e6f6f3;
 			color: #0d8471;
 			display: grid;
 			place-items: center;
+			flex-shrink: 0;
 		}
 
 		.advantage-card h4 {
-			font-size: 18px;
+			font-size: 16.5px;
+			line-height: 1.3;
 			margin-bottom: 8px;
+			font-family: 'Space Grotesk', sans-serif;
+			color: var(--navy);
 		}
 
 		.advantage-card p {
-			font-size: 13.5px;
+			font-size: 13px;
+			line-height: 1.5;
 			color: var(--muted);
+			margin: 0;
 		}
 
 		/* CTA BANNER TO TIENDA */
@@ -1073,7 +1098,8 @@
 				grid-template-columns: repeat(2, 1fr);
 			}
 			.advantages-grid {
-				grid-template-columns: repeat(2, 1fr);
+				grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+				gap: 16px;
 			}
 			.about-grid {
 				grid-template-columns: 1fr;
@@ -1510,14 +1536,20 @@
 
 					<div class="advantage-card">
 						<div class="advantage-icon"><i data-lucide="cpu" width="28"></i></div>
-						<h4 data-landing-key="adv3_h4">Asesoría de Ingenieros</h4>
-						<p data-landing-key="adv3_p">No solo vendemos cajas: te ayudamos a dimensionar tu red para optimizar tu inversión y prevenir cuellos de botella.</p>
+						<h4 data-landing-key="adv3_h4">Expertos que te acompañan</h4>
+						<p data-landing-key="adv3_p">Analizamos tus necesidades y te ayudamos a elegir los equipos, servicios e infraestructura adecuados para optimizar tu inversión y acompañar tu crecimiento</p>
 					</div>
 
 					<div class="advantage-card">
 						<div class="advantage-icon"><i data-lucide="credit-card" width="28"></i></div>
 						<h4 data-landing-key="adv4_h4">Compra en Línea Segura</h4>
 						<p data-landing-key="adv4_p">Nuestra tienda virtual te permite consultar stock, cotizar en el momento y pagar con métodos de pago protegidos.</p>
+					</div>
+
+					<div class="advantage-card">
+						<div class="advantage-icon"><i data-lucide="shield-check" width="28"></i></div>
+						<h4 data-landing-key="adv5_h4">Nueva Ventaja Competitiva</h4>
+						<p data-landing-key="adv5_p">Describe aquí la razón por la que tus clientes deben elegir tu empresa.</p>
 					</div>
 				</div>
 			</div>
@@ -1893,8 +1925,20 @@
 						statsGrid.innerHTML = content.stats_grid_html;
 						cleanPublicGrid(statsGrid);
 					}
-				}
 				cleanPublicGrid(document.body);
+
+				const updateAdvGridCols = () => {
+					const grid = document.querySelector('.advantages-grid');
+					if (!grid) return;
+					const cards = grid.querySelectorAll('.advantage-card');
+					if (cards.length > 0 && window.innerWidth >= 992) {
+						grid.style.setProperty('--adv-cols', cards.length);
+					} else {
+						grid.style.removeProperty('--adv-cols');
+					}
+				};
+				updateAdvGridCols();
+				window.addEventListener('resize', updateAdvGridCols);
 
 				// 3. Aplicar estilos y textos dinámicos
 				const isDesktop = window.innerWidth > 768;
