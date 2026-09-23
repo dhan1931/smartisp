@@ -21,7 +21,14 @@ export default defineConfig({
     {
       name: 'copy-extra-files',
       closeBundle() {
-        const filesToCopy = ['.htaccess', 'db.js', 'package.json'];
+        const filesToCopy = [
+          '.htaccess', 'db.js', 'package.json', 'robots.txt',
+          'favicon.ico', 'favicon.png', 'favicon-16x16.png', 'favicon-32x32.png',
+          'favicon-48x48.png', 'favicon-96x96.png', 'favicon-144x144.png',
+          'favicon-192x192.png', 'favicon-512x512.png',
+          'apple-touch-icon.png', 'apple-touch-icon-precomposed.png',
+          'site.webmanifest', 'manifest.json'
+        ];
         for (const file of filesToCopy) {
           if (fs.existsSync(file)) {
             fs.copyFileSync(file, path.resolve('dist', file));
