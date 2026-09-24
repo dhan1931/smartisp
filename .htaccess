@@ -24,5 +24,13 @@ DirectoryIndex index.html index.htm index.php
         Header set Pragma "no-cache"
         Header set Expires "0"
     </FilesMatch>
+
+    # Cabeceras de seguridad y hardening HTTP (QA-030)
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "geolocation=(), camera=(), microphone=(), payment=()"
+    Header always set Content-Security-Policy "frame-ancestors 'self';"
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
 </IfModule>
 

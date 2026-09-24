@@ -694,16 +694,20 @@
 
           <div class="summary-box">
             <div class="summary-row">
-              <span>Subtotal productos</span>
-              <strong id="subtotalText">$0</strong>
+              <span>Subtotal neto (sin IVA)</span>
+              <strong id="subtotalBaseText">$0.00</strong>
+            </div>
+            <div class="summary-row">
+              <span>IVA (15%)</span>
+              <strong id="ivaText">$0.00</strong>
             </div>
             <div class="summary-row">
               <span>Despacho</span>
               <span style="color:var(--green); font-weight:600;">A coordinar con asesor</span>
             </div>
             <div class="summary-row total">
-              <span>Total estimado</span>
-              <strong id="totalText">$0</strong>
+              <span>Total a pagar (IVA incl.)</span>
+              <strong id="totalText">$0.00</strong>
             </div>
           </div>
         </section>
@@ -715,11 +719,11 @@
       <div class="success-icon-wrap">
         <i data-lucide="check-circle-2" width="42"></i>
       </div>
-      <h2 style="font:700 28px 'Space Grotesk',sans-serif; color:var(--navy)">¡Compra confirmada con éxito!</h2>
+      <h2 style="font:700 28px 'Space Grotesk',sans-serif; color:var(--navy)">¡Solicitud de Pedido Confirmada!</h2>
       <div class="order-id-badge">Nº de Pedido: <span id="confirmedOrderId">...</span></div>
       
       <p style="color:var(--muted); font-size:15px; max-width:560px; margin:0 auto 20px;">
-        Tu pedido ha sido registrado correctamente en nuestro sistema comercial. Hemos activado la atención para tu orden.
+        Tu pedido ha sido registrado correctamente en nuestro sistema comercial. Un asesor comercial te contactará a la brevedad para coordinar la entrega y confirmación de pago.
       </p>
 
       <div class="success-cards">
@@ -752,8 +756,16 @@
           <tbody id="successItemsBody"></tbody>
           <tfoot>
             <tr>
-              <td colspan="2" style="font-weight:700; padding-top:14px;">Total del pedido:</td>
-              <td id="successTotalText" style="text-align:right; font-weight:700; color:var(--blue); font-size:17px; padding-top:14px;"></td>
+              <td colspan="2" style="padding-top:10px; color:var(--muted); font-size:13px;">Subtotal neto (sin IVA):</td>
+              <td id="successSubtotalBaseText" style="text-align:right; padding-top:10px; color:var(--muted); font-size:13px;"></td>
+            </tr>
+            <tr>
+              <td colspan="2" style="padding-top:4px; color:var(--muted); font-size:13px;">IVA (15%):</td>
+              <td id="successIvaText" style="text-align:right; padding-top:4px; color:var(--muted); font-size:13px;"></td>
+            </tr>
+            <tr>
+              <td colspan="2" style="font-weight:700; padding-top:12px; font-size:16px;">Total del pedido:</td>
+              <td id="successTotalText" style="text-align:right; font-weight:700; color:var(--blue); font-size:18px; padding-top:12px;"></td>
             </tr>
           </tfoot>
         </table>
@@ -771,7 +783,10 @@
   </main>
 
   <script>
-    const money = value => Number(value || 0) > 0 ? '$' + Number(value).toLocaleString('es-CL') : 'Solicitar cotización';
+    const money = value => {
+      const num = Number(value || 0);
+      return num > 0 ? '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'Solicitar cotización';
+    };
     const productKey = product => String(product.id || product.name);
     
     const formatItemImage = item => {
@@ -820,8 +835,12 @@
 
     // Render Summary
     const cartItemsList = document.querySelector('#cartItemsList');
-    const subtotalText = document.querySelector('#subtotalText');
+    const subtotalBaseText = document.querySelector('#subtotalBaseText');
+    const ivaText = document.querySelector('#ivaText');
     const totalText = document.querySelector('#totalText');
+
+    const baseAmount = totalAmount > 0 ? totalAmount / 1.15 : 0;
+    const ivaAmount = totalAmount > 0 ? totalAmount - baseAmount : 0;
 
     if (!groupedItems.length) {
       cartItemsList.innerHTML = '<div style="padding:28px 0; color:var(--muted); text-align:center;">Tu carrito está vacío. <br><a href="/tienda.html" style="color:var(--blue); font-weight:600; margin-top:8px; display:inline-block;">Ir al catálogo</a></div>';
@@ -838,8 +857,9 @@
         </div>
       `).join('');
     }
-    subtotalText.textContent = totalAmount > 0 ? money(totalAmount) : (hasQuoteOnly ? 'Solicitar cotización' : '$0');
-    totalText.textContent = totalAmount > 0 ? money(totalAmount) : (hasQuoteOnly ? 'Solicitar cotización' : '$0');
+    if (subtotalBaseText) subtotalBaseText.textContent = totalAmount > 0 ? money(baseAmount) : (hasQuoteOnly ? 'Solicitar cotización' : '$0.00');
+    if (ivaText) ivaText.textContent = totalAmount > 0 ? money(ivaAmount) : '$0.00';
+    if (totalText) totalText.textContent = totalAmount > 0 ? money(totalAmount) : (hasQuoteOnly ? 'Solicitar cotización' : '$0.00');
 
     // Elements
     const form = document.querySelector('#checkoutForm');
@@ -958,7 +978,11 @@
             <td style="text-align:right">${money(item.price * item.quantity)}</td>
           </tr>
         `).join('');
-        document.querySelector('#successTotalText').textContent = totalAmount > 0 ? money(totalAmount) : (hasQuoteOnly ? 'Solicitar cotización' : '$0');
+        const successSubtotalBase = document.querySelector('#successSubtotalBaseText');
+        const successIva = document.querySelector('#successIvaText');
+        if (successSubtotalBase) successSubtotalBase.textContent = totalAmount > 0 ? money(baseAmount) : (hasQuoteOnly ? 'Solicitar cotización' : '$0.00');
+        if (successIva) successIva.textContent = totalAmount > 0 ? money(ivaAmount) : '$0.00';
+        document.querySelector('#successTotalText').textContent = totalAmount > 0 ? money(totalAmount) : (hasQuoteOnly ? 'Solicitar cotización' : '$0.00');
 
         // Hide checkout view and show success view
         document.querySelector('#processBanner').style.display = 'none';

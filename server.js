@@ -141,6 +141,12 @@ const initializeDatabase = async () => {
 
 app.use((req, res, next) => {
   console.log(`🌐 [${new Date().toLocaleTimeString('es-CL')}] ${req.method} ${req.url}`);
+  // Cabeceras de seguridad y hardening (QA-030)
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=(), payment=()');
+  res.setHeader('Content-Security-Policy', "frame-ancestors 'self';");
   next();
 });
 
@@ -560,6 +566,9 @@ const buildCustomerReceiptEmail = ({ orderId, customerName, customerPhone, items
     </tr>
   `).join('');
 
+  const baseAmount = total > 0 ? total / 1.15 : 0;
+  const ivaAmount = total > 0 ? total - baseAmount : 0;
+
   return `
   <!DOCTYPE html>
   <html>
@@ -604,15 +613,19 @@ const buildCustomerReceiptEmail = ({ orderId, customerName, customerPhone, items
             </tbody>
             <tfoot>
               <tr>
-                <td colspan="3" style="padding: 12px 10px 4px; text-align: right; color: #64748b;">Subtotal:</td>
-                <td style="padding: 12px 10px 4px; text-align: right; font-weight: 600; color: #102c3d;">${moneyFormat(subtotal)}</td>
+                <td colspan="3" style="padding: 12px 10px 4px; text-align: right; color: #64748b;">Subtotal neto (sin IVA):</td>
+                <td style="padding: 12px 10px 4px; text-align: right; font-weight: 600; color: #102c3d;">${moneyFormat(baseAmount)}</td>
+              </tr>
+              <tr>
+                <td colspan="3" style="padding: 4px 10px; text-align: right; color: #64748b;">IVA (15% Ecuador):</td>
+                <td style="padding: 4px 10px; text-align: right; font-weight: 600; color: #102c3d;">${moneyFormat(ivaAmount)}</td>
               </tr>
               <tr>
                 <td colspan="3" style="padding: 4px 10px; text-align: right; color: #64748b;">Envío:</td>
                 <td style="padding: 4px 10px; text-align: right; color: #0f8b44; font-weight: 600;">A coordinar con asesor</td>
               </tr>
               <tr>
-                <td colspan="3" style="padding: 10px; text-align: right; font-size: 16px; font-weight: bold; color: #102c3d; border-top: 2px solid #cbd5e1;">Total a Pagar:</td>
+                <td colspan="3" style="padding: 10px; text-align: right; font-size: 16px; font-weight: bold; color: #102c3d; border-top: 2px solid #cbd5e1;">Total a Pagar (IVA incl.):</td>
                 <td style="padding: 10px; text-align: right; font-size: 18px; font-weight: bold; color: #087ea4; border-top: 2px solid #cbd5e1;">${moneyFormat(total)}</td>
               </tr>
             </tfoot>
@@ -643,6 +656,9 @@ const buildAdminAlertEmail = ({ orderId, customerName, customerEmail, customerPh
   const cleanPhone = String(customerPhone || '').replace(/[^\d+]/g, '');
   const rawDigits = String(customerPhone || '').replace(/\D/g, '');
   const waUrl = rawDigits ? `https://wa.me/${rawDigits}?text=${encodeURIComponent(`Hola ${customerName}, te contactamos de SmartISP respecto a tu pedido #${orderId}.`)}` : null;
+
+  const baseAmount = total > 0 ? total / 1.15 : 0;
+  const ivaAmount = total > 0 ? total - baseAmount : 0;
 
   const itemsList = items.map(item => `
     <tr>
@@ -700,7 +716,15 @@ const buildAdminAlertEmail = ({ orderId, customerName, customerEmail, customerPh
             </tbody>
             <tfoot>
               <tr>
-                <td colspan="2" style="padding: 10px; text-align: right; font-weight: bold; font-size: 15px; color: #0f172a; border-top: 2px solid #cbd5e1;">Monto Total:</td>
+                <td colspan="2" style="padding: 8px 10px 4px; text-align: right; font-size: 13px; color: #64748b;">Subtotal (sin IVA):</td>
+                <td style="padding: 8px 10px 4px; text-align: right; font-size: 13px; color: #64748b;">${moneyFormat(baseAmount)}</td>
+              </tr>
+              <tr>
+                <td colspan="2" style="padding: 4px 10px 8px; text-align: right; font-size: 13px; color: #64748b;">IVA (15%):</td>
+                <td style="padding: 4px 10px 8px; text-align: right; font-size: 13px; color: #64748b;">${moneyFormat(ivaAmount)}</td>
+              </tr>
+              <tr>
+                <td colspan="2" style="padding: 10px; text-align: right; font-weight: bold; font-size: 15px; color: #0f172a; border-top: 2px solid #cbd5e1;">Monto Total (IVA incl.):</td>
                 <td style="padding: 10px; text-align: right; font-weight: bold; font-size: 16px; color: #087ea4; border-top: 2px solid #cbd5e1;">${moneyFormat(total)}</td>
               </tr>
             </tfoot>
@@ -755,6 +779,16 @@ app.post('/api/auth/update-profile', async (req, res) => {
 app.get('/api/auth/customer-orders', async (req, res) => {
   const user = await findUserById(req.session.userId);
   if (!user) return res.status(401).json({ error: 'Debes iniciar sesión.' });
+  if (pool) {
+    try {
+      const q = user.role === 'admin'
+        ? await pool.query('SELECT * FROM orders ORDER BY created_at DESC LIMIT 100')
+        : await pool.query('SELECT * FROM orders WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50', [user.id]);
+      return res.json({ orders: q.rows });
+    } catch (err) {
+      console.warn('Error consultando órdenes en PostgreSQL:', err.message);
+    }
+  }
   return res.json({ orders: orders.get(user.id) || [] });
 });
 
@@ -1303,6 +1337,7 @@ const ensureProductsTable = async () => {
 
 // --- Endpoints de Gestión de Categorías ---
 app.get('/api/auth/categories', async (req, res) => {
+  if (!await requireAdminUser(req, res)) return;
   try {
     const categories = await getStoredCategories();
     return res.json({ categories });
@@ -1870,17 +1905,35 @@ app.get('/api/auth/catalog', async (req, res) => {
     return p;
   };
 
+  const page = req.query?.page !== undefined ? Math.max(1, parseInt(req.query.page, 10) || 1) : null;
+  const limit = req.query?.limit !== undefined ? Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 36)) : 36;
+
+  let allProducts = [];
+  let contentRows = [];
+
   if (pool) {
     await ensureProductsTable();
     const [products, content] = await Promise.all([
       pool.query('SELECT id, name, description, price, category, subcategory, image_url AS "imageUrl", external_url AS "externalUrl", sku FROM products WHERE visible = TRUE ORDER BY created_at DESC'),
       pool.query('SELECT content_key AS "key", content_value AS value FROM site_content')
     ]);
-    return res.json({ products: products.rows.map(maskProduct), content: content.rows, categories });
+    allProducts = products.rows.map(maskProduct);
+    contentRows = content.rows;
+  } else {
+    allProducts = [...inMemoryProducts.values()].filter(p => p.visible !== false).map(maskProduct);
+    contentRows = [...inMemoryContent.entries()].map(([key, value]) => ({ key, value }));
   }
+
+  const total = allProducts.length;
+  const returnProducts = page !== null ? allProducts.slice((page - 1) * limit, page * limit) : allProducts;
+
   return res.json({
-    products: [...inMemoryProducts.values()].filter(p => p.visible !== false).map(maskProduct),
-    content: [...inMemoryContent.entries()].map(([key, value]) => ({ key, value })),
+    products: returnProducts,
+    total,
+    page: page || 1,
+    limit,
+    totalPages: Math.ceil(total / limit) || 1,
+    content: contentRows,
     categories
   });
 });

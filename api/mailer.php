@@ -437,6 +437,10 @@ function buildCustomerReceiptHtml(array $order): string {
         </tr>";
     }
 
+    $baseAmount = $total > 0 ? round($total / 1.15, 2) : 0;
+    $ivaAmount = $total > 0 ? round($total - $baseAmount, 2) : 0;
+    $baseDisplay = $baseAmount > 0 ? '$' . number_format($baseAmount, 2) : 'A coordinar';
+    $ivaDisplay = $ivaAmount > 0 ? '$' . number_format($ivaAmount, 2) : '$0.00';
     $totalDisplay = $total > 0 ? '$' . number_format($total, 2) : 'A coordinar';
 
     $shippingInfoHtml = '';
@@ -515,10 +519,26 @@ function buildCustomerReceiptHtml(array $order): string {
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td colspan=\"3\" style=\"padding: 16px 14px; text-align: right; font-size: 15px; font-weight: 700; color: #102c3d;\">
-                                    Total del Pedido:
+                                <td colspan=\"3\" style=\"padding: 12px 14px 4px; text-align: right; font-size: 13px; color: #5a7384;\">
+                                    Subtotal neto (sin IVA):
                                 </td>
-                                <td style=\"padding: 16px 14px; text-align: right; font-size: 20px; font-weight: 800; color: #087ea4;\">
+                                <td style=\"padding: 12px 14px 4px; text-align: right; font-size: 13px; color: #5a7384; font-weight: 600;\">
+                                    $baseDisplay
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan=\"3\" style=\"padding: 4px 14px 10px; text-align: right; font-size: 13px; color: #5a7384;\">
+                                    IVA (15% Ecuador):
+                                </td>
+                                <td style=\"padding: 4px 14px 10px; text-align: right; font-size: 13px; color: #5a7384; font-weight: 600;\">
+                                    $ivaDisplay
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan=\"3\" style=\"padding: 12px 14px; text-align: right; font-size: 15px; font-weight: 700; color: #102c3d; border-top: 1px solid #dce8ea;\">
+                                    Total del Pedido (IVA incl.):
+                                </td>
+                                <td style=\"padding: 12px 14px; text-align: right; font-size: 20px; font-weight: 800; color: #087ea4; border-top: 1px solid #dce8ea;\">
                                     $totalDisplay
                                 </td>
                             </tr>
@@ -609,6 +629,10 @@ function buildAdminAlertHtml(array $order): string {
         </tr>";
     }
 
+    $baseAmount = $total > 0 ? round($total / 1.15, 2) : 0;
+    $ivaAmount = $total > 0 ? round($total - $baseAmount, 2) : 0;
+    $baseDisplay = $baseAmount > 0 ? '$' . number_format($baseAmount, 2) : 'A convenir';
+    $ivaDisplay = $ivaAmount > 0 ? '$' . number_format($ivaAmount, 2) : '$0.00';
     $totalDisplay = $total > 0 ? '$' . number_format($total, 2) : 'A convenir';
 
     return "
@@ -671,8 +695,16 @@ function buildAdminAlertHtml(array $order): string {
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td colspan=\"2\" style=\"padding: 12px 10px; text-align: right; font-weight: 700; font-size: 14px; color: #102c3d;\">Total del Pedido:</td>
-                                <td style=\"padding: 12px 10px; text-align: right; font-weight: 800; font-size: 17px; color: #087ea4;\">$totalDisplay</td>
+                                <td colspan=\"2\" style=\"padding: 10px 10px 4px; text-align: right; font-size: 12.5px; color: #64748b;\">Subtotal (sin IVA):</td>
+                                <td style=\"padding: 10px 10px 4px; text-align: right; font-size: 12.5px; color: #64748b;\">$baseDisplay</td>
+                            </tr>
+                            <tr>
+                                <td colspan=\"2\" style=\"padding: 4px 10px 8px; text-align: right; font-size: 12.5px; color: #64748b;\">IVA (15%):</td>
+                                <td style=\"padding: 4px 10px 8px; text-align: right; font-size: 12.5px; color: #64748b;\">$ivaDisplay</td>
+                            </tr>
+                            <tr>
+                                <td colspan=\"2\" style=\"padding: 12px 10px; text-align: right; font-weight: 700; font-size: 14px; color: #102c3d; border-top: 1px solid #e5edf0;\">Total del Pedido (IVA incl.):</td>
+                                <td style=\"padding: 12px 10px; text-align: right; font-weight: 800; font-size: 17px; color: #087ea4; border-top: 1px solid #e5edf0;\">$totalDisplay</td>
                             </tr>
                         </tfoot>
                     </table>

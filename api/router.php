@@ -357,9 +357,23 @@ if ($action === 'catalog' && $method === 'GET') {
         }
 
         $categories = getDynamicCategoriesList($pdo);
+        $total = count($products);
+
+        $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : null;
+        $limit = isset($_GET['limit']) ? min(100, max(1, (int)$_GET['limit'])) : 36;
+
+        $returnProducts = $products;
+        if ($page !== null) {
+            $offset = ($page - 1) * $limit;
+            $returnProducts = array_slice($products, $offset, $limit);
+        }
 
         echo json_encode([
-            'products'   => $products,
+            'products'   => $returnProducts,
+            'total'      => $total,
+            'page'       => $page ?: 1,
+            'limit'      => $limit,
+            'totalPages' => ceil($total / $limit),
             'content'    => $content,
             'categories' => $categories
         ]);
@@ -733,6 +747,8 @@ if ($action === 'landing-content-reset' || $action === 'landing-content/reset') 
 // GESTIÓN DE CATEGORÍAS (/api/auth/categories, /api/auth/categories-reassign)
 // -------------------------------------------------------------
 if ($action === 'categories') {
+    requireAdminAuth();
+
     if ($method === 'GET') {
         $cats = getDynamicCategoriesList($pdo);
         echo json_encode(['categories' => $cats]);
@@ -740,7 +756,6 @@ if ($action === 'categories') {
     }
 
     if ($method === 'POST') {
-        requireAdminAuth();
         $cats = $body['categories'] ?? [];
         if (is_array($cats)) {
             $pdo->exec("DELETE FROM categories_rows");
@@ -941,38 +956,171 @@ if ($action === 'orders' || $action === 'customer-orders') {
             exit;
         }
 
-        if (isAdminUser($user)) {
-            $stmt = $pdo->query("SELECT * FROM orders_rows ORDER BY created_at DESC, id DESC LIMIT 100");
-            echo json_encode(['orders' => $stmt ? $stmt->fetchAll() : []]);
+        try {
+            $colsStmt = $pdo->query("SHOW COLUMNS FROM orders_rows");
+            $existingCols = array_map(fn($c) => $c['Field'], $colsStmt ? $colsStmt->fetchAll() : []);
+
+            $userId = $user['id'] ?? '';
+            $userEmail = $user['email'] ?? '';
+
+            if (isAdminUser($user)) {
+                $stmt = $pdo->query("SELECT * FROM orders_rows ORDER BY id DESC LIMIT 100");
+                $rows = $stmt ? $stmt->fetchAll() : [];
+            } else {
+                $where = [];
+                $params = [];
+                if (in_array('user_id', $existingCols, true) && !empty($userId)) {
+                    $where[] = "user_id = :uid";
+                    $params[':uid'] = $userId;
+                }
+                if (in_array('customer_email', $existingCols, true) && !empty($userEmail)) {
+                    $where[] = "customer_email = :email";
+                    $params[':email'] = $userEmail;
+                }
+
+                if (!empty($where)) {
+                    $stmt = $pdo->prepare("SELECT * FROM orders_rows WHERE (" . implode(' OR ', $where) . ") ORDER BY id DESC LIMIT 50");
+                    $stmt->execute($params);
+                    $rows = $stmt ? $stmt->fetchAll() : [];
+                } else {
+                    $rows = [];
+                }
+            }
+
+            $orders = array_map(function($r) {
+                if (isset($r['items']) && is_string($r['items'])) {
+                    $r['items'] = json_decode($r['items'], true) ?: [];
+                }
+                if (isset($r['shipping']) && is_string($r['shipping'])) {
+                    $r['shipping'] = json_decode($r['shipping'], true) ?: [];
+                }
+                return $r;
+            }, $rows);
+
+            echo json_encode(['orders' => $orders]);
+            exit;
+        } catch (Throwable $e) {
+            echo json_encode(['orders' => []]);
+            exit;
+        }
+    }
+}
+
+// -------------------------------------------------------------
+// ACTUALIZAR PERFIL (/api/auth/update-profile) (QA-019)
+// -------------------------------------------------------------
+if ($action === 'update-profile' && $method === 'POST') {
+    $user = getAuthUser();
+    if (!$user) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Debes iniciar sesión para actualizar tu perfil.']);
+        exit;
+    }
+
+    try {
+        $uTable = getUsersTableName($pdo);
+        $name = trim($body['name'] ?? ($user['name'] ?? ''));
+        $surname = trim($body['surname'] ?? ($user['surname'] ?? ''));
+        $phone = trim($body['phone'] ?? ($user['phone'] ?? ''));
+        $email = strtolower(trim($body['email'] ?? ($user['email'] ?? '')));
+
+        if (!$name) {
+            http_response_code(400);
+            echo json_encode(['error' => 'El nombre es obligatorio.']);
             exit;
         }
 
-        $userId = $user['id'] ?? '';
-        $userEmail = $user['email'] ?? '';
-        $stmt = $pdo->prepare("SELECT * FROM orders_rows WHERE (user_id = :uid OR customer_email = :email) ORDER BY created_at DESC, id DESC LIMIT 50");
-        $stmt->execute([':uid' => $userId, ':email' => $userEmail]);
-        echo json_encode(['orders' => $stmt ? $stmt->fetchAll() : []]);
+        if ($email && $email !== strtolower($user['email'] ?? '')) {
+            $check = $pdo->prepare("SELECT id FROM `$uTable` WHERE LOWER(email) = :email AND id != :id LIMIT 1");
+            $check->execute([':email' => $email, ':id' => $user['id']]);
+            if ($check->fetch()) {
+                http_response_code(409);
+                echo json_encode(['error' => 'Ese correo ya está registrado por otro usuario.']);
+                exit;
+            }
+        } else {
+            $email = $user['email'];
+        }
+
+        $stmt = $pdo->prepare("UPDATE `$uTable` SET name = :name, surname = :surname, phone = :phone, email = :email, updated_at = CURRENT_TIMESTAMP WHERE id = :id");
+        $stmt->execute([
+            ':name'    => $name,
+            ':surname' => $surname,
+            ':phone'   => $phone,
+            ':email'   => $email,
+            ':id'      => $user['id']
+        ]);
+
+        $user['name'] = $name;
+        $user['surname'] = $surname;
+        $user['phone'] = $phone;
+        $user['email'] = $email;
+        $_SESSION['auth_user_name'] = $name;
+        $_SESSION['auth_user_email'] = $email;
+
+        echo json_encode([
+            'ok'   => true,
+            'user' => [
+                'id'      => $user['id'],
+                'name'    => $name,
+                'surname' => $surname,
+                'email'   => $email,
+                'phone'   => $phone,
+                'role'    => $user['role'] ?? 'customer'
+            ]
+        ]);
+        exit;
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Error al actualizar perfil: ' . $e->getMessage()]);
         exit;
     }
 }
 
 // -------------------------------------------------------------
-// LISTA DE DESEOS (/api/auth/customer-wishlist)
+// LISTA DE DESEOS IDEMPOTENTE (/api/auth/customer-wishlist) (QA-022, QA-023)
 // -------------------------------------------------------------
 if ($action === 'customer-wishlist') {
+    $user = getAuthUser();
+    $uKey = $user ? 'wishlist_' . $user['id'] : 'guest_wishlist';
+    if (!isset($_SESSION[$uKey]) || !is_array($_SESSION[$uKey])) {
+        $_SESSION[$uKey] = [];
+    }
+
     if ($method === 'GET') {
-        echo json_encode(['wishlist' => $_SESSION['wishlist'] ?? []]);
+        echo json_encode(['wishlist' => array_values($_SESSION[$uKey])]);
         exit;
     }
+
     if ($method === 'POST') {
         $item = $body['item'] ?? $body;
-        $_SESSION['wishlist'][] = $item;
-        echo json_encode(['ok' => true]);
+        $prodId = (string)($item['productId'] ?? ($item['id'] ?? ''));
+
+        // Idempotencia: si ya existe el producto, no duplicarlo
+        $_SESSION[$uKey] = array_values(array_filter($_SESSION[$uKey], function($x) use ($prodId) {
+            $xId = (string)($x['productId'] ?? ($x['id'] ?? ''));
+            return !empty($xId) && $xId !== $prodId;
+        }));
+
+        if (!empty($prodId)) {
+            array_unshift($_SESSION[$uKey], $item);
+        }
+
+        echo json_encode(['ok' => true, 'wishlist' => array_values($_SESSION[$uKey])]);
         exit;
     }
+
     if ($method === 'DELETE') {
-        $_SESSION['wishlist'] = [];
-        echo json_encode(['ok' => true]);
+        $delId = (string)($_GET['productId'] ?? ($body['productId'] ?? ($body['id'] ?? '')));
+        if (!empty($delId)) {
+            $_SESSION[$uKey] = array_values(array_filter($_SESSION[$uKey], function($x) use ($delId) {
+                $xId = (string)($x['productId'] ?? ($x['id'] ?? ''));
+                return $xId !== $delId;
+            }));
+        } else {
+            $_SESSION[$uKey] = [];
+        }
+        echo json_encode(['ok' => true, 'wishlist' => array_values($_SESSION[$uKey])]);
         exit;
     }
 }

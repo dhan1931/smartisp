@@ -1260,6 +1260,7 @@ export default async function handler(req, res) {
     }
 
     if (isAction('categories') && req.method === 'GET') {
+      if (!await requireAdmin(req, res, database)) return;
       const categories = await getStoredCategories(database);
       return res.status(200).json({ categories });
     }
@@ -1620,7 +1621,21 @@ export default async function handler(req, res) {
         }
         return p;
       };
-      return res.status(200).json({ products: products.rows.map(maskProduct), content: content.rows, categories });
+      const allProducts = products.rows.map(maskProduct);
+      const page = req.query?.page !== undefined ? Math.max(1, parseInt(req.query.page, 10) || 1) : null;
+      const limit = req.query?.limit !== undefined ? Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 36)) : 36;
+      const total = allProducts.length;
+      const returnProducts = page !== null ? allProducts.slice((page - 1) * limit, page * limit) : allProducts;
+
+      return res.status(200).json({
+        products: returnProducts,
+        total,
+        page: page || 1,
+        limit,
+        totalPages: Math.ceil(total / limit) || 1,
+        content: content.rows,
+        categories
+      });
     }
 
     if ((isAction('search-product-image') || isAction('search-images')) && req.method === 'GET') {
