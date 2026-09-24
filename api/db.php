@@ -207,6 +207,15 @@ function normalizeProductRow(array $row): array {
     $visVal = $row['visible'] ?? ($row['COL 10'] ?? null);
     $visible = $visVal === null || $visVal == 1 || $visVal === true || $visVal === 'true' || $visVal === '1';
 
+    // MÁSCARA Y PROXY DE IMÁGENES DE PROVEEDORES (ej. Siglo 21 / wp-content)
+    // Oculta completamente el dominio y rutas del distribuidor para que el cliente final no lo vea
+    $maskedImg = $img;
+    if (!empty($img) && (stripos($img, 'siglo21.net') !== false || stripos($img, 'wp-content/uploads') !== false)) {
+        $basename = basename(parse_url($img, PHP_URL_PATH));
+        if (empty($basename)) $basename = 'producto.jpg';
+        $maskedImg = '/api/auth/product-image?id=' . rawurlencode($id) . '&f=' . rawurlencode($basename);
+    }
+
     return [
         'id'          => $id,
         'name'        => $name,
@@ -214,7 +223,8 @@ function normalizeProductRow(array $row): array {
         'price'       => $price,
         'category'    => $cat,
         'subcategory' => $subcat,
-        'imageUrl'    => $img,
+        'imageUrl'    => $maskedImg,
+        'rawImageUrl' => $img,
         'externalUrl' => $ext,
         'sku'         => $sku,
         'visible'     => $visible

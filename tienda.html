@@ -1332,6 +1332,23 @@
 			return 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=600&q=80';
 		};
 
+		const getProductImageUrl = product => {
+			if (!product) return fallbackImage(null);
+			const raw = product.image || product.imageUrl || '';
+			if (!raw) return fallbackImage(product);
+			if (raw.startsWith('/api/') || raw.startsWith('api/')) return raw;
+			if (raw.includes('siglo21.net') || raw.includes('wp-content/uploads')) {
+				const id = product.id || product.sku;
+				const basename = raw.split('/').pop().split('?')[0] || 'producto.jpg';
+				if (id) {
+					return `/api/auth/product-image?id=${encodeURIComponent(id)}&f=${encodeURIComponent(basename)}`;
+				}
+				const token = btoa(raw).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+				return `/api/auth/proxy-image?token=${token}&f=${encodeURIComponent(basename)}`;
+			}
+			return raw;
+		};
+
 		let toggleWishlist = (product, heartEl) => {
 			if (!product) return;
 			const key = productKey(product);
@@ -1761,7 +1778,7 @@
 			const hasMore = shown.length > toDisplay.length;
 
 			const productsHtml = toDisplay.map(product => {
-				const pImg = product.image || fallbackImage(product);
+				const pImg = getProductImageUrl(product);
 				const fbImg = fallbackImage(product);
 				return `<article class="product" data-index="${products.indexOf(product)}" tabindex="0" role="group" aria-label="Ver especificaciones de ${product.name}"><div class="product-image">${product.tag ? `<span class="tag">${product.tag}</span>` : ''}<button class="heart" aria-label="Agregar a favoritos"><i data-lucide="heart" width="16"></i></button><img src="${pImg}" alt="${product.name}" loading="lazy" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></div><div class="product-info"><div class="product-brand">${product.brand}</div><h3>${product.name}</h3><div><span class="stars">★★★★★</span><span class="reviews">(${product.reviews})</span></div><div class="price-row"><div class="price-block"><span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span>${Number(product.price || 0) > 0 ? '<span class="price-tax-label">Precios incluye iva</span>' : ''}</div><button class="add" data-index="${products.indexOf(product)}" aria-label="Agregar ${product.name} al carrito"><i data-lucide="plus" width="18"></i></button></div></div></article>`;
 			}).join('');
@@ -1905,7 +1922,7 @@
 		};
 
 		const openProduct = product => {
-			const pImg = product.image || fallbackImage(product);
+			const pImg = getProductImageUrl(product);
 			const fbImg = fallbackImage(product);
 			document.querySelector('#productDetail').innerHTML = `<div class="detail-layout"><div class="detail-image"><img src="${pImg}" alt="${product.name}" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></div><div class="detail-copy"><div class="product-brand">${product.brand} · ${product.category}</div><h2 id="detailTitle">${product.name}</h2><div><span class="stars">★★★★★</span><span class="reviews">${product.reviews} opiniones</span></div><div class="price-block modal-price-block"><span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span>${Number(product.price || 0) > 0 ? '<span class="price-tax-label">Precios incluye iva</span>' : ''}</div><p class="detail-description">${product.description}</p><div class="specs">${product.specs.map(spec => `<div class="spec"><span>${spec[0]}</span><strong>${spec[1]}</strong></div>`).join('')}</div><button class="primary" data-detail-add="${products.indexOf(product)}" style="margin-top:22px">Agregar al carrito <i data-lucide="shopping-cart" width="16"></i></button></div></div>`;
 			document.querySelector('#productModal').classList.add('open');
@@ -1985,7 +2002,7 @@
 						const qty = Number(item.quantity) || 1;
 						const unitPrice = Number(item.price) || 0;
 						const lineTotal = unitPrice > 0 ? unitPrice * qty : 0;
-						const pImg = item.image || fallbackImage(item);
+						const pImg = getProductImageUrl(item);
 						return `
 							<div class="cart-item">
 								<img src="${pImg}" alt="${item.name}" onerror="this.src='${fallbackImage(item)}'">
@@ -2222,7 +2239,7 @@
 					products = remote.products.map(product => ({
 						...product,
 						brand: product.category || 'SmartISP',
-						image: product.imageUrl,
+						image: getProductImageUrl(product),
 						reviews: 0,
 						tag: '',
 						specs: []
@@ -2598,7 +2615,7 @@
 			if (!list) return;
 			list.innerHTML = customerData.wishlist.length ? customerData.wishlist.map((item, index) => `
 				<div class="hub-item" data-wishlist-item="${index}">
-					<img src="${item.image || ''}" alt="" onerror="this.src='https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=120&q=80'">
+					<img src="${getProductImageUrl(item)}" alt="" onerror="this.src='${fallbackImage(item)}'">
 					<div style="flex:1;min-width:0;">
 						<strong style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}</strong>
 						<small>${money(Number(item.price || 0))} · ${item.category || 'SmartISP'}</small>

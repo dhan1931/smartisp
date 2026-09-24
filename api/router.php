@@ -408,6 +408,16 @@ if ($action === 'admin-products') {
         $checkStmt->execute([':id' => $id, ':name' => $name]);
         $existingId = $checkStmt->fetchColumn();
 
+        // Si la imagen enviada es la URL del proxy, conservar la URL real original almacenada en la base de datos
+        if ($existingId && (strpos($imageUrl, '/api/auth/product-image') === 0 || strpos($imageUrl, '/api/auth/proxy-image') === 0)) {
+            $curImgStmt = $pdo->prepare("SELECT image_url FROM `$pTable` WHERE id = :id LIMIT 1");
+            $curImgStmt->execute([':id' => $existingId]);
+            $curImg = $curImgStmt->fetchColumn();
+            if (!empty($curImg)) {
+                $imageUrl = $curImg;
+            }
+        }
+
         if ($existingId) {
             $sql = "UPDATE `$pTable` SET
                         name = :name,
@@ -1007,15 +1017,149 @@ if ($action === 'search-product-image' || $action === 'search-images') {
     exit;
 }
 
-if ($action === 'proxy-image') {
-    $url = $_GET['url'] ?? '';
-    if (!$url || !filter_var($url, FILTER_VALIDATE_URL)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'URL inválida']);
+// -------------------------------------------------------------
+// PROXY SEGURO DE IMÁGENES (/api/auth/product-image, /api/auth/proxy-image)
+// Oculta completamente el dominio de los proveedores (siglo21.net) y sirve las fotos bajo el dominio de SmartISP
+// -------------------------------------------------------------
+if ($action === 'product-image' || $action === 'proxy-image') {
+    $targetUrl = '';
+    $id = trim($_GET['id'] ?? ($_GET['sku'] ?? ''));
+    $token = trim($_GET['token'] ?? ($_GET['img'] ?? ''));
+    $rawUrl = trim($_GET['url'] ?? '');
+
+    // 1. Resolver por ID de producto en base de datos
+    if (!empty($id)) {
+        try {
+            $pTable = getProductsTableName($pdo);
+            $stmt = $pdo->prepare("SELECT image_url FROM `$pTable` WHERE id = :id OR sku = :sku LIMIT 1");
+            $stmt->execute([':id' => $id, ':sku' => $id]);
+            $foundUrl = $stmt->fetchColumn();
+            if (!empty($foundUrl)) {
+                $targetUrl = trim($foundUrl);
+            }
+        } catch (Throwable $e) {}
+    }
+
+    // 2. Resolver por Token Base64Url
+    if (empty($targetUrl) && !empty($token)) {
+        $decoded = base64_decode(strtr($token, '-_', '+/'));
+        if ($decoded && filter_var($decoded, FILTER_VALIDATE_URL)) {
+            $targetUrl = $decoded;
+        }
+    }
+
+    // 3. Fallback a URL directa si es válida
+    if (empty($targetUrl) && !empty($rawUrl) && filter_var($rawUrl, FILTER_VALIDATE_URL)) {
+        $targetUrl = $rawUrl;
+    }
+
+    // Función auxiliar para servir placeholder SVG neutro de SmartISP
+    $servePlaceholder = function() {
+        header('Content-Type: image/svg+xml; charset=utf-8');
+        header('Cache-Control: public, max-age=86400');
+        echo '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" fill="none"><rect width="400" height="400" fill="#f8fafc"/><rect x="70" y="70" width="260" height="260" rx="16" fill="#e2e8f0"/><path d="M130 270l50-60 40 45 45-55 45 70H130z" fill="#94a3b8"/><circle cx="170" cy="160" r="22" fill="#94a3b8"/><text x="200" y="318" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#64748b">SmartISP</text></svg>';
+        exit;
+    };
+
+    if (empty($targetUrl) || !filter_var($targetUrl, FILTER_VALIDATE_URL)) {
+        $servePlaceholder();
+    }
+
+    // 4. Directorio de Caché persistente en disco
+    $cacheDir = __DIR__ . '/../public/uploads/cache';
+    if (!is_dir($cacheDir)) {
+        @mkdir($cacheDir, 0755, true);
+    }
+    if (!is_dir($cacheDir) || !is_writable($cacheDir)) {
+        $cacheDir = sys_get_temp_dir() . '/smartisp_img_cache';
+        if (!is_dir($cacheDir)) {
+            @mkdir($cacheDir, 0755, true);
+        }
+    }
+
+    $cacheHash = md5($targetUrl);
+    $pathExt = pathinfo(parse_url($targetUrl, PHP_URL_PATH), PATHINFO_EXTENSION);
+    $ext = in_array(strtolower($pathExt), ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg']) ? strtolower($pathExt) : 'jpg';
+    $cacheFile = $cacheDir . '/' . $cacheHash . '.' . $ext;
+
+    // Verificar si ya existe en caché (máximo 30 días)
+    if (file_exists($cacheFile) && filesize($cacheFile) > 0 && (time() - filemtime($cacheFile) < 86400 * 30)) {
+        $mime = function_exists('mime_content_type') ? @mime_content_type($cacheFile) : null;
+        if (!$mime) $mime = 'image/' . ($ext === 'jpg' ? 'jpeg' : $ext);
+        header('Content-Type: ' . $mime);
+        header('Cache-Control: public, max-age=2592000, immutable');
+        header('ETag: "' . $cacheHash . '"');
+        header('Content-Length: ' . filesize($cacheFile));
+        header('Access-Control-Allow-Origin: *');
+        if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && trim($_SERVER['HTTP_IF_NONE_MATCH'], '"') === $cacheHash) {
+            http_response_code(304);
+            exit;
+        }
+        readfile($cacheFile);
         exit;
     }
-    header('Location: ' . $url);
-    exit;
+
+    // 5. Descarga segura del servidor proveedor mediante cURL
+    $imgData = null;
+    $contentType = null;
+    $parsedHost = parse_url($targetUrl, PHP_URL_HOST);
+    $parsedScheme = parse_url($targetUrl, PHP_URL_SCHEME) ?: 'https';
+    $referer = $parsedScheme . '://' . $parsedHost . '/';
+
+    if (function_exists('curl_init')) {
+        $ch = curl_init($targetUrl);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS      => 4,
+            CURLOPT_TIMEOUT        => 8,
+            CURLOPT_CONNECTTIMEOUT => 4,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            CURLOPT_REFERER        => $referer,
+            CURLOPT_HTTPHEADER     => [
+                'Accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+                'Accept-Language: es-EC,es;q=0.9,en;q=0.8'
+            ]
+        ]);
+        $imgData = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+        curl_close($ch);
+        if ($httpCode < 200 || $httpCode >= 300) {
+            $imgData = null;
+        }
+    } else {
+        $opts = [
+            'http' => [
+                'method' => 'GET',
+                'header' => "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)\r\nReferer: $referer\r\n",
+                'timeout' => 8
+            ],
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false
+            ]
+        ];
+        $imgData = @file_get_contents($targetUrl, false, stream_context_create($opts));
+    }
+
+    if (!empty($imgData)) {
+        if (!$contentType || strpos($contentType, 'image/') === false) {
+            $contentType = 'image/' . ($ext === 'jpg' ? 'jpeg' : $ext);
+        }
+        @file_put_contents($cacheFile, $imgData);
+        header('Content-Type: ' . $contentType);
+        header('Cache-Control: public, max-age=2592000, immutable');
+        header('ETag: "' . $cacheHash . '"');
+        header('Content-Length: ' . strlen($imgData));
+        header('Access-Control-Allow-Origin: *');
+        echo $imgData;
+        exit;
+    }
+
+    // Si falló la descarga, servir el placeholder de SmartISP
+    $servePlaceholder();
 }
 
 if ($action === 'test-email') {

@@ -1858,16 +1858,28 @@ app.post('/api/auth/test-email', async (req, res) => {
 
 app.get('/api/auth/catalog', async (req, res) => {
   const categories = await getStoredCategories();
+  const maskProduct = p => {
+    const img = String(p.imageUrl || p.image_url || '').trim();
+    if (img && (/siglo21\.net/i.test(img) || /wp-content\/uploads/i.test(img))) {
+      const filename = img.split('/').pop().split('?')[0] || 'producto.jpg';
+      return {
+        ...p,
+        imageUrl: `/api/auth/product-image?id=${encodeURIComponent(p.id)}&f=${encodeURIComponent(filename)}`
+      };
+    }
+    return p;
+  };
+
   if (pool) {
     await ensureProductsTable();
     const [products, content] = await Promise.all([
       pool.query('SELECT id, name, description, price, category, subcategory, image_url AS "imageUrl", external_url AS "externalUrl", sku FROM products WHERE visible = TRUE ORDER BY created_at DESC'),
       pool.query('SELECT content_key AS "key", content_value AS value FROM site_content')
     ]);
-    return res.json({ products: products.rows, content: content.rows, categories });
+    return res.json({ products: products.rows.map(maskProduct), content: content.rows, categories });
   }
   return res.json({
-    products: [...inMemoryProducts.values()].filter(p => p.visible !== false),
+    products: [...inMemoryProducts.values()].filter(p => p.visible !== false).map(maskProduct),
     content: [...inMemoryContent.entries()].map(([key, value]) => ({ key, value })),
     categories
   });
@@ -2109,28 +2121,75 @@ app.get(['/api/auth/search-product-image', '/api/auth/search-images'], async (re
   return res.json({ images });
 });
 
-app.get('/api/auth/proxy-image', async (req, res) => {
-  const targetUrl = String(req.query?.url || '').trim();
-  if (!targetUrl || !/^https?:\/\//i.test(targetUrl)) {
-    return res.status(400).json({ error: 'URL de imagen no válida.' });
+const fallbackImageSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" fill="none"><rect width="400" height="400" fill="#f8fafc"/><rect x="70" y="70" width="260" height="260" rx="16" fill="#e2e8f0"/><path d="M130 270l50-60 40 45 45-55 45 70H130z" fill="#94a3b8"/><circle cx="170" cy="160" r="22" fill="#94a3b8"/><text x="200" y="318" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#64748b">SmartISP</text></svg>`;
+
+app.get(['/api/auth/product-image', '/api/auth/proxy-image'], async (req, res) => {
+  let targetUrl = '';
+  const id = String(req.query?.id || req.query?.sku || '').trim();
+  const token = String(req.query?.token || req.query?.img || '').trim();
+  const rawUrl = String(req.query?.url || '').trim();
+
+  // 1. Resolver por ID de producto
+  if (id) {
+    if (pool) {
+      try {
+        const row = await pool.query('SELECT image_url FROM products WHERE id = $1 OR sku = $1 LIMIT 1', [id]);
+        if (row.rows.length && row.rows[0].image_url) {
+          targetUrl = row.rows[0].image_url.trim();
+        }
+      } catch (e) {}
+    }
+    if (!targetUrl && inMemoryProducts.has(id)) {
+      targetUrl = inMemoryProducts.get(id).imageUrl || '';
+    }
   }
+
+  // 2. Resolver por token codificado en Base64Url
+  if (!targetUrl && token) {
+    try {
+      const decoded = Buffer.from(token.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+      if (/^https?:\/\//i.test(decoded)) {
+        targetUrl = decoded;
+      }
+    } catch (e) {}
+  }
+
+  // 3. Fallback a URL directa
+  if (!targetUrl && /^https?:\/\//i.test(rawUrl)) {
+    targetUrl = rawUrl;
+  }
+
+  if (!targetUrl || !/^https?:\/\//i.test(targetUrl)) {
+    res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.send(fallbackImageSvg);
+  }
+
   try {
+    const parsed = new URL(targetUrl);
+    const referer = `${parsed.protocol}//${parsed.host}/`;
     const response = await fetch(targetUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': referer,
+        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
       }
     });
     if (!response.ok) {
-      return res.status(response.status).json({ error: 'No se pudo descargar la imagen remota.' });
+      res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      return res.send(fallbackImageSvg);
     }
     const contentType = response.headers.get('content-type') || 'image/jpeg';
     const buffer = Buffer.from(await response.arrayBuffer());
     res.setHeader('Content-Type', contentType);
-    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');
     res.setHeader('Access-Control-Allow-Origin', '*');
     return res.send(buffer);
   } catch (err) {
-    return res.status(500).json({ error: 'Error al obtener la imagen: ' + err.message });
+    res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.send(fallbackImageSvg);
   }
 });
 

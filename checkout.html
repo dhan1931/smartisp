@@ -774,6 +774,22 @@
     const money = value => Number(value || 0) > 0 ? '$' + Number(value).toLocaleString('es-CL') : 'Solicitar cotización';
     const productKey = product => String(product.id || product.name);
     
+    const formatItemImage = item => {
+      let raw = item?.image || item?.imageUrl || '';
+      if (!raw) return 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=300&q=80';
+      if (raw.startsWith('/api/') || raw.startsWith('api/')) return raw;
+      if (raw.includes('siglo21.net') || raw.includes('wp-content/uploads')) {
+        const id = item.id || item.productId || item.sku;
+        const basename = raw.split('/').pop().split('?')[0] || 'producto.jpg';
+        if (id) {
+          return `/api/auth/product-image?id=${encodeURIComponent(id)}&f=${encodeURIComponent(basename)}`;
+        }
+        const token = btoa(raw).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        return `/api/auth/proxy-image?token=${token}&f=${encodeURIComponent(basename)}`;
+      }
+      return raw;
+    };
+
     // Load Cart from localStorage
     const rawCart = JSON.parse(localStorage.getItem('smartisp.cart') || '[]');
     const cartMap = new Map();
@@ -787,7 +803,7 @@
           ...item,
           quantity: qty,
           price: Math.max(0, Number(item.price || 0)),
-          image: item.image || item.imageUrl || 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=300&q=80'
+          image: formatItemImage(item)
         });
       }
     });
@@ -813,7 +829,7 @@
     } else {
       cartItemsList.innerHTML = groupedItems.map(item => `
         <div class="cart-line">
-          <img src="${item.image}" alt="${item.name}" onerror="this.src='https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=300&q=80'">
+          <img src="${formatItemImage(item)}" alt="${item.name}" onerror="this.src='https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=300&q=80'">
           <div class="cart-line-info">
             <strong>${item.name}</strong>
             <small>Cant: ${item.quantity} × ${money(item.price)}</small>
