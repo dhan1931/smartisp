@@ -1423,7 +1423,18 @@ app.post('/api/auth/admin-products', async (req, res) => {
   const price = Number(product.price || 0);
   const category = String(product.category || '').trim();
   const subcategory = String(product.subcategory || '').trim();
-  const imageUrl = String(product.imageUrl || product.image_url || '').trim();
+  let imageUrl = String(product.imageUrl || product.image_url || '').trim();
+  if (imageUrl.includes('/api/auth/product-image') || imageUrl.includes('/api/auth/proxy-image')) {
+    const match = imageUrl.match(/[?&]t=([A-Za-z0-9_-]+)/);
+    if (match) {
+      try {
+        const decoded = Buffer.from(match[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+        if (/^https?:\/\//i.test(decoded)) imageUrl = decoded;
+      } catch (e) {}
+    } else if (product.rawImageUrl && /^https?:\/\//i.test(product.rawImageUrl)) {
+      imageUrl = product.rawImageUrl.trim();
+    }
+  }
   const externalUrl = String(product.externalUrl || product.external_url || '').trim();
   const sku = String(product.sku || '').trim();
   const visible = product.visible !== false;
@@ -1893,13 +1904,36 @@ app.post('/api/auth/test-email', async (req, res) => {
 
 app.get('/api/auth/catalog', async (req, res) => {
   const categories = await getStoredCategories();
+  const isSupplierUrl = (url) => {
+    if (!url || typeof url !== 'string') return false;
+    const trimmed = url.trim();
+    if (!/^https?:\/\//i.test(trimmed)) return false;
+    if (/siglo21\.net/i.test(trimmed) || /wp-content\/uploads/i.test(trimmed)) return true;
+    if (/intcomex/i.test(trimmed) || /1worldsync\.com/i.test(trimmed)) return true;
+    try {
+      const parsed = new URL(trimmed);
+      const host = parsed.hostname.toLowerCase();
+      if (host === 'smart-isp.com.ec' || host.endsWith('.smart-isp.com.ec') || host === 'localhost' || host === '127.0.0.1') return false;
+      if (host === 'images.unsplash.com') return false;
+      return true;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const toBase64Url = (str) => {
+    return Buffer.from(str, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  };
+
   const maskProduct = p => {
     const img = String(p.imageUrl || p.image_url || '').trim();
-    if (img && (/siglo21\.net/i.test(img) || /wp-content\/uploads/i.test(img))) {
+    if (img && isSupplierUrl(img)) {
       const filename = img.split('/').pop().split('?')[0] || 'producto.jpg';
+      const token = toBase64Url(img);
       return {
         ...p,
-        imageUrl: `/api/auth/product-image?id=${encodeURIComponent(p.id)}&f=${encodeURIComponent(filename)}`
+        rawImageUrl: img,
+        imageUrl: `/api/auth/product-image?id=${encodeURIComponent(p.id)}&t=${token}&f=${encodeURIComponent(filename)}`
       };
     }
     return p;
@@ -2179,32 +2213,38 @@ const fallbackImageSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" he
 app.get(['/api/auth/product-image', '/api/auth/proxy-image'], async (req, res) => {
   let targetUrl = '';
   const id = String(req.query?.id || req.query?.sku || '').trim();
-  const token = String(req.query?.token || req.query?.img || '').trim();
+  const token = String(req.query?.t || req.query?.token || req.query?.img || '').trim();
   const rawUrl = String(req.query?.url || '').trim();
 
-  // 1. Resolver por ID de producto
-  if (id) {
-    if (pool) {
-      try {
-        const row = await pool.query('SELECT image_url FROM products WHERE id = $1 OR sku = $1 LIMIT 1', [id]);
-        if (row.rows.length && row.rows[0].image_url) {
-          targetUrl = row.rows[0].image_url.trim();
-        }
-      } catch (e) {}
-    }
-    if (!targetUrl && inMemoryProducts.has(id)) {
-      targetUrl = inMemoryProducts.get(id).imageUrl || '';
-    }
-  }
-
-  // 2. Resolver por token codificado en Base64Url
-  if (!targetUrl && token) {
+  // 1. Resolver por token codificado en Base64Url (directo y rápido)
+  if (token) {
     try {
       const decoded = Buffer.from(token.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
       if (/^https?:\/\//i.test(decoded)) {
         targetUrl = decoded;
       }
     } catch (e) {}
+  }
+
+  // 2. Resolver por ID de producto si no vino token
+  if (!targetUrl && id) {
+    if (pool) {
+      try {
+        const row = await pool.query('SELECT image_url FROM products WHERE id = $1 OR sku = $1 LIMIT 1', [id]);
+        if (row.rows.length && row.rows[0].image_url) {
+          const dbUrl = row.rows[0].image_url.trim();
+          if (/^https?:\/\//i.test(dbUrl) && !dbUrl.includes('/api/auth/product-image')) {
+            targetUrl = dbUrl;
+          }
+        }
+      } catch (e) {}
+    }
+    if (!targetUrl && inMemoryProducts.has(id)) {
+      const memUrl = (inMemoryProducts.get(id).imageUrl || '').trim();
+      if (/^https?:\/\//i.test(memUrl) && !memUrl.includes('/api/auth/product-image')) {
+        targetUrl = memUrl;
+      }
+    }
   }
 
   // 3. Fallback a URL directa

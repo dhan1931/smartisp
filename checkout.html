@@ -789,18 +789,40 @@
     };
     const productKey = product => String(product.id || product.name);
     
+    const isSupplierUrl = (url) => {
+      if (!url || typeof url !== 'string') return false;
+      const trimmed = url.trim();
+      if (!/^https?:\/\//i.test(trimmed)) return false;
+      if (trimmed.includes('siglo21.net') || trimmed.includes('wp-content/uploads')) return true;
+      if (trimmed.includes('intcomex') || trimmed.includes('1worldsync.com')) return true;
+      try {
+        const parsed = new URL(trimmed);
+        const host = parsed.hostname.toLowerCase();
+        if (host === 'smart-isp.com.ec' || host.endsWith('.smart-isp.com.ec') || host === 'localhost' || host === '127.0.0.1') return false;
+        if (host === 'images.unsplash.com') return false;
+        return true;
+      } catch (e) {
+        return false;
+      }
+    };
+
+    const toBase64Url = (str) => {
+      try {
+        return btoa(unescape(encodeURIComponent(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      } catch (e) {
+        return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      }
+    };
+
     const formatItemImage = item => {
       let raw = item?.image || item?.imageUrl || '';
       if (!raw) return 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=300&q=80';
       if (raw.startsWith('/api/') || raw.startsWith('api/')) return raw;
-      if (raw.includes('siglo21.net') || raw.includes('wp-content/uploads')) {
-        const id = item.id || item.productId || item.sku;
+      if (isSupplierUrl(raw)) {
+        const id = item.id || item.productId || item.sku || '';
         const basename = raw.split('/').pop().split('?')[0] || 'producto.jpg';
-        if (id) {
-          return `/api/auth/product-image?id=${encodeURIComponent(id)}&f=${encodeURIComponent(basename)}`;
-        }
-        const token = btoa(raw).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-        return `/api/auth/proxy-image?token=${token}&f=${encodeURIComponent(basename)}`;
+        const token = toBase64Url(raw);
+        return `/api/auth/product-image?id=${encodeURIComponent(id)}&t=${token}&f=${encodeURIComponent(basename)}`;
       }
       return raw;
     };

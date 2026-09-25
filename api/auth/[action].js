@@ -1320,12 +1320,24 @@ export default async function handler(req, res) {
       }
       const product = bodyOf(req);
       const id = String(product.id || crypto.randomUUID());
+      let imageUrl = String(product.imageUrl || product.image_url || '').trim();
+      if (imageUrl.includes('/api/auth/product-image') || imageUrl.includes('/api/auth/proxy-image')) {
+        const match = imageUrl.match(/[?&]t=([A-Za-z0-9_-]+)/);
+        if (match) {
+          try {
+            const decoded = Buffer.from(match[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+            if (/^https?:\/\//i.test(decoded)) imageUrl = decoded;
+          } catch (e) {}
+        } else if (product.rawImageUrl && /^https?:\/\//i.test(product.rawImageUrl)) {
+          imageUrl = product.rawImageUrl.trim();
+        }
+      }
       await database.query(`INSERT INTO products (id, name, description, price, category, subcategory, image_url, external_url, sku, visible, updated_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
         ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description, price = EXCLUDED.price,
         category = EXCLUDED.category, subcategory = EXCLUDED.subcategory, image_url = EXCLUDED.image_url, external_url = EXCLUDED.external_url, sku = EXCLUDED.sku,
         visible = EXCLUDED.visible, updated_at = NOW()`,
-        [id, String(product.name || '').trim(), String(product.description || '').trim(), Number(product.price || 0), String(product.category || '').trim(), String(product.subcategory || '').trim(), String(product.imageUrl || '').trim(), String(product.externalUrl || '').trim(), String(product.sku || '').trim(), product.visible !== false]);
+        [id, String(product.name || '').trim(), String(product.description || '').trim(), Number(product.price || 0), String(product.category || '').trim(), String(product.subcategory || '').trim(), imageUrl, String(product.externalUrl || '').trim(), String(product.sku || '').trim(), product.visible !== false]);
       return res.status(200).json({ ok: true, id });
     }
 
@@ -1610,13 +1622,36 @@ export default async function handler(req, res) {
         database.query('SELECT content_key AS "key", content_value AS value FROM site_content'),
         getStoredCategories(database)
       ]);
+      const isSupplierUrl = (url) => {
+        if (!url || typeof url !== 'string') return false;
+        const trimmed = url.trim();
+        if (!/^https?:\/\//i.test(trimmed)) return false;
+        if (/siglo21\.net/i.test(trimmed) || /wp-content\/uploads/i.test(trimmed)) return true;
+        if (/intcomex/i.test(trimmed) || /1worldsync\.com/i.test(trimmed)) return true;
+        try {
+          const parsed = new URL(trimmed);
+          const host = parsed.hostname.toLowerCase();
+          if (host === 'smart-isp.com.ec' || host.endsWith('.smart-isp.com.ec') || host === 'localhost' || host === '127.0.0.1') return false;
+          if (host === 'images.unsplash.com') return false;
+          return true;
+        } catch (e) {
+          return false;
+        }
+      };
+
+      const toBase64Url = (str) => {
+        return Buffer.from(str, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      };
+
       const maskProduct = p => {
         const img = String(p.imageUrl || p.image_url || '').trim();
-        if (img && (/siglo21\.net/i.test(img) || /wp-content\/uploads/i.test(img))) {
+        if (img && isSupplierUrl(img)) {
           const filename = img.split('/').pop().split('?')[0] || 'producto.jpg';
+          const token = toBase64Url(img);
           return {
             ...p,
-            imageUrl: `/api/auth/product-image?id=${encodeURIComponent(p.id)}&f=${encodeURIComponent(filename)}`
+            rawImageUrl: img,
+            imageUrl: `/api/auth/product-image?id=${encodeURIComponent(p.id)}&t=${token}&f=${encodeURIComponent(filename)}`
           };
         }
         return p;
@@ -1650,23 +1685,26 @@ export default async function handler(req, res) {
     if ((isAction('product-image') || isAction('proxy-image')) && req.method === 'GET') {
       let targetUrl = '';
       const id = String(req.query?.id || req.query?.sku || '').trim();
-      const token = String(req.query?.token || req.query?.img || '').trim();
+      const token = String(req.query?.t || req.query?.token || req.query?.img || '').trim();
       const rawUrl = String(req.query?.url || '').trim();
 
-      if (id) {
-        try {
-          const row = await database.query('SELECT image_url FROM products WHERE id = $1 OR sku = $1 LIMIT 1', [id]);
-          if (row.rows.length && row.rows[0].image_url) {
-            targetUrl = row.rows[0].image_url.trim();
-          }
-        } catch (e) {}
-      }
-
-      if (!targetUrl && token) {
+      if (token) {
         try {
           const decoded = Buffer.from(token.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
           if (/^https?:\/\//i.test(decoded)) {
             targetUrl = decoded;
+          }
+        } catch (e) {}
+      }
+
+      if (!targetUrl && id) {
+        try {
+          const row = await database.query('SELECT image_url FROM products WHERE id = $1 OR sku = $1 LIMIT 1', [id]);
+          if (row.rows.length && row.rows[0].image_url) {
+            const dbUrl = row.rows[0].image_url.trim();
+            if (/^https?:\/\//i.test(dbUrl) && !dbUrl.includes('/api/auth/product-image')) {
+              targetUrl = dbUrl;
+            }
           }
         } catch (e) {}
       }

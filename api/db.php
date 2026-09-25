@@ -193,6 +193,41 @@ function getUsersTableName(PDO $pdo) {
     return $tbl;
 }
 
+// Verifica si una URL proviene de distribuidores externos (Intcomex, Siglo 21, 1worldsync, etc.)
+function isExternalSupplierImageUrl(?string $url): bool {
+    if (empty($url)) return false;
+    $url = trim($url);
+    if (strpos($url, '/api/auth/') === 0 || strpos($url, 'api/auth/') === 0 || strpos($url, 'data:') === 0) {
+        return false;
+    }
+    // Detección directa de mayoristas y sus redes de distribución
+    if (stripos($url, 'intcomex') !== false) return true;
+    if (stripos($url, '1worldsync.com') !== false) return true;
+    if (stripos($url, 'siglo21.net') !== false) return true;
+    if (stripos($url, 'wp-content/uploads') !== false) return true;
+
+    // Cualquier URL absoluta http/https externa que no sea del propio dominio de SmartISP
+    if (preg_match('/^https?:\/\//i', $url)) {
+        $host = strtolower((string)parse_url($url, PHP_URL_HOST));
+        if ($host === 'smart-isp.com.ec' || $host === 'www.smart-isp.com.ec' || $host === 'images.unsplash.com') {
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+
+function buildProductProxyImageUrl(string $id, string $rawUrl): string {
+    $path = (string)parse_url($rawUrl, PHP_URL_PATH);
+    $basename = basename($path);
+    if (empty($basename) || strpos($basename, '.') === false) {
+        $basename = 'producto.jpg';
+    }
+    $basename = explode('?', $basename)[0];
+    $token = rtrim(strtr(base64_encode($rawUrl), '+/', '-_'), '=');
+    return '/api/auth/product-image?id=' . rawurlencode($id) . '&t=' . $token . '&f=' . rawurlencode($basename);
+}
+
 // Normaliza los nombres de columnas de productos de forma flexible
 function normalizeProductRow(array $row): array {
     $id = (string)($row['id'] ?? ($row['product_id'] ?? ($row['codigo'] ?? ($row['COL 1'] ?? uniqid()))));
@@ -207,13 +242,11 @@ function normalizeProductRow(array $row): array {
     $visVal = $row['visible'] ?? ($row['COL 10'] ?? null);
     $visible = $visVal === null || $visVal == 1 || $visVal === true || $visVal === 'true' || $visVal === '1';
 
-    // MÁSCARA Y PROXY DE IMÁGENES DE PROVEEDORES (ej. Siglo 21 / wp-content)
+    // MÁSCARA Y PROXY DE IMÁGENES DE PROVEEDORES (Intcomex, Siglo 21, 1worldsync o cualquier distribuidor)
     // Oculta completamente el dominio y rutas del distribuidor para que el cliente final no lo vea
     $maskedImg = $img;
-    if (!empty($img) && (stripos($img, 'siglo21.net') !== false || stripos($img, 'wp-content/uploads') !== false)) {
-        $basename = basename(parse_url($img, PHP_URL_PATH));
-        if (empty($basename)) $basename = 'producto.jpg';
-        $maskedImg = '/api/auth/product-image?id=' . rawurlencode($id) . '&f=' . rawurlencode($basename);
+    if (!empty($img) && isExternalSupplierImageUrl($img)) {
+        $maskedImg = buildProductProxyImageUrl($id, $img);
     }
 
     return [

@@ -422,13 +422,27 @@ if ($action === 'admin-products') {
         $checkStmt->execute([':id' => $id, ':name' => $name]);
         $existingId = $checkStmt->fetchColumn();
 
-        // Si la imagen enviada es la URL del proxy, conservar la URL real original almacenada en la base de datos
-        if ($existingId && (strpos($imageUrl, '/api/auth/product-image') === 0 || strpos($imageUrl, '/api/auth/proxy-image') === 0)) {
-            $curImgStmt = $pdo->prepare("SELECT image_url FROM `$pTable` WHERE id = :id LIMIT 1");
-            $curImgStmt->execute([':id' => $existingId]);
-            $curImg = $curImgStmt->fetchColumn();
-            if (!empty($curImg)) {
-                $imageUrl = $curImg;
+        // Si la imagen enviada es la URL del proxy, conservar la URL real original
+        if (strpos($imageUrl, '/api/auth/product-image') !== false || strpos($imageUrl, '/api/auth/proxy-image') !== false) {
+            $extractedReal = null;
+            if (preg_match('/[?&]t=([A-Za-z0-9_-]+)/', $imageUrl, $m)) {
+                $decoded = base64_decode(strtr($m[1], '-_', '+/'));
+                if ($decoded && filter_var($decoded, FILTER_VALIDATE_URL)) {
+                    $extractedReal = $decoded;
+                }
+            }
+            if ($extractedReal) {
+                $imageUrl = $extractedReal;
+            } elseif ($existingId) {
+                $curImgStmt = $pdo->prepare("SELECT * FROM `$pTable` WHERE id = :id LIMIT 1");
+                $curImgStmt->execute([':id' => $existingId]);
+                $curRow = $curImgStmt->fetch(PDO::FETCH_ASSOC);
+                if ($curRow) {
+                    $curImg = (string)($curRow['image_url'] ?? ($curRow['imageUrl'] ?? ($curRow['imagen'] ?? ($curRow['foto'] ?? ''))));
+                    if (!empty($curImg) && strpos($curImg, '/api/auth/') !== 0) {
+                        $imageUrl = $curImg;
+                    }
+                }
             }
         }
 
@@ -1172,28 +1186,32 @@ if ($action === 'search-product-image' || $action === 'search-images') {
 if ($action === 'product-image' || $action === 'proxy-image') {
     $targetUrl = '';
     $id = trim($_GET['id'] ?? ($_GET['sku'] ?? ''));
-    $token = trim($_GET['token'] ?? ($_GET['img'] ?? ''));
+    $token = trim($_GET['token'] ?? ($_GET['img'] ?? ($_GET['t'] ?? '')));
     $rawUrl = trim($_GET['url'] ?? '');
 
-    // 1. Resolver por ID de producto en base de datos
-    if (!empty($id)) {
-        try {
-            $pTable = getProductsTableName($pdo);
-            $stmt = $pdo->prepare("SELECT image_url FROM `$pTable` WHERE id = :id OR sku = :sku LIMIT 1");
-            $stmt->execute([':id' => $id, ':sku' => $id]);
-            $foundUrl = $stmt->fetchColumn();
-            if (!empty($foundUrl)) {
-                $targetUrl = trim($foundUrl);
-            }
-        } catch (Throwable $e) {}
-    }
-
-    // 2. Resolver por Token Base64Url
-    if (empty($targetUrl) && !empty($token)) {
+    // 1. Resolver por Token Base64Url (directo y de alto rendimiento)
+    if (!empty($token)) {
         $decoded = base64_decode(strtr($token, '-_', '+/'));
         if ($decoded && filter_var($decoded, FILTER_VALIDATE_URL)) {
             $targetUrl = $decoded;
         }
+    }
+
+    // 2. Resolver por ID de producto en base de datos si no vino token o falló
+    if (empty($targetUrl) && !empty($id)) {
+        try {
+            $pTable = getProductsTableName($pdo);
+            $stmt = $pdo->prepare("SELECT * FROM `$pTable` WHERE id = :id OR sku = :sku LIMIT 1");
+            $stmt->execute([':id' => $id, ':sku' => $id]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($row) {
+                $norm = normalizeProductRow($row);
+                $foundUrl = trim($norm['rawImageUrl'] ?? ($norm['imageUrl'] ?? ''));
+                if (!empty($foundUrl) && strpos($foundUrl, '/api/auth/') !== 0) {
+                    $targetUrl = $foundUrl;
+                }
+            }
+        } catch (Throwable $e) {}
     }
 
     // 3. Fallback a URL directa si es válida
