@@ -2,6 +2,7 @@
 User-agent: *
 Allow: /
 Allow: /favicon.ico
+Allow: /favicon.svg
 Allow: /favicon*.png
 Allow: /apple-touch-icon*.png
 Allow: /site.webmanifest
