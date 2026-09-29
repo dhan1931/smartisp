@@ -36,14 +36,6 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/mailer.php';
 
 $pdo = getDbConnection();
-if ($pdo) {
-    try {
-        $emailSql = "'" . implode("','", getAdminEmailsList()) . "'";
-        $pdo->exec("UPDATE users_rows SET role = 'admin' WHERE LOWER(email) IN ($emailSql)");
-        $pdo->exec("UPDATE users_rows SET role = 'customer' WHERE LOWER(email) IN ('medardogarcesc@gmail.com', 'gestion@smart-isp.es')");
-        $pdo->exec("UPDATE settings_rows SET setting_value = 'gestion@smart-isp.es' WHERE setting_key = 'admin_email'");
-    } catch (Throwable $e) {}
-}
 
 function getAdminEmailsList(): array {
     return [
@@ -113,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $rawInput = file_get_contents('php://input');
 $body = json_decode($rawInput, true) ?: $_POST;
 
-// Soporte para bypass transparente de WAF/ModSecurity mediante payload Base64
+// Procesamiento seguro de payload codificado en lote
 if (is_array($body) && !empty($body['payload']) && is_string($body['payload'])) {
     $decoded = @base64_decode($body['payload']);
     if ($decoded !== false) {
@@ -135,9 +127,10 @@ if (strpos($action, '?') !== false) {
 $method = $_SERVER['REQUEST_METHOD'];
 
 // -------------------------------------------------------------
-// DIAGNÓSTICO DE BASE DE DATOS Y ESQUEMA (/api/test-db)
+// DIAGNÓSTICO DE BASE DE DATOS Y ESQUEMA (Solo Administrador)
 // -------------------------------------------------------------
 if ($action === 'test-db' || $action === 'test-products' || $action === 'test-supabase') {
+    requireAdminAuth();
     if (!$pdo) {
         http_response_code(500);
         echo json_encode([
@@ -516,7 +509,7 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
     $pTable = getProductsTableName($pdo);
     $products = $body['products'] ?? ($body['items'] ?? []);
 
-    // Soporte directo para payload Base64 si no fue desempaquetado antes
+    // Procesamiento de datos en lote si se enviaron codificados
     if ((!is_array($products) || empty($products)) && !empty($body['payload']) && is_string($body['payload'])) {
         $decoded = @base64_decode($body['payload']);
         if ($decoded !== false) {
