@@ -13,6 +13,11 @@ Options -Indexes
     RewriteRule ^(package\.json|package-lock\.json|vite\.config\.js|tsconfig.*|\.git.*)$ - [F,L]
     RewriteRule \.(sql|bak|config|log|md)$ - [F,L]
 
+    # Rutas amigables SEO para productos individuales y sitemaps
+    RewriteRule ^sitemap-products\.xml$ sitemap-products.php [QSA,L]
+    RewriteRule ^producto/([^/]+)/?$ producto.php?slug=$1 [QSA,L]
+    RewriteRule ^producto/?$ tienda.html [QSA,L]
+
     # Enrutamiento universal de API hacia router.php
     RewriteRule ^api/auth/(.*)$ api/router.php?action=$1 [QSA,L]
     RewriteRule ^api/(.*)$ api/router.php?action=$1 [QSA,L]

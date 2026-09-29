@@ -233,6 +233,10 @@
 		.specs { border-top: 1px solid var(--line); margin-top: 22px; padding-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 11px 22px; }
 		.spec { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; border-bottom: 1px solid #eef5f8; padding-bottom: 8px; }
 		.spec span { color: var(--muted); }
+		.modal-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; align-items: center; }
+		.modal-actions button.primary { margin-top: 0 !important; flex: 1 1 180px; }
+		.btn-share-link, .btn-view-card { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 11px 15px; border-radius: 6px; font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; transition: all .2s; border: 1px solid var(--line); background: var(--pale); color: var(--navy); white-space: nowrap; }
+		.btn-share-link:hover, .btn-view-card:hover { background: #e2e8f0; border-color: #cbd5e1; color: var(--blue); }
 		.account-panel { width: min(430px, 100%); }
 		.account-panel h2 { font-size: 28px; margin: 8px 0; }
 		.account-panel p { color: var(--muted); font-size: 13px; line-height: 1.5; }
@@ -2026,16 +2030,93 @@
 			}, 4000);
 		};
 
-		const openProduct = product => {
+		let originalDocumentTitle = document.title;
+
+		const slugifyText = text => {
+			return String(text || '')
+				.normalize('NFD')
+				.replace(/[\u0300-\u036f]/g, '')
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/g, '-')
+				.replace(/^-+|-+$/g, '')
+				.slice(0, 80) || 'articulo';
+		};
+
+		const getProductUrl = product => {
+			if (!product) return '/tienda.html';
+			const pid = product.id || product.sku || '';
+			const slug = slugifyText(product.name || '');
+			return `/producto/${encodeURIComponent(pid)}-${slug}`;
+		};
+
+		const closeProductModal = (updateHistory = true) => {
+			const modal = document.querySelector('#productModal');
+			if (modal) modal.classList.remove('open');
+			if (originalDocumentTitle) document.title = originalDocumentTitle;
+			if (updateHistory) {
+				const currentParams = new URLSearchParams(window.location.search);
+				if (currentParams.has('p') || currentParams.has('id')) {
+					currentParams.delete('p');
+					currentParams.delete('id');
+					const cleanQuery = currentParams.toString();
+					const cleanUrl = cleanQuery ? `${window.location.pathname}?${cleanQuery}` : window.location.pathname;
+					history.replaceState(null, '', cleanUrl);
+				}
+			}
+		};
+
+		const openProduct = (product, updateHistory = true) => {
+			if (!product) return;
 			const pImg = getProductImageUrl(product);
 			const fbImg = fallbackImage(product);
 			const hasReviews = Number(product.reviews || 0) > 0;
 			const reviewsHtml = hasReviews
 				? `<div><span class="stars">★★★★★</span><span class="reviews">${product.reviews} opiniones</span></div>`
 				: `<div><span class="reviews" style="margin-left:0;font-style:italic;">Sin opiniones registradas</span></div>`;
-			document.querySelector('#productDetail').innerHTML = `<div class="detail-layout"><div class="detail-image"><img src="${pImg}" alt="${product.name}" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></div><div class="detail-copy"><div class="product-brand">${product.brand} · ${product.category}</div><h2 id="detailTitle">${product.name}</h2>${reviewsHtml}<div class="price-block modal-price-block"><span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span>${Number(product.price || 0) > 0 ? '<span class="price-tax-label">Precios incluye iva</span>' : ''}</div><p class="detail-description">${product.description}</p><div class="specs">${product.specs.map(spec => `<div class="spec"><span>${spec[0]}</span><strong>${spec[1]}</strong></div>`).join('')}</div><button class="primary" data-detail-add="${products.indexOf(product)}" style="margin-top:22px">Agregar al carrito <i data-lucide="shopping-cart" width="16"></i></button></div></div>`;
+			
+			const productUrl = getProductUrl(product);
+			const fullProductUrl = window.location.origin + productUrl;
+
+			document.querySelector('#productDetail').innerHTML = `
+				<div class="detail-layout">
+					<div class="detail-image">
+						<img src="${pImg}" alt="${product.name}" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}">
+					</div>
+					<div class="detail-copy">
+						<div class="product-brand">${product.brand || 'SmartISP'} · ${product.category || 'General'}</div>
+						<h2 id="detailTitle">${product.name}</h2>
+						${reviewsHtml}
+						<div class="price-block modal-price-block">
+							<span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span>
+							${Number(product.price || 0) > 0 ? '<span class="price-tax-label">Precios incluye iva</span>' : ''}
+						</div>
+						<p class="detail-description">${product.description || ''}</p>
+						<div class="specs">${(product.specs || []).map(spec => `<div class="spec"><span>${spec[0]}</span><strong>${spec[1]}</strong></div>`).join('')}</div>
+						<div class="modal-actions">
+							<button class="primary" data-detail-add="${products.indexOf(product)}">
+								Agregar al carrito <i data-lucide="shopping-cart" width="16"></i>
+							</button>
+							<button type="button" class="btn-share-link" id="btnShareModal" title="Copiar enlace único para compartir">
+								<i data-lucide="link" width="15"></i> Copiar enlace
+							</button>
+							<a href="${productUrl}" target="_blank" rel="noopener noreferrer" class="btn-view-card" title="Abrir ficha web completa en una nueva pestaña">
+								<i data-lucide="external-link" width="15"></i> Ficha web
+							</a>
+						</div>
+					</div>
+				</div>
+			`;
 			document.querySelector('#productModal').classList.add('open');
 			lucide.createIcons();
+
+			if (updateHistory) {
+				const currentParams = new URLSearchParams(window.location.search);
+				currentParams.set('p', product.id || product.sku);
+				history.pushState({ modalOpen: true, productId: product.id }, '', `${window.location.pathname}?${currentParams.toString()}`);
+			}
+			originalDocumentTitle = originalDocumentTitle || document.title;
+			document.title = `${product.name} - SmartISP`;
+
 			const addBtn = document.querySelector('[data-detail-add]');
 			if (addBtn) {
 				addBtn.addEventListener('click', () => {
@@ -2047,6 +2128,32 @@
 						if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
 					}, 1200);
 					addToCart(product);
+				});
+			}
+
+			const shareBtn = document.querySelector('#btnShareModal');
+			if (shareBtn) {
+				shareBtn.addEventListener('click', async () => {
+					try {
+						if (navigator.clipboard && navigator.clipboard.writeText) {
+							await navigator.clipboard.writeText(fullProductUrl);
+						} else {
+							const t = document.createElement('input');
+							t.value = fullProductUrl;
+							document.body.appendChild(t);
+							t.select();
+							document.execCommand('copy');
+							document.body.removeChild(t);
+						}
+						shareBtn.innerHTML = '<i data-lucide="check" width="15" style="color:#10b981;"></i> ¡Enlace copiado!';
+						if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
+						setTimeout(() => {
+							shareBtn.innerHTML = '<i data-lucide="link" width="15"></i> Copiar enlace';
+							if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
+						}, 2000);
+					} catch (e) {
+						prompt('Copia este enlace directo al producto:', fullProductUrl);
+					}
 				});
 			}
 		};
@@ -2281,8 +2388,37 @@
 		document.querySelector('#searchInput').addEventListener('input', () => { visibleProductLimit = 36; render(); });
 		document.querySelector('#sortSelect').addEventListener('change', () => { visibleProductLimit = 36; render(); });
 		document.querySelector('#openCart').addEventListener('click', () => document.querySelector('#drawer').classList.add('open')); document.querySelector('#closeCart').addEventListener('click', () => document.querySelector('#drawer').classList.remove('open')); document.querySelector('#drawer').addEventListener('click', event => { if (event.target.id === 'drawer') event.target.classList.remove('open'); });
-		document.querySelectorAll('[data-close-modal]').forEach(button => button.addEventListener('click', () => document.querySelector(`#${button.dataset.closeModal}`)?.classList.remove('open')));
-		document.querySelectorAll('.modal').forEach(modal => modal.addEventListener('click', event => { if (event.target === modal) modal.classList.remove('open'); }));
+		document.querySelectorAll('[data-close-modal]').forEach(button => button.addEventListener('click', () => {
+			const modalId = button.dataset.closeModal;
+			if (modalId === 'productModal') {
+				closeProductModal();
+			} else {
+				document.querySelector(`#${modalId}`)?.classList.remove('open');
+			}
+		}));
+		document.querySelectorAll('.modal').forEach(modal => modal.addEventListener('click', event => {
+			if (event.target === modal) {
+				if (modal.id === 'productModal') {
+					closeProductModal();
+				} else {
+					modal.classList.remove('open');
+				}
+			}
+		}));
+		window.addEventListener('popstate', () => {
+			const modal = document.querySelector('#productModal');
+			if (modal && modal.classList.contains('open')) {
+				closeProductModal(false);
+			}
+		});
+		window.addEventListener('keydown', event => {
+			if (event.key === 'Escape') {
+				const modal = document.querySelector('#productModal');
+				if (modal && modal.classList.contains('open')) {
+					closeProductModal();
+				}
+			}
+		});
 		const applySiteLogo = content => {
 			if (!content) return;
 			const mode = content.logo_type || content.landing_logo_type || ((content.logo_image || content.landing_logo_image) ? 'image' : 'text');
@@ -2361,6 +2497,7 @@
 					isCatalogLoading = false;
 					render();
 					if (typeof renderSidebarCategories === 'function') renderSidebarCategories();
+					checkDirectProductLanding();
 
 					if (remote.totalPages > 1) {
 						setTimeout(async () => {
@@ -2379,6 +2516,7 @@
 										}));
 										render();
 										if (typeof renderSidebarCategories === 'function') renderSidebarCategories();
+										checkDirectProductLanding();
 									}
 								}
 							} catch (e) {
@@ -2423,11 +2561,56 @@
 				render();
 			}
 		};
-		// Soporte de parámetros de URL para filtrar categorías al cargar
+
+		// Verificación de producto directo por URL (?p= o ?id=)
+		const checkDirectProductLanding = async () => {
+			try {
+				const urlParams = new URLSearchParams(window.location.search);
+				const targetId = urlParams.get('p') || urlParams.get('id');
+				if (!targetId) return;
+
+				let found = products.find(p => String(p.id).toLowerCase() === String(targetId).toLowerCase() || String(p.sku).toLowerCase() === String(targetId).toLowerCase());
+				if (found) {
+					openProduct(found, false);
+					return;
+				}
+
+				// Si el producto no estaba en la primera página de 36, buscarlo directamente en la API
+				try {
+					const res = await fetch(`/api/auth/catalog?q=${encodeURIComponent(targetId)}&limit=1`);
+					if (res.ok) {
+						const data = await res.json();
+						if (data.products && data.products.length) {
+							const single = {
+								...data.products[0],
+								brand: data.products[0].category || 'SmartISP',
+								image: getProductImageUrl(data.products[0]),
+								reviews: Number(data.products[0].reviews || 0),
+								tag: data.products[0].tag || '',
+								specs: Array.isArray(data.products[0].specs) ? data.products[0].specs : []
+							};
+							if (!products.some(p => p.id === single.id)) {
+								products.push(single);
+							}
+							openProduct(single, false);
+						}
+					}
+				} catch (err) {
+					console.warn('No se pudo cargar el producto solicitado:', err);
+				}
+			} catch (e) {
+				console.warn('Error verificando enlace directo de producto:', e);
+			}
+		};
+
+		// Soporte de parámetros de URL para filtrar categorías, búsquedas y carrito al cargar
 		try {
 			const urlParams = new URLSearchParams(window.location.search);
 			const catParam = urlParams.get('categoria') || urlParams.get('category');
 			const macroParam = urlParams.get('macro');
+			const searchParam = urlParams.get('q') || urlParams.get('buscar') || urlParams.get('s');
+			const cartParam = urlParams.get('openCart') || urlParams.get('carrito');
+
 			if (catParam) {
 				const macro = getMacroCategory(catParam);
 				selectedFilter = { type: 'sub', macroId: macro.id, category: catParam };
@@ -2435,6 +2618,23 @@
 			} else if (macroParam) {
 				selectedFilter = { type: 'macro', id: macroParam };
 				expandedGroups.add(macroParam);
+			}
+
+			if (searchParam) {
+				const sInput = document.querySelector('#searchInput');
+				if (sInput) {
+					sInput.value = searchParam;
+					setTimeout(() => {
+						const catEl = document.querySelector('#catalogo');
+						if (catEl) catEl.scrollIntoView({ behavior: 'smooth' });
+					}, 200);
+				}
+			}
+
+			if (cartParam) {
+				setTimeout(() => {
+					document.querySelector('#drawer')?.classList.add('open');
+				}, 300);
 			}
 		} catch (e) {
 			console.warn('URL params no disponibles:', e);
