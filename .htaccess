@@ -1,17 +1,13 @@
 DirectoryIndex index.html index.htm index.php
 
-# Desactivar listado de directorios para evitar exploración de carpetas
-Options -Indexes
-
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
 
-    # Bloquear acceso a archivos sensibles, configuraciones, paquetes y repositorios
+    # Proteger archivos sensibles y configuraciones
     RewriteRule ^\.env - [F,L]
     RewriteRule ^api/config\.php$ - [F,L]
-    RewriteRule ^(package\.json|package-lock\.json|vite\.config\.js|tsconfig.*|\.git.*)$ - [F,L]
-    RewriteRule \.(sql|bak|config|log|md)$ - [F,L]
+    RewriteRule ^(package\.json|package-lock\.json|\.git) - [F,L]
 
     # Rutas amigables SEO para productos individuales y sitemaps
     RewriteRule ^sitemap-products\.xml$ sitemap-products.php [QSA,L]
@@ -24,16 +20,6 @@ Options -Indexes
     RewriteRule ^api/auth/(.*)$ api/router.php?action=$1 [QSA,L]
     RewriteRule ^api/(.*)$ api/router.php?action=$1 [QSA,L]
 </IfModule>
-
-<FilesMatch "^(\.env|config\.php|package\.json|package-lock\.json|vite\.config\.js|\.git)">
-    <IfModule mod_authz_core.c>
-        Require all denied
-    </IfModule>
-    <IfModule !mod_authz_core.c>
-        Order deny,allow
-        Deny from all
-    </IfModule>
-</FilesMatch>
 
 <IfModule mod_headers.c>
     # Prevenir que navegadores guarden en caché páginas HTML desactualizadas
