@@ -20,7 +20,7 @@ if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < $cacheTime) && 
 require_once __DIR__ . '/api/db.php';
 
 function slugifySitemap(string $text): string {
-    $clean = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text);
+    $clean = @iconv('UTF-8', 'ASCII//TRANSLIT', $text);
     if (!$clean) $clean = $text;
     $clean = preg_replace('~[^\\pL\\d]+~u', '-', $clean);
     $clean = trim($clean, '-');

@@ -15,7 +15,7 @@ $slug = trim($_GET['slug'] ?? ($_GET['id'] ?? ($_GET['p'] ?? '')));
 
 // Función para limpiar texto y convertirlo en slug SEO amigable
 function slugify(string $text): string {
-    $clean = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text);
+    $clean = @iconv('UTF-8', 'ASCII//TRANSLIT', $text);
     if (!$clean) $clean = $text;
     $clean = preg_replace('~[^\\pL\\d]+~u', '-', $clean);
     $clean = trim($clean, '-');

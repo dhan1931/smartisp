@@ -36,18 +36,14 @@ Options -Indexes
 </FilesMatch>
 
 <IfModule mod_headers.c>
-    # Prevenir que navegadores móviles (iOS / Android) guarden en caché páginas HTML desactualizadas
+    # Prevenir que navegadores guarden en caché páginas HTML desactualizadas
     <FilesMatch "\.(html|htm)$">
         Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
         Header set Pragma "no-cache"
-        Header set Expires "0"
     </FilesMatch>
 
-    # Cabeceras de seguridad y hardening HTTP (QA-030)
-    Header always set X-Content-Type-Options "nosniff"
-    Header always set X-Frame-Options "SAMEORIGIN"
-    Header always set Referrer-Policy "strict-origin-when-cross-origin"
-    Header always set Permissions-Policy "geolocation=(), camera=(), microphone=(), payment=()"
-    Header always set Content-Security-Policy "frame-ancestors 'self';"
-    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+    # Cabeceras de seguridad compatibles con HTTP/2 y Hostinger CDN
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
