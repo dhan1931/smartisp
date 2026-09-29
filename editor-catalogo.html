@@ -2255,28 +2255,91 @@
     const prodImgPreview = document.getElementById('prodImagePreview');
     const prodImgUrlInput = document.getElementById('prodImageUrlInput');
 
+    const compressImage = file => new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 1000;
+        let w = img.width;
+        let h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        canvas.toBlob(blob => {
+          resolve(blob || file);
+        }, 'image/jpeg', 0.85);
+      };
+      img.onerror = () => resolve(file);
+      img.src = URL.createObjectURL(file);
+    });
+
     if (btnUploadLocal && localFileInput) {
       btnUploadLocal.addEventListener('click', () => localFileInput.click());
-      localFileInput.addEventListener('change', e => {
+      localFileInput.addEventListener('change', async e => {
         const file = e.target.files?.[0];
         if (!file) return;
         if (!file.type.startsWith('image/')) {
           showToast('Por favor selecciona un archivo de imagen válido (PNG, JPG, WebP).', 'error');
           return;
         }
-        if (file.size > 5 * 1024 * 1024) {
-          showToast('La imagen es demasiado pesada (máximo 5 MB).', 'error');
+        if (file.size > 15 * 1024 * 1024) {
+          showToast('La imagen es demasiado pesada (máximo 15 MB).', 'error');
           return;
         }
-        const reader = new FileReader();
-        reader.onload = ev => {
-          const dataUrl = ev.target.result;
-          prodImgUrlInput.value = dataUrl;
-          prodImgPreview.src = dataUrl;
+
+        const originalBtnHtml = btnUploadLocal.innerHTML;
+        btnUploadLocal.disabled = true;
+        btnUploadLocal.innerHTML = '<span style="font-size:12px;">Subiendo...</span>';
+
+        try {
+          const localPreviewUrl = URL.createObjectURL(file);
+          prodImgPreview.src = localPreviewUrl;
           prodImgPreview.style.display = 'block';
           if (btnRemoveImage) btnRemoveImage.style.display = 'flex';
-        };
-        reader.readAsDataURL(file);
+
+          const compressedBlob = await compressImage(file);
+          const fd = new FormData();
+          fd.append('image', compressedBlob, (file.name || 'producto').replace(/\.[^.]+$/, '') + '.jpg');
+
+          const uploadRes = await fetch('/api/auth/upload-image', {
+            method: 'POST',
+            credentials: 'include',
+            body: fd
+          });
+
+          if (uploadRes.ok) {
+            const upData = await uploadRes.json();
+            if (upData.url) {
+              prodImgUrlInput.value = upData.url;
+              prodImgPreview.src = upData.url;
+              showToast('Fotografía subida y optimizada en el servidor.');
+            }
+          } else {
+            const reader = new FileReader();
+            reader.onload = ev => {
+              prodImgUrlInput.value = ev.target.result;
+            };
+            reader.readAsDataURL(compressedBlob);
+            showToast('Fotografía optimizada para guardar.');
+          }
+        } catch (err) {
+          console.warn('Error subiendo imagen:', err);
+          showToast('Error al procesar la foto.', 'error');
+        } finally {
+          btnUploadLocal.disabled = false;
+          btnUploadLocal.innerHTML = originalBtnHtml;
+          if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
+        }
       });
     }
 
@@ -2443,14 +2506,33 @@
         visible: document.getElementById('prodVisibleInput').checked
       };
 
+      // Si la imagen todavía es un Data URL base64, subirla primero al endpoint para obtener URL limpia
+      if (product.imageUrl && product.imageUrl.startsWith('data:image/')) {
+        try {
+          const upRes = await fetch('/api/auth/upload-image', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: product.imageUrl })
+          });
+          if (upRes.ok) {
+            const upData = await upRes.json();
+            if (upData.url) {
+              product.imageUrl = upData.url;
+              document.getElementById('prodImageUrlInput').value = upData.url;
+            }
+          }
+        } catch (upErr) {
+          console.warn('Auto-upload fallback:', upErr);
+        }
+      }
+
       const prodJson = JSON.stringify(product);
-      const b64 = toUtf8Base64(prodJson);
-      const bodyToSend = b64 ? JSON.stringify({ payload: b64 }) : prodJson;
 
       try {
         await api('admin-products', {
           method: 'POST',
-          body: bodyToSend
+          body: prodJson
         });
         showToast('Producto guardado con éxito.');
         closeModal('productModal');

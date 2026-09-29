@@ -400,6 +400,26 @@ if ($action === 'admin-products') {
         $category = trim($body['category'] ?? 'General');
         $subcategory = trim($body['subcategory'] ?? '');
         $imageUrl = trim($body['imageUrl'] ?? ($body['image_url'] ?? ''));
+
+        // Si la imagen es un Data URL base64, guardarla automáticamente como archivo en uploads/products/
+        if (strpos($imageUrl, 'data:image/') === 0 && preg_match('/^data:image\/(\w+);base64,(.+)$/', $imageUrl, $m)) {
+            $ext = strtolower($m[1]) === 'png' ? 'png' : (strtolower($m[1]) === 'webp' ? 'webp' : 'jpg');
+            $bData = base64_decode($m[2]);
+            if ($bData && strlen($bData) < 10 * 1024 * 1024) {
+                $uploadDir = __DIR__ . '/../uploads/products/';
+                if (!is_dir($uploadDir)) @mkdir($uploadDir, 0755, true);
+                $fn = 'prod_' . bin2hex(random_bytes(8)) . '.' . $ext;
+                if (@file_put_contents($uploadDir . $fn, $bData) !== false) {
+                    $imageUrl = '/uploads/products/' . $fn;
+                    $pubDir = __DIR__ . '/../public/uploads/products/';
+                    if (is_dir($pubDir)) {
+                        @mkdir($pubDir, 0755, true);
+                        @copy($uploadDir . $fn, $pubDir . $fn);
+                    }
+                }
+            }
+        }
+
         $externalUrl = trim($body['externalUrl'] ?? ($body['external_url'] ?? ''));
         $sku = trim($body['sku'] ?? '');
         $visible = isset($body['visible']) ? ($body['visible'] ? 1 : 0) : 1;
@@ -499,6 +519,80 @@ if ($action === 'admin-products') {
         }
         exit;
     }
+// -------------------------------------------------------------
+// 2.1 SUBIDA DE IMÁGENES DE PRODUCTOS (/api/auth/upload-image)
+// -------------------------------------------------------------
+if ($action === 'upload-image' && $method === 'POST') {
+    requireAdminAuth();
+
+    $uploadDir = __DIR__ . '/../uploads/products/';
+    if (!is_dir($uploadDir)) {
+        @mkdir($uploadDir, 0755, true);
+    }
+
+    $fileData = null;
+    $ext = 'jpg';
+
+    // 1. Caso archivo subido por multipart/form-data
+    if (!empty($_FILES['image']) && is_uploaded_file($_FILES['image']['tmp_name'])) {
+        $fileInfo = @getimagesize($_FILES['image']['tmp_name']);
+        if (!$fileInfo) {
+            http_response_code(400);
+            echo json_encode(['error' => 'El archivo subido no es una imagen válida.']);
+            exit;
+        }
+        $mime = $fileInfo['mime'] ?? '';
+        $ext = match ($mime) {
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            'image/gif' => 'gif',
+            default => 'jpg'
+        };
+        $fileData = file_get_contents($_FILES['image']['tmp_name']);
+    }
+    // 2. Caso Data URL / Base64 enviado por JSON o POST
+    elseif (!empty($body['image']) && is_string($body['image'])) {
+        $raw = $body['image'];
+        if (preg_match('/^data:image\/(\w+);base64,(.+)$/', $raw, $m)) {
+            $ext = strtolower($m[1]) === 'png' ? 'png' : (strtolower($m[1]) === 'webp' ? 'webp' : 'jpg');
+            $fileData = base64_decode($m[2]);
+        }
+    }
+
+    if (!$fileData) {
+        http_response_code(400);
+        echo json_encode(['error' => 'No se recibió ninguna imagen para subir.']);
+        exit;
+    }
+
+    if (strlen($fileData) > 8 * 1024 * 1024) {
+        http_response_code(400);
+        echo json_encode(['error' => 'La imagen supera el límite de 8 MB.']);
+        exit;
+    }
+
+    $filename = 'prod_' . bin2hex(random_bytes(8)) . '.' . $ext;
+    $targetPath = $uploadDir . $filename;
+
+    if (@file_put_contents($targetPath, $fileData) === false) {
+        http_response_code(500);
+        echo json_encode(['error' => 'No se pudo guardar la imagen en el servidor (permisos de carpeta).']);
+        exit;
+    }
+
+    $publicUploadDir = __DIR__ . '/../public/uploads/products/';
+    if (is_dir($publicUploadDir)) {
+        @mkdir($publicUploadDir, 0755, true);
+        @copy($targetPath, $publicUploadDir . $filename);
+    }
+
+    $publicUrl = '/uploads/products/' . $filename;
+    echo json_encode([
+        'ok' => true,
+        'url' => $publicUrl,
+        'filename' => $filename
+    ]);
+    exit;
 }
 
 // -------------------------------------------------------------
