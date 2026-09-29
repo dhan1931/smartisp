@@ -193,6 +193,12 @@
 		.product-info { padding: 16px 4px 4px; }
 		.product-brand { color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
 		.product h3 { font-family: 'DM Sans', sans-serif; font-size: 15px; letter-spacing: 0; line-height: 1.35; margin: 6px 0 10px; min-height: 41px; }
+		.product-card-link { display: contents; text-decoration: none; color: inherit; }
+		.product-title-link { text-decoration: none; color: inherit; display: block; }
+		.product-title-link:hover h3 { color: var(--blue); }
+		.card-btn-group { display: flex; align-items: center; gap: 6px; }
+		.btn-card-view { color: var(--muted); border: 1px solid #cbd5e1; background: #f8fafc; width: 33px; height: 33px; display: grid; place-items: center; border-radius: 4px; text-decoration: none; transition: all .2s; }
+		.btn-card-view:hover { background: #e2e8f0; color: var(--blue); border-color: #94a3b8; }
 		.stars { color: #e99824; font-size: 12px; letter-spacing: 1px; }
 		.reviews { color: var(--muted); font-size: 11px; margin-left: 4px; letter-spacing: 0; }
 		.price-row { display: flex; justify-content: space-between; align-items: center; margin-top: 13px; }
@@ -1885,11 +1891,12 @@
 			const productsHtml = toDisplay.map(product => {
 				const pImg = getProductImageUrl(product);
 				const fbImg = fallbackImage(product);
+				const pUrl = getProductUrl(product);
 				const hasReviews = Number(product.reviews || 0) > 0;
 				const reviewsHtml = hasReviews
 					? `<div><span class="stars">★★★★★</span><span class="reviews">(${product.reviews})</span></div>`
 					: `<div><span class="reviews" style="margin-left:0;font-style:italic;">Sin reseñas aún</span></div>`;
-				return `<article class="product" data-index="${products.indexOf(product)}" tabindex="0" role="group" aria-label="Ver especificaciones de ${product.name}"><div class="product-image">${product.tag ? `<span class="tag">${product.tag}</span>` : ''}<button class="heart" aria-label="Agregar a favoritos"><i data-lucide="heart" width="16"></i></button><img src="${pImg}" alt="${product.name}" loading="lazy" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></div><div class="product-info"><div class="product-brand">${product.brand}</div><h3>${product.name}</h3>${reviewsHtml}<div class="price-row"><div class="price-block"><span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span>${Number(product.price || 0) > 0 ? '<span class="price-tax-label">Precios incluye iva</span>' : ''}</div><button class="add" data-index="${products.indexOf(product)}" aria-label="Agregar ${product.name} al carrito"><i data-lucide="plus" width="18"></i></button></div></div></article>`;
+				return `<article class="product" data-index="${products.indexOf(product)}" tabindex="0" role="group" aria-label="Ver especificaciones de ${product.name}"><div class="product-image">${product.tag ? `<span class="tag">${product.tag}</span>` : ''}<button class="heart" aria-label="Agregar a favoritos"><i data-lucide="heart" width="16"></i></button><a href="${pUrl}" class="product-card-link" aria-label="${product.name}" tabindex="-1"><img src="${pImg}" alt="${product.name}" loading="lazy" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></a></div><div class="product-info"><div class="product-brand">${product.brand}</div><a href="${pUrl}" class="product-title-link" title="${product.name}"><h3>${product.name}</h3></a>${reviewsHtml}<div class="price-row"><div class="price-block"><span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span>${Number(product.price || 0) > 0 ? '<span class="price-tax-label">Precios incluye iva</span>' : ''}</div><div class="card-btn-group"><a href="${pUrl}" class="btn-card-view" title="Ver producto en página completa" aria-label="Ver ficha completa de ${product.name}"><i data-lucide="external-link" width="15"></i></a><button class="add" data-index="${products.indexOf(product)}" aria-label="Agregar ${product.name} al carrito"><i data-lucide="plus" width="18"></i></button></div></div></div></article>`;
 			}).join('');
 
 			const loadMoreHtml = hasMore ? `
@@ -1939,8 +1946,19 @@
 			});
 			document.querySelectorAll('.product').forEach(card => {
 				const open = () => openProduct(products[card.dataset.index]);
-				card.addEventListener('click', event => { if (!event.target.closest('button')) open(); });
-				card.addEventListener('keydown', event => { if ((event.key === 'Enter' || event.key === ' ') && !event.target.closest('button')) { event.preventDefault(); open(); } });
+				card.addEventListener('click', event => {
+					if (event.target.closest('button')) return;
+					if (event.target.closest('.btn-card-view')) return;
+					if (event.ctrlKey || event.metaKey || event.shiftKey || event.button === 1) return;
+					event.preventDefault();
+					open();
+				});
+				card.addEventListener('keydown', event => {
+					if ((event.key === 'Enter' || event.key === ' ') && !event.target.closest('button') && !event.target.closest('.btn-card-view')) {
+						event.preventDefault();
+						open();
+					}
+				});
 			});
 		};
 

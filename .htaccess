@@ -15,7 +15,9 @@ Options -Indexes
 
     # Rutas amigables SEO para productos individuales y sitemaps
     RewriteRule ^sitemap-products\.xml$ sitemap-products.php [QSA,L]
+    RewriteRule ^productos/([^/]+)/?$ producto.php?slug=$1 [QSA,L]
     RewriteRule ^producto/([^/]+)/?$ producto.php?slug=$1 [QSA,L]
+    RewriteRule ^productos/?$ tienda.html [QSA,L]
     RewriteRule ^producto/?$ tienda.html [QSA,L]
 
     # Enrutamiento universal de API hacia router.php

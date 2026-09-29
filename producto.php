@@ -60,13 +60,22 @@ if ($pdo && !empty($slug)) {
         }
 
         // Fallback 2: si no coincide por ID directo, buscar por coincidencia en palabras clave del nombre
-        if (!$row && strlen($slug) > 3) {
-            $words = array_filter(explode('-', $slug), fn($w) => strlen($w) > 2);
+        if (!$row && strlen($slug) > 2) {
+            $words = array_values(array_filter(explode('-', $slug), fn($w) => strlen($w) > 2));
             if (!empty($words)) {
-                $term = '%' . implode('%', array_slice($words, 0, 3)) . '%';
-                $stmt = $pdo->prepare("SELECT * FROM `$pTable` WHERE name LIKE :term LIMIT 1");
-                $stmt->execute([':term' => $term]);
+                $term1 = '%' . implode('%', array_slice($words, 0, 3)) . '%';
+                $stmt = $pdo->prepare("SELECT * FROM `$pTable` WHERE name LIKE :term1 LIMIT 1");
+                $stmt->execute([':term1' => $term1]);
                 $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$row && count($words) > 1) {
+                    $sorted = $words;
+                    usort($sorted, fn($a, $b) => strlen($b) <=> strlen($a));
+                    $term2 = '%' . $sorted[0] . '%';
+                    $stmt = $pdo->prepare("SELECT * FROM `$pTable` WHERE name LIKE :term2 LIMIT 1");
+                    $stmt->execute([':term2' => $term2]);
+                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                }
             }
         }
 
