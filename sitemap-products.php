@@ -7,7 +7,6 @@
  */
 
 header('Content-Type: application/xml; charset=utf-8');
-header('X-Robots-Tag: noindex, follow');
 
 $cacheFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'smartisp_sitemap_products.xml';
 $cacheTime = 21600; // 6 horas de caché
