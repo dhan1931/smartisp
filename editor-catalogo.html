@@ -1426,6 +1426,41 @@
     </div>
   </div>
 
+  <!-- MODAL: LOGIN / RE-AUTENTICACIÓN RÁPIDA DE ADMINISTRADOR -->
+  <div class="modal-overlay" id="adminAuthModal">
+    <div class="modal-dialog" style="max-width:440px;">
+      <div class="modal-head">
+        <h3 class="modal-title" style="display:flex; align-items:center; gap:8px;">
+          <i data-lucide="shield-check" width="20" style="color:var(--blue);"></i>
+          <span>Autenticación de Administrador</span>
+        </h3>
+        <button type="button" class="modal-close-btn" onclick="closeModal('adminAuthModal')">✕</button>
+      </div>
+      <form id="adminAuthForm" style="padding:10px 0;">
+        <p style="font-size:13px; color:var(--muted); margin-bottom:16px; line-height:1.5;" id="adminAuthMsg">
+          Para registrar productos o subir imágenes al catálogo, debes iniciar sesión con una cuenta autorizada de administrador.
+        </p>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label" for="authEmailInput">* Correo Electrónico:</label>
+          <input type="email" id="authEmailInput" class="form-control" placeholder="admin@smart-isp.com.ec" required value="admin@smart-isp.com.ec">
+        </div>
+        <div class="form-group" style="margin-bottom:18px;">
+          <label class="form-label" for="authPasswordInput">* Contraseña:</label>
+          <input type="password" id="authPasswordInput" class="form-control" placeholder="••••••••" required autofocus>
+        </div>
+        <div id="authErrorMsg" style="display:none; color:#dc2626; background:#fee2e2; border:1px solid #fecaca; border-radius:6px; padding:8px 12px; font-size:12.5px; margin-bottom:14px;"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+          <a href="/admin.html" class="btn btn-secondary btn-sm">
+            Ir a Admin General
+          </a>
+          <button type="submit" class="btn btn-primary" id="btnAdminAuthSubmit" style="font-weight:700;">
+            <i data-lucide="log-in" width="15"></i> Iniciar Sesión y Continuar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- MODAL: CONFIRMAR ELIMINAR TODOS LOS PRODUCTOS -->
   <div class="modal-overlay" id="deleteAllModal">
     <div class="modal-dialog" style="max-width:480px; text-align:center;">
@@ -1512,15 +1547,18 @@
       const customHeaders = {
         'Content-Type': 'application/json'
       };
+      let url = `/api/auth/${endpoint}`;
       if (token) {
         customHeaders['Authorization'] = `Bearer ${token}`;
         customHeaders['X-Admin-Token'] = token;
+        const sep = url.includes('?') ? '&' : '?';
+        url += `${sep}admin_token=${encodeURIComponent(token)}`;
       }
       const reqHeaders = { ...customHeaders, ...(options.headers || {}) };
 
       let res = null;
       try {
-        res = await fetch(`/api/auth/${endpoint}`, {
+        res = await fetch(url, {
           credentials: 'include',
           ...options,
           headers: reqHeaders
@@ -1539,8 +1577,13 @@
       }
 
       if (!res.ok) {
-        if (res.status === 401 || res.status === 403) {
+        if (res.status === 401 || res.status === 403 || data.unauthorized) {
           console.warn('Acceso no autorizado o sesión expirada:', data.error);
+          if (endpoint !== 'login' && endpoint !== 'me') {
+            if (typeof openAdminAuthModal === 'function') {
+              openAdminAuthModal(data.error || 'Sesión expirada. Por favor autentícate para continuar.');
+            }
+          }
         }
         throw new Error(data.error || 'Ocurrió un error en la solicitud.');
       }
@@ -2396,14 +2439,16 @@
           const safeName = (file.name || 'producto').replace(/[^a-zA-Z0-9_-]/g, '_') + '.jpg';
           fd.append('image', compressedBlob, safeName);
 
+          let uploadUrl = '/api/auth/upload-image';
           const uploadHeaders = {};
           const token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
           if (token) {
             uploadHeaders['Authorization'] = `Bearer ${token}`;
             uploadHeaders['X-Admin-Token'] = token;
+            uploadUrl += `?admin_token=${encodeURIComponent(token)}`;
           }
 
-          const uploadRes = await fetch('/api/auth/upload-image', {
+          const uploadRes = await fetch(uploadUrl, {
             method: 'POST',
             credentials: 'include',
             headers: uploadHeaders,
@@ -2420,7 +2465,14 @@
               throw new Error('No se recibió la URL de la imagen guardada.');
             }
           } else {
-            const errData = await uploadRes.json().catch(() => ({}));
+            const textErr = await uploadRes.text().catch(() => '');
+            let errData = {};
+            try { errData = JSON.parse(textErr); } catch { errData = { error: textErr }; }
+            if (uploadRes.status === 401 || uploadRes.status === 403 || errData.unauthorized) {
+              if (typeof openAdminAuthModal === 'function') {
+                openAdminAuthModal(errData.error || 'Sesión de administrador requerida para subir fotos.');
+              }
+            }
             throw new Error(errData.error || `Error al subir imagen al servidor (${uploadRes.status})`);
           }
         } catch (err) {
@@ -3325,6 +3377,61 @@
       window.location.href = '/admin.html';
     });
 
+    // --- MODAL DE AUTENTICACIÓN RÁPIDA DE ADMINISTRADOR ---
+    window.openAdminAuthModal = (customMsg = null) => {
+      const msgEl = document.getElementById('adminAuthMsg');
+      if (msgEl && customMsg) {
+        msgEl.textContent = customMsg;
+      }
+      const errEl = document.getElementById('authErrorMsg');
+      if (errEl) errEl.style.display = 'none';
+      openModal('adminAuthModal');
+      setTimeout(() => document.getElementById('authPasswordInput')?.focus(), 200);
+    };
+
+    document.getElementById('adminAuthForm')?.addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = document.getElementById('authEmailInput').value.trim();
+      const password = document.getElementById('authPasswordInput').value;
+      const errEl = document.getElementById('authErrorMsg');
+      const submitBtn = document.getElementById('btnAdminAuthSubmit');
+      const origHtml = submitBtn.innerHTML;
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = 'Verificando...';
+      if (errEl) errEl.style.display = 'none';
+
+      try {
+        const res = await api('login', {
+          method: 'POST',
+          body: JSON.stringify({ email, password })
+        });
+        if (res && res.user) {
+          currentAdminUser = res.user;
+          localStorage.setItem('smartisp.accountUser', JSON.stringify(res.user));
+          if (res.token) {
+            localStorage.setItem('smartisp.adminToken', res.token);
+          }
+          const badge = document.getElementById('userBadge');
+          if (badge) badge.textContent = `👤 ${res.user.email || res.user.name || 'Admin'}`;
+          closeModal('adminAuthModal');
+          showToast(`¡Sesión iniciada como ${res.user.name || 'Administrador'}!`);
+          await loadAllData();
+        } else {
+          throw new Error('Respuesta no válida del servidor.');
+        }
+      } catch (err) {
+        if (errEl) {
+          errEl.textContent = err.message || 'Error al iniciar sesión.';
+          errEl.style.display = 'block';
+        }
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = origHtml;
+        if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
+      }
+    });
+
     // Verificación de sesión de Administrador
     (async () => {
       let user = null;
@@ -3345,21 +3452,27 @@
           if (sessionRes.token) {
             localStorage.setItem('smartisp.adminToken', sessionRes.token);
           }
+        } else {
+          user = null;
+          currentAdminUser = null;
         }
-      } catch (e) {}
+      } catch (e) {
+        user = null;
+        currentAdminUser = null;
+      }
+
+      if (!user) {
+        openAdminAuthModal('Por favor inicia sesión con tu cuenta de administrador para gestionar el catálogo.');
+        return;
+      }
 
       // Asegurar permisos para configurar el catálogo
       const userEmail = (user && user.email) ? String(user.email).toLowerCase().trim() : '';
       const isAdmin = Boolean(user && userEmail !== 'medardogarcesc@gmail.com' && userEmail !== 'gestion@smart-isp.es' && user.role === 'admin');
 
-      if (user && !isAdmin) {
+      if (!isAdmin) {
         alert('Acceso restringido: Esta cuenta no posee permisos de administrador.');
         window.location.href = '/tienda.html';
-        return;
-      }
-
-      if (!user) {
-        window.location.href = '/admin.html';
         return;
       }
 

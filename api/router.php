@@ -2,7 +2,7 @@
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Admin-Token');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
@@ -77,15 +77,31 @@ function getAuthUser(): ?array {
     }
     $user = $_SESSION['user'] ?? null;
 
-    // Respaldo resiliente: validar token Bearer o cabecera X-Admin-Token si la cookie PHP expiró
+    // Respaldo resiliente: validar token Bearer o cabecera X-Admin-Token o parámetro si la cookie PHP expiró
     if (!$user || !is_array($user)) {
-        $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? ($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '');
         $token = '';
+        $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? ($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '');
         if (preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
             $token = $matches[1];
         }
         if (empty($token) && !empty($_SERVER['HTTP_X_ADMIN_TOKEN'])) {
             $token = $_SERVER['HTTP_X_ADMIN_TOKEN'];
+        }
+        if (empty($token) && function_exists('getallheaders')) {
+            $hdrs = (array)getallheaders();
+            foreach ($hdrs as $k => $v) {
+                if (strtolower($k) === 'x-admin-token' && !empty($v)) {
+                    $token = trim((string)$v);
+                    break;
+                }
+                if (strtolower($k) === 'authorization' && preg_match('/Bearer\s+(\S+)/i', (string)$v, $hm)) {
+                    $token = $hm[1];
+                    break;
+                }
+            }
+        }
+        if (empty($token)) {
+            $token = trim((string)($_REQUEST['admin_token'] ?? ($_REQUEST['token'] ?? '')));
         }
 
         if (!empty($token)) {
