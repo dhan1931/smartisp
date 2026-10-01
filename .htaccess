@@ -5,10 +5,8 @@ DirectoryIndex index.html index.htm index.php
     RewriteBase /
 
     # Proteger archivos sensibles
-    RewriteRule ^\.env$ - [F,L]
-    RewriteRule ^api/config\.php$ - [F,L]
-    RewriteRule ^package(-lock)?\.json$ - [F,L]
-    RewriteRule ^\.git(/.*)?$ - [F,L]
+    RewriteRule ^\.env - [F,L]
+    RewriteRule ^api/config\.php - [F,L]
 
     # Rutas amigables SEO para productos individuales y sitemaps
     RewriteRule ^sitemap-products\.xml$ sitemap-products.php [QSA,L]
@@ -17,12 +15,10 @@ DirectoryIndex index.html index.htm index.php
     RewriteRule ^productos/?$ tienda.html [QSA,L]
     RewriteRule ^producto/?$ tienda.html [QSA,L]
 
-    # Si el archivo o directorio solicitado existe físicamente en el servidor, servirlo directamente
-    RewriteCond %{REQUEST_FILENAME} -f [OR]
-    RewriteCond %{REQUEST_FILENAME} -d
-    RewriteRule ^ - [L]
-
-    # Enrutamiento universal de API hacia router.php
+    # Enrutamiento universal de API hacia router.php (evita bucle interno)
+    RewriteCond %{REQUEST_URI} !/api/router\.php
     RewriteRule ^api/auth/(.*)$ api/router.php?action=$1 [QSA,L]
+
+    RewriteCond %{REQUEST_URI} !/api/router\.php
     RewriteRule ^api/(.*)$ api/router.php?action=$1 [QSA,L]
 </IfModule>
