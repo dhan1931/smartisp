@@ -1489,9 +1489,22 @@
       let url = `/api/router.php?action=${encodeURIComponent(baseAction)}${queryPart}&admin_email=${encodeURIComponent(adminEmail)}`;
       if (token) url += `&admin_token=${encodeURIComponent(token)}`;
 
+      let finalBody = options.body;
+      if (finalBody && typeof finalBody === 'string' && (options.method === 'POST' || options.method === 'PUT')) {
+        try {
+          const parsed = JSON.parse(finalBody);
+          if (!parsed.payload && typeof toUtf8Base64 === 'function') {
+            const b64 = toUtf8Base64(finalBody);
+            if (b64) {
+              finalBody = JSON.stringify({ payload: b64 });
+            }
+          }
+        } catch (e) {}
+      }
+
       let response = null;
       try {
-        response = await fetch(url, { credentials: 'include', ...options, headers: reqHeaders });
+        response = await fetch(url, { credentials: 'include', ...options, headers: reqHeaders, body: finalBody });
       } catch (e) { response = null; }
       if (!response) throw new Error('No se pudo conectar con el servidor.');
       const text = await response.text();

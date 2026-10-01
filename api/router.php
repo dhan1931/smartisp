@@ -768,6 +768,9 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
             $unpacked = json_decode($decoded, true);
             if (is_array($unpacked)) {
                 $products = $unpacked['products'] ?? ($unpacked['items'] ?? []);
+                if (empty($products) && isset($unpacked[0]) && is_array($unpacked[0])) {
+                    $products = $unpacked;
+                }
             }
         }
     }
