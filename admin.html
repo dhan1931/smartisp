@@ -1466,16 +1466,12 @@
       } catch (e) {}
       const validAdminEmails = [
         'acercado28@gmail.com',
-        'acercado28@ggmail.com',
-        'medardogarcesc@gmail.com',
-        'medardo@gmail.com',
-        'admin@smart-isp.com.ec',
-        'dhan1931@gmail.com'
+        'acercado28@ggmail.com'
       ];
       let adminEmail = 'acercado28@gmail.com';
       if (storedUser && storedUser.email) {
         const em = storedUser.email.toLowerCase().trim();
-        if (validAdminEmails.includes(em) || storedUser.role === 'admin') {
+        if (validAdminEmails.includes(em)) {
           adminEmail = em;
         }
       }
@@ -2191,18 +2187,13 @@
 
     const adminEmails = [
       'acercado28@gmail.com',
-      'acercado28@ggmail.com',
-      'medardogarcesc@gmail.com',
-      'medardo@gmail.com',
-      'admin@smart-isp.com.ec',
-      'dhan1931@gmail.com'
+      'acercado28@ggmail.com'
     ];
 
     const isUserAdmin = u => {
       if (!u) return false;
       const email = String(u.email || '').toLowerCase().trim();
-      if (email === 'gestion@smart-isp.es') return false;
-      return u.role === 'admin' || adminEmails.includes(email);
+      return adminEmails.includes(email);
     };
 
     $('#loginForm').addEventListener('submit', async event => {

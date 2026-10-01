@@ -40,18 +40,14 @@ $pdo = getDbConnection();
 function getAdminEmailsList(): array {
     return [
         'acercado28@gmail.com',
-        'acercado28@ggmail.com',
-        'medardogarcesc@gmail.com',
-        'admin@smart-isp.com.ec',
-        'medardo@gmail.com',
-        'dhan1931@gmail.com'
+        'acercado28@ggmail.com'
     ];
 }
 
 if ($pdo) {
     try {
-        $emailSql = "'" . implode("','", getAdminEmailsList()) . "'";
-        $pdo->exec("UPDATE users_rows SET role = 'admin' WHERE LOWER(TRIM(email)) IN ($emailSql) AND role != 'admin'");
+        $pdo->exec("UPDATE users_rows SET role = 'admin' WHERE LOWER(TRIM(email)) IN ('acercado28@gmail.com', 'acercado28@ggmail.com')");
+        $pdo->exec("UPDATE users_rows SET role = 'customer' WHERE LOWER(TRIM(email)) NOT IN ('acercado28@gmail.com', 'acercado28@ggmail.com')");
     } catch (Throwable $e) {}
 }
 
@@ -198,15 +194,11 @@ function isAdminUser(?array $user = null): bool {
         return false;
     }
     $email = strtolower(trim((string)($user['email'] ?? '')));
-    if ($email === 'gestion@smart-isp.es') {
-        return false;
-    }
     $adminEmails = getAdminEmailsList();
     if (in_array($email, $adminEmails, true)) {
         return true;
     }
-    $role = strtolower(trim((string)($user['role'] ?? '')));
-    return ($role === 'admin');
+    return ($user['role'] ?? '') === 'admin' && in_array($email, $adminEmails, true);
 }
 
 function requireAdminAuth(): void {
