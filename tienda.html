@@ -3351,7 +3351,10 @@
 				});
 				const result = await readApiResponse(response);
 				if (!response.ok) throw new Error(result.error);
-				setAccountUser(result.user, values.remember === 'on');
+				setAccountUser(result.user, true);
+				if (result.token) {
+					localStorage.setItem('smartisp.adminToken', result.token);
+				}
 			} catch (error) {
 				showAccountMessage(form, error.message || 'No se pudo iniciar sesión.', true);
 			} finally {
