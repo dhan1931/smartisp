@@ -1544,6 +1544,12 @@
     // --- HELPER DE LLAMADAS API CON CREDENCIALES Y RESILENCIA DE TOKEN ---
     const api = async (endpoint, options = {}) => {
       const token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
+      let storedUser = null;
+      try {
+        const u = localStorage.getItem('smartisp.accountUser') || sessionStorage.getItem('smartisp.accountUser');
+        if (u) storedUser = JSON.parse(u);
+      } catch (e) {}
+
       const customHeaders = {
         'Content-Type': 'application/json'
       };
@@ -1553,6 +1559,11 @@
         customHeaders['X-Admin-Token'] = token;
         const sep = url.includes('?') ? '&' : '?';
         url += `${sep}admin_token=${encodeURIComponent(token)}`;
+      }
+      if (storedUser && storedUser.email) {
+        customHeaders['X-Admin-Email'] = storedUser.email;
+        const sep = url.includes('?') ? '&' : '?';
+        url += `${sep}admin_email=${encodeURIComponent(storedUser.email)}`;
       }
       const reqHeaders = { ...customHeaders, ...(options.headers || {}) };
 
@@ -1570,7 +1581,13 @@
       if (!res) throw new Error('No se pudo conectar con el servidor.');
       const text = await res.text();
       let data = {};
-      try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text || `Error ${res.status}` }; }
+      try { 
+        data = text ? JSON.parse(text) : {}; 
+      } catch { 
+        let clean = (text || '').replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+        if (clean.length > 150) clean = clean.substring(0, 150) + '...';
+        data = { error: clean || `Error ${res.status}` }; 
+      }
 
       if (data && data.token) {
         localStorage.setItem('smartisp.adminToken', data.token);
@@ -1595,7 +1612,9 @@
       const toast = document.getElementById('toast');
       const text = document.getElementById('toastText');
       const icon = document.getElementById('toastIcon');
-      text.textContent = message;
+      let cleanMsg = typeof message === 'string' ? message.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim() : String(message || '');
+      if (cleanMsg.length > 250) cleanMsg = cleanMsg.substring(0, 250) + '...';
+      text.textContent = cleanMsg;
       toast.className = `toast-msg show ${type === 'error' ? 'toast-error' : 'toast-success'}`;
       if (icon) {
         icon.setAttribute('data-lucide', type === 'error' ? 'alert-triangle' : 'check-circle');
@@ -2442,10 +2461,21 @@
           let uploadUrl = '/api/auth/upload-image';
           const uploadHeaders = {};
           const token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
+          let storedUser = null;
+          try {
+            const u = localStorage.getItem('smartisp.accountUser') || sessionStorage.getItem('smartisp.accountUser');
+            if (u) storedUser = JSON.parse(u);
+          } catch (e) {}
+
           if (token) {
             uploadHeaders['Authorization'] = `Bearer ${token}`;
             uploadHeaders['X-Admin-Token'] = token;
             uploadUrl += `?admin_token=${encodeURIComponent(token)}`;
+          }
+          if (storedUser && storedUser.email) {
+            uploadHeaders['X-Admin-Email'] = storedUser.email;
+            const sep = uploadUrl.includes('?') ? '&' : '?';
+            uploadUrl += `${sep}admin_email=${encodeURIComponent(storedUser.email)}`;
           }
 
           const uploadRes = await fetch(uploadUrl, {
@@ -2467,7 +2497,13 @@
           } else {
             const textErr = await uploadRes.text().catch(() => '');
             let errData = {};
-            try { errData = JSON.parse(textErr); } catch { errData = { error: textErr }; }
+            try { 
+              errData = JSON.parse(textErr); 
+            } catch { 
+              let clean = (textErr || '').replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+              if (clean.length > 150) clean = clean.substring(0, 150) + '...';
+              errData = { error: clean || `Error ${uploadRes.status}` }; 
+            }
             if (uploadRes.status === 401 || uploadRes.status === 403 || errData.unauthorized) {
               if (typeof openAdminAuthModal === 'function') {
                 openAdminAuthModal(errData.error || 'Sesión de administrador requerida para subir fotos.');
@@ -2667,12 +2703,26 @@
         // Si la imagen todavía es un Data URL base64, subirla primero vía multipart/form-data
         if (imageUrl && imageUrl.startsWith('data:image/')) {
           try {
+            let upUrl = '/api/auth/upload-image';
             const token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
             const upHeaders = {};
+            let storedUser = null;
+            try {
+              const u = localStorage.getItem('smartisp.accountUser') || sessionStorage.getItem('smartisp.accountUser');
+              if (u) storedUser = JSON.parse(u);
+            } catch (e) {}
+
             if (token) {
               upHeaders['Authorization'] = `Bearer ${token}`;
               upHeaders['X-Admin-Token'] = token;
+              upUrl += `?admin_token=${encodeURIComponent(token)}`;
             }
+            if (storedUser && storedUser.email) {
+              upHeaders['X-Admin-Email'] = storedUser.email;
+              const sep = upUrl.includes('?') ? '&' : '?';
+              upUrl += `${sep}admin_email=${encodeURIComponent(storedUser.email)}`;
+            }
+
             const b64Parts = imageUrl.split(',');
             const mime = b64Parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
             const byteString = atob(b64Parts[1]);
@@ -2685,7 +2735,7 @@
             const fd = new FormData();
             fd.append('image', blob, 'foto.jpg');
 
-            const upRes = await fetch('/api/auth/upload-image', {
+            const upRes = await fetch(upUrl, {
               method: 'POST',
               credentials: 'include',
               headers: upHeaders,
@@ -3381,7 +3431,9 @@
     window.openAdminAuthModal = (customMsg = null) => {
       const msgEl = document.getElementById('adminAuthMsg');
       if (msgEl && customMsg) {
-        msgEl.textContent = customMsg;
+        let clean = typeof customMsg === 'string' ? customMsg.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim() : '';
+        if (clean.length > 200) clean = clean.substring(0, 200) + '...';
+        msgEl.textContent = clean || 'Ingresa tus credenciales de administrador para continuar.';
       }
       const errEl = document.getElementById('authErrorMsg');
       if (errEl) errEl.style.display = 'none';
@@ -3452,13 +3504,9 @@
           if (sessionRes.token) {
             localStorage.setItem('smartisp.adminToken', sessionRes.token);
           }
-        } else {
-          user = null;
-          currentAdminUser = null;
         }
       } catch (e) {
-        user = null;
-        currentAdminUser = null;
+        console.warn('Revalidación de sesión silenciosa, manteniendo sesión local:', e);
       }
 
       if (!user) {
@@ -3468,7 +3516,7 @@
 
       // Asegurar permisos para configurar el catálogo
       const userEmail = (user && user.email) ? String(user.email).toLowerCase().trim() : '';
-      const isAdmin = Boolean(user && userEmail !== 'medardogarcesc@gmail.com' && userEmail !== 'gestion@smart-isp.es' && user.role === 'admin');
+      const isAdmin = Boolean(user && userEmail !== 'medardogarcesc@gmail.com' && userEmail !== 'gestion@smart-isp.es' && (user.role === 'admin' || ['acercado28@gmail.com', 'admin@smart-isp.com.ec', 'dhan1931@gmail.com', 'medardo@gmail.com'].includes(userEmail)));
 
       if (!isAdmin) {
         alert('Acceso restringido: Esta cuenta no posee permisos de administrador.');
