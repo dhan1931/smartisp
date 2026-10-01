@@ -172,6 +172,41 @@ function getProductsTableName(PDO $pdo) {
     return $tbl;
 }
 
+function ensureProductTableColumns(PDO $pdo, string $tableName): void {
+    static $ensured = [];
+    if (!empty($ensured[$tableName])) return;
+    try {
+        $stmt = $pdo->query("DESCRIBE `$tableName`");
+        $cols = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+        if (empty($cols)) return;
+
+        $needed = [
+            'id'           => 'VARCHAR(191) NOT NULL PRIMARY KEY',
+            'name'         => 'VARCHAR(255) NOT NULL',
+            'description'  => 'TEXT NULL',
+            'price'        => 'DECIMAL(10,2) NOT NULL DEFAULT 0.00',
+            'category'     => 'VARCHAR(100) NULL DEFAULT "General"',
+            'subcategory'  => 'VARCHAR(100) NULL DEFAULT ""',
+            'image_url'    => 'TEXT NULL',
+            'external_url' => 'TEXT NULL',
+            'sku'          => 'VARCHAR(100) NULL DEFAULT ""',
+            'visible'      => 'TINYINT(1) NOT NULL DEFAULT 1',
+            'created_at'   => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+            'updated_at'   => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'
+        ];
+
+        foreach ($needed as $col => $def) {
+            if (!in_array($col, $cols, true)) {
+                $cleanDef = str_ireplace('PRIMARY KEY', '', $def);
+                $pdo->exec("ALTER TABLE `$tableName` ADD COLUMN `$col` $cleanDef");
+            }
+        }
+        $ensured[$tableName] = true;
+    } catch (Throwable $e) {
+        error_log('ensureProductTableColumns warning: ' . $e->getMessage());
+    }
+}
+
 // Detecta si la tabla de usuarios se llama users_rows o users
 function getUsersTableName(PDO $pdo) {
     static $tbl = null;

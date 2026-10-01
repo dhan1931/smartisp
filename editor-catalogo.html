@@ -828,6 +828,9 @@
       </div>
     </div>
     <div class="top-actions">
+      <button type="button" class="btn btn-sm" onclick="document.getElementById('btnNewProduct').click()" style="background:#0284c7; color:#fff; font-weight:700; border:none; box-shadow:0 2px 6px rgba(2,132,199,0.4);">
+        <i data-lucide="plus" width="14"></i> + Agregar Producto Manual
+      </button>
       <a href="/admin.html" class="btn btn-dark btn-sm">
         <i data-lucide="arrow-left" width="15"></i> Volver a Admin General
       </a>
@@ -908,8 +911,8 @@
             <button type="button" class="btn btn-secondary" onclick="switchTab('tab-importer')">
               <i data-lucide="file-up" width="16"></i> Importar Excel
             </button>
-            <button type="button" id="btnNewProduct" class="btn btn-primary">
-              <i data-lucide="plus" width="16"></i> Nuevo Producto
+            <button type="button" id="btnNewProduct" class="btn btn-primary" style="background:#0284c7; font-weight:700; padding:8px 16px; box-shadow:0 3px 10px rgba(2,132,199,0.35);">
+              <i data-lucide="plus-circle" width="16"></i> ➕ Agregar Producto Manual
             </button>
           </div>
         </div>
@@ -1388,6 +1391,41 @@
     </div>
   </div>
 
+  <!-- MODAL: PRODUCTO GUARDADO / ENLACE SEO INDEXABLE -->
+  <div class="modal-overlay" id="productSavedModal">
+    <div class="modal-dialog" style="max-width:560px; text-align:center;">
+      <div style="width:60px; height:60px; border-radius:50%; background:#ecfdf5; color:#059669; display:flex; align-items:center; justify-content:center; margin:0 auto 14px auto;">
+        <i data-lucide="check-circle-2" width="34" height="34"></i>
+      </div>
+      <h3 class="modal-title" id="savedModalTitle" style="margin-bottom:6px; color:#065f46;">¡Producto Guardado con Éxito!</h3>
+      <p style="font-size:13.5px; color:#475569; margin-bottom:16px;" id="savedModalDesc">
+        El producto ya está registrado en la base de datos y cuenta con su enlace SEO permanente indexable para Google.
+      </p>
+
+      <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:14px; text-align:left; margin-bottom:20px;">
+        <label style="font-size:12px; font-weight:700; color:#334155; display:block; margin-bottom:6px;">Enlace público indexable en Google:</label>
+        <div style="display:flex; gap:6px;">
+          <input type="text" id="savedProductUrlInput" readonly class="form-control" style="font-family:monospace; font-size:12px; background:#fff; color:#0f172a; font-weight:600;">
+          <button type="button" class="btn btn-secondary" id="btnCopySavedUrl" title="Copiar enlace al portapapeles">
+            <i data-lucide="copy" width="15"></i> Copiar
+          </button>
+        </div>
+        <small style="font-size:11px; color:#64748b; margin-top:6px; display:block;">
+          ✨ Este enlace cuenta con microdatos Schema.org Product y etiquetas Open Graph listas para ser rastreadas por Google.
+        </small>
+      </div>
+
+      <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+        <a href="#" id="savedProductLinkBtn" target="_blank" class="btn btn-primary" style="padding:10px 18px; font-weight:700; background:#059669; border-color:#047857;">
+          <i data-lucide="external-link" width="16"></i> Ver Ficha Web del Producto ↗
+        </a>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('productSavedModal')">
+          Aceptar y Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: CONFIRMAR ELIMINAR TODOS LOS PRODUCTOS -->
   <div class="modal-overlay" id="deleteAllModal">
     <div class="modal-dialog" style="max-width:480px; text-align:center;">
@@ -1468,11 +1506,16 @@
       }
     };
 
-    // --- HELPER DE LLAMADAS API CON CREDENCIALES ---
+    // --- HELPER DE LLAMADAS API CON CREDENCIALES Y RESILENCIA DE TOKEN ---
     const api = async (endpoint, options = {}) => {
+      const token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
       const customHeaders = {
         'Content-Type': 'application/json'
       };
+      if (token) {
+        customHeaders['Authorization'] = `Bearer ${token}`;
+        customHeaders['X-Admin-Token'] = token;
+      }
       const reqHeaders = { ...customHeaders, ...(options.headers || {}) };
 
       let res = null;
@@ -1490,7 +1533,17 @@
       const text = await res.text();
       let data = {};
       try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text || `Error ${res.status}` }; }
-      if (!res.ok) throw new Error(data.error || 'Ocurrió un error en la solicitud.');
+
+      if (data && data.token) {
+        localStorage.setItem('smartisp.adminToken', data.token);
+      }
+
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          console.warn('Acceso no autorizado o sesión expirada:', data.error);
+        }
+        throw new Error(data.error || 'Ocurrió un error en la solicitud.');
+      }
       return data;
     };
 
@@ -1987,6 +2040,25 @@
       }
     });
 
+    // --- HELPERS SEO Y ENLACES PÚBLICOS ---
+    const slugifyJs = text => {
+      return String(text || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .substring(0, 80) || 'articulo';
+    };
+
+    const getProductPublicUrl = p => {
+      if (!p || !p.id) return '#';
+      const cleanId = String(p.id).replace(':', '_');
+      const slug = slugifyJs(p.name);
+      return `/producto/${cleanId}-${slug}`;
+    };
+
     // --- RENDER TAB 2: PRODUCTOS ---
     const renderCategorySelects = () => {
       const macroFilter = document.getElementById('filterMacroCat');
@@ -1995,7 +2067,9 @@
       const reFrom = document.getElementById('reassignFromCategory');
       const reTo = document.getElementById('reassignToCategory');
 
-      const catOptions = categoriesList.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+      const defaultCats = ['General', 'Servidores', 'Networking', 'Almacenamiento', 'Computadoras y Laptops', 'Seguridad Electrónica'];
+      const availableCatNames = categoriesList.length ? categoriesList.map(c => c.name) : defaultCats;
+      const catOptions = availableCatNames.map(c => `<option value="${c}">${c}</option>`).join('');
 
       if (macroFilter) {
         const cur = macroFilter.value;
@@ -2003,7 +2077,9 @@
         macroFilter.value = cur || 'all';
       }
       if (prodCat) {
+        const curProdCat = prodCat.value;
         prodCat.innerHTML = catOptions;
+        if (curProdCat) prodCat.value = curProdCat;
       }
       if (reFrom) reFrom.innerHTML = catOptions;
       if (reTo) reTo.innerHTML = catOptions;
@@ -2137,9 +2213,12 @@
             <td>${imgEl}</td>
             <td>
               <strong class="prod-title">${p.name || 'Sin nombre'}</strong>
-              <div style="display:flex; gap:6px; align-items:center; margin-top:3px; flex-wrap:wrap;">
+              <div style="display:flex; gap:8px; align-items:center; margin-top:4px; flex-wrap:wrap;">
                 ${p.sku ? `<code class="prod-sku">SKU: ${p.sku}</code>` : ''}
-                ${p.externalUrl ? `<a href="${p.externalUrl}" target="_blank" style="font-size:11px; color:var(--blue); text-decoration:none; display:inline-flex; align-items:center; gap:2px;">🔗 Ficha técnica</a>` : ''}
+                <a href="${getProductPublicUrl(p)}" target="_blank" style="font-size:11.5px; color:var(--blue); font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:3px;" title="Ver enlace único indexable en Google">
+                  <i data-lucide="external-link" width="12"></i> Enlace Google
+                </a>
+                ${p.externalUrl ? `<a href="${p.externalUrl}" target="_blank" style="font-size:11px; color:var(--muted); text-decoration:none; display:inline-flex; align-items:center; gap:2px;">🔗 Ficha fabricante</a>` : ''}
               </div>
             </td>
             <td>
@@ -2159,6 +2238,9 @@
             </td>
             <td style="text-align:right;">
               <div style="display:flex; justify-content:flex-end; gap:6px;">
+                <a href="${getProductPublicUrl(p)}" target="_blank" class="btn btn-secondary btn-sm" title="Abrir ficha web de este producto (enlace permanente)">
+                  <i data-lucide="external-link" width="14"></i>
+                </a>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="openEditProductModal('${p.id}')" title="Editar producto">
                   <i data-lucide="edit-3" width="14"></i>
                 </button>
@@ -2258,7 +2340,7 @@
     const compressImage = file => new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
-        const maxDim = 1000;
+        const maxDim = 900;
         let w = img.width;
         let h = img.height;
         if (w > maxDim || h > maxDim) {
@@ -2274,10 +2356,12 @@
         canvas.width = w;
         canvas.height = h;
         const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, w, h);
         ctx.drawImage(img, 0, 0, w, h);
         canvas.toBlob(blob => {
           resolve(blob || file);
-        }, 'image/jpeg', 0.85);
+        }, 'image/jpeg', 0.82);
       };
       img.onerror = () => resolve(file);
       img.src = URL.createObjectURL(file);
@@ -2309,11 +2393,20 @@
 
           const compressedBlob = await compressImage(file);
           const fd = new FormData();
-          fd.append('image', compressedBlob, (file.name || 'producto').replace(/\.[^.]+$/, '') + '.jpg');
+          const safeName = (file.name || 'producto').replace(/[^a-zA-Z0-9_-]/g, '_') + '.jpg';
+          fd.append('image', compressedBlob, safeName);
+
+          const uploadHeaders = {};
+          const token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
+          if (token) {
+            uploadHeaders['Authorization'] = `Bearer ${token}`;
+            uploadHeaders['X-Admin-Token'] = token;
+          }
 
           const uploadRes = await fetch('/api/auth/upload-image', {
             method: 'POST',
             credentials: 'include',
+            headers: uploadHeaders,
             body: fd
           });
 
@@ -2323,18 +2416,19 @@
               prodImgUrlInput.value = upData.url;
               prodImgPreview.src = upData.url;
               showToast('Fotografía subida y optimizada en el servidor.');
+            } else {
+              throw new Error('No se recibió la URL de la imagen guardada.');
             }
           } else {
-            const reader = new FileReader();
-            reader.onload = ev => {
-              prodImgUrlInput.value = ev.target.result;
-            };
-            reader.readAsDataURL(compressedBlob);
-            showToast('Fotografía optimizada para guardar.');
+            const errData = await uploadRes.json().catch(() => ({}));
+            throw new Error(errData.error || `Error al subir imagen al servidor (${uploadRes.status})`);
           }
         } catch (err) {
           console.warn('Error subiendo imagen:', err);
-          showToast('Error al procesar la foto.', 'error');
+          showToast(err.message || 'Error al procesar la foto.', 'error');
+          prodImgUrlInput.value = '';
+          prodImgPreview.style.display = 'none';
+          if (btnRemoveImage) btnRemoveImage.style.display = 'none';
         } finally {
           btnUploadLocal.disabled = false;
           btnUploadLocal.innerHTML = originalBtnHtml;
@@ -2384,8 +2478,9 @@
     }
 
     document.getElementById('btnNewProduct').addEventListener('click', () => {
-      document.getElementById('prodModalTitle').textContent = 'Nuevo Producto';
-      document.getElementById('prodId').value = '';
+      document.getElementById('prodModalTitle').textContent = '➕ Agregar Producto Manual';
+      const cleanNewId = 'prod_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
+      document.getElementById('prodId').value = cleanNewId;
       document.getElementById('prodNameInput').value = '';
       document.getElementById('prodSkuInput').value = '';
       document.getElementById('prodPriceInput').value = '';
@@ -2402,7 +2497,12 @@
       if (document.getElementById('btnRemoveProdImage')) document.getElementById('btnRemoveProdImage').style.display = 'none';
       if (document.getElementById('btnModalDeleteProduct')) document.getElementById('btnModalDeleteProduct').style.display = 'none';
       if (localFileInput) localFileInput.value = '';
+
+      const submitBtn = document.querySelector('#productForm button[type="submit"]');
+      if (submitBtn) submitBtn.innerHTML = '<i data-lucide="plus"></i> Guardar y Publicar Producto';
+
       openModal('productModal');
+      lucide.createIcons();
     });
 
     window.openEditProductModal = productId => {
@@ -2448,6 +2548,9 @@
       if (modalDeleteBtn) modalDeleteBtn.style.display = 'inline-flex';
       if (localFileInput) localFileInput.value = '';
 
+      const submitBtn = document.querySelector('#productForm button[type="submit"]');
+      if (submitBtn) submitBtn.innerHTML = '<i data-lucide="save"></i> Actualizar Producto';
+
       openModal('productModal');
       lucide.createIcons();
     };
@@ -2488,57 +2591,131 @@
 
     document.getElementById('productForm').addEventListener('submit', async e => {
       e.preventDefault();
-      const id = document.getElementById('prodId').value || crypto.randomUUID();
-      const isQuote = document.getElementById('chkQuotePrice')?.checked;
-      const rawPrice = parseFloat(document.getElementById('prodPriceInput').value);
-      const finalPrice = isQuote || isNaN(rawPrice) || rawPrice <= 0 ? 0 : rawPrice;
-
-      const product = {
-        id,
-        name: document.getElementById('prodNameInput').value.trim(),
-        sku: document.getElementById('prodSkuInput').value.trim(),
-        price: finalPrice,
-        category: document.getElementById('prodCategorySelect').value,
-        subcategory: document.getElementById('prodSubcategoryInput').value.trim(),
-        imageUrl: document.getElementById('prodImageUrlInput').value.trim(),
-        externalUrl: document.getElementById('prodExternalUrlInput').value.trim(),
-        description: document.getElementById('prodDescInput').value.trim(),
-        visible: document.getElementById('prodVisibleInput').checked
-      };
-
-      // Si la imagen todavía es un Data URL base64, subirla primero al endpoint para obtener URL limpia
-      if (product.imageUrl && product.imageUrl.startsWith('data:image/')) {
-        try {
-          const upRes = await fetch('/api/auth/upload-image', {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: product.imageUrl })
-          });
-          if (upRes.ok) {
-            const upData = await upRes.json();
-            if (upData.url) {
-              product.imageUrl = upData.url;
-              document.getElementById('prodImageUrlInput').value = upData.url;
-            }
-          }
-        } catch (upErr) {
-          console.warn('Auto-upload fallback:', upErr);
-        }
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const origHtml = submitBtn ? submitBtn.innerHTML : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;">⏳ Guardando producto...</span>';
       }
 
-      const prodJson = JSON.stringify(product);
-
       try {
-        await api('admin-products', {
+        const idInput = document.getElementById('prodId');
+        const id = (idInput && idInput.value.trim()) ? idInput.value.trim() : ('prod_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 8));
+        const isQuote = document.getElementById('chkQuotePrice')?.checked;
+        const rawPrice = parseFloat(document.getElementById('prodPriceInput').value);
+        const finalPrice = isQuote || isNaN(rawPrice) || rawPrice <= 0 ? 0 : rawPrice;
+
+        const name = document.getElementById('prodNameInput').value.trim();
+        if (!name) {
+          throw new Error('Por favor ingresa el nombre del producto.');
+        }
+
+        let imageUrl = document.getElementById('prodImageUrlInput').value.trim();
+
+        // Si la imagen todavía es un Data URL base64, subirla primero vía multipart/form-data
+        if (imageUrl && imageUrl.startsWith('data:image/')) {
+          try {
+            const token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
+            const upHeaders = {};
+            if (token) {
+              upHeaders['Authorization'] = `Bearer ${token}`;
+              upHeaders['X-Admin-Token'] = token;
+            }
+            const b64Parts = imageUrl.split(',');
+            const mime = b64Parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+            const byteString = atob(b64Parts[1]);
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+              ia[i] = byteString.charCodeAt(i);
+            }
+            const blob = new Blob([ab], { type: mime });
+            const fd = new FormData();
+            fd.append('image', blob, 'foto.jpg');
+
+            const upRes = await fetch('/api/auth/upload-image', {
+              method: 'POST',
+              credentials: 'include',
+              headers: upHeaders,
+              body: fd
+            });
+            if (upRes.ok) {
+              const upData = await upRes.json();
+              if (upData.url) {
+                imageUrl = upData.url;
+                document.getElementById('prodImageUrlInput').value = upData.url;
+              }
+            } else {
+              imageUrl = '';
+              console.warn('No se pudo subir la foto en base64; se guardará sin imagen para evitar bloqueo WAF 403.');
+            }
+          } catch (upErr) {
+            imageUrl = '';
+            console.warn('Error en fallback de imagen:', upErr);
+          }
+        }
+
+        const product = {
+          id,
+          name,
+          sku: document.getElementById('prodSkuInput').value.trim(),
+          price: finalPrice,
+          category: document.getElementById('prodCategorySelect').value || 'General',
+          subcategory: document.getElementById('prodSubcategoryInput').value.trim(),
+          imageUrl,
+          externalUrl: document.getElementById('prodExternalUrlInput').value.trim(),
+          description: document.getElementById('prodDescInput').value.trim(),
+          visible: document.getElementById('prodVisibleInput').checked
+        };
+
+        const res = await api('admin-products', {
           method: 'POST',
-          body: prodJson
+          body: JSON.stringify(product)
         });
-        showToast('Producto guardado con éxito.');
+
         closeModal('productModal');
         await loadAllData();
+
+        // Mostrar modal de confirmación con enlace único SEO directo
+        const savedUrl = res.url || getProductPublicUrl(product);
+        const fullSavedUrl = window.location.origin + savedUrl;
+
+        const titleEl = document.getElementById('savedModalTitle');
+        const descEl = document.getElementById('savedModalDesc');
+        const inputEl = document.getElementById('savedProductUrlInput');
+        const linkBtn = document.getElementById('savedProductLinkBtn');
+
+        if (titleEl) titleEl.textContent = res.message || '¡Producto Guardado con Éxito!';
+        if (descEl) descEl.innerHTML = `<strong>${product.name}</strong> se ha registrado en la base de datos y su enlace permanente ya está disponible para clientes y buscadores.`;
+        if (inputEl) inputEl.value = fullSavedUrl;
+        if (linkBtn) linkBtn.href = savedUrl;
+
+        openModal('productSavedModal');
+        showToast('Producto guardado correctamente.');
+
       } catch (err) {
-        showToast(err.message, 'error');
+        console.error('Error guardando producto:', err);
+        showToast(err.message || 'Error al guardar el producto.', 'error');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = origHtml;
+          if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
+        }
+      }
+    });
+
+    // Copiar enlace SEO del modal de producto guardado
+    document.getElementById('btnCopySavedUrl')?.addEventListener('click', () => {
+      const input = document.getElementById('savedProductUrlInput');
+      if (input && input.value) {
+        navigator.clipboard.writeText(input.value).then(() => {
+          showToast('Enlace copiado al portapapeles.');
+        }).catch(() => {
+          input.select();
+          document.execCommand('copy');
+          showToast('Enlace copiado.');
+        });
       }
     });
 
@@ -3140,9 +3317,11 @@
 
     // --- AUTENTICACIÓN Y CIERRE DE SESIÓN ---
     document.getElementById('logoutBtn').addEventListener('click', async () => {
-      await api('logout', { method: 'POST' });
+      try { await api('logout', { method: 'POST' }); } catch (e) {}
       localStorage.removeItem('smartisp.accountUser');
+      localStorage.removeItem('smartisp.adminToken');
       sessionStorage.removeItem('smartisp.accountUser');
+      sessionStorage.removeItem('smartisp.adminToken');
       window.location.href = '/admin.html';
     });
 
@@ -3163,6 +3342,9 @@
           user = sessionRes.user;
           currentAdminUser = user;
           localStorage.setItem('smartisp.accountUser', JSON.stringify(user));
+          if (sessionRes.token) {
+            localStorage.setItem('smartisp.adminToken', sessionRes.token);
+          }
         }
       } catch (e) {}
 

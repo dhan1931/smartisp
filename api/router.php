@@ -47,11 +47,66 @@ function getAdminEmailsList(): array {
     ];
 }
 
+function slugify(string $text): string {
+    $clean = @iconv('UTF-8', 'ASCII//TRANSLIT', $text);
+    if (!$clean) $clean = $text;
+    $clean = preg_replace('~[^\\pL\\d]+~u', '-', $clean);
+    $clean = trim($clean, '-');
+    $clean = preg_replace('~-+~', '-', $clean);
+    $clean = strtolower($clean);
+    return !empty($clean) ? substr($clean, 0, 80) : 'articulo';
+}
+
+function generateAdminAuthToken(array $user): string {
+    $secretKey = 'smartisp_admin_jwt_secret_key_2026';
+    $payload = [
+        'id'    => $user['id'] ?? uniqid('usr_'),
+        'email' => strtolower(trim((string)($user['email'] ?? ''))),
+        'name'  => $user['name'] ?? '',
+        'role'  => $user['role'] ?? 'admin',
+        'exp'   => time() + (86400 * 30) // 30 días de vigencia
+    ];
+    $b64 = base64_encode(json_encode($payload));
+    $sig = hash_hmac('sha256', $b64, $secretKey);
+    return $b64 . '.' . $sig;
+}
+
 function getAuthUser(): ?array {
     if (session_status() === PHP_SESSION_NONE) {
         @session_start();
     }
     $user = $_SESSION['user'] ?? null;
+
+    // Respaldo resiliente: validar token Bearer o cabecera X-Admin-Token si la cookie PHP expiró
+    if (!$user || !is_array($user)) {
+        $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? ($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '');
+        $token = '';
+        if (preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
+            $token = $matches[1];
+        }
+        if (empty($token) && !empty($_SERVER['HTTP_X_ADMIN_TOKEN'])) {
+            $token = $_SERVER['HTTP_X_ADMIN_TOKEN'];
+        }
+
+        if (!empty($token)) {
+            $secretKey = 'smartisp_admin_jwt_secret_key_2026';
+            $parts = explode('.', $token);
+            if (count($parts) === 2) {
+                list($payloadB64, $sig) = $parts;
+                $expectedSig = hash_hmac('sha256', $payloadB64, $secretKey);
+                if (hash_equals($expectedSig, $sig)) {
+                    $decoded = json_decode(base64_decode($payloadB64), true);
+                    if (is_array($decoded) && !empty($decoded['email'])) {
+                        if (empty($decoded['exp']) || $decoded['exp'] > time()) {
+                            $user = $decoded;
+                            $_SESSION['user'] = $user;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     if (is_array($user) && !empty($user['email'])) {
         $email = strtolower(trim((string)$user['email']));
         if ($email === 'medardogarcesc@gmail.com' || $email === 'gestion@smart-isp.es') {
@@ -393,11 +448,18 @@ if ($action === 'admin-products') {
     }
 
     if ($method === 'POST') {
-        $id = $body['id'] ?? uniqid('prod_');
+        ensureProductTableColumns($pdo, $pTable);
+
+        $id = trim((string)($body['id'] ?? ''));
+        if (empty($id) || $id === 'modal-draft') {
+            $id = 'prod_' . bin2hex(random_bytes(7));
+        }
+
         $name = trim($body['name'] ?? '');
         $description = trim($body['description'] ?? '');
         $price = (float)($body['price'] ?? 0);
         $category = trim($body['category'] ?? 'General');
+        if (empty($category)) $category = 'General';
         $subcategory = trim($body['subcategory'] ?? '');
         $imageUrl = trim($body['imageUrl'] ?? ($body['image_url'] ?? ''));
 
@@ -405,7 +467,7 @@ if ($action === 'admin-products') {
         if (strpos($imageUrl, 'data:image/') === 0 && preg_match('/^data:image\/(\w+);base64,(.+)$/', $imageUrl, $m)) {
             $ext = strtolower($m[1]) === 'png' ? 'png' : (strtolower($m[1]) === 'webp' ? 'webp' : 'jpg');
             $bData = base64_decode($m[2]);
-            if ($bData && strlen($bData) < 10 * 1024 * 1024) {
+            if ($bData && strlen($bData) < 15 * 1024 * 1024) {
                 $uploadDir = __DIR__ . '/../uploads/products/';
                 if (!is_dir($uploadDir)) @mkdir($uploadDir, 0755, true);
                 $fn = 'prod_' . bin2hex(random_bytes(8)) . '.' . $ext;
@@ -430,10 +492,30 @@ if ($action === 'admin-products') {
             exit;
         }
 
-        // Comprobar si ya existe por id o por nombre idéntico
-        $checkStmt = $pdo->prepare("SELECT id FROM `$pTable` WHERE id = :id OR (name = :name AND name != '') LIMIT 1");
-        $checkStmt->execute([':id' => $id, ':name' => $name]);
+        // Si se especificó una nueva categoría, asegurar que esté registrada en categories_rows
+        if (!empty($category)) {
+            try {
+                $chkCat = $pdo->prepare("SELECT id FROM `categories_rows` WHERE LOWER(name) = LOWER(:name) LIMIT 1");
+                $chkCat->execute([':name' => $category]);
+                if (!$chkCat->fetchColumn()) {
+                    $catId = slugify($category);
+                    $insCat = $pdo->prepare("INSERT INTO `categories_rows` (id, name, subcategories) VALUES (:id, :name, :subs)");
+                    $subsJson = !empty($subcategory) ? json_encode([$subcategory], JSON_UNESCAPED_UNICODE) : '[]';
+                    $insCat->execute([':id' => $catId, ':name' => $category, ':subs' => $subsJson]);
+                }
+            } catch (Throwable $e) {}
+        }
+
+        // Comprobar si ya existe por id o por SKU
+        $checkStmt = $pdo->prepare("SELECT id FROM `$pTable` WHERE id = :id LIMIT 1");
+        $checkStmt->execute([':id' => $id]);
         $existingId = $checkStmt->fetchColumn();
+
+        if (!$existingId && !empty($sku)) {
+            $chkSku = $pdo->prepare("SELECT id FROM `$pTable` WHERE sku = :sku AND sku != '' LIMIT 1");
+            $chkSku->execute([':sku' => $sku]);
+            $existingId = $chkSku->fetchColumn();
+        }
 
         // Si la imagen enviada es la URL del proxy, conservar la URL real original
         if (strpos($imageUrl, '/api/auth/product-image') !== false || strpos($imageUrl, '/api/auth/proxy-image') !== false) {
@@ -458,6 +540,8 @@ if ($action === 'admin-products') {
                 }
             }
         }
+
+        $prodSlug = slugify($name);
 
         if ($existingId) {
             $sql = "UPDATE `$pTable` SET
@@ -485,7 +569,14 @@ if ($action === 'admin-products') {
                 ':sku'          => $sku,
                 ':visible'      => $visible
             ]);
-            echo json_encode(['ok' => true, 'id' => $existingId]);
+            $publicUrl = '/producto/' . $existingId . '-' . $prodSlug;
+            echo json_encode([
+                'ok'      => true,
+                'id'      => $existingId,
+                'name'    => $name,
+                'url'     => $publicUrl,
+                'message' => 'Producto actualizado con éxito.'
+            ]);
         } else {
             $sql = "INSERT INTO `$pTable` (id, name, description, price, category, subcategory, image_url, external_url, sku, visible)
                     VALUES (:id, :name, :description, :price, :category, :subcategory, :image_url, :external_url, :sku, :visible)";
@@ -502,7 +593,14 @@ if ($action === 'admin-products') {
                 ':sku'          => $sku,
                 ':visible'      => $visible
             ]);
-            echo json_encode(['ok' => true, 'id' => $id]);
+            $publicUrl = '/producto/' . $id . '-' . $prodSlug;
+            echo json_encode([
+                'ok'      => true,
+                'id'      => $id,
+                'name'    => $name,
+                'url'     => $publicUrl,
+                'message' => 'Producto registrado y publicado con éxito.'
+            ]);
         }
         exit;
     }
@@ -1485,8 +1583,9 @@ if ($action === 'login' && $method === 'POST') {
                 'phone'   => $user ? ($user['phone'] ?? '+593 999 000 000') : '+593 999 000 000',
                 'role'    => 'admin'
             ];
+            $token = generateAdminAuthToken($demoUser);
             $_SESSION['user'] = $demoUser;
-            echo json_encode(['user' => $demoUser]);
+            echo json_encode(['user' => $demoUser, 'token' => $token]);
             exit;
         }
 
@@ -1533,8 +1632,9 @@ if ($action === 'login' && $method === 'POST') {
                     $pdo->exec("UPDATE `$uTable` SET role = 'admin' WHERE id = " . $pdo->quote($normUser['id']));
                 } catch (Throwable $e) {}
             }
+            $token = generateAdminAuthToken($normUser);
             $_SESSION['user'] = $normUser;
-            echo json_encode(['user' => $normUser]);
+            echo json_encode(['user' => $normUser, 'token' => $token]);
         } else {
             http_response_code(401);
             echo json_encode(['error' => 'Contraseña incorrecta. Verifica tus datos.']);
@@ -1592,17 +1692,19 @@ if ($action === 'register' && $method === 'POST') {
 }
 
 if ($action === 'me' && $method === 'GET') {
-    $user = $_SESSION['user'] ?? null;
+    $user = getAuthUser();
+    $token = null;
     if ($user && is_array($user)) {
-        if (strtolower($user['email'] ?? '') === 'medardogarcesc@gmail.com') {
+        if (strtolower($user['email'] ?? '') === 'medardogarcesc@gmail.com' || strtolower($user['email'] ?? '') === 'gestion@smart-isp.es') {
             $user['role'] = 'customer';
             $_SESSION['user']['role'] = 'customer';
         } elseif (isAdminUser($user)) {
             $user['role'] = 'admin';
             $_SESSION['user']['role'] = 'admin';
+            $token = generateAdminAuthToken($user);
         }
     }
-    echo json_encode(['user' => $user]);
+    echo json_encode(['user' => $user, 'token' => $token]);
     exit;
 }
 

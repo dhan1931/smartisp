@@ -1458,9 +1458,14 @@
       } catch { return null; }
     };
     const api = async (action, options = {}) => {
+      const token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
       const customHeaders = {
         'Content-Type': 'application/json'
       };
+      if (token) {
+        customHeaders['Authorization'] = `Bearer ${token}`;
+        customHeaders['X-Admin-Token'] = token;
+      }
       const reqHeaders = { ...customHeaders, ...(options.headers || {}) };
 
       let response = null;
@@ -1471,6 +1476,9 @@
       const text = await response.text();
       let result = {};
       try { result = text ? JSON.parse(text) : {}; } catch { result = { error: text || `Respuesta inválida (${response.status})` }; }
+      if (result && result.token) {
+        localStorage.setItem('smartisp.adminToken', result.token);
+      }
       if (!response.ok) throw new Error(result.error || 'No se pudo completar la operación.');
       return result;
     };
@@ -2109,6 +2117,9 @@
         const values = Object.fromEntries(new FormData(event.currentTarget));
         const remember = values.remember === 'on';
         const result = await api('login', { method: 'POST', body: JSON.stringify(values) });
+        if (result.token) {
+          (remember ? localStorage : sessionStorage).setItem('smartisp.adminToken', result.token);
+        }
         const displayUser = { id: result.user?.id, name: result.user?.name, email: result.user?.email };
         (remember ? localStorage : sessionStorage).setItem('smartisp.accountUser', JSON.stringify(displayUser));
         if (remember) localStorage.setItem('smartisp.accountRemembered', 'true');
@@ -3298,10 +3309,12 @@
     }
 
     $('#logoutButton').addEventListener('click', async () => {
-      await api('logout', { method: 'POST' });
+      try { await api('logout', { method: 'POST' }); } catch (e) {}
       localStorage.removeItem('smartisp.accountUser');
       localStorage.removeItem('smartisp.accountRemembered');
+      localStorage.removeItem('smartisp.adminToken');
       sessionStorage.removeItem('smartisp.accountUser');
+      sessionStorage.removeItem('smartisp.adminToken');
       location.reload();
     });
 
@@ -3309,7 +3322,9 @@
       try { await api('logout', { method: 'POST' }); } catch (e) {}
       localStorage.removeItem('smartisp.accountUser');
       localStorage.removeItem('smartisp.accountRemembered');
+      localStorage.removeItem('smartisp.adminToken');
       sessionStorage.removeItem('smartisp.accountUser');
+      sessionStorage.removeItem('smartisp.adminToken');
       $('#accessDeniedPanel').classList.add('hidden');
       $('#loginPanel').classList.remove('hidden');
     });
