@@ -4,10 +4,11 @@ DirectoryIndex index.html index.htm index.php
     RewriteEngine On
     RewriteBase /
 
-    # Proteger archivos sensibles y configuraciones
-    RewriteRule ^\.env - [F,L]
+    # Proteger archivos sensibles
+    RewriteRule ^\.env$ - [F,L]
     RewriteRule ^api/config\.php$ - [F,L]
-    RewriteRule ^(package\.json|package-lock\.json|\.git) - [F,L]
+    RewriteRule ^package(-lock)?\.json$ - [F,L]
+    RewriteRule ^\.git(/.*)?$ - [F,L]
 
     # Rutas amigables SEO para productos individuales y sitemaps
     RewriteRule ^sitemap-products\.xml$ sitemap-products.php [QSA,L]
@@ -16,20 +17,12 @@ DirectoryIndex index.html index.htm index.php
     RewriteRule ^productos/?$ tienda.html [QSA,L]
     RewriteRule ^producto/?$ tienda.html [QSA,L]
 
+    # Si el archivo o directorio solicitado existe físicamente en el servidor, servirlo directamente
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
     # Enrutamiento universal de API hacia router.php
     RewriteRule ^api/auth/(.*)$ api/router.php?action=$1 [QSA,L]
     RewriteRule ^api/(.*)$ api/router.php?action=$1 [QSA,L]
-</IfModule>
-
-<IfModule mod_headers.c>
-    # Prevenir que navegadores guarden en caché páginas HTML desactualizadas
-    <FilesMatch "\.(html|htm)$">
-        Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
-        Header set Pragma "no-cache"
-    </FilesMatch>
-
-    # Cabeceras de seguridad compatibles con HTTP/2 y Hostinger CDN
-    Header set X-Content-Type-Options "nosniff"
-    Header set X-Frame-Options "SAMEORIGIN"
-    Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
