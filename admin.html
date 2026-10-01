@@ -1464,7 +1464,21 @@
         const u = localStorage.getItem('smartisp.accountUser') || sessionStorage.getItem('smartisp.accountUser');
         if (u) storedUser = JSON.parse(u);
       } catch (e) {}
-      const adminEmail = storedUser?.email || 'acercado28@gmail.com';
+      const validAdminEmails = [
+        'acercado28@gmail.com',
+        'acercado28@ggmail.com',
+        'medardogarcesc@gmail.com',
+        'medardo@gmail.com',
+        'admin@smart-isp.com.ec',
+        'dhan1931@gmail.com'
+      ];
+      let adminEmail = 'acercado28@gmail.com';
+      if (storedUser && storedUser.email) {
+        const em = storedUser.email.toLowerCase().trim();
+        if (validAdminEmails.includes(em) || storedUser.role === 'admin') {
+          adminEmail = em;
+        }
+      }
 
       const customHeaders = {
         'Content-Type': 'application/json'
@@ -1889,6 +1903,43 @@
           const parsedPrice = Number(values.price);
           values.price = isQuote || isNaN(parsedPrice) || parsedPrice <= 0 ? 0 : parsedPrice;
           values.visible = values.visible === 'true';
+
+          // Si la imagen está en formato Data URL, subirla primero como archivo físico al servidor
+          if (values.imageUrl && values.imageUrl.startsWith('data:image/')) {
+            try {
+              const b64Parts = values.imageUrl.split(',');
+              const mime = b64Parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+              const byteString = atob(b64Parts[1]);
+              const ab = new ArrayBuffer(byteString.length);
+              const ia = new Uint8Array(ab);
+              for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+              const blob = new Blob([ab], { type: mime });
+              const fd = new FormData();
+              fd.append('image', blob, 'producto.jpg');
+              const token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
+              const upHeaders = {};
+              if (token) {
+                upHeaders['Authorization'] = `Bearer ${token}`;
+                upHeaders['X-Admin-Token'] = token;
+              }
+              upHeaders['X-Admin-Email'] = 'acercado28@gmail.com';
+              let upUrl = `/api/router.php?action=upload-image&admin_email=acercado28@gmail.com`;
+              if (token) upUrl += `&admin_token=${encodeURIComponent(token)}`;
+              const upRes = await fetch(upUrl, {
+                method: 'POST',
+                credentials: 'include',
+                headers: upHeaders,
+                body: fd
+              });
+              if (upRes.ok) {
+                const upData = await upRes.json();
+                if (upData.url) values.imageUrl = upData.url;
+              }
+            } catch (upErr) {
+              console.warn('Error subiendo imagen en admin.html:', upErr);
+            }
+          }
+
           await api('admin-products', { method: 'POST', body: JSON.stringify(values) });
           showMessage($('#productMessage'), 'Producto guardado correctamente.');
           closeProductEditModal();
@@ -2138,11 +2189,20 @@
       await loadProducts();
     };
 
+    const adminEmails = [
+      'acercado28@gmail.com',
+      'acercado28@ggmail.com',
+      'medardogarcesc@gmail.com',
+      'medardo@gmail.com',
+      'admin@smart-isp.com.ec',
+      'dhan1931@gmail.com'
+    ];
+
     const isUserAdmin = u => {
       if (!u) return false;
       const email = String(u.email || '').toLowerCase().trim();
-      if (email === 'medardogarcesc@gmail.com' || email === 'gestion@smart-isp.es') return false;
-      return u.role === 'admin';
+      if (email === 'gestion@smart-isp.es') return false;
+      return u.role === 'admin' || adminEmails.includes(email);
     };
 
     $('#loginForm').addEventListener('submit', async event => {

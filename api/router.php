@@ -41,10 +41,18 @@ function getAdminEmailsList(): array {
     return [
         'acercado28@gmail.com',
         'acercado28@ggmail.com',
+        'medardogarcesc@gmail.com',
         'admin@smart-isp.com.ec',
         'medardo@gmail.com',
         'dhan1931@gmail.com'
     ];
+}
+
+if ($pdo) {
+    try {
+        $emailSql = "'" . implode("','", getAdminEmailsList()) . "'";
+        $pdo->exec("UPDATE users_rows SET role = 'admin' WHERE LOWER(TRIM(email)) IN ($emailSql) AND role != 'admin'");
+    } catch (Throwable $e) {}
 }
 
 function slugify(string $text): string {
@@ -77,8 +85,9 @@ function getAuthUser(): ?array {
     }
     $user = $_SESSION['user'] ?? null;
 
-    // Respaldo resiliente: validar token Bearer o cabecera X-Admin-Token o parámetro si la cookie PHP expiró
-    if (!$user || !is_array($user)) {
+    // Validar token Bearer o cabecera X-Admin-Token o parámetro si no hay usuario o si el usuario actual no es admin
+    $isAdminSession = (is_array($user) && !empty($user['role']) && $user['role'] === 'admin');
+    if (!$isAdminSession) {
         $token = '';
         $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? ($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '');
         if (preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
@@ -116,6 +125,7 @@ function getAuthUser(): ?array {
                         if (empty($decoded['exp']) || $decoded['exp'] > time()) {
                             $user = $decoded;
                             $_SESSION['user'] = $user;
+                            $isAdminSession = true;
                         }
                     }
                 }
@@ -123,8 +133,8 @@ function getAuthUser(): ?array {
         }
     }
 
-    // Respaldo por email de administrador autorizado si la sesión o token expiraron
-    if (!$user || !is_array($user)) {
+    // Respaldo por email de administrador autorizado si la sesión o token no son admin
+    if (!$isAdminSession) {
         $adminEmail = strtolower(trim((string)($_SERVER['HTTP_X_ADMIN_EMAIL'] ?? ($_SERVER['REDIRECT_HTTP_X_ADMIN_EMAIL'] ?? ($_REQUEST['admin_email'] ?? '')))));
         if (empty($adminEmail) && function_exists('getallheaders')) {
             $hdrs = (array)getallheaders();
@@ -135,7 +145,7 @@ function getAuthUser(): ?array {
                 }
             }
         }
-        if (!empty($adminEmail) && in_array($adminEmail, getAdminEmailsList(), true) && $adminEmail !== 'medardogarcesc@gmail.com' && $adminEmail !== 'gestion@smart-isp.es') {
+        if (!empty($adminEmail) && in_array($adminEmail, getAdminEmailsList(), true) && $adminEmail !== 'gestion@smart-isp.es') {
             try {
                 $db = getDbConnection();
                 if ($db) {
@@ -153,7 +163,7 @@ function getAuthUser(): ?array {
                 }
             } catch (Throwable $e) {}
 
-            if (!$user) {
+            if (!$user || ($user['role'] ?? '') !== 'admin') {
                 $user = [
                     'id'    => '7af355cc-65f0-4ebe-b768-4093b74afbb3',
                     'email' => $adminEmail,
@@ -167,7 +177,7 @@ function getAuthUser(): ?array {
 
     if (is_array($user) && !empty($user['email'])) {
         $email = strtolower(trim((string)$user['email']));
-        if ($email === 'medardogarcesc@gmail.com' || $email === 'gestion@smart-isp.es') {
+        if ($email === 'gestion@smart-isp.es') {
             $user['role'] = 'customer';
             $_SESSION['user']['role'] = 'customer';
         } elseif (in_array($email, getAdminEmailsList(), true)) {
@@ -188,7 +198,7 @@ function isAdminUser(?array $user = null): bool {
         return false;
     }
     $email = strtolower(trim((string)($user['email'] ?? '')));
-    if ($email === 'medardogarcesc@gmail.com' || $email === 'gestion@smart-isp.es') {
+    if ($email === 'gestion@smart-isp.es') {
         return false;
     }
     $adminEmails = getAdminEmailsList();
@@ -1682,7 +1692,7 @@ if ($action === 'login' && $method === 'POST') {
                 'phone'   => (string)($user['phone'] ?? ($user['telefono'] ?? ($user['COL 6'] ?? ''))),
                 'role'    => (string)($user['role'] ?? ($user['rol'] ?? ($user['COL 8'] ?? 'customer')))
             ];
-            if (in_array(strtolower($normUser['email']), ['medardogarcesc@gmail.com', 'gestion@smart-isp.es'], true)) {
+            if (in_array(strtolower($normUser['email']), ['gestion@smart-isp.es'], true)) {
                 $normUser['role'] = 'customer';
                 try {
                     $pdo->exec("UPDATE `$uTable` SET role = 'customer' WHERE id = " . $pdo->quote($normUser['id']));
@@ -1756,7 +1766,7 @@ if ($action === 'me' && $method === 'GET') {
     $user = getAuthUser();
     $token = null;
     if ($user && is_array($user)) {
-        if (strtolower($user['email'] ?? '') === 'medardogarcesc@gmail.com' || strtolower($user['email'] ?? '') === 'gestion@smart-isp.es') {
+        if (strtolower($user['email'] ?? '') === 'gestion@smart-isp.es') {
             $user['role'] = 'customer';
             $_SESSION['user']['role'] = 'customer';
         } elseif (isAdminUser($user)) {

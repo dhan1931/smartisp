@@ -162,6 +162,12 @@ function getProductsTableName(PDO $pdo) {
         return $tbl;
     }
 
+    $stmt = $pdo->query("SHOW TABLES LIKE 'product_rows'");
+    if ($stmt && $stmt->fetch()) {
+        $tbl = 'product_rows';
+        return $tbl;
+    }
+
     $stmt = $pdo->query("SHOW TABLES LIKE 'products'");
     if ($stmt && $stmt->fetch()) {
         $tbl = 'products';

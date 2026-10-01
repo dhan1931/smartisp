@@ -1543,12 +1543,30 @@
 
     // --- OBTENER USUARIO ADMINISTRADOR DE RESPALDO O LOCALSTORAGE ---
     const getStoredAdminUser = () => {
-      if (currentAdminUser && currentAdminUser.email) return currentAdminUser;
+      const allowedAdminEmails = [
+        'acercado28@gmail.com',
+        'acercado28@ggmail.com',
+        'medardogarcesc@gmail.com',
+        'medardo@gmail.com',
+        'admin@smart-isp.com.ec',
+        'dhan1931@gmail.com'
+      ];
+      if (currentAdminUser && currentAdminUser.email) {
+        const em = currentAdminUser.email.toLowerCase().trim();
+        if (allowedAdminEmails.includes(em) || currentAdminUser.role === 'admin') {
+          return currentAdminUser;
+        }
+      }
       try {
         const s = localStorage.getItem('smartisp.accountUser') || sessionStorage.getItem('smartisp.accountUser');
         if (s) {
           const u = JSON.parse(s);
-          if (u && u.email) return u;
+          if (u && u.email) {
+            const em = u.email.toLowerCase().trim();
+            if (allowedAdminEmails.includes(em) || u.role === 'admin') {
+              return { ...u, role: 'admin' };
+            }
+          }
         }
       } catch (e) {}
       return { id: '7af355cc-65f0-4ebe-b768-4093b74afbb3', email: 'acercado28@gmail.com', name: 'Administrador', role: 'admin' };
