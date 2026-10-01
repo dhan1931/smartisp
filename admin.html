@@ -1459,6 +1459,13 @@
     };
     const api = async (action, options = {}) => {
       const token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
+      let storedUser = null;
+      try {
+        const u = localStorage.getItem('smartisp.accountUser') || sessionStorage.getItem('smartisp.accountUser');
+        if (u) storedUser = JSON.parse(u);
+      } catch (e) {}
+      const adminEmail = storedUser?.email || 'acercado28@gmail.com';
+
       const customHeaders = {
         'Content-Type': 'application/json'
       };
@@ -1466,11 +1473,25 @@
         customHeaders['Authorization'] = `Bearer ${token}`;
         customHeaders['X-Admin-Token'] = token;
       }
+      if (adminEmail) {
+        customHeaders['X-Admin-Email'] = adminEmail;
+      }
       const reqHeaders = { ...customHeaders, ...(options.headers || {}) };
+
+      let cleanAction = action.replace(/^\/?api\/auth\//, '').replace(/^\/?api\//, '');
+      let baseAction = cleanAction;
+      let queryPart = '';
+      if (cleanAction.includes('?')) {
+        const parts = cleanAction.split('?');
+        baseAction = parts[0];
+        queryPart = '&' + parts[1];
+      }
+      let url = `/api/router.php?action=${encodeURIComponent(baseAction)}${queryPart}&admin_email=${encodeURIComponent(adminEmail)}`;
+      if (token) url += `&admin_token=${encodeURIComponent(token)}`;
 
       let response = null;
       try {
-        response = await fetch(`/api/auth/${action}`, { credentials: 'include', ...options, headers: reqHeaders });
+        response = await fetch(url, { credentials: 'include', ...options, headers: reqHeaders });
       } catch (e) { response = null; }
       if (!response) throw new Error('No se pudo conectar con el servidor.');
       const text = await response.text();
