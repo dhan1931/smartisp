@@ -1476,9 +1476,11 @@
         }
       }
 
-      const customHeaders = {
-        'Content-Type': 'application/json'
-      };
+      const isForm = (options.body instanceof FormData);
+      const customHeaders = {};
+      if (!isForm) {
+        customHeaders['Content-Type'] = 'application/json';
+      }
       if (token) {
         customHeaders['Authorization'] = `Bearer ${token}`;
         customHeaders['X-Admin-Token'] = token;
@@ -1500,7 +1502,7 @@
       if (token) url += `&admin_token=${encodeURIComponent(token)}`;
 
       let finalBody = options.body;
-      if (finalBody && typeof finalBody === 'string' && (options.method === 'POST' || options.method === 'PUT')) {
+      if (!isForm && finalBody && typeof finalBody === 'string' && (options.method === 'POST' || options.method === 'PUT')) {
         try {
           const parsed = JSON.parse(finalBody);
           if (!parsed.payload && typeof toUtf8Base64 === 'function') {
@@ -1936,7 +1938,11 @@
             }
           }
 
-          await api('admin-products', { method: 'POST', body: JSON.stringify(values) });
+          const pfd = new FormData();
+          for (const [k, v] of Object.entries(values)) {
+            if (v !== undefined && v !== null) pfd.append(k, String(v));
+          }
+          await api('admin-products', { method: 'POST', body: pfd });
           showMessage($('#productMessage'), 'Producto guardado correctamente.');
           closeProductEditModal();
           await loadProducts();

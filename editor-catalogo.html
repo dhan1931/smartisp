@@ -1573,9 +1573,11 @@
       const token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
       const adminUser = getStoredAdminUser();
 
-      const customHeaders = {
-        'Content-Type': 'application/json'
-      };
+      const isForm = (options.body instanceof FormData);
+      const customHeaders = {};
+      if (!isForm) {
+        customHeaders['Content-Type'] = 'application/json';
+      }
 
       // Construcción de ruta directa a router.php evitando depender de reescrituras de mod_rewrite
       let cleanEndpoint = endpoint.replace(/^\/?api\/auth\//, '').replace(/^\/?api\//, '');
@@ -1601,7 +1603,7 @@
 
       // Protección WAF: empaquetar automáticamente payloads JSON como Base64 para prevenir bloqueos falsos positivos de ModSecurity en Hostinger
       let finalBody = options.body;
-      if (finalBody && typeof finalBody === 'string' && (options.method === 'POST' || options.method === 'PUT')) {
+      if (!isForm && finalBody && typeof finalBody === 'string' && (options.method === 'POST' || options.method === 'PUT')) {
         try {
           const parsed = JSON.parse(finalBody);
           if (!parsed.payload && typeof toUtf8Base64 === 'function') {
@@ -2373,7 +2375,17 @@
       if (!prod) return;
       prod.visible = isVisible;
       try {
-        await api('admin-products', { method: 'POST', body: JSON.stringify(prod) });
+        const fd = new FormData();
+        fd.append('id', prod.id);
+        fd.append('name', prod.name);
+        fd.append('price', String(prod.price || 0));
+        fd.append('category', prod.category || 'General');
+        fd.append('subcategory', prod.subcategory || '');
+        fd.append('imageUrl', prod.imageUrl || prod.image_url || '');
+        fd.append('sku', prod.sku || '');
+        fd.append('description', prod.description || '');
+        fd.append('visible', isVisible ? '1' : '0');
+        await api('admin-products', { method: 'POST', body: fd });
         showToast(`Producto ${isVisible ? 'visible en tienda' : 'oculto de la tienda'}.`);
         renderProductsTab();
       } catch (err) {
@@ -2795,9 +2807,21 @@
           visible: document.getElementById('prodVisibleInput').checked
         };
 
+        const fd = new FormData();
+        fd.append('id', id);
+        fd.append('name', name);
+        fd.append('sku', product.sku);
+        fd.append('price', String(finalPrice));
+        fd.append('category', product.category);
+        fd.append('subcategory', product.subcategory);
+        fd.append('imageUrl', imageUrl);
+        fd.append('externalUrl', product.externalUrl);
+        fd.append('description', product.description);
+        fd.append('visible', product.visible ? '1' : '0');
+
         const res = await api('admin-products', {
           method: 'POST',
-          body: JSON.stringify(product)
+          body: fd
         });
 
         closeModal('productModal');
@@ -2929,7 +2953,17 @@
 
       targetImageProduct.imageUrl = url;
       try {
-        await api('admin-products', { method: 'POST', body: JSON.stringify(targetImageProduct) });
+        const fd = new FormData();
+        fd.append('id', targetImageProduct.id);
+        fd.append('name', targetImageProduct.name);
+        fd.append('price', String(targetImageProduct.price || 0));
+        fd.append('category', targetImageProduct.category || 'General');
+        fd.append('subcategory', targetImageProduct.subcategory || '');
+        fd.append('imageUrl', url);
+        fd.append('sku', targetImageProduct.sku || '');
+        fd.append('description', targetImageProduct.description || '');
+        fd.append('visible', targetImageProduct.visible !== false ? '1' : '0');
+        await api('admin-products', { method: 'POST', body: fd });
         showToast('Foto asignada al producto.');
         closeModal('imageSearchModal');
         renderProductsTab();
