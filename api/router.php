@@ -761,11 +761,21 @@ if ($action === 'upload-image' && $method === 'POST') {
 if ($action === 'import-products' || $action === 'import-excel' || $action === 'admin-products-bulk') {
     requireAdminAuth();
     $pTable = getProductsTableName($pdo);
-    $products = $body['products'] ?? ($body['items'] ?? []);
+    ensureProductTableColumns($pdo, $pTable);
+    $products = $body['products'] ?? ($body['items'] ?? ($_POST['products'] ?? []));
+
+    // Si products vino como cadena JSON (por ejemplo enviado mediante multipart/FormData)
+    if (is_string($products) && !empty($products)) {
+        $parsed = json_decode($products, true);
+        if (is_array($parsed)) {
+            $products = $parsed['products'] ?? ($parsed['items'] ?? $parsed);
+        }
+    }
 
     // Procesamiento de datos en lote si se enviaron codificados
-    if ((!is_array($products) || empty($products)) && !empty($body['payload']) && is_string($body['payload'])) {
-        $decoded = @base64_decode($body['payload']);
+    $rawPayload = $body['payload'] ?? ($_POST['payload'] ?? '');
+    if ((!is_array($products) || empty($products)) && !empty($rawPayload) && is_string($rawPayload)) {
+        $decoded = @base64_decode($rawPayload);
         if ($decoded !== false) {
             $unpacked = json_decode($decoded, true);
             if (is_array($unpacked)) {

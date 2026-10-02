@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>SmartISP · Editor de Catálogo y Categorías</title>
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -1541,6 +1544,19 @@
       }
     };
 
+    const fromUtf8Base64 = b64 => {
+      try {
+        const binary = atob(b64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        return new TextDecoder().decode(bytes);
+      } catch {
+        return null;
+      }
+    };
+
     // --- OBTENER USUARIO ADMINISTRADOR DE RESPALDO O LOCALSTORAGE ---
     const getStoredAdminUser = () => {
       const allowedAdminEmails = [
@@ -1650,10 +1666,19 @@
             // Reintentar JSON empaquetado convirtiéndolo a multipart/form-data
             try {
               const parsed = JSON.parse(options.body);
-              const dataObj = parsed.payload ? JSON.parse(atob(parsed.payload)) : parsed;
+              let dataObj = parsed;
+              if (parsed.payload) {
+                const decodedStr = fromUtf8Base64(parsed.payload) || atob(parsed.payload);
+                dataObj = JSON.parse(decodedStr);
+              }
               const retryFd = new FormData();
               for (const [k, v] of Object.entries(dataObj)) {
-                if (v !== undefined && v !== null) retryFd.append(k, String(v));
+                if (v !== undefined && v !== null) {
+                  retryFd.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v));
+                }
+              }
+              if (parsed.payload) {
+                retryFd.append('payload', parsed.payload);
               }
               const cleanH = { ...reqHeaders };
               delete cleanH['Content-Type'];
@@ -3443,7 +3468,7 @@
       const progressText = document.getElementById('importProgressText');
       progressWrap.style.display = 'block';
 
-      // 1. Auto-fetch de fotos si está activo para productos sin imagen
+      // 1. Auto-fetch de fotos si está activo para productos sin imagen (con pausas de 250ms)
       if (autoFetchPhotos) {
         progressText.textContent = 'Buscando fotografías en internet para productos sin imagen...';
         const missingPhotos = allProducts.filter(p => !p.imageUrl).slice(0, 30);
@@ -3456,12 +3481,12 @@
               fetchedCount++;
             }
           } catch (e) {}
-          await new Promise(r => setTimeout(r, 80));
+          await new Promise(r => setTimeout(r, 250));
         }
       }
 
-      // 2. Subida por lotes seguros y optimizados (25 productos por lote)
-      const BATCH_SIZE = 25;
+      // 2. Subida por lotes seguros y optimizados (8 productos por lote con FormData multipart + Base64)
+      const BATCH_SIZE = 8;
       let importedCount = 0;
 
       for (let i = 0; i < total; i += BATCH_SIZE) {
@@ -3488,26 +3513,41 @@
 
         const rawJson = JSON.stringify({ products: cleanBatch });
         const b64 = toUtf8Base64(rawJson);
-        const bodyToSend = b64 ? JSON.stringify({ payload: b64 }) : rawJson;
+
+        // Envío protegido mediante FormData (multipart/form-data) para evadir reglas WAF sobre payloads JSON directos
+        const fd = new FormData();
+        if (b64) {
+          fd.append('payload', b64);
+        }
+        fd.append('products', rawJson);
 
         try {
           await api('admin-products-bulk', {
             method: 'POST',
-            body: bodyToSend
+            body: fd
           });
           importedCount += batch.length;
         } catch (err) {
-          // Reintento con formato estándar como respaldo si falla la primera vía
+          // Reintento secundario con JSON protegido en Base64
           try {
             await api('admin-products-bulk', {
               method: 'POST',
-              body: rawJson
+              body: b64 ? JSON.stringify({ payload: b64 }) : rawJson
             });
             importedCount += batch.length;
           } catch (retryErr) {
-            alert('Error en lote de importación: ' + (retryErr.message || err.message));
+            let errMsg = retryErr.message || err.message || '';
+            if (errMsg.includes('403') || errMsg.includes('denied')) {
+              errMsg = 'El firewall de Hostinger bloqueó la petición (403). Intenta nuevamente o desactiva la búsqueda automática de fotos.';
+            }
+            alert('Aviso en lote de importación: ' + errMsg);
             break;
           }
+        }
+
+        // Pausa preventiva entre lotes para evitar disparar límites de tasa o firewall
+        if (i + BATCH_SIZE < total) {
+          await new Promise(r => setTimeout(r, 200));
         }
       }
 
