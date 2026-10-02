@@ -4,6 +4,9 @@ DirectoryIndex index.html index.htm index.php
     RewriteEngine On
     RewriteBase /
 
+    # Preservar cabecera Authorization en LiteSpeed / Apache
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
     # Proteger archivos sensibles
     RewriteRule ^\.env - [F,L]
     RewriteRule ^api/config\.php - [F,L]

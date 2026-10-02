@@ -1593,11 +1593,9 @@
       if (token) {
         customHeaders['Authorization'] = `Bearer ${token}`;
         customHeaders['X-Admin-Token'] = token;
-        url += `&admin_token=${encodeURIComponent(token)}`;
       }
       if (adminUser && adminUser.email) {
         customHeaders['X-Admin-Email'] = adminUser.email;
-        url += `&admin_email=${encodeURIComponent(adminUser.email)}`;
       }
       const reqHeaders = { ...customHeaders, ...(options.headers || {}) };
 
@@ -1627,13 +1625,64 @@
         res = null;
       }
 
+      // Contingencia WAF: Si el servidor devuelve 403 Forbidden en POST/PUT, reintentar con el formato alternativo
+      if (res && res.status === 403 && (options.method === 'POST' || options.method === 'PUT')) {
+        try {
+          if (isForm && options.body instanceof FormData) {
+            // Reintentar convirtiendo FormData a JSON protegido con Base64
+            const obj = {};
+            for (const [k, v] of options.body.entries()) {
+              obj[k] = v;
+            }
+            const b64 = (typeof toUtf8Base64 === 'function') ? toUtf8Base64(JSON.stringify(obj)) : null;
+            if (b64) {
+              const retryRes = await fetch(url, {
+                credentials: 'include',
+                method: options.method,
+                headers: { ...reqHeaders, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ payload: b64 })
+              });
+              if (retryRes && retryRes.ok) {
+                res = retryRes;
+              }
+            }
+          } else if (!isForm && typeof options.body === 'string') {
+            // Reintentar JSON empaquetado convirtiéndolo a multipart/form-data
+            try {
+              const parsed = JSON.parse(options.body);
+              const dataObj = parsed.payload ? JSON.parse(atob(parsed.payload)) : parsed;
+              const retryFd = new FormData();
+              for (const [k, v] of Object.entries(dataObj)) {
+                if (v !== undefined && v !== null) retryFd.append(k, String(v));
+              }
+              const cleanH = { ...reqHeaders };
+              delete cleanH['Content-Type'];
+              const retryRes = await fetch(url, {
+                credentials: 'include',
+                method: options.method,
+                headers: cleanH,
+                body: retryFd
+              });
+              if (retryRes && retryRes.ok) {
+                res = retryRes;
+              }
+            } catch (e) {}
+          }
+        } catch (retryErr) {}
+      }
+
       if (!res) throw new Error('No se pudo conectar con el servidor.');
       const text = await res.text();
       let data = {};
       try { 
         data = text ? JSON.parse(text) : {}; 
       } catch { 
-        let clean = (text || '').replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+        let clean = (text || '')
+          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+          .replace(/<[^>]*>?/gm, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
         if (clean.length > 150) clean = clean.substring(0, 150) + '...';
         data = { error: clean || `Error ${res.status}` }; 
       }
@@ -2518,11 +2567,9 @@
           if (token) {
             uploadHeaders['Authorization'] = `Bearer ${token}`;
             uploadHeaders['X-Admin-Token'] = token;
-            uploadUrl += `&admin_token=${encodeURIComponent(token)}`;
           }
           if (adminUser && adminUser.email) {
             uploadHeaders['X-Admin-Email'] = adminUser.email;
-            uploadUrl += `&admin_email=${encodeURIComponent(adminUser.email)}`;
           }
 
           const uploadRes = await fetch(uploadUrl, {
@@ -2753,11 +2800,9 @@
             if (token) {
               upHeaders['Authorization'] = `Bearer ${token}`;
               upHeaders['X-Admin-Token'] = token;
-              upUrl += `&admin_token=${encodeURIComponent(token)}`;
             }
             if (adminUser && adminUser.email) {
               upHeaders['X-Admin-Email'] = adminUser.email;
-              upUrl += `&admin_email=${encodeURIComponent(adminUser.email)}`;
             }
 
             const b64Parts = imageUrl.split(',');
