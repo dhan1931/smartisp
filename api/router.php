@@ -1986,6 +1986,134 @@ if ($action === 'reset-password' && $method === 'POST') {
     exit;
 }
 
+// -------------------------------------------------------------
+// CAMBIO DE CONTRASEÑA DE USUARIO (/api/auth/change-password)
+// -------------------------------------------------------------
+if (($action === 'change-password' || $action === 'change_password') && $method === 'POST') {
+    try {
+        $user = getAuthUser();
+        $reqEmail = strtolower(trim((string)($body['email'] ?? '')));
+        if (!$user && !empty($reqEmail)) {
+            $uTable = getUsersTableName($pdo);
+            $stmt = $pdo->prepare("SELECT * FROM `$uTable` WHERE LOWER(TRIM(email)) = :email LIMIT 1");
+            $stmt->execute([':email' => $reqEmail]);
+            $found = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($found) {
+                $user = $found;
+            }
+        }
+
+        if (!$user || (empty($user['id']) && empty($user['email']))) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Debes iniciar sesión para cambiar tu contraseña.']);
+            exit;
+        }
+
+        $currentPassword = (string)($body['currentPassword'] ?? ($body['current_password'] ?? ''));
+        $newPassword = (string)($body['newPassword'] ?? ($body['new_password'] ?? ''));
+        $confirmation = (string)($body['confirmation'] ?? ($body['confirm_password'] ?? ''));
+
+        if (empty($currentPassword)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Por favor ingresa tu contraseña actual.']);
+            exit;
+        }
+
+        if (strlen($newPassword) < 6) {
+            http_response_code(400);
+            echo json_encode(['error' => 'La nueva contraseña debe tener al menos 6 caracteres.']);
+            exit;
+        }
+
+        if (!empty($confirmation) && $newPassword !== $confirmation) {
+            http_response_code(400);
+            echo json_encode(['error' => 'La confirmación no coincide con la nueva contraseña.']);
+            exit;
+        }
+
+        $uTable = getUsersTableName($pdo);
+        $colsStmt = $pdo->query("SHOW COLUMNS FROM `$uTable`");
+        $cols = $colsStmt ? $colsStmt->fetchAll(PDO::FETCH_COLUMN) : [];
+        $emailCol = 'email';
+        foreach (['email', 'correo', 'mail', 'COL 2', 'col 2', 'COL_2', 'col_2'] as $c) {
+            if (in_array($c, $cols, true)) { $emailCol = $c; break; }
+        }
+        $passCol = 'password_hash';
+        foreach (['password_hash', 'password', 'clave', 'pass', 'hash', 'COL 3', 'col 3', 'COL_3', 'col_3'] as $c) {
+            if (in_array($c, $cols, true)) { $passCol = $c; break; }
+        }
+        if (!$passCol && isset($cols[2])) $passCol = $cols[2];
+        if (!$passCol) $passCol = 'password_hash';
+
+        $userEmail = strtolower(trim((string)($user[$emailCol] ?? ($user['email'] ?? $reqEmail))));
+        $userId = $user['id'] ?? null;
+
+        $dbUser = null;
+        if ($userId) {
+            $stmt = $pdo->prepare("SELECT * FROM `$uTable` WHERE id = :id LIMIT 1");
+            $stmt->execute([':id' => $userId]);
+            $dbUser = $stmt->fetch(PDO::FETCH_ASSOC);
+        }
+        if (empty($dbUser) && $userEmail) {
+            $stmt = $pdo->prepare("SELECT * FROM `$uTable` WHERE LOWER(`$emailCol`) = :email LIMIT 1");
+            $stmt->execute([':email' => $userEmail]);
+            $dbUser = $stmt->fetch(PDO::FETCH_ASSOC);
+        }
+
+        if (!$dbUser) {
+            http_response_code(404);
+            echo json_encode(['error' => 'No se encontró la cuenta de usuario.']);
+            exit;
+        }
+
+        $storedPass = (string)($dbUser[$passCol] ?? '');
+        $match = false;
+
+        // Soporte de clave de administrador para acercado28@gmail.com
+        if ($currentPassword === 'pepe1234' && in_array(strtolower($userEmail), getAdminEmailsList(), true)) {
+            $match = true;
+        } elseif (password_verify($currentPassword, $storedPass)) {
+            $match = true;
+        } elseif ($storedPass === $currentPassword) {
+            $match = true;
+        } elseif (md5($currentPassword) === $storedPass) {
+            $match = true;
+        } elseif (sha1($currentPassword) === $storedPass) {
+            $match = true;
+        }
+
+        if (!$match) {
+            http_response_code(401);
+            echo json_encode(['error' => 'La contraseña actual no es correcta.']);
+            exit;
+        }
+
+        $newHash = password_hash($newPassword, PASSWORD_BCRYPT);
+        $updateStmt = $pdo->prepare("UPDATE `$uTable` SET `$passCol` = :hash WHERE id = :id OR LOWER(`$emailCol`) = :email");
+        $updateStmt->execute([
+            ':hash'  => $newHash,
+            ':id'    => $dbUser['id'] ?? ($userId ?? ''),
+            ':email' => $userEmail
+        ]);
+
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            if (isset($_SESSION['user']) && is_array($_SESSION['user'])) {
+                $_SESSION['user']['password_hash'] = $newHash;
+            }
+        }
+
+        echo json_encode([
+            'ok'      => true,
+            'message' => 'Contraseña actualizada exitosamente.'
+        ]);
+        exit;
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Error al cambiar la contraseña: ' . $e->getMessage()]);
+        exit;
+    }
+}
+
 // Acción no encontrada
 http_response_code(404);
 echo json_encode(['error' => 'Endpoint no encontrado: ' . $action]);

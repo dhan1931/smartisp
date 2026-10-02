@@ -3435,19 +3435,33 @@
 				showAccountMessage(form, 'La confirmación no coincide con la nueva contraseña.', true);
 				return;
 			}
+			if ((values.newPassword || '').length < 6) {
+				showAccountMessage(form, 'La nueva contraseña debe tener al menos 6 caracteres.', true);
+				return;
+			}
 			const button = form.querySelector('button[type="submit"]');
 			button.disabled = true;
 			try {
-				const response = await fetch('/api/auth/change-password', {
+				const reqHeaders = { 'Content-Type': 'application/json' };
+				const token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
+				if (token) {
+					reqHeaders['Authorization'] = `Bearer ${token}`;
+					reqHeaders['X-Admin-Token'] = token;
+				}
+				if (accountState.user && accountState.user.email) {
+					reqHeaders['X-Admin-Email'] = accountState.user.email;
+					values.email = accountState.user.email;
+				}
+				const response = await fetch('/api/router.php?action=change-password', {
 					method: 'POST',
 					credentials: 'include',
-					headers: { 'Content-Type': 'application/json' },
+					headers: reqHeaders,
 					body: JSON.stringify(values)
 				});
 				const result = await readApiResponse(response);
 				if (!response.ok) throw new Error(result.error);
 				form.reset();
-				showAccountMessage(form, 'Contraseña actualizada correctamente.');
+				showAccountMessage(form, '¡Contraseña actualizada correctamente!');
 			} catch (error) {
 				showAccountMessage(form, error.message || 'No se pudo cambiar la contraseña.', true);
 			} finally {
