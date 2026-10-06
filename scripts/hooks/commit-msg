@@ -1,0 +1,12 @@
+#!/bin/sh
+# Aviso (NO bloquea) si el mensaje del commit no menciona una tarea: sin clave, el commit no se vincula con ninguna tarea.
+# Activar:  git config core.hooksPath scripts/hooks
+# Formatos reconocidos: STELLAR-012 · varias: (STELLAR-012, STELLAR-013) · cierra STELLAR-014 · DEV-20261005-031
+msg=$(head -1 "$1")
+case "$msg" in
+  Merge*|Revert*|fixup!*|squash!*|"chore("*|"docs("*|"style("*) exit 0 ;;
+esac
+if ! grep -Eq '(^|[^A-Za-z0-9])([A-Za-z][A-Za-z0-9]{1,7}-[0-9]{1,6}|DEV-[0-9]{8}-[0-9]{3})([^A-Za-z0-9]|$)' "$1"; then
+  echo "AVISO: este commit no menciona ninguna tarea (p. ej. STELLAR-012). No se vinculará con el Kanban." >&2
+fi
+exit 0

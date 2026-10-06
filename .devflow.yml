@@ -1,0 +1,96 @@
+approvals:
+  create_pr: false
+  create_remote_branch: false
+  destructive_db_change: true
+  dns_change: true
+  force_push: true
+  production_deploy: true
+  production_load_test: true
+  shared_infrastructure_change: true
+  staging_deploy: false
+audit:
+  allow_na: true
+  minimum_confidence_to_publish_score: 50
+  profile: fullstack
+  require_evidence: true
+commands:
+  build: ''
+  dead_code_scan: ''
+  duplication_scan: ''
+  format_check: ''
+  install: ''
+  lint: ''
+  load_test: ''
+  security_scan: ''
+  test: ''
+  test_integration: ''
+  typecheck: ''
+preferences:
+  avoid_premature_kubernetes: true
+  avoid_premature_microservices: true
+  philosophy: simple-first
+  prefer_incremental_scaling: true
+project:
+  budget_profile: lean
+  criticality: high
+  engagement: maintenance
+  expected_traffic: unknown
+  name: smartisp-ecomerce
+  ownership: external_client
+  slug: smartisp-ecomerce
+  stage: mvp
+  type: fullstack
+stack:
+  backend:
+    alternatives:
+    - fastapi
+    - go
+    - nodejs
+    - quarkus
+    - php
+    primary: nodejs
+  ci_cd:
+    provider: none
+  database:
+    alternatives:
+    - postgresql
+    - mariadb
+    - sqlite
+    primary: mariadb
+  frontend:
+    alternatives:
+    - angular
+    - nextjs
+    - react
+    - javascript
+    primary: javascript
+    styling:
+    - tailwind
+  infrastructure:
+    container: none
+    edge: none
+    orchestration: none
+    os: ubuntu-server
+  observability:
+    load_testing: []
+    metrics: []
+stellarcode:
+  mcp_url: https://api.stellarcodelabs.lat/mcp
+  sync_status: pending
+  enabled: true
+  project_id: 3
+  client_name: devflow-cli
+  auth:
+    mode: bearer
+    token_env: STELLARCODE_TOKEN
+  sync:
+    backlog: remote_first
+    trace: true
+    evidence: true
+    decisions: true
+    risks: true
+trace:
+  enabled: true
+  id_prefix: DEV
+  timezone: America/Guayaquil
+version: 1

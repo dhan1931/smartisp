@@ -1,0 +1,406 @@
+{
+  "schema": "devflow.audit",
+  "schema_version": 1,
+  "devflow_version": "0.5.1",
+  "generated_at": "2026-10-05T14:16:25-05:00",
+  "mode": "static",
+  "root": "C:\\Users\\USER\\Desktop\\programs\\smartisp",
+  "detected_stack": {
+    "backend": "nodejs",
+    "frontend": "javascript",
+    "database": "postgresql",
+    "infra": [],
+    "observability": [],
+    "project_type": "fullstack",
+    "evidence": {
+      "backend": [
+        "package.json: backend framework"
+      ],
+      "frontend": [
+        "package.json"
+      ],
+      "database": [
+        "runtime/config references PostgreSQL"
+      ],
+      "infra": [],
+      "observability": []
+    }
+  },
+  "project_health_score": 61.9,
+  "stack_fit_score": 87.8,
+  "evidence_confidence": 44.2,
+  "categories": [
+    {
+      "id": "security",
+      "score": 20,
+      "confidence": 55,
+      "applicable": true,
+      "evidence": [
+        "vite.config.js",
+        "api/router.php",
+        "CORS wildcard"
+      ],
+      "findings": []
+    },
+    {
+      "id": "architecture",
+      "score": 76,
+      "confidence": 45,
+      "applicable": true,
+      "evidence": [
+        "source_files=16",
+        "large_files=3"
+      ],
+      "findings": []
+    },
+    {
+      "id": "code_quality",
+      "score": 88,
+      "confidence": 50,
+      "applicable": true,
+      "evidence": [
+        "todo_fixme_hack=4"
+      ],
+      "findings": []
+    },
+    {
+      "id": "maintainability",
+      "score": 84,
+      "confidence": 55,
+      "applicable": true,
+      "evidence": [
+        "README=True",
+        "docs=True"
+      ],
+      "findings": []
+    },
+    {
+      "id": "duplication",
+      "score": 90.7,
+      "confidence": 40,
+      "applicable": true,
+      "evidence": [
+        "approx_duplicate_ratio=0.037"
+      ],
+      "findings": []
+    },
+    {
+      "id": "dead_code",
+      "score": null,
+      "confidence": 15,
+      "applicable": true,
+      "evidence": [
+        "No language-specific dead-code analyzer executed"
+      ],
+      "findings": []
+    },
+    {
+      "id": "testing",
+      "score": 30,
+      "confidence": 55,
+      "applicable": true,
+      "evidence": [
+        "test_files=0",
+        "source_files=16"
+      ],
+      "findings": []
+    },
+    {
+      "id": "performance",
+      "score": 73,
+      "confidence": 30,
+      "applicable": true,
+      "evidence": [
+        "cache/redis references",
+        "SELECT * patterns"
+      ],
+      "findings": []
+    },
+    {
+      "id": "server_load",
+      "score": null,
+      "confidence": 0,
+      "applicable": true,
+      "evidence": [
+        "Runtime/load metrics not provided"
+      ],
+      "findings": []
+    },
+    {
+      "id": "seo",
+      "score": 92,
+      "confidence": 45,
+      "applicable": true,
+      "evidence": [
+        "sitemap",
+        "robots.txt",
+        "metadata/title",
+        "canonical/structured data"
+      ],
+      "findings": []
+    },
+    {
+      "id": "accessibility",
+      "score": 75,
+      "confidence": 25,
+      "applicable": true,
+      "evidence": [
+        "static semantic scan"
+      ],
+      "findings": []
+    },
+    {
+      "id": "database",
+      "score": 73,
+      "confidence": 45,
+      "applicable": true,
+      "evidence": [
+        "detected=postgresql",
+        "index definitions"
+      ],
+      "findings": []
+    },
+    {
+      "id": "devops",
+      "score": 45,
+      "confidence": 60,
+      "applicable": true,
+      "evidence": [],
+      "findings": []
+    },
+    {
+      "id": "observability",
+      "score": 35,
+      "confidence": 50,
+      "applicable": true,
+      "evidence": [],
+      "findings": []
+    },
+    {
+      "id": "resilience",
+      "score": 73,
+      "confidence": 30,
+      "applicable": true,
+      "evidence": [
+        "timeout",
+        "retry"
+      ],
+      "findings": []
+    },
+    {
+      "id": "dependencies",
+      "score": 85,
+      "confidence": 45,
+      "applicable": true,
+      "evidence": [
+        "package-lock.json"
+      ],
+      "findings": []
+    },
+    {
+      "id": "documentation",
+      "score": 95,
+      "confidence": 80,
+      "applicable": true,
+      "evidence": [
+        "README=True",
+        "docs=True"
+      ],
+      "findings": []
+    }
+  ],
+  "findings": [
+    {
+      "id": "FND-SECURITY_GENERIC_SECRET-45C6C7C5",
+      "fingerprint": "45c6c7c5867f5f278feed98859fd55768bfb80cc5bda2c15b5b965afed1a40f2",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.generic_secret",
+      "severity": "high",
+      "confidence": 70,
+      "status": "open",
+      "title": "Posible secreto expuesto en vite.config.js",
+      "description": "Posible secreto expuesto en vite.config.js",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "vite.config.js"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "vite.config.js"
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:13:59-05:00",
+      "last_seen_at": "2026-10-05T14:16:25-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-SECURITY_GENERIC_SECRET-C2E6C5D7",
+      "fingerprint": "c2e6c5d7293a58364a5941335de949552a77388a03592e2e1135166dff172aa9",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.generic_secret",
+      "severity": "high",
+      "confidence": 70,
+      "status": "open",
+      "title": "Posible secreto expuesto en api/router.php",
+      "description": "Posible secreto expuesto en api/router.php",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "api/router.php"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "api/router.php"
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:13:59-05:00",
+      "last_seen_at": "2026-10-05T14:16:25-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-SECURITY_CORS_WILDCARD-16DB4241",
+      "fingerprint": "16db4241774dce69e8084781308694cacfa1b98822c3bf23b333be7c0c7f0449",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.cors_wildcard",
+      "severity": "medium",
+      "confidence": 70,
+      "status": "open",
+      "title": "CORS wildcard detectado; validar si es intencional.",
+      "description": "CORS wildcard detectado; validar si es intencional.",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "repository search"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": null,
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:13:59-05:00",
+      "last_seen_at": "2026-10-05T14:16:25-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-ARCHITECTURE_LARGE_FILES-8F11687A",
+      "fingerprint": "8f11687af53738cbbe3fd616d531d2d4e825ebcdac9137de4728430dc6882718",
+      "project_id": "smartisp-ecomerce",
+      "category": "architecture",
+      "rule_id": "architecture.large_files",
+      "severity": "medium",
+      "confidence": 70,
+      "status": "open",
+      "title": "3 archivos fuente superan 700 líneas; revisar hotspots antes de dividir por reflejo.",
+      "description": "3 archivos fuente superan 700 líneas; revisar hotspots antes de dividir por reflejo.",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "server.js, api/mailer.php, api/router.php"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "server.js, api/mailer.php, api/router.php"
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:13:59-05:00",
+      "last_seen_at": "2026-10-05T14:16:25-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-TESTING_NO_TESTS-5DE335A5",
+      "fingerprint": "5de335a51bbdf5c2e819cf8be83e94de740dcfacfb6505afddfaafeb0e5dcd69",
+      "project_id": "smartisp-ecomerce",
+      "category": "testing",
+      "rule_id": "testing.no_tests",
+      "severity": "high",
+      "confidence": 70,
+      "status": "open",
+      "title": "No se detectaron archivos de prueba.",
+      "description": "No se detectaron archivos de prueba.",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "repository tree"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": null,
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:13:59-05:00",
+      "last_seen_at": "2026-10-05T14:16:25-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    }
+  ],
+  "stack_fit": {
+    "score": 87.8,
+    "recommendation": "keep",
+    "dimensions": {
+      "personal_alignment": 95.0,
+      "team_familiarity": 80.0,
+      "project_fit": 90.0,
+      "operating_cost": 85.0,
+      "delivery_speed": 85.0,
+      "ecosystem_and_support": 85.0,
+      "migration_cost": 80.0,
+      "future_flexibility": 85.0
+    },
+    "components": [
+      {
+        "component": "backend",
+        "actual": "nodejs",
+        "score": 100,
+        "reason": "Coincide con el estándar primario"
+      },
+      {
+        "component": "frontend",
+        "actual": "javascript",
+        "score": 100,
+        "reason": "Coincide con el estándar primario"
+      },
+      {
+        "component": "database",
+        "actual": "postgresql",
+        "score": 85,
+        "reason": "Está dentro de las alternativas aceptadas"
+      }
+    ],
+    "warnings": []
+  },
+  "unknowns": [
+    "dead_code",
+    "server_load"
+  ],
+  "finding_reconciliation": {
+    "new": 0,
+    "persistent": 5,
+    "fixed": 0,
+    "regressed": 0
+  },
+  "finding_history_file": "ops/findings.json"
+}
