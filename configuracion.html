@@ -52,7 +52,9 @@
     .logo-badge-format { font-size: 11px; font-weight: 800; background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 6px; letter-spacing: 0.05em; }
     @keyframes save-confirm { 0% { opacity: 0; transform: translateY(-8px) scale(.98); } 55% { transform: translateY(0) scale(1.02); } 100% { opacity: 1; transform: translateY(0) scale(1); } } @keyframes rise-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .panel { animation: rise-in .45s ease both; } @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } .top, .toolbar, .section-heading { align-items: flex-start; flex-direction: column; } } @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+    svg.lucide { width: 1em; height: 1em; vertical-align: -0.125em; stroke-width: 2; flex-shrink: 0; }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
   <link rel="stylesheet" href="/assets/css/admin-nav.css">
@@ -62,7 +64,7 @@
   <main class="shell">
     <section id="accessDeniedPanel" class="login hidden">
       <div style="text-align: center; padding: 10px 0;">
-        <div style="font-size: 42px; line-height: 1; margin-bottom: 12px;">🚫</div>
+        <div style="margin-bottom: 12px;"><i data-lucide="ban" style="width:42px;height:42px;color:#c2410c;"></i></div>
         <h2 style="color: #c2410c; margin-bottom: 6px;">Acceso Restringido</h2>
         <p style="color: var(--muted); font-size: 13.5px; line-height: 1.5; margin-bottom: 18px;">
           Has iniciado sesión como <strong id="deniedUserEmail" style="color: var(--ink);"></strong>.<br>
@@ -89,7 +91,7 @@
       <div class="toolbar">
         <div><h2>Configuración</h2><span id="adminIdentity"></span></div>
         <div style="display:flex; gap:10px; align-items:center;">
-          <a href="/admin.html" class="button secondary" style="text-decoration:none;">🏠 Volver al Panel</a>
+          <a href="/admin.html" class="button secondary" style="text-decoration:none;"><i data-lucide="home"></i> Volver al Panel</a>
           <button id="logoutButton" class="button danger">Cerrar sesion</button>
         </div>
       </div>
@@ -99,14 +101,14 @@
             <div class="logo-card-header">
               <div>
                 <h4 style="margin:0 0 3px; font-size:14px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:6px;">
-                  <span>🎨</span> Diseño del Logotipo de la Tienda
+                  <i data-lucide="palette"></i> Diseño del Logotipo de la Tienda
                 </h4>
                 <span style="font-size:11.5px; color:var(--muted);">Personaliza el logo para el navbar claro, el pie de página oscuro y la versión tipográfica. Puedes agrandarlo hasta 140px.</span>
               </div>
               <div class="logo-type-tabs">
-                <button type="button" class="logo-tab active" data-logo-mode="light" id="tabLogoLightBtn">☀️ Fondo Claro (Navbar)</button>
-                <button type="button" class="logo-tab" data-logo-mode="dark" id="tabLogoDarkBtn">🌙 Fondo Oscuro (Footer)</button>
-                <button type="button" class="logo-tab" data-logo-mode="text" id="tabLogoTextBtn">✍️ Solo Texto</button>
+                <button type="button" class="logo-tab active" data-logo-mode="light" id="tabLogoLightBtn"><i data-lucide="sun"></i> Fondo Claro (Navbar)</button>
+                <button type="button" class="logo-tab" data-logo-mode="dark" id="tabLogoDarkBtn"><i data-lucide="moon"></i> Fondo Oscuro (Footer)</button>
+                <button type="button" class="logo-tab" data-logo-mode="text" id="tabLogoTextBtn"><i data-lucide="pencil-line"></i> Solo Texto</button>
               </div>
               <input type="hidden" name="logo_type" id="logoTypeInput" value="image">
               <input type="hidden" name="logo_image" id="logoImageHidden">
@@ -119,13 +121,13 @@
             <!-- PANEL 1: LOGO PARA FONDO CLARO (NAVBAR) -->
             <div id="logoLightPanel" class="logo-panel">
               <div style="margin-bottom:12px; font-size:12px; font-weight:700; color:var(--blue); display:flex; align-items:center; gap:6px;">
-                <span>☀️ Logotipo para Barra Superior / Menú Claro</span>
+                <span><i data-lucide="sun"></i> Logotipo para Barra Superior / Menú Claro</span>
                 <span style="font-weight:400; color:var(--muted); font-size:11px;">(Visible en el navbar principal de la tienda)</span>
               </div>
               <div class="logo-upload-zone" id="logoLightDropZone">
                 <div class="logo-upload-prompt" id="logoLightPrompt">
                   <div class="logo-upload-icon-circle">
-                    <span style="font-size:24px;">🖼️</span>
+                    <i data-lucide="image" style="width:24px;height:24px;"></i>
                   </div>
                   <div style="font-weight:700; font-size:13px; color:var(--ink); margin-top:8px;">
                     Sube tu logotipo para <span style="color:var(--blue); font-weight:800;">fondo claro</span>
@@ -134,7 +136,7 @@
                     Recomendado: PNG con fondo transparente (también admite WebP, SVG o JPG). Máx. 3 MB.
                   </div>
                   <button type="button" class="button secondary" id="chooseLogoBtn" style="margin-top:10px; padding:6px 14px; font-size:12px;">
-                    📁 Seleccionar archivo PNG
+                    <i data-lucide="folder-open" style="width:14px;height:14px;"></i> Seleccionar archivo PNG
                   </button>
                 </div>
                 <input type="file" id="logoFileInput" name="logo_image_file" accept=".png, image/png, image/jpeg, image/webp, image/svg+xml" style="display:none;">
@@ -144,11 +146,11 @@
               <div id="logoLightPreviewWrap" style="display:none; margin-top:12px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                   <span style="font-size:12px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:6px;">
-                    <span style="color:#16a34a; font-weight:900;">✓</span> Logotipo para fondo claro cargado:
+                    <i data-lucide="check" style="color:#16a34a;width:16px;height:16px;"></i> Logotipo para fondo claro cargado:
                   </span>
                   <div style="display:flex; gap:6px;">
-                    <button type="button" class="button secondary" id="changeLogoBtn" style="padding:4px 10px; font-size:11px;">🔄 Cambiar</button>
-                    <button type="button" class="button danger" id="deleteLogoBtn" style="padding:4px 10px; font-size:11px; background:#fff1f1; border:1px solid #fecaca; color:#b91c1c;">🗑️ Quitar imagen</button>
+                    <button type="button" class="button secondary" id="changeLogoBtn" style="padding:4px 10px; font-size:11px;"><i data-lucide="refresh-cw" style="width:12px;height:12px;"></i> Cambiar</button>
+                    <button type="button" class="button danger" id="deleteLogoBtn" style="padding:4px 10px; font-size:11px; background:#fff1f1; border:1px solid #fecaca; color:#b91c1c;"><i data-lucide="trash-2" style="width:12px;height:12px;"></i> Quitar imagen</button>
                   </div>
                 </div>
                 <div class="logo-preview-canvas-box">
@@ -181,25 +183,25 @@
             <!-- PANEL 2: LOGO PARA FONDO OSCURO (FOOTER) -->
             <div id="logoDarkPanel" class="logo-panel" style="display:none;">
               <div style="margin-bottom:12px; font-size:12px; font-weight:700; color:#0e7490; display:flex; align-items:center; gap:6px;">
-                <span>🌙 Logotipo para Pie de Página / Fondo Oscuro</span>
+                <span><i data-lucide="moon"></i> Logotipo para Pie de Página / Fondo Oscuro</span>
                 <span style="font-weight:400; color:var(--muted); font-size:11px;">(Visible en el footer oscuro de la tienda y páginas de compra)</span>
               </div>
 
               <!-- Quick Bar: Copiar del menú claro & auto invert -->
               <div class="logo-quick-bar">
                 <button type="button" class="button secondary" id="btnCopyLightToDark" style="padding:6px 12px; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
-                  <span>📋</span> Usar el mismo logo del menú claro
+                  <i data-lucide="clipboard" style="width:14px;height:14px;"></i> Usar el mismo logo del menú claro
                 </button>
                 <label style="margin:0; font-size:12px; font-weight:600; color:var(--ink); display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
                   <input type="checkbox" id="logoDarkAutoInvert" style="width:16px; height:16px; margin:0; accent-color:var(--blue);">
-                  <span>⚪ Invertir colores automáticamente a blanco (para logos oscuros)</span>
+                  <span><i data-lucide="circle" style="width:13px;height:13px;"></i> Invertir colores automáticamente a blanco (para logos oscuros)</span>
                 </label>
               </div>
 
               <div class="logo-upload-zone" id="logoDarkDropZone">
                 <div class="logo-upload-prompt" id="logoDarkPrompt">
                   <div class="logo-upload-icon-circle" style="background:#e2e8f0;">
-                    <span style="font-size:24px;">🌙</span>
+                    <i data-lucide="moon" style="width:24px;height:24px;"></i>
                   </div>
                   <div style="font-weight:700; font-size:13px; color:var(--ink); margin-top:8px;">
                     Sube tu logotipo para <span style="color:#0369a1; font-weight:800;">fondo oscuro</span>
@@ -208,7 +210,7 @@
                     Recomendado: PNG en blanco o colores claros con transparencia. Si no subes uno, se usará el del menú claro.
                   </div>
                   <button type="button" class="button secondary" id="chooseLogoDarkBtn" style="margin-top:10px; padding:6px 14px; font-size:12px;">
-                    📁 Seleccionar archivo PNG oscuro
+                    <i data-lucide="folder-open" style="width:14px;height:14px;"></i> Seleccionar archivo PNG oscuro
                   </button>
                 </div>
                 <input type="file" id="logoDarkFileInput" name="logo_dark_image_file" accept=".png, image/png, image/jpeg, image/webp, image/svg+xml" style="display:none;">
@@ -218,11 +220,11 @@
               <div id="logoDarkPreviewWrap" style="display:none; margin-top:12px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                   <span style="font-size:12px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:6px;">
-                    <span style="color:#16a34a; font-weight:900;">✓</span> Logotipo para fondo oscuro cargado:
+                    <i data-lucide="check" style="color:#16a34a;width:16px;height:16px;"></i> Logotipo para fondo oscuro cargado:
                   </span>
                   <div style="display:flex; gap:6px;">
-                    <button type="button" class="button secondary" id="changeLogoDarkBtn" style="padding:4px 10px; font-size:11px;">🔄 Cambiar</button>
-                    <button type="button" class="button danger" id="deleteLogoDarkBtn" style="padding:4px 10px; font-size:11px; background:#fff1f1; border:1px solid #fecaca; color:#b91c1c;">🗑️ Quitar imagen</button>
+                    <button type="button" class="button secondary" id="changeLogoDarkBtn" style="padding:4px 10px; font-size:11px;"><i data-lucide="refresh-cw" style="width:12px;height:12px;"></i> Cambiar</button>
+                    <button type="button" class="button danger" id="deleteLogoDarkBtn" style="padding:4px 10px; font-size:11px; background:#fff1f1; border:1px solid #fecaca; color:#b91c1c;"><i data-lucide="trash-2" style="width:12px;height:12px;"></i> Quitar imagen</button>
                   </div>
                 </div>
                 <div class="logo-preview-canvas-box" style="background:#071722;">
@@ -246,7 +248,7 @@
                 </div>
                 <div>
                   <span style="font-size:11.5px; color:var(--muted); line-height:1.4; display:block;">
-                    💡 En el footer de la tienda el fondo es azul oscuro (<code>#102c3d</code>). Si activas invertir colores, el logo se convertirá en blanco puro automáticamente.
+                    <i data-lucide="lightbulb" style="width:13px;height:13px;"></i> En el footer de la tienda el fondo es azul oscuro (<code>#102c3d</code>). Si activas invertir colores, el logo se convertirá en blanco puro automáticamente.
                   </span>
                 </div>
               </div>
@@ -280,7 +282,7 @@
             </div>
             <div class="actions">
               <button id="testEmailButton" class="button secondary" type="button" style="background:#f0fdf4;border:1px solid #86efac;color:#166534;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
-                <span>🧪 Probar Envío de Correo Real</span>
+                <span><i data-lucide="flask-conical"></i> Probar Envío de Correo Real</span>
               </button>
             </div>
           </div>
@@ -313,13 +315,13 @@
             <!-- Panel de Configuración para Hostinger Correo Corporativo -->
             <div id="hostingerConfigSection" class="hidden" style="background:#f0faf8;border:1px solid #a7e0d4;border-radius:10px;padding:16px;margin-bottom:16px;">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                <span style="font-size:20px;">🌐</span>
+                <i data-lucide="globe" style="width:20px;height:20px;"></i>
                 <strong style="color:#065f46;font-size:14px;">Correo Corporativo de Hostinger (smtp.hostinger.com)</strong>
               </div>
               <p style="font-size:12.5px;color:#047857;line-height:1.5;margin:0 0 12px;">
                 Usa tu cuenta de correo creada en el panel de Hostinger (ejemplo: <code>gestion@smart-isp.es</code> o <code>admin@smart-isp.com.ec</code>):
                 <br>• Servidor SMTP: <strong>smtp.hostinger.com</strong> | Puerto: <strong>465 (SSL)</strong>
-                <br>• ⚠️ <strong>Importante:</strong> Debes ingresar la <strong>contraseña real de ese correo en Hostinger</strong> (con la que entras al Webmail de Hostinger).
+                <br>• <i data-lucide="alert-triangle" style="width:13px;height:13px;"></i> <strong>Importante:</strong> Debes ingresar la <strong>contraseña real de ese correo en Hostinger</strong> (con la que entras al Webmail de Hostinger).
               </p>
               <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:14px;">
                 <label>Tu Correo de Hostinger
@@ -328,7 +330,7 @@
                 <label>Contraseña REAL del Correo en Hostinger
                   <div style="position:relative;">
                     <input name="hostinger_pass" id="hostingerPass" type="password" placeholder="••••••••" autocomplete="new-password">
-                    <button type="button" id="toggleHostingerPass" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;font-size:14px;color:var(--muted);" title="Ver u ocultar contraseña">👁️</button>
+                    <button type="button" id="toggleHostingerPass" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;font-size:14px;color:var(--muted);" title="Ver u ocultar contraseña"><i data-lucide="eye"></i></button>
                   </div>
                 </label>
               </div>
@@ -337,7 +339,7 @@
             <!-- Panel de Configuración para Gmail -->
             <div id="gmailConfigSection" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:16px;margin-bottom:16px;">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                <span style="font-size:20px;">✉️</span>
+                <i data-lucide="mail" style="width:20px;height:20px;"></i>
                 <strong style="color:#0369a1;font-size:14px;">Configuración Rápida de Gmail</strong>
               </div>
               <p style="font-size:12.5px;color:#0c4a6e;line-height:1.5;margin:0 0 12px;">
@@ -355,7 +357,7 @@
                 <label>Contraseña de Aplicación de Google (16 caracteres)
                   <div style="position:relative;">
                     <input name="smtp_pass" id="gmailPass" type="password" placeholder="abcd efgh ijkl mnop" autocomplete="new-password">
-                    <button type="button" id="toggleGmailPass" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;font-size:14px;color:var(--muted);" title="Ver u ocultar contraseña">👁️</button>
+                    <button type="button" id="toggleGmailPass" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;font-size:14px;color:var(--muted);" title="Ver u ocultar contraseña"><i data-lucide="eye"></i></button>
                   </div>
                 </label>
               </div>
@@ -363,7 +365,7 @@
 
             <!-- Panel de Configuración para SMTP Personalizado -->
             <div id="customSmtpSection" class="hidden" style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:16px;margin-bottom:16px;">
-              <strong style="color:#1e293b;font-size:14px;display:block;margin-bottom:12px;">⚙️ Servidor SMTP Personalizado</strong>
+              <strong style="color:#1e293b;font-size:14px;display:block;margin-bottom:12px;"><i data-lucide="settings" style="width:14px;height:14px;"></i> Servidor SMTP Personalizado</strong>
               <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:12px;">
                 <label>Servidor Host SMTP
                   <input name="smtp_host" placeholder="smtp.ejemplo.com">
@@ -390,7 +392,7 @@
             <!-- Panel de Configuración para Resend -->
             <div id="resendSection" class="hidden" style="background:#fdf2f8;border:1px solid #fbcfe8;border-radius:10px;padding:16px;margin-bottom:16px;">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                <span style="font-size:20px;">🚀</span>
+                <i data-lucide="rocket" style="width:20px;height:20px;"></i>
                 <strong style="color:#9d174d;font-size:14px;">Integración con Resend API (Opción de máxima velocidad y entrega inmediata)</strong>
               </div>
               <p style="font-size:12.5px;color:#831843;line-height:1.5;margin:0 0 12px;">
@@ -409,7 +411,7 @@
             </div>
 
             <div class="form-actions" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-              <button class="button" type="submit" style="background:var(--blue);">💾 Guardar Configuración de Correo</button>
+              <button class="button" type="submit" style="background:var(--blue);"><i data-lucide="save" style="width:14px;height:14px;"></i> Guardar Configuración de Correo</button>
               <span style="font-size:12px;color:var(--muted);">Se aplicará de inmediato a las compras en tienda y a las pruebas.</span>
             </div>
             <div id="notificationsMessage" class="message"></div>
@@ -422,7 +424,7 @@
     <section class="crop-dialog" role="dialog" aria-modal="true" aria-labelledby="cropTitle">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
         <h2 id="cropTitle" style="margin:0;">Ajustar y Recortar Imagen</h2>
-        <button type="button" class="button secondary" onclick="$('#cancelCropButton').click()" style="padding:4px 11px;font-size:15px;line-height:1;">✕</button>
+        <button type="button" class="button secondary" onclick="$('#cancelCropButton').click()" style="padding:4px 11px;font-size:15px;line-height:1;"><i data-lucide="x" style="width:15px;height:15px;"></i></button>
       </div>
       <p class="crop-help">La imagen aparece completa. Arrastra el recuadro blanco o sus esquinas y laterales para elegir el encuadre deseado.</p>
       <div id="cropStage" class="crop-stage">
@@ -450,7 +452,7 @@
       </div>
       <div class="crop-actions">
         <button id="cancelCropButton" class="button secondary" type="button">Cancelar</button>
-        <button id="applyCropButton" class="button" type="button">✂️ Aplicar recorte</button>
+        <button id="applyCropButton" class="button" type="button"><i data-lucide="scissors" style="width:14px;height:14px;"></i> Aplicar recorte</button>
       </div>
     </section>
   </div>
@@ -770,7 +772,7 @@
           return;
         }
         updateLogoDarkUI(lightData);
-        showMessage($('#contentMessage'), '✓ Logotipo de menú claro copiado al fondo oscuro.');
+        showMessage($('#contentMessage'), 'Logotipo de menú claro copiado al fondo oscuro.');
       });
 
       $('#logoDarkFileInput')?.addEventListener('change', async event => {
@@ -1088,7 +1090,8 @@
       if (!input) return;
       const isPass = input.type === 'password';
       input.type = isPass ? 'text' : 'password';
-      $('#toggleGmailPass').textContent = isPass ? '🔒' : '👁️';
+      $('#toggleGmailPass').innerHTML = isPass ? '<i data-lucide="lock"></i>' : '<i data-lucide="eye"></i>';
+      if (window.lucide) window.lucide.createIcons();
     });
 
     $('#toggleHostingerPass')?.addEventListener('click', () => {
@@ -1096,7 +1099,8 @@
       if (!input) return;
       const isPass = input.type === 'password';
       input.type = isPass ? 'text' : 'password';
-      $('#toggleHostingerPass').textContent = isPass ? '🔒' : '👁️';
+      $('#toggleHostingerPass').innerHTML = isPass ? '<i data-lucide="lock"></i>' : '<i data-lucide="eye"></i>';
+      if (window.lucide) window.lucide.createIcons();
     });
 
     const getNotificationPayload = () => {
@@ -1210,9 +1214,9 @@
         });
         let successNote = result.message || `¡Correo de prueba enviado exitosamente a ${adminEmail}! Revisa tu bandeja de entrada o spam.`;
         if (result.transport === 'resend') {
-          successNote = `🚀 ¡Excelente! Correo de prueba despachado de inmediato vía Resend REST API a ${adminEmail}. Revisa tu bandeja de entrada.`;
+          successNote = `¡Excelente! Correo de prueba despachado de inmediato vía Resend REST API a ${adminEmail}. Revisa tu bandeja de entrada.`;
         } else if (result.transport === 'smtp') {
-          successNote = `⚡ ¡Excelente! Conexión SMTP verificada y correo despachado con éxito a ${adminEmail}.`;
+          successNote = `¡Excelente! Conexión SMTP verificada y correo despachado con éxito a ${adminEmail}.`;
         }
         showMessage($('#notificationsMessage'), successNote);
       } catch (error) {
@@ -1290,6 +1294,7 @@
       }
     };
 
+    if (window.lucide) window.lucide.createIcons();
     checkAuthAndInit();
   </script>
 </body>

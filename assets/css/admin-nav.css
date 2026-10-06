@@ -48,6 +48,12 @@
   flex-wrap: wrap;
 }
 
+#smartisp-admin-nav svg.lucide {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
 #smartisp-admin-nav .admin-nav-links a {
   display: inline-flex;
   align-items: center;

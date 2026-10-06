@@ -138,7 +138,9 @@
       background: #e2e8f0;
       color: #0f172a;
     }
+    svg.lucide { width: 1em; height: 1em; vertical-align: -0.125em; stroke-width: 2; flex-shrink: 0; }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
   <link rel="stylesheet" href="/assets/css/admin-nav.css">
@@ -148,7 +150,7 @@
   <main class="shell">
     <section id="accessDeniedPanel" class="login hidden">
       <div style="text-align: center; padding: 10px 0;">
-        <div style="font-size: 42px; line-height: 1; margin-bottom: 12px;">🚫</div>
+        <div style="margin-bottom: 12px;"><i data-lucide="ban" style="width:42px;height:42px;color:#c2410c;"></i></div>
         <h2 style="color: #c2410c; margin-bottom: 6px;">Acceso Restringido</h2>
         <p style="color: var(--muted); font-size: 13.5px; line-height: 1.5; margin-bottom: 18px;">
           Has iniciado sesión como <strong id="deniedUserEmail" style="color: var(--ink);"></strong>.<br>
@@ -176,12 +178,12 @@
         <div><h2>Panel de control</h2><span id="adminIdentity"></span></div>
         <div style="display:flex; gap:10px; align-items:center;">
           <a href="editor-catalogo.html" class="button" style="background:#075d7d; color:#fff; text-decoration:none; display:inline-flex; align-items:center; gap:8px; font-weight:700; box-shadow:0 3px 10px rgba(7,93,125,0.25);">
-            <span>📦 Editor de Catálogo y Categorías</span>
-            <span style="font-size:11px; background:rgba(255,255,255,0.22); padding:2px 7px; border-radius:10px;">Nuevo ↗</span>
+            <span><i data-lucide="package"></i> Editor de Catálogo y Categorías</span>
+            <span style="font-size:11px; background:rgba(255,255,255,0.22); padding:2px 7px; border-radius:10px;">Nuevo <i data-lucide="external-link" style="width:12px;height:12px;"></i></span>
           </a>
           <a href="editor-landing.html" target="_blank" class="button" style="background:#087ea4; color:#fff; text-decoration:none; display:inline-flex; align-items:center; gap:8px; font-weight:700; box-shadow:0 3px 10px rgba(8,126,164,0.25);">
-            <span>🎨 Editar Página de Presentación</span>
-            <span style="font-size:11px; background:rgba(255,255,255,0.22); padding:2px 7px; border-radius:10px;">Abrir ↗</span>
+            <span><i data-lucide="palette"></i> Editar Página de Presentación</span>
+            <span style="font-size:11px; background:rgba(255,255,255,0.22); padding:2px 7px; border-radius:10px;">Abrir <i data-lucide="external-link" style="width:12px;height:12px;"></i></span>
           </a>
           <button id="logoutButton" class="button danger">Cerrar sesion</button>
         </div>
@@ -209,7 +211,7 @@
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
             <div style="max-width: 650px;">
               <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(8,126,164,0.4); border:1px solid rgba(128,214,255,0.4); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; color:#80d6ff; margin-bottom:8px;">
-                <span>🌐 PÁGINA PRINCIPAL</span> • Editor Visual Interactivo
+                <span><i data-lucide="globe"></i> PÁGINA PRINCIPAL</span> • Editor Visual Interactivo
               </div>
               <h3 style="margin:0 0 6px; font-size:19px; color:#ffffff; font-weight:700; font-family:'Space Grotesk',sans-serif;">
                 Editar Página de Presentación Corporativa
@@ -220,8 +222,8 @@
             </div>
             <div>
               <a href="editor-landing.html" target="_blank" class="button" style="background:#087ea4; color:#fff; border:none; padding:12px 20px; font-size:13.5px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:8px; border-radius:8px; box-shadow:0 6px 18px rgba(8,126,164,.45);">
-                <span>✏️ Editar Página de Presentación</span>
-                <span style="font-size:15px;">↗</span>
+                <span><i data-lucide="pencil"></i> Editar Página de Presentación</span>
+                <i data-lucide="external-link" style="width:15px;height:15px;"></i>
               </a>
             </div>
           </div>
@@ -231,7 +233,7 @@
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px;">
             <div style="max-width: 680px;">
               <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(56,189,248,0.2); border:1px solid rgba(56,189,248,0.4); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; color:#7dd3fc; margin-bottom:10px;">
-                <span>📦 CATÁLOGO Y TAXONOMÍA</span> • Gestión Exclusiva
+                <span><i data-lucide="package"></i> CATÁLOGO Y TAXONOMÍA</span> • Gestión Exclusiva
               </div>
               <h3 style="margin:0 0 8px; font-size:20px; color:#ffffff; font-weight:700; font-family:'Space Grotesk',sans-serif;">
                 Gestión de Catálogo, Productos y Categorías
@@ -241,14 +243,14 @@
               </p>
               <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap;">
                 <div style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); padding:8px 16px; border-radius:8px; display:inline-flex; align-items:center; gap:10px;">
-                  <span style="font-size:20px;">📦</span>
+                  <i data-lucide="package" style="width:20px;height:20px;"></i>
                   <div>
                     <span style="font-size:11px; color:#bae6fd; display:block; text-transform:uppercase; font-weight:600;">Productos en Catálogo</span>
                     <strong id="adminCatalogProdCount" style="font-size:17px; color:#ffffff;">0</strong>
                   </div>
                 </div>
                 <div style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); padding:8px 16px; border-radius:8px; display:inline-flex; align-items:center; gap:10px;">
-                  <span style="font-size:20px;">📂</span>
+                  <i data-lucide="folder" style="width:20px;height:20px;"></i>
                   <div>
                     <span style="font-size:11px; color:#bae6fd; display:block; text-transform:uppercase; font-weight:600;">Macro-Categorías</span>
                     <strong id="adminCatalogCatCount" style="font-size:17px; color:#ffffff;">0</strong>
@@ -258,8 +260,8 @@
             </div>
             <div>
               <a href="editor-catalogo.html" class="button" style="background:#0284c7; color:#fff; border:none; padding:14px 24px; font-size:14px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:10px; border-radius:8px; box-shadow:0 6px 20px rgba(2,132,199,.4);">
-                <span>📂 Ir al Editor de Catálogo y Categorías</span>
-                <span style="font-size:16px;">↗</span>
+                <span><i data-lucide="folder"></i> Ir al Editor de Catálogo y Categorías</span>
+                <i data-lucide="external-link" style="width:16px;height:16px;"></i>
               </a>
             </div>
           </div>
@@ -269,7 +271,7 @@
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:18px;">
             <div style="max-width: 680px;">
               <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(148,163,184,0.25); border:1px solid rgba(203,213,225,0.4); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; color:#e2e8f0; margin-bottom:8px;">
-                <span>⚙️ CONFIGURACIÓN</span> • Apariencia, visibilidad y correo
+                <span><i data-lucide="settings"></i> CONFIGURACIÓN</span> • Apariencia, visibilidad y correo
               </div>
               <h3 style="margin:0 0 6px; font-size:18px; color:#ffffff; font-weight:700; font-family:'Space Grotesk',sans-serif;">
                 Apariencia, visibilidad de secciones y correo SMTP
@@ -280,8 +282,8 @@
             </div>
             <div>
               <a href="configuracion.html" class="button secondary" style="padding:11px 18px; font-size:13.5px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
-                <span>⚙️ Ir a Configuración</span>
-                <span style="font-size:15px;">↗</span>
+                <span><i data-lucide="settings"></i> Ir a Configuración</span>
+                <i data-lucide="external-link" style="width:15px;height:15px;"></i>
               </a>
             </div>
           </div>
@@ -291,7 +293,7 @@
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:18px;">
             <div style="max-width: 680px;">
               <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(125,211,252,0.2); border:1px solid rgba(125,211,252,0.4); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; color:#bae6fd; margin-bottom:8px;">
-                <span>🧾 PEDIDOS</span> • Centro de pedidos
+                <span><i data-lucide="receipt"></i> PEDIDOS</span> • Centro de pedidos
               </div>
               <h3 style="margin:0 0 6px; font-size:18px; color:#ffffff; font-weight:700; font-family:'Space Grotesk',sans-serif;">
                 Pedidos, cotizaciones y cambios de estado con historial
@@ -302,8 +304,8 @@
             </div>
             <div>
               <a href="pedidos.html" class="button secondary" style="padding:11px 18px; font-size:13.5px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
-                <span>🧾 Ir a Pedidos</span>
-                <span style="font-size:15px;">↗</span>
+                <span><i data-lucide="receipt"></i> Ir a Pedidos</span>
+                <i data-lucide="external-link" style="width:15px;height:15px;"></i>
               </a>
             </div>
           </div>
@@ -314,7 +316,7 @@
           <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px; margin-bottom:18px;">
             <div>
               <div style="display:inline-flex; align-items:center; gap:6px; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; margin-bottom:6px;">
-                <span>📂 TAXONOMÍA Y MACRO-CATEGORÍAS</span> • Catálogo Inteligente
+                <span><i data-lucide="folder"></i> TAXONOMÍA Y MACRO-CATEGORÍAS</span> • Catálogo Inteligente
               </div>
               <h3 style="margin:0 0 6px; font-size:20px; color:#0f172a; font-weight:700; font-family:'Space Grotesk',sans-serif;">
                 Macro-Categorías Activas en la Tienda
@@ -326,14 +328,14 @@
             <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
               <div style="position:relative; min-width:260px;">
                 <input type="text" id="adminMacroSearchInput" placeholder="Buscar categoría o subcategoría..." style="width:100%; padding:9px 12px 9px 34px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; transition:border-color .2s; background:#f8fafc;" onfocus="this.style.borderColor='#0284c7'; this.style.background='#fff';" onblur="this.style.borderColor='#cbd5e1'; this.style.background='#f8fafc';">
-                <span style="position:absolute; left:11px; top:50%; transform:translateY(-50%); font-size:13px; color:#94a3b8; pointer-events:none;">🔍</span>
+                <span style="position:absolute; left:11px; top:50%; transform:translateY(-50%); color:#94a3b8; pointer-events:none;"><i data-lucide="search" style="width:13px;height:13px;"></i></span>
               </div>
               <button id="refreshMacroCatsBtn" type="button" class="button secondary" style="padding:9px 14px; font-size:13px; display:inline-flex; align-items:center; gap:6px; border-radius:8px;">
-                <span>🔄</span> Recargar
+                <i data-lucide="refresh-cw" style="width:13px;height:13px;"></i> Recargar
               </button>
               <a href="editor-catalogo.html?tab=tab-categories" class="button" style="background:#0284c7; color:#fff; text-decoration:none; padding:9px 16px; font-size:13px; font-weight:700; display:inline-flex; align-items:center; gap:6px; border-radius:8px; box-shadow:0 3px 10px rgba(2,132,199,0.3);">
-                <span>⚙️ Administrar en Editor</span>
-                <span style="font-size:14px;">↗</span>
+                <span><i data-lucide="settings"></i> Administrar en Editor</span>
+                <i data-lucide="external-link" style="width:14px;height:14px;"></i>
               </a>
             </div>
           </div>
@@ -512,27 +514,27 @@
     // --- GESTIÓN Y VISUALIZACIÓN DE MACRO-CATEGORÍAS EN PANEL ADMIN ---
     const getCategoryIcon = name => {
       const n = (name || '').toLowerCase();
-      if (n.includes('impres') || n.includes('multifuncional') || n.includes('plotter') || n.includes('toner') || n.includes('tinta')) return '🖨️';
-      if (n.includes('portatil') || n.includes('portátil') || n.includes('laptop') || n.includes('notebook')) return '💻';
-      if (n.includes('computador') || n.includes('desktop') || n.includes('pc') || n.includes('all in one') || n.includes('servidor')) return '🖥️';
-      if (n.includes('componente') || n.includes('procesador') || n.includes('ram') || n.includes('disco') || n.includes('placa') || n.includes('fuente') || n.includes('tarjeta')) return '🧩';
-      if (n.includes('seguridad') || n.includes('vigilancia') || n.includes('camara') || n.includes('cámara') || n.includes('cctv') || n.includes('dvr') || n.includes('nvr') || n.includes('alarma')) return '🛡️';
-      if (n.includes('red') || n.includes('comunicac') || n.includes('router') || n.includes('switch') || n.includes('access point') || n.includes('fibra') || n.includes('wifi') || n.includes('antena')) return '🌐';
-      if (n.includes('audio') || n.includes('sonido') || n.includes('parlante') || n.includes('microfono') || n.includes('auricular') || n.includes('headset')) return '🔊';
-      if (n.includes('video') || n.includes('monitor') || n.includes('pantalla') || n.includes('proyector') || n.includes('tv')) return '🖥️';
-      if (n.includes('accesorio') || n.includes('periferico') || n.includes('periférico') || n.includes('teclado') || n.includes('mouse') || n.includes('soporte')) return '⌨️';
-      if (n.includes('energia') || n.includes('energía') || n.includes('ups') || n.includes('bateria') || n.includes('batería') || n.includes('regulador') || n.includes('inversor')) return '⚡';
-      if (n.includes('software') || n.includes('licencia') || n.includes('antivirus') || n.includes('sistema')) return '💾';
-      if (n.includes('celular') || n.includes('smartphone') || n.includes('tablet') || n.includes('movil') || n.includes('móvil')) return '📱';
-      if (n.includes('cable') || n.includes('conectiv') || n.includes('adaptador') || n.includes('hdmi') || n.includes('usb')) return '🔌';
-      if (n.includes('gaming') || n.includes('gamer') || n.includes('juego')) return '🎮';
-      if (n.includes('herramienta') || n.includes('ferreteria') || n.includes('instrumento') || n.includes('probador')) return '🔧';
-      if (n.includes('oficina') || n.includes('papel') || n.includes('mueble') || n.includes('silla') || n.includes('suministro')) return '📁';
-      if (n.includes('almacenamiento') || n.includes('pendrive') || n.includes('flash') || n.includes('memoria') || n.includes('externo')) return '💽';
-      if (n.includes('pos') || n.includes('punto de venta') || n.includes('lector') || n.includes('codigo de barra') || n.includes('gaveta')) return '🏷️';
-      if (n.includes('fotografia') || n.includes('fotografía') || n.includes('lente') || n.includes('tripode')) return '📷';
-      if (n.includes('telefonia') || n.includes('telefonía') || n.includes('telefono') || n.includes('conmutador')) return '📞';
-      return '📂';
+      if (n.includes('impres') || n.includes('multifuncional') || n.includes('plotter') || n.includes('toner') || n.includes('tinta')) return 'printer';
+      if (n.includes('portatil') || n.includes('portátil') || n.includes('laptop') || n.includes('notebook')) return 'laptop';
+      if (n.includes('computador') || n.includes('desktop') || n.includes('pc') || n.includes('all in one') || n.includes('servidor')) return 'monitor';
+      if (n.includes('componente') || n.includes('procesador') || n.includes('ram') || n.includes('disco') || n.includes('placa') || n.includes('fuente') || n.includes('tarjeta')) return 'cpu';
+      if (n.includes('seguridad') || n.includes('vigilancia') || n.includes('camara') || n.includes('cámara') || n.includes('cctv') || n.includes('dvr') || n.includes('nvr') || n.includes('alarma')) return 'shield';
+      if (n.includes('red') || n.includes('comunicac') || n.includes('router') || n.includes('switch') || n.includes('access point') || n.includes('fibra') || n.includes('wifi') || n.includes('antena')) return 'router';
+      if (n.includes('audio') || n.includes('sonido') || n.includes('parlante') || n.includes('microfono') || n.includes('auricular') || n.includes('headset')) return 'volume-2';
+      if (n.includes('video') || n.includes('monitor') || n.includes('pantalla') || n.includes('proyector') || n.includes('tv')) return 'tv';
+      if (n.includes('accesorio') || n.includes('periferico') || n.includes('periférico') || n.includes('teclado') || n.includes('mouse') || n.includes('soporte')) return 'keyboard';
+      if (n.includes('energia') || n.includes('energía') || n.includes('ups') || n.includes('bateria') || n.includes('batería') || n.includes('regulador') || n.includes('inversor')) return 'zap';
+      if (n.includes('software') || n.includes('licencia') || n.includes('antivirus') || n.includes('sistema')) return 'save';
+      if (n.includes('celular') || n.includes('smartphone') || n.includes('tablet') || n.includes('movil') || n.includes('móvil')) return 'smartphone';
+      if (n.includes('cable') || n.includes('conectiv') || n.includes('adaptador') || n.includes('hdmi') || n.includes('usb')) return 'plug';
+      if (n.includes('gaming') || n.includes('gamer') || n.includes('juego')) return 'gamepad-2';
+      if (n.includes('herramienta') || n.includes('ferreteria') || n.includes('instrumento') || n.includes('probador')) return 'wrench';
+      if (n.includes('oficina') || n.includes('papel') || n.includes('mueble') || n.includes('silla') || n.includes('suministro')) return 'folder';
+      if (n.includes('almacenamiento') || n.includes('pendrive') || n.includes('flash') || n.includes('memoria') || n.includes('externo')) return 'hard-drive';
+      if (n.includes('pos') || n.includes('punto de venta') || n.includes('lector') || n.includes('codigo de barra') || n.includes('gaveta')) return 'tag';
+      if (n.includes('fotografia') || n.includes('fotografía') || n.includes('lente') || n.includes('tripode')) return 'camera';
+      if (n.includes('telefonia') || n.includes('telefonía') || n.includes('telefono') || n.includes('conmutador')) return 'phone';
+      return 'folder-open';
     };
 
     const renderMacroCategories = (categories, filterText = '') => {
@@ -578,13 +580,14 @@
       if (filtered.length === 0) {
         grid.innerHTML = `
           <div style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px;">
-            <div style="font-size: 32px; margin-bottom: 8px;">🔍</div>
+            <div style="font-size: 32px; margin-bottom: 8px;"><i data-lucide="search"></i></div>
             <strong style="display:block; font-size:15px; color:#1e293b; margin-bottom:4px;">No se encontraron macro-categorías</strong>
             <p style="margin:0; font-size:13px; color:#64748b;">
               ${q ? `Ninguna categoría coincide con el término "<strong>${escapeHtml(q)}</strong>".` : 'No hay macro-categorías registradas en este momento.'}
             </p>
           </div>
         `;
+        if (window.lucide) window.lucide.createIcons();
         return;
       }
 
@@ -614,14 +617,14 @@
           <div class="macro-cat-card">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
               <div style="display:flex; align-items:center; gap:10px;">
-                <div class="macro-cat-icon">${icon}</div>
+                <div class="macro-cat-icon"><i data-lucide="${icon}"></i></div>
                 <div>
                   <h4 class="macro-cat-title" title="${escapeHtml(cat.name)}">${escapeHtml(cat.name)}</h4>
                   <span style="font-size:11px; color:#64748b;">${subcats.length} ${subcats.length === 1 ? 'subcategoría' : 'subcategorías'}</span>
                 </div>
               </div>
               <span class="macro-cat-count-badge" title="${prodCount} productos asociados en el catálogo">
-                <span>📦</span> ${prodCount}
+                <i data-lucide="package"></i> ${prodCount}
               </span>
             </div>
 
@@ -630,15 +633,16 @@
             <div style="display:flex; gap:8px; margin-top:auto; padding-top:10px; border-top:1px solid #f1f5f9;">
               <a href="editor-catalogo.html?macro=${encodedCat}" class="macro-cat-btn-view" title="Ver los productos de ${escapeHtml(cat.name)} en el editor">
                 <span>Ver productos</span>
-                <span style="font-size:14px; line-height:1;">↗</span>
+                <i data-lucide="external-link" style="width:14px;height:14px;"></i>
               </a>
               <a href="editor-catalogo.html?tab=tab-categories" class="macro-cat-btn-edit" title="Editar taxonomía y subcategorías">
-                <span>⚙️</span>
+                <i data-lucide="settings"></i>
               </a>
             </div>
           </div>
         `;
       }).join('');
+      if (window.lucide) window.lucide.createIcons();
     };
 
     const loadCategories = async () => {
@@ -788,6 +792,7 @@
       }
     };
 
+    if (window.lucide) window.lucide.createIcons();
     checkAuthAndInit();
   </script>
 </body>

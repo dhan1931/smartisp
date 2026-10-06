@@ -12,11 +12,11 @@
   'use strict';
 
   var LINKS = [
-    { key: 'inicio', href: '/admin.html', label: 'Inicio', icon: '🏠' },
-    { key: 'catalogo', href: '/editor-catalogo.html', label: 'Catálogo', icon: '📦' },
-    { key: 'contenido', href: '/editor-landing.html', label: 'Contenido', icon: '🎨' },
-    { key: 'config', href: '/configuracion.html', label: 'Configuración', icon: '⚙️' },
-    { key: 'pedidos', href: '/pedidos.html', label: 'Pedidos', icon: '🧾' }
+    { key: 'inicio', href: '/admin.html', label: 'Inicio', icon: 'home' },
+    { key: 'catalogo', href: '/editor-catalogo.html', label: 'Catálogo', icon: 'package' },
+    { key: 'contenido', href: '/editor-landing.html', label: 'Contenido', icon: 'palette' },
+    { key: 'config', href: '/configuracion.html', label: 'Configuración', icon: 'settings' },
+    { key: 'pedidos', href: '/pedidos.html', label: 'Pedidos', icon: 'receipt' }
   ];
 
   function escapeHtml(value) {
@@ -32,7 +32,7 @@
       if (link.disabled) classes.push('is-disabled');
       var titleAttr = link.title ? ' title="' + escapeHtml(link.title) + '"' : '';
       return '<a href="' + link.href + '" class="' + classes.join(' ') + '"' + titleAttr + '>' +
-        '<span aria-hidden="true">' + link.icon + '</span><span class="label">' + escapeHtml(link.label) + '</span></a>';
+        '<i data-lucide="' + link.icon + '" aria-hidden="true"></i><span class="label">' + escapeHtml(link.label) + '</span></a>';
     }).join('');
   }
 
@@ -44,7 +44,7 @@
     root.classList.remove('is-loading');
     root.innerHTML =
       '<div class="admin-nav-inner">' +
-      '<a class="admin-nav-brand" href="/admin.html">🌐 SmartISP · Panel</a>' +
+      '<a class="admin-nav-brand" href="/admin.html"><i data-lucide="globe" aria-hidden="true"></i> SmartISP · Panel</a>' +
       '<div class="admin-nav-links">' + buildLinksHtml(activeKey) + '</div>' +
       '<div class="admin-nav-user">' +
       '<span><strong>' + escapeHtml(name) + '</strong> · ' + role + '</span>' +
@@ -52,6 +52,8 @@
       '<button type="button" class="admin-nav-logout">Cerrar sesión</button>' +
       '</div>' +
       '</div>';
+
+    if (window.lucide) window.lucide.createIcons();
 
     root.querySelector('.admin-nav-logout').addEventListener('click', function () {
       fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).finally(function () {

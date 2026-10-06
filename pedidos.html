@@ -61,17 +61,19 @@
     .timeline-item { position: relative; padding-bottom: 14px; font-size: 12.5px; }
     .timeline-item::before { content: ''; position: absolute; left: -21px; top: 3px; width: 9px; height: 9px; border-radius: 50%; background: var(--blue); }
     @media (max-width: 720px) { .top, .toolbar { flex-direction: column; align-items: flex-start; } table.orders-table { font-size: 12px; } }
+    svg.lucide { width: 1em; height: 1em; vertical-align: -0.125em; stroke-width: 2; flex-shrink: 0; }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
   <link rel="stylesheet" href="/assets/css/admin-nav.css">
   <div id="smartisp-admin-nav" class="is-loading" data-active="pedidos"></div>
   <script src="/assets/js/admin-nav.js" defer></script>
-  <header class="top"><div><h1>SmartISP Administracion</h1><span>Centro de pedidos</span></div><div style="display:flex;gap:8px;"><a class="button secondary" href="/admin.html" style="text-decoration:none;">🏠 Panel</a></div></header>
+  <header class="top"><div><h1>SmartISP Administracion</h1><span>Centro de pedidos</span></div><div style="display:flex;gap:8px;"><a class="button secondary" href="/admin.html" style="text-decoration:none;"><i data-lucide="home"></i> Panel</a></div></header>
   <main class="shell">
     <section id="accessDeniedPanel" class="login hidden">
       <div style="text-align: center; padding: 10px 0;">
-        <div style="font-size: 42px; line-height: 1; margin-bottom: 12px;">🚫</div>
+        <div style="margin-bottom: 12px;"><i data-lucide="ban" style="width:42px;height:42px;color:#c2410c;"></i></div>
         <h2 style="color: #c2410c; margin-bottom: 6px;">Acceso Restringido</h2>
         <p style="color: var(--muted); font-size: 13.5px; line-height: 1.5; margin-bottom: 18px;">
           Has iniciado sesión como <strong id="deniedUserEmail" style="color: var(--ink);"></strong>.<br>
@@ -117,16 +119,16 @@
       <div id="emptyState" class="empty-state hidden">No hay pedidos que coincidan con el filtro actual.</div>
 
       <div class="pager">
-        <button id="prevPageBtn" class="button secondary" type="button">← Anterior</button>
+        <button id="prevPageBtn" class="button secondary" type="button"><i data-lucide="arrow-left" style="width:14px;height:14px;"></i> Anterior</button>
         <span id="pageInfo"></span>
-        <button id="nextPageBtn" class="button secondary" type="button">Siguiente →</button>
+        <button id="nextPageBtn" class="button secondary" type="button">Siguiente <i data-lucide="arrow-right" style="width:14px;height:14px;"></i></button>
       </div>
     </section>
   </main>
 
   <div id="orderModal" class="modal-overlay" hidden>
     <div class="modal-box" style="position:relative;">
-      <button class="modal-close" id="closeOrderModalBtn" type="button">✕</button>
+      <button class="modal-close" id="closeOrderModalBtn" type="button"><i data-lucide="x" style="width:18px;height:18px;"></i></button>
       <h3 id="modalOrderTitle" style="margin:0 0 4px;">Pedido</h3>
       <p id="modalOrderDate" style="margin:0 0 18px;color:var(--muted);font-size:12.5px;"></p>
 
@@ -291,12 +293,13 @@
             <td>${itemCount} ud.</td>
             <td>${money(o.total)}</td>
             <td>${statusBadge(o.status)}</td>
-            <td><button class="row-link" data-id="${escapeHtml(o.id)}">Ver detalle →</button></td>
+            <td><button class="row-link" data-id="${escapeHtml(o.id)}">Ver detalle <i data-lucide="arrow-right" style="width:12px;height:12px;"></i></button></td>
           </tr>`;
       }).join('');
       body.querySelectorAll('.row-link').forEach(btn => {
         btn.addEventListener('click', () => openOrderModal(btn.dataset.id));
       });
+      if (window.lucide) window.lucide.createIcons();
     };
 
     const loadOrders = async () => {
@@ -476,6 +479,7 @@
       }
     };
 
+    if (window.lucide) window.lucide.createIcons();
     checkAuthAndInit();
   </script>
 </body>
