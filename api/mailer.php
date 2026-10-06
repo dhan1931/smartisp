@@ -44,6 +44,28 @@ function getMailSettings(PDO $pdo, ?array $override = null): array {
         $defaults['smtp_from'] = $defaults['email_from'];
     }
 
+    // Variables de entorno (.env, ignorado por git) ganan sobre lo guardado en settings_rows:
+    // mismo criterio que api/config.php para MySQL. Evita que la contraseña SMTP real tenga
+    // que vivir en la base de datos (ver SEC-016 en ops/SECURITY.md).
+    $envMap = [
+        'admin_email'    => 'ADMIN_EMAIL',
+        'smtp_provider'  => 'SMTP_PROVIDER',
+        'smtp_host'      => 'SMTP_HOST',
+        'smtp_port'      => 'SMTP_PORT',
+        'smtp_user'      => 'SMTP_USER',
+        'smtp_pass'      => 'SMTP_PASS',
+        'smtp_from'      => 'SMTP_FROM',
+        'smtp_secure'    => 'SMTP_SECURE',
+        'resend_api_key' => 'RESEND_API_KEY',
+        'email_from'     => 'EMAIL_FROM',
+    ];
+    foreach ($envMap as $settingKey => $envName) {
+        $envValue = getenv($envName);
+        if ($envValue !== false && $envValue !== '') {
+            $defaults[$settingKey] = $envValue;
+        }
+    }
+
     if (is_array($override)) {
         foreach ($override as $ok => $ov) {
             if ($ov !== null && $ov !== '') {

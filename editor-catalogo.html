@@ -2384,7 +2384,7 @@
       tbody.innerHTML = items.map(p => {
         const hasImg = Boolean(p.imageUrl);
         const imgEl = hasImg
-          ? `<img src="${p.imageUrl}" alt="" class="prod-thumb-img" onclick="openQuickImageSearch('${p.id}')" title="Clic para buscar otra foto">`
+          ? `<img src="${p.imageUrl}" alt="" loading="lazy" class="prod-thumb-img" onclick="openQuickImageSearch('${p.id}')" title="Clic para buscar otra foto">`
           : `<div class="prod-thumb-placeholder" onclick="openQuickImageSearch('${p.id}')" title="Buscar foto en Amazon o Google"><span>📷</span><span>Buscar</span></div>`;
 
         const isVisible = p.visible !== false;
@@ -3407,7 +3407,7 @@
           <tr>
             <td>
               ${p.imageUrl
-                ? `<img src="${p.imageUrl}" class="prod-thumb-img" style="width:34px; height:34px;">`
+                ? `<img src="${p.imageUrl}" loading="lazy" class="prod-thumb-img" style="width:34px; height:34px;">`
                 : '<div class="prod-thumb-placeholder" style="width:34px; height:34px;"><span>📷</span></div>'
               }
             </td>
