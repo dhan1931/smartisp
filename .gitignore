@@ -21,4 +21,8 @@ scripts/dev-db*.env
 !migrations/*.sql
 
 # Cache de imagenes del proxy (regenerable, no versionar)
-public/uploads/cache/
+uploads/cache/
+
+# Uploads reales de productos subidos por el admin (contenido de usuario, no versionar)
+uploads/products/*
+!uploads/products/.gitkeep

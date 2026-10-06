@@ -228,16 +228,11 @@ if ($action === 'admin-products') {
             $ext = strtolower($m[1]) === 'png' ? 'png' : (strtolower($m[1]) === 'webp' ? 'webp' : 'jpg');
             $bData = base64_decode($m[2]);
             if ($bData && strlen($bData) < 15 * 1024 * 1024) {
-                $uploadDir = __DIR__ . '/../uploads/products/';
+                $uploadDir = __DIR__ . '/../../uploads/products/';
                 if (!is_dir($uploadDir)) @mkdir($uploadDir, 0755, true);
                 $fn = 'prod_' . bin2hex(random_bytes(8)) . '.' . $ext;
                 if (@file_put_contents($uploadDir . $fn, $bData) !== false) {
                     $imageUrl = '/uploads/products/' . $fn;
-                    $pubDir = __DIR__ . '/../public/uploads/products/';
-                    if (is_dir($pubDir)) {
-                        @mkdir($pubDir, 0755, true);
-                        @copy($uploadDir . $fn, $pubDir . $fn);
-                    }
                 }
             }
         }
@@ -386,7 +381,7 @@ if ($action === 'admin-products') {
 if ($action === 'upload-image' && $method === 'POST') {
     requireAdminAuth();
 
-    $uploadDir = __DIR__ . '/../uploads/products/';
+    $uploadDir = __DIR__ . '/../../uploads/products/';
     if (!is_dir($uploadDir)) {
         @mkdir($uploadDir, 0755, true);
     }
@@ -439,12 +434,6 @@ if ($action === 'upload-image' && $method === 'POST') {
         http_response_code(500);
         echo json_encode(['error' => 'No se pudo guardar la imagen en el servidor (permisos de carpeta).']);
         exit;
-    }
-
-    $publicUploadDir = __DIR__ . '/../public/uploads/products/';
-    if (is_dir($publicUploadDir)) {
-        @mkdir($publicUploadDir, 0755, true);
-        @copy($targetPath, $publicUploadDir . $filename);
     }
 
     $publicUrl = '/uploads/products/' . $filename;
@@ -748,7 +737,7 @@ if ($action === 'product-image' || $action === 'proxy-image') {
     }
 
     // 4. Directorio de Caché persistente en disco
-    $cacheDir = __DIR__ . '/../public/uploads/cache';
+    $cacheDir = __DIR__ . '/../../uploads/cache';
     if (!is_dir($cacheDir)) {
         @mkdir($cacheDir, 0755, true);
     }
