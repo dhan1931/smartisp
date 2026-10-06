@@ -366,16 +366,43 @@ function getDynamicCategoriesList(PDO $pdo): array {
 if ($action === 'catalog' && $method === 'GET') {
     try {
         $pTable = getProductsTableName($pdo);
-        
-        $stmt = $pdo->query("SELECT * FROM `$pTable`");
-        $rawProducts = $stmt->fetchAll();
-        $products = [];
-        foreach ($rawProducts as $p) {
-            $norm = normalizeProductRow($p);
-            if ($norm['visible']) {
-                $products[] = $norm;
-            }
+        // Garantiza las columnas esperadas y un índice (visible, created_at) antes de filtrar/paginar en SQL.
+        ensureProductTableColumns($pdo, $pTable);
+
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $limit = min(100, max(1, (int)($_GET['limit'] ?? 36)));
+        $offset = ($page - 1) * $limit;
+        $search = trim((string)($_GET['q'] ?? ''));
+
+        $where = 'visible = 1';
+        $params = [];
+        if ($search !== '') {
+            // Búsqueda directa por id/sku (enlaces de producto) o por nombre (DEV-20261005-022: antes el
+            // backend ignoraba ?q= y devolvía el primer producto de la tabla en vez del buscado).
+            // Placeholders distintos para el mismo valor: con PDO::ATTR_EMULATE_PREPARES=false (prepares
+            // nativos) un parámetro nombrado repetido da "SQLSTATE[HY093]: Invalid parameter number".
+            $where .= ' AND (id = :search_id OR sku = :search_sku OR name LIKE :search_like)';
+            $params[':search_id'] = $search;
+            $params[':search_sku'] = $search;
+            $params[':search_like'] = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $search) . '%';
         }
+
+        $totalStmt = $pdo->prepare("SELECT COUNT(*) FROM `$pTable` WHERE $where");
+        $totalStmt->execute($params);
+        $total = (int)$totalStmt->fetchColumn();
+
+        // Solo las columnas que normalizeProductRow usa; sin created_at/updated_at ni SELECT *.
+        $cols = 'id, name, description, price, category, subcategory, image_url, external_url, sku, visible';
+        // id como desempate: en los datos reales created_at está vacío en todas las filas, así que sin un
+        // criterio estable la paginación podía devolver un producto repetido o saltarse otro entre páginas.
+        $stmt = $pdo->prepare("SELECT $cols FROM `$pTable` WHERE $where ORDER BY created_at DESC, id DESC LIMIT :limit OFFSET :offset");
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $products = array_map('normalizeProductRow', $stmt->fetchAll());
 
         $stmtContent = $pdo->query("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows");
         $allContent = $stmtContent ? $stmtContent->fetchAll() : [];
@@ -409,23 +436,16 @@ if ($action === 'catalog' && $method === 'GET') {
         }
 
         $categories = getDynamicCategoriesList($pdo);
-        $total = count($products);
 
-        $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : null;
-        $limit = isset($_GET['limit']) ? min(100, max(1, (int)$_GET['limit'])) : 36;
-
-        $returnProducts = $products;
-        if ($page !== null) {
-            $offset = ($page - 1) * $limit;
-            $returnProducts = array_slice($products, $offset, $limit);
-        }
+        // Catálogo público: caché corta en el navegador/CDN en vez del no-store global (DEV-20261005-022).
+        header('Cache-Control: public, max-age=30');
 
         echo json_encode([
-            'products'   => $returnProducts,
+            'products'   => $products,
             'total'      => $total,
-            'page'       => $page ?: 1,
+            'page'       => $page,
             'limit'      => $limit,
-            'totalPages' => ceil($total / $limit),
+            'totalPages' => (int)ceil($total / max(1, $limit)),
             'content'    => $content,
             'categories' => $categories
         ]);
