@@ -1,4 +1,4 @@
-DirectoryIndex tienda.html index.html index.htm index.php
+DirectoryIndex index.html index.htm index.php
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
@@ -7,9 +7,6 @@ DirectoryIndex tienda.html index.html index.htm index.php
     # Proteger archivos sensibles
     RewriteRule ^\.env - [F,L]
     RewriteRule ^api/config\.php - [F,L]
-
-    # Redirigir index.html directamente a la raíz de la tienda
-    RewriteRule ^index\.html$ / [R=301,L]
 
     # Rutas amigables SEO para productos individuales y sitemaps
     RewriteRule ^sitemap-products\.xml$ sitemap-products.php [QSA,L]
