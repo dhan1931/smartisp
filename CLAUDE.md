@@ -2,6 +2,8 @@
 
 Proyecto de **cliente externo** (`ownership: external_client`), mantenimiento. Metodología **DevFlow** (`.devflow.yml`, `ops/`) conectada a StellarCode: proyecto **3** (`smartisp-ecomerce`). Stack: Node/Express (`server.js`) + API PHP (`api/`) + MySQL/Postgres; front estático.
 
+Flujo paso a paso de sesión a sesión (login, elegir tarea, cronómetro, commits, cierre): [docs/FLUJO-DEVFLOW.md](docs/FLUJO-DEVFLOW.md).
+
 ## DevFlow ↔ StellarCode (MCP)
 - Sesión: `npm run devflow:login` (aprobación en el navegador, token de 24 h máx., se guarda en `~/.devflow/`, fuera del repo).
 - Comandos: `npm run devflow -- <comando> --target .` (carga el token guardado). Requiere Python con `mcp>=1.13,<2`.
