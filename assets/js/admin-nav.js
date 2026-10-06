@@ -16,7 +16,7 @@
     { key: 'catalogo', href: '/editor-catalogo.html', label: 'Catálogo', icon: '📦' },
     { key: 'contenido', href: '/editor-landing.html', label: 'Contenido', icon: '🎨' },
     { key: 'config', href: '/configuracion.html', label: 'Configuración', icon: '⚙️' },
-    { key: 'pedidos', href: '#', label: 'Pedidos', icon: '🧾', disabled: true, title: 'Próximamente (DEV-20261005-019)' }
+    { key: 'pedidos', href: '/pedidos.html', label: 'Pedidos', icon: '🧾' }
   ];
 
   function escapeHtml(value) {

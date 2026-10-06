@@ -186,6 +186,24 @@
           <button id="logoutButton" class="button danger">Cerrar sesion</button>
         </div>
       </div>
+      <div id="dashboardStatsRow" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 20px;">
+        <a href="pedidos.html?status=pending" style="text-decoration:none; color:inherit; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; box-shadow:0 2px 8px rgba(0,0,0,.03); transition:transform .15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+          <div style="font-size:24px; font-weight:800; color:#b45309;" id="dashPendingCount">—</div>
+          <div style="font-size:11.5px; color:#64748b; font-weight:700; text-transform:uppercase;">Pendientes de pago</div>
+        </a>
+        <a href="pedidos.html" style="text-decoration:none; color:inherit; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; box-shadow:0 2px 8px rgba(0,0,0,.03); transition:transform .15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+          <div style="font-size:24px; font-weight:800; color:#0f172a;" id="dashTodayCount">—</div>
+          <div style="font-size:11.5px; color:#64748b; font-weight:700; text-transform:uppercase;">Pedidos hoy</div>
+        </a>
+        <a href="pedidos.html" style="text-decoration:none; color:inherit; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; box-shadow:0 2px 8px rgba(0,0,0,.03); transition:transform .15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+          <div style="font-size:24px; font-weight:800; color:#0f172a;" id="dashTotalCount">—</div>
+          <div style="font-size:11.5px; color:#64748b; font-weight:700; text-transform:uppercase;">Total de pedidos</div>
+        </a>
+        <a href="pedidos.html" style="text-decoration:none; color:inherit; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; box-shadow:0 2px 8px rgba(0,0,0,.03); transition:transform .15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+          <div style="font-size:24px; font-weight:800; color:#0d9488;" id="dashRevenue">—</div>
+          <div style="font-size:11.5px; color:#64748b; font-weight:700; text-transform:uppercase;">Ingresos (no cancelados)</div>
+        </a>
+      </div>
       <div class="grid">
         <section class="panel wide" style="background: linear-gradient(135deg, #0f2d3f 0%, #163e56 100%); color: #fff; border: 1px solid #20506e; padding: 20px 24px; border-radius: 12px; margin-bottom: 4px;">
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
@@ -263,6 +281,28 @@
             <div>
               <a href="configuracion.html" class="button secondary" style="padding:11px 18px; font-size:13.5px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
                 <span>⚙️ Ir a Configuración</span>
+                <span style="font-size:15px;">↗</span>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel wide" style="background: linear-gradient(135deg, #0c4a6e 0%, #075d7d 100%); color: #fff; border: 1px solid #0e7490; padding: 22px 26px; border-radius: 12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:18px;">
+            <div style="max-width: 680px;">
+              <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(125,211,252,0.2); border:1px solid rgba(125,211,252,0.4); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; color:#bae6fd; margin-bottom:8px;">
+                <span>🧾 PEDIDOS</span> • Centro de pedidos
+              </div>
+              <h3 style="margin:0 0 6px; font-size:18px; color:#ffffff; font-weight:700; font-family:'Space Grotesk',sans-serif;">
+                Pedidos, cotizaciones y cambios de estado con historial
+              </h3>
+              <p style="margin:0; font-size:13px; color:#d8f1f5; line-height:1.5;">
+                Lista completa con filtros por estado, detalle de cada pedido y cambio de estado que notifica por correo al cliente.
+              </p>
+            </div>
+            <div>
+              <a href="pedidos.html" class="button secondary" style="padding:11px 18px; font-size:13.5px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+                <span>🧾 Ir a Pedidos</span>
                 <span style="font-size:15px;">↗</span>
               </a>
             </div>
@@ -623,10 +663,24 @@
       }
     };
 
+    const loadOrderStats = async () => {
+      try {
+        const stats = await api('admin-orders-stats');
+        const byStatus = Object.fromEntries((stats.by_status || []).map(s => [s.status, s.total]));
+        document.getElementById('dashPendingCount').textContent = byStatus.pending || 0;
+        document.getElementById('dashTodayCount').textContent = stats.today_count || 0;
+        document.getElementById('dashTotalCount').textContent = stats.total || 0;
+        document.getElementById('dashRevenue').textContent = '$' + Number(stats.revenue || 0).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      } catch (e) {
+        console.warn('Error al cargar estadisticas de pedidos:', e);
+      }
+    };
+
     const openPanel = async user => {
       $('#loginPanel').classList.add('hidden');
       $('#adminPanel').classList.remove('hidden');
       $('#adminIdentity').textContent = `${user.name} ${user.surname || ''} - ${user.email}`;
+      await loadOrderStats();
       await loadCategories();
       await loadProductCount();
     };

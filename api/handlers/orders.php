@@ -206,6 +206,168 @@ if ($action === 'orders' || $action === 'customer-orders') {
 }
 
 // -------------------------------------------------------------
+// CENTRO DE PEDIDOS - ADMIN (DEV-20261005-019)
+// /api/auth/admin-orders, /api/auth/admin-orders-stats, /api/auth/admin-order,
+// /api/auth/admin-order-status
+// -------------------------------------------------------------
+
+// 'received' es un estado legado de datos reales anteriores a este flujo; se acepta para
+// no romper el filtro sobre pedidos viejos, pero no es un destino nuevo que se promueva en la UI.
+const ADMIN_ORDER_STATUSES = ['quote_requested', 'pending', 'paid', 'preparing', 'shipped', 'delivered', 'cancelled', 'received'];
+
+function smartispDecodeOrderRow(array $r): array {
+    if (isset($r['items']) && is_string($r['items'])) {
+        $r['items'] = json_decode($r['items'], true) ?: [];
+    }
+    if (isset($r['shipping']) && is_string($r['shipping'])) {
+        $r['shipping'] = json_decode($r['shipping'], true) ?: [];
+    }
+    return $r;
+}
+
+if ($action === 'admin-orders') {
+    requireAdminAuth();
+
+    $page = max(1, (int)($_GET['page'] ?? 1));
+    $limit = min(100, max(1, (int)($_GET['limit'] ?? 20)));
+    $offset = ($page - 1) * $limit;
+    $status = trim((string)($_GET['status'] ?? ''));
+    $q = trim((string)($_GET['q'] ?? ''));
+
+    $where = [];
+    $params = [];
+    if ($status !== '' && $status !== 'all' && in_array($status, ADMIN_ORDER_STATUSES, true)) {
+        $where[] = 'status = :status';
+        $params[':status'] = $status;
+    }
+    if ($q !== '') {
+        $where[] = '(id LIKE :q OR customer_name LIKE :q OR customer_email LIKE :q OR customer_phone LIKE :q)';
+        $params[':q'] = '%' . $q . '%';
+    }
+    $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+
+    $countStmt = $pdo->prepare("SELECT COUNT(*) FROM orders_rows $whereSql");
+    $countStmt->execute($params);
+    $total = (int)$countStmt->fetchColumn();
+
+    $stmt = $pdo->prepare("SELECT * FROM orders_rows $whereSql ORDER BY created_at DESC, id DESC LIMIT :limit OFFSET :offset");
+    foreach ($params as $k => $v) {
+        $stmt->bindValue($k, $v);
+    }
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+    $stmt->execute();
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    echo json_encode([
+        'orders'     => array_map('smartispDecodeOrderRow', $rows),
+        'total'      => $total,
+        'page'       => $page,
+        'limit'      => $limit,
+        'totalPages' => (int)ceil($total / $limit),
+    ]);
+    exit;
+}
+
+if ($action === 'admin-orders-stats') {
+    requireAdminAuth();
+
+    $byStatus = $pdo->query("SELECT status, COUNT(*) AS total, SUM(total) AS revenue FROM orders_rows GROUP BY status")->fetchAll(PDO::FETCH_ASSOC);
+    $totals = $pdo->query("SELECT COUNT(*) AS total,
+        SUM(CASE WHEN status != 'cancelled' THEN total ELSE 0 END) AS revenue,
+        SUM(CASE WHEN DATE(created_at) = CURDATE() THEN 1 ELSE 0 END) AS today_count
+        FROM orders_rows")->fetch(PDO::FETCH_ASSOC) ?: [];
+
+    echo json_encode([
+        'by_status'  => array_map(fn($r) => [
+            'status'  => $r['status'],
+            'total'   => (int)$r['total'],
+            'revenue' => (float)($r['revenue'] ?? 0),
+        ], $byStatus),
+        'total'       => (int)($totals['total'] ?? 0),
+        'revenue'     => (float)($totals['revenue'] ?? 0),
+        'today_count' => (int)($totals['today_count'] ?? 0),
+    ]);
+    exit;
+}
+
+if ($action === 'admin-order') {
+    requireAdminAuth();
+    $id = trim((string)($_GET['id'] ?? ''));
+    if ($id === '') {
+        http_response_code(400);
+        echo json_encode(['error' => 'Falta el id del pedido.']);
+        exit;
+    }
+
+    $stmt = $pdo->prepare('SELECT * FROM orders_rows WHERE id = :id LIMIT 1');
+    $stmt->execute([':id' => $id]);
+    $order = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$order) {
+        http_response_code(404);
+        echo json_encode(['error' => 'Pedido no encontrado.']);
+        exit;
+    }
+
+    $evStmt = $pdo->prepare('SELECT * FROM order_events WHERE order_id = :id ORDER BY created_at ASC, id ASC');
+    $evStmt->execute([':id' => $id]);
+
+    echo json_encode([
+        'order'  => smartispDecodeOrderRow($order),
+        'events' => $evStmt->fetchAll(PDO::FETCH_ASSOC),
+    ]);
+    exit;
+}
+
+if ($action === 'admin-order-status' && $method === 'POST') {
+    requireAdminAuth();
+
+    $id = trim((string)($body['id'] ?? ''));
+    $newStatus = trim((string)($body['status'] ?? ''));
+    $note = trim((string)($body['note'] ?? ''));
+
+    if ($id === '' || !in_array($newStatus, ADMIN_ORDER_STATUSES, true)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Pedido o estado inválido. Estados permitidos: ' . implode(', ', ADMIN_ORDER_STATUSES)]);
+        exit;
+    }
+
+    $stmt = $pdo->prepare('SELECT * FROM orders_rows WHERE id = :id LIMIT 1');
+    $stmt->execute([':id' => $id]);
+    $order = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$order) {
+        http_response_code(404);
+        echo json_encode(['error' => 'Pedido no encontrado.']);
+        exit;
+    }
+
+    $fromStatus = $order['status'] ?? null;
+
+    $upd = $pdo->prepare('UPDATE orders_rows SET status = :status, updated_at = NOW() WHERE id = :id');
+    $upd->execute([':status' => $newStatus, ':id' => $id]);
+
+    $actor = getAuthUser()['email'] ?? 'admin';
+    $ev = $pdo->prepare('INSERT INTO order_events (order_id, from_status, to_status, actor, note) VALUES (:order_id, :from_status, :to_status, :actor, :note)');
+    $ev->execute([
+        ':order_id'    => $id,
+        ':from_status' => $fromStatus,
+        ':to_status'   => $newStatus,
+        ':actor'       => $actor,
+        ':note'        => $note !== '' ? $note : null,
+    ]);
+
+    $order['status'] = $newStatus;
+    $emailResult = sendOrderStatusUpdateEmail($pdo, $order, $newStatus, $note);
+
+    echo json_encode([
+        'ok'    => true,
+        'order' => smartispDecodeOrderRow($order),
+        'email' => $emailResult,
+    ]);
+    exit;
+}
+
+// -------------------------------------------------------------
 // ACTUALIZAR PERFIL (/api/auth/update-profile) (QA-019)
 // -------------------------------------------------------------
 

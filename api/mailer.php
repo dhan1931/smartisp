@@ -816,6 +816,70 @@ function sendOrderEmails(PDO $pdo, array $orderData): array {
 }
 
 // ------------------------------------------------------------------
+// 6.1. NOTIFICACIÓN DE CAMBIO DE ESTADO DE PEDIDO (DEV-20261005-019, centro de pedidos)
+// ------------------------------------------------------------------
+
+const ORDER_STATUS_LABELS = [
+    'quote_requested' => 'Cotización solicitada',
+    'pending'          => 'Pendiente de pago',
+    'paid'             => 'Pago confirmado',
+    'preparing'        => 'Preparando tu pedido',
+    'shipped'          => 'Enviado / listo para retiro',
+    'delivered'        => 'Entregado',
+    'cancelled'        => 'Cancelado',
+    'received'         => 'Recibido',
+];
+
+function buildOrderStatusUpdateHtml(array $order, string $toStatus, string $note = ''): string {
+    $orderId = htmlspecialchars($order['id'] ?? '', ENT_QUOTES, 'UTF-8');
+    $customerName = htmlspecialchars($order['customer_name'] ?? ($order['customerName'] ?? 'Cliente'), ENT_QUOTES, 'UTF-8');
+    $statusLabel = htmlspecialchars(ORDER_STATUS_LABELS[$toStatus] ?? $toStatus, ENT_QUOTES, 'UTF-8');
+    $noteHtml = trim($note) !== ''
+        ? '<p style="margin:14px 0 0;color:#163342;font-size:13px;background:#f3f9f8;border:1px solid #cce8e2;border-radius:8px;padding:12px 14px;"><b>Nota del equipo:</b> ' . htmlspecialchars($note, ENT_QUOTES, 'UTF-8') . '</p>'
+        : '';
+
+    return "
+    <!DOCTYPE html>
+    <html lang=\"es\">
+    <head><meta charset=\"UTF-8\"></head>
+    <body style=\"margin:0;padding:20px 10px;background-color:#f0f4f6;font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;color:#163342;\">
+        <table align=\"center\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:560px;margin:0 auto;background-color:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(16,44,61,0.08);border:1px solid #d8e5e7;\">
+            <tr><td style=\"background:linear-gradient(120deg,#102c3d,#075d7d);padding:22px 28px;\">
+                <span style=\"color:#b7d4dc;font-size:12px;letter-spacing:.06em;text-transform:uppercase;\">SmartISP · Pedido $orderId</span>
+                <h2 style=\"margin:6px 0 0;color:#ffffff;font-size:20px;\">Actualización de tu pedido</h2>
+            </td></tr>
+            <tr><td style=\"padding:26px 28px;\">
+                <p style=\"margin:0 0 14px;font-size:14px;\">Hola $customerName, el estado de tu pedido <b>#$orderId</b> cambió a:</p>
+                <div style=\"display:inline-block;background:#e0f2fe;color:#075d7d;font-weight:700;font-size:15px;padding:8px 16px;border-radius:20px;\">$statusLabel</div>
+                $noteHtml
+                <p style=\"margin:20px 0 0;color:#6b7f88;font-size:12px;\">Si tienes alguna pregunta, responde este correo o escríbenos por WhatsApp.</p>
+            </td></tr>
+        </table>
+    </body>
+    </html>";
+}
+
+function sendOrderStatusUpdateEmail(PDO $pdo, array $order, string $toStatus, string $note = ''): array {
+    $customerEmail = trim($order['customer_email'] ?? ($order['customerEmail'] ?? ''));
+    if ($customerEmail === '' || !filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) {
+        return ['ok' => false, 'error' => 'Correo de cliente no válido o ausente'];
+    }
+    $orderId = trim($order['id'] ?? '');
+    $statusLabel = ORDER_STATUS_LABELS[$toStatus] ?? $toStatus;
+    try {
+        return sendSmartEmail(
+            $pdo,
+            $customerEmail,
+            "📦 Pedido #$orderId: $statusLabel - SmartISP",
+            buildOrderStatusUpdateHtml($order, $toStatus, $note)
+        );
+    } catch (Throwable $e) {
+        error_log("Fallo al enviar correo de cambio de estado ($customerEmail): " . $e->getMessage());
+        return ['ok' => false, 'error' => $e->getMessage()];
+    }
+}
+
+// ------------------------------------------------------------------
 // 7. DIAGNÓSTICO Y CORREO DE PRUEBA DESDE EL PANEL ADMIN
 // ------------------------------------------------------------------
 function testEmailConnection(PDO $pdo, ?array $overrideConfig = null, ?string $testTo = null): array {
