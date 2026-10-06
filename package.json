@@ -8,7 +8,9 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "build": "vite build",
-    "import:intcomex": "node scripts/import-intcomex-products.js"
+    "import:intcomex": "node scripts/import-intcomex-products.js",
+    "devflow": "bash scripts/devflow.sh",
+    "devflow:login": "node scripts/devflow-login.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.0.0",

@@ -7,3 +7,17 @@ dist/
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Tokens locales (nunca versionar)
+tokem.env
+*.token
+
+scripts/dev-db*.env
+
+# Volcados de base de datos (contienen datos reales; nunca versionar)
+*.sql
+*.sql.gz
+*.dump
+
+# Cache de imagenes del proxy (regenerable, no versionar)
+public/uploads/cache/

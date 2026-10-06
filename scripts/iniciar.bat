@@ -18,7 +18,7 @@ echo    (Desde allí encontrarás el botón directo a la Tienda Online)
 echo.
 
 REM Obtener la ruta completa del archivo index.html
-set "indexPath=%cd%\index.html"
+set "indexPath=%~dp0..\index.html"
 
 REM Abrir en el navegador predeterminado
 start "" "%indexPath%"
