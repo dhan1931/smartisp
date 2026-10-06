@@ -52,3 +52,5 @@
 - [ ] **DEV-20261005-041** `high` `seo` — Mejorar SEO: robots.txt y sitemaps desactualizados, navegacion a productos
 
 - [ ] **DEV-20261005-042** `low` `devops` — Entorno local (PHP/MariaDB) y documentacion operativa de la sesion
+
+- [ ] **DEV-20261006-001** `medium` `refactor` — Dividir admin.html en dashboard resumen y Configuracion aparte

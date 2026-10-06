@@ -940,3 +940,25 @@ StellarCode task id: 118
 
 - Pending
 
+### DEV-20261006-001 — Dividir admin.html en dashboard resumen y Configuracion aparte
+
+- Status: `planned`
+- Type: `refactor`
+- Priority: `medium`
+- Started: 2026-10-06T05:52:15-05:00
+- Updated: 2026-10-06T05:52:15-05:00
+
+#### Goal
+
+Dividir admin.html en dashboard resumen y Configuracion aparte
+
+StellarCode task id: 119
+
+#### Acceptance criteria
+
+- TODO: definir criterios verificables
+
+#### Evidence
+
+- Pending
+
