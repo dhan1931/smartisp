@@ -152,6 +152,27 @@ app.use((req, res, next) => {
 
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
+
+// Compatibilidad con el front, escrito para el backend PHP: llama /api/router.php?action=<accion>
+// y envía los cuerpos POST como { payload: <base64 utf-8> } para pasar el WAF de LiteSpeed.
+app.use((req, res, next) => {
+  if (req.path === '/api/router.php' || req.path === '/api/router') {
+    const action = String(req.query.action || '').trim();
+    if (!/^[a-z0-9-]+$/i.test(action)) return res.status(400).json({ error: 'Acción inválida.' });
+    const rest = new URLSearchParams(req.query);
+    rest.delete('action');
+    const query = rest.toString();
+    req.url = `/api/auth/${action}${query ? `?${query}` : ''}`;
+  }
+  if (req.path.startsWith('/api/') && req.body && typeof req.body.payload === 'string') {
+    try {
+      req.body = JSON.parse(Buffer.from(req.body.payload, 'base64').toString('utf8'));
+    } catch {
+      return res.status(400).json({ error: 'Payload inválido.' });
+    }
+  }
+  next();
+});
 app.use(session({
   name: 'nexotech.sid',
   secret: process.env.SESSION_SECRET || 'cambia-esta-clave-en-produccion',
@@ -234,6 +255,10 @@ app.get(['/api/test-db', '/api/auth/test-db'], async (req, res) => {
   }
 });
 
+// El código, la configuración y los archivos internos nunca se sirven como estáticos.
+// Los .php no se pueden ejecutar aquí, así que servirlos solo expondría su código fuente.
+const BLOCKED_STATIC = /\.php$|^\/(?:src|scripts|ops|docs|data|legacy|node_modules)(?:\/|$)|^\/(?:server\.js|db\.js|package(?:-lock)?\.json|vite\.config\.js|vercel\.json|[^/]*\.(?:env|token|yml|yaml|md|sql|gz|dump|bak|log))$/i;
+app.use((req, res, next) => (BLOCKED_STATIC.test(req.path) ? res.status(404).end() : next()));
 app.use(express.static(__dirname));
 
 app.post('/api/auth/login', async (req, res) => {
@@ -985,7 +1010,7 @@ const inMemoryContent = new Map();
 const inMemoryLandingContent = new Map();
 const inMemoryCategories = new Map();
 
-const PRODUCTS_STORAGE_FILE = path.join(process.cwd(), 'products-storage.json');
+const PRODUCTS_STORAGE_FILE = path.join(process.cwd(), 'data', 'products-storage.json');
 const saveProductsToFile = () => {
   if (pool) return;
   try {
@@ -2287,6 +2312,7 @@ app.get(['/api/auth/product-image', '/api/auth/proxy-image'], async (req, res) =
 });
 
 await initializeDatabase();
-app.listen(port, () => {
-  console.log(`NexoTech disponible en http://localhost:${port}`);
-});
+const onListen = () => console.log(`NexoTech disponible en http://localhost:${port}`);
+// HOST=127.0.0.1 limita el servidor a esta máquina (desarrollo local); sin HOST escucha en todas las interfaces.
+if (process.env.HOST) app.listen(port, process.env.HOST, onListen);
+else app.listen(port, onListen);

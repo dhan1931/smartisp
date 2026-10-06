@@ -37,19 +37,12 @@ require_once __DIR__ . '/mailer.php';
 
 $pdo = getDbConnection();
 
-function getAdminEmailsList(): array {
-    return [
-        'acercado28@gmail.com',
-        'acercado28@ggmail.com'
-    ];
-}
-
-if ($pdo) {
-    try {
-        $pdo->exec("UPDATE users_rows SET role = 'admin' WHERE LOWER(TRIM(email)) IN ('acercado28@gmail.com', 'acercado28@ggmail.com')");
-        $pdo->exec("UPDATE users_rows SET role = 'customer' WHERE LOWER(TRIM(email)) NOT IN ('acercado28@gmail.com', 'acercado28@ggmail.com')");
-    } catch (Throwable $e) {}
-}
+// El rol de administrador vive únicamente en users_rows.role, puesto por un login real
+// (contraseña verificada) o, en el futuro, por una acción explícita de gestión de usuarios.
+// Antes había aquí una lista de emails hardcodeada que: (a) en cada petición forzaba
+// role='customer' para cualquier email fuera de la lista y role='admin' para los de la lista,
+// sin importar lo que dijera la base; y (b) se usaba para otorgar una contraseña universal
+// y para decidir el rol otra vez después de autenticar. Todo eso se eliminó.
 
 function slugify(string $text): string {
     $clean = @iconv('UTF-8', 'ASCII//TRANSLIT', $text);
@@ -129,57 +122,11 @@ function getAuthUser(): ?array {
         }
     }
 
-    // Respaldo por email de administrador autorizado si la sesión o token no son admin
-    if (!$isAdminSession) {
-        $adminEmail = strtolower(trim((string)($_SERVER['HTTP_X_ADMIN_EMAIL'] ?? ($_SERVER['REDIRECT_HTTP_X_ADMIN_EMAIL'] ?? ($_REQUEST['admin_email'] ?? '')))));
-        if (empty($adminEmail) && function_exists('getallheaders')) {
-            $hdrs = (array)getallheaders();
-            foreach ($hdrs as $k => $v) {
-                if (strtolower($k) === 'x-admin-email' && !empty($v)) {
-                    $adminEmail = strtolower(trim((string)$v));
-                    break;
-                }
-            }
-        }
-        if (!empty($adminEmail) && in_array($adminEmail, getAdminEmailsList(), true) && $adminEmail !== 'gestion@smart-isp.es') {
-            try {
-                $db = getDbConnection();
-                if ($db) {
-                    $stmt = $db->prepare("SELECT id, email, name, role FROM users_rows WHERE LOWER(TRIM(email)) = :email LIMIT 1");
-                    $stmt->execute([':email' => $adminEmail]);
-                    $dbRow = $stmt->fetch(PDO::FETCH_ASSOC);
-                    if ($dbRow) {
-                        $user = [
-                            'id'    => $dbRow['id'],
-                            'email' => $dbRow['email'],
-                            'name'  => $dbRow['name'] ?? 'Administrador',
-                            'role'  => 'admin'
-                        ];
-                    }
-                }
-            } catch (Throwable $e) {}
-
-            if (!$user || ($user['role'] ?? '') !== 'admin') {
-                $user = [
-                    'id'    => '7af355cc-65f0-4ebe-b768-4093b74afbb3',
-                    'email' => $adminEmail,
-                    'name'  => 'Administrador',
-                    'role'  => 'admin'
-                ];
-            }
-            $_SESSION['user'] = $user;
-        }
-    }
+    // SEC-001 (corregido): antes había aquí un "respaldo" que otorgaba sesión de administrador
+    // solo con la cabecera X-Admin-Email o ?admin_email=, sin contraseña ni token. Se eliminó:
+    // la única forma de llegar a este punto como admin es sesión real o token firmado válido (arriba).
 
     if (is_array($user) && !empty($user['email'])) {
-        $email = strtolower(trim((string)$user['email']));
-        if ($email === 'gestion@smart-isp.es') {
-            $user['role'] = 'customer';
-            $_SESSION['user']['role'] = 'customer';
-        } elseif (in_array($email, getAdminEmailsList(), true)) {
-            $user['role'] = 'admin';
-            $_SESSION['user']['role'] = 'admin';
-        }
         return $user;
     }
 
@@ -193,12 +140,9 @@ function isAdminUser(?array $user = null): bool {
     if (!$user || !is_array($user)) {
         return false;
     }
-    $email = strtolower(trim((string)($user['email'] ?? '')));
-    $adminEmails = getAdminEmailsList();
-    if (in_array($email, $adminEmails, true)) {
-        return true;
-    }
-    return ($user['role'] ?? '') === 'admin' && in_array($email, $adminEmails, true);
+    // El rol ya quedó fijado al autenticar (sesión real o token firmado); no se vuelve
+    // a decidir aquí por email.
+    return ($user['role'] ?? '') === 'admin';
 }
 
 function requireAdminAuth(): void {
@@ -1645,23 +1589,6 @@ if ($action === 'login' && $method === 'POST') {
         $stmt->execute([':email' => $email]);
         $user = $stmt->fetch();
 
-        // Acceso demo / admin garantizado
-        $adminList = getAdminEmailsList();
-        if ($password === 'pepe1234' && in_array(strtolower($email), $adminList, true)) {
-            $demoUser = [
-                'id'      => $user ? ($user['id'] ?? 'demo-medardo') : 'demo-medardo',
-                'name'    => $user ? ($user['name'] ?? 'Medardo') : 'Medardo',
-                'surname' => $user ? ($user['surname'] ?? 'Admin') : 'Admin',
-                'email'   => $email,
-                'phone'   => $user ? ($user['phone'] ?? '+593 999 000 000') : '+593 999 000 000',
-                'role'    => 'admin'
-            ];
-            $token = generateAdminAuthToken($demoUser);
-            $_SESSION['user'] = $demoUser;
-            echo json_encode(['user' => $demoUser, 'token' => $token]);
-            exit;
-        }
-
         if (!$user) {
             http_response_code(401);
             echo json_encode(['error' => 'No se encontró ninguna cuenta con el correo: ' . $email]);
@@ -1694,17 +1621,8 @@ if ($action === 'login' && $method === 'POST') {
                 'phone'   => (string)($user['phone'] ?? ($user['telefono'] ?? ($user['COL 6'] ?? ''))),
                 'role'    => (string)($user['role'] ?? ($user['rol'] ?? ($user['COL 8'] ?? 'customer')))
             ];
-            if (in_array(strtolower($normUser['email']), ['gestion@smart-isp.es'], true)) {
-                $normUser['role'] = 'customer';
-                try {
-                    $pdo->exec("UPDATE `$uTable` SET role = 'customer' WHERE id = " . $pdo->quote($normUser['id']));
-                } catch (Throwable $e) {}
-            } elseif (in_array(strtolower($normUser['email']), getAdminEmailsList(), true) || $normUser['role'] === 'admin') {
-                $normUser['role'] = 'admin';
-                try {
-                    $pdo->exec("UPDATE `$uTable` SET role = 'admin' WHERE id = " . $pdo->quote($normUser['id']));
-                } catch (Throwable $e) {}
-            }
+            // $normUser['role'] ya viene de la columna role de la base (línea de arriba);
+            // ya no se recalcula por email.
             $token = generateAdminAuthToken($normUser);
             $_SESSION['user'] = $normUser;
             echo json_encode(['user' => $normUser, 'token' => $token]);
@@ -1767,15 +1685,8 @@ if ($action === 'register' && $method === 'POST') {
 if ($action === 'me' && $method === 'GET') {
     $user = getAuthUser();
     $token = null;
-    if ($user && is_array($user)) {
-        if (strtolower($user['email'] ?? '') === 'gestion@smart-isp.es') {
-            $user['role'] = 'customer';
-            $_SESSION['user']['role'] = 'customer';
-        } elseif (isAdminUser($user)) {
-            $user['role'] = 'admin';
-            $_SESSION['user']['role'] = 'admin';
-            $token = generateAdminAuthToken($user);
-        }
+    if ($user && is_array($user) && isAdminUser($user)) {
+        $token = generateAdminAuthToken($user);
     }
     echo json_encode(['user' => $user, 'token' => $token]);
     exit;
@@ -2079,10 +1990,7 @@ if (($action === 'change-password' || $action === 'change_password') && $method 
         $storedPass = (string)($dbUser[$passCol] ?? '');
         $match = false;
 
-        // Soporte de clave de administrador para acercado28@gmail.com
-        if ($currentPassword === 'pepe1234' && in_array(strtolower($userEmail), getAdminEmailsList(), true)) {
-            $match = true;
-        } elseif (password_verify($currentPassword, $storedPass)) {
+        if (password_verify($currentPassword, $storedPass)) {
             $match = true;
         } elseif ($storedPass === $currentPassword) {
             $match = true;
