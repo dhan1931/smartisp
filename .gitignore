@@ -18,6 +18,7 @@ scripts/dev-db*.env
 *.sql
 *.sql.gz
 *.dump
+!migrations/*.sql
 
 # Cache de imagenes del proxy (regenerable, no versionar)
 public/uploads/cache/

@@ -48,3 +48,7 @@
 - [ ] **DEV-20261005-029** `low` `feature` — Roles de usuario, registro de actividad y confirmación reforzada de acciones destructivas
 - [ ] **DEV-20261005-030** `low` `devops` — Definir comandos build, test y lint en .devflow.yml y agregar CI
 - [ ] **DEV-20261005-031** `low` `feature` — Mi pedido para el cliente: estados, seguimiento y recuperación de carritos
+
+- [ ] **DEV-20261005-041** `high` `seo` — Mejorar SEO: robots.txt y sitemaps desactualizados, navegacion a productos
+
+- [ ] **DEV-20261005-042** `low` `devops` — Entorno local (PHP/MariaDB) y documentacion operativa de la sesion

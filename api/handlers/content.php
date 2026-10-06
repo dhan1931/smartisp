@@ -6,6 +6,14 @@
 // igual que antes; solo cambio donde vive el codigo, no la logica.
 
 // -------------------------------------------------------------
+// DEV-20261005-023: los campos de correo viven en mail_settings (tabla propia, fila única),
+// no en settings_rows. admin-content sigue siendo el único endpoint que usa el front (su
+// formulario de "Correo" no cambió); lo que cambió es dónde se guardan estos 10 campos.
+const MAIL_SETTINGS_KEYS = [
+    'admin_email', 'smtp_provider', 'smtp_host', 'smtp_port', 'smtp_user',
+    'smtp_pass', 'smtp_secure', 'smtp_from', 'resend_api_key', 'email_from',
+];
+
 if ($action === 'admin-content') {
     requireAdminAuth();
 
@@ -13,7 +21,7 @@ if ($action === 'admin-content') {
         // Un solo valor pesado (p. ej. un logo en base64), para cargarlo aparte cuando
         // realmente se necesita, en vez de traerlo siempre junto con el resto de los ajustes.
         $singleKey = trim((string)($_GET['key'] ?? ''));
-        if ($singleKey !== '' && $singleKey !== 'smtp_pass' && $singleKey !== 'resend_api_key') {
+        if ($singleKey !== '' && !in_array($singleKey, MAIL_SETTINGS_KEYS, true)) {
             $stmt = $pdo->prepare('SELECT setting_value FROM settings_rows WHERE setting_key = :key LIMIT 1');
             $stmt->execute([':key' => $singleKey]);
             echo json_encode(['key' => $singleKey, 'value' => (string)($stmt->fetchColumn() ?: '')]);
@@ -22,6 +30,14 @@ if ($action === 'admin-content') {
 
         $stmt = $pdo->query("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows");
         $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+
+        $mailRow = $pdo->query('SELECT * FROM mail_settings WHERE id = 1')->fetch(PDO::FETCH_ASSOC) ?: [];
+        foreach (MAIL_SETTINGS_KEYS as $k) {
+            $v = $mailRow[$k] ?? null;
+            if ($k === 'smtp_secure') $v = ((string)$v === '1') ? 'true' : 'false';
+            $rows[] = ['key' => $k, 'value' => $v === null ? '' : (string)$v];
+        }
+
         $maskedRows = [];
         $hasSmtpPass = false;
         $hasResendKey = false;
@@ -65,16 +81,35 @@ if ($action === 'admin-content') {
             $stmt = $pdo->prepare("INSERT INTO settings_rows (setting_key, setting_value)
                                    VALUES (:key, :value)
                                    ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = CURRENT_TIMESTAMP");
+            $mailUpdates = [];
             foreach ($items as $item) {
                 $k = $item['key'] ?? '';
                 $v = $item['value'] ?? '';
-                if ($k) {
-                    // Si el valor de contraseña es viñetas '••••••••' o vacío al enviar sin cambios, NO sobreescribir la contraseña existente
-                    if (($k === 'smtp_pass' || $k === 'resend_api_key') && ($v === '••••••••' || $v === '')) {
-                        continue;
-                    }
-                    $stmt->execute([':key' => $k, ':value' => (string)$v]);
+                if (!$k) continue;
+                // Si el valor de contraseña es viñetas '••••••••' o vacío al enviar sin cambios, NO sobreescribir la contraseña existente
+                if (($k === 'smtp_pass' || $k === 'resend_api_key') && ($v === '••••••••' || $v === '')) {
+                    continue;
                 }
+                if (in_array($k, MAIL_SETTINGS_KEYS, true)) {
+                    $mailUpdates[$k] = (string)$v;
+                    continue;
+                }
+                $stmt->execute([':key' => $k, ':value' => (string)$v]);
+            }
+
+            if (!empty($mailUpdates)) {
+                if (isset($mailUpdates['smtp_secure'])) {
+                    $mailUpdates['smtp_secure'] = in_array(strtolower($mailUpdates['smtp_secure']), ['false', '0', ''], true) ? 0 : 1;
+                }
+                if (isset($mailUpdates['smtp_port'])) {
+                    $mailUpdates['smtp_port'] = $mailUpdates['smtp_port'] === '' ? null : (int)$mailUpdates['smtp_port'];
+                }
+                $pdo->exec('INSERT IGNORE INTO mail_settings (id) VALUES (1)');
+                $setSql = implode(', ', array_map(fn($k) => "`$k` = :$k", array_keys($mailUpdates)));
+                $mailStmt = $pdo->prepare("UPDATE mail_settings SET $setSql WHERE id = 1");
+                $params = [];
+                foreach ($mailUpdates as $k => $v) { $params[":$k"] = $v; }
+                $mailStmt->execute($params);
             }
         }
 

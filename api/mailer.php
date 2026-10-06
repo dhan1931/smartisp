@@ -26,14 +26,20 @@ function getMailSettings(PDO $pdo, ?array $override = null): array {
         'email_from'     => ''
     ];
 
+    // DEV-20261005-023: la configuración de correo vive en su propia tabla (fila única,
+    // mail_settings), no mezclada en settings_rows con el contenido de la landing y el resto
+    // de parámetros. topbar_email no es de aquí (es un texto que se muestra en el sitio
+    // público); sigue en settings_rows, lo lee landing-content.
     try {
-        $stmt = $pdo->query("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows WHERE setting_key LIKE 'smtp_%' OR setting_key = 'admin_email' OR setting_key = 'email_from' OR setting_key LIKE 'resend_%' OR setting_key = 'topbar_email'");
-        $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
-        foreach ($rows as $r) {
-            $k = $r['key'] ?? '';
-            $v = trim((string)($r['value'] ?? ''));
-            if ($k && $v !== '') {
-                $defaults[$k] = $v;
+        $row = $pdo->query('SELECT * FROM mail_settings WHERE id = 1')->fetch(PDO::FETCH_ASSOC);
+        if ($row) {
+            foreach ($row as $k => $v) {
+                if ($k === 'id' || $k === 'updated_at') continue;
+                if ($k === 'smtp_secure') {
+                    $defaults[$k] = ((string)$v === '1') ? 'true' : 'false';
+                } elseif ($v !== null && $v !== '') {
+                    $defaults[$k] = (string)$v;
+                }
             }
         }
     } catch (Throwable $e) {

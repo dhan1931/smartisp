@@ -896,3 +896,47 @@ StellarCode task id: 115
 
 - Pending
 
+### DEV-20261005-041 — Mejorar SEO: robots.txt y sitemaps desactualizados, navegacion a productos
+
+- Status: `planned`
+- Type: `seo`
+- Priority: `high`
+- Started: 2026-10-05T22:16:39-05:00
+- Updated: 2026-10-05T22:16:39-05:00
+
+#### Goal
+
+robots.txt referencia rutas de favicon que ya no existen (se movieron a assets/favicons/ en DEV-20261005-032/035); sin Disallow para admin/checkout/login/api; sitemap-main.xml con fechas fijas desactualizadas y checkout.html indexable (no deberia). Revisar tambien si los enlaces de producto en tienda.html son consistentes con el esquema real de URL (prod_<id>-<slug>) usado por producto.php y sitemap-products.php.
+
+StellarCode task id: 117
+
+#### Acceptance criteria
+
+- robots.txt y sitemaps coherentes con las rutas reales; enlaces de producto verificados contra producto.php
+
+#### Evidence
+
+- Pending
+
+### DEV-20261005-042 — Entorno local (PHP/MariaDB) y documentacion operativa de la sesion
+
+- Status: `planned`
+- Type: `devops`
+- Priority: `low`
+- Started: 2026-10-05T22:25:04-05:00
+- Updated: 2026-10-05T22:25:04-05:00
+
+#### Goal
+
+Instalacion de PHP 8.3 y MariaDB 11.8 portatiles, importacion de la copia de datos reales, scripts dev-php.ps1/dev-router.php, y los documentos DIAGNOSTICO/ARQUITECTURA-Y-DEUDA/PLAN-DE-FASES/PROPUESTAS-DE-VALOR/FLUJO-DEVFLOW. Commits: 48f7d6e, 73a578d, 6829d39.
+
+StellarCode task id: 118
+
+#### Acceptance criteria
+
+- Entorno local funcional y documentado
+
+#### Evidence
+
+- Pending
+
