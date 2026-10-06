@@ -1530,7 +1530,7 @@
     let categoriesList = [];
     let productsList = []; // solo la página actual (DEV-20261005-022: paginado real, ya no el catálogo completo)
     let productsPage = 1;
-    let productsPageSize = 100;
+    let productsPageSize = 50; // feedback: 100 por página se sentía pesado para revisar en la tabla
     let productsTotal = 0;
     let productsTotalPages = 1;
     let productsStats = { total: 0, visible: 0, with_photo: 0, without_photo: 0, by_category: [] };

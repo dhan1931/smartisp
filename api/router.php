@@ -501,7 +501,7 @@ if ($action === 'admin-products') {
         ensureProductTableColumns($pdo, $pTable);
 
         $page = max(1, (int)($_GET['page'] ?? 1));
-        $limit = min(500, max(1, (int)($_GET['limit'] ?? 100)));
+        $limit = min(500, max(1, (int)($_GET['limit'] ?? 50))); // feedback: 100 por página se sentía pesado
         $offset = ($page - 1) * $limit;
 
         $where = ['1=1'];

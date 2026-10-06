@@ -1,11 +1,14 @@
 # Robots.txt for SmartISP
 User-agent: *
 Allow: /
-Allow: /favicon.ico
-Allow: /favicon.svg
-Allow: /favicon*.png
-Allow: /apple-touch-icon*.png
-Allow: /site.webmanifest
-Allow: /manifest.json
+
+# Páginas privadas/transaccionales: no deben indexarse ni rastrearse
+Disallow: /admin.html
+Disallow: /editor-catalogo.html
+Disallow: /editor-landing.html
+Disallow: /login.html
+Disallow: /checkout.html
+Disallow: /reset-password.html
+Disallow: /api/
 
 Sitemap: https://smart-isp.com.ec/sitemap.xml
