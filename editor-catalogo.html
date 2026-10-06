@@ -971,6 +971,7 @@
             </tbody>
           </table>
         </div>
+        <div id="productsPager" style="display:flex; align-items:center; justify-content:center; gap:14px; padding:16px 0; font-size:13px; color:var(--muted);"></div>
       </div>
     </section>
 
@@ -1527,7 +1528,12 @@
   <script>
     // --- ESTADO GLOBAL ---
     let categoriesList = [];
-    let productsList = [];
+    let productsList = []; // solo la página actual (DEV-20261005-022: paginado real, ya no el catálogo completo)
+    let productsPage = 1;
+    let productsPageSize = 100;
+    let productsTotal = 0;
+    let productsTotalPages = 1;
+    let productsStats = { total: 0, visible: 0, with_photo: 0, without_photo: 0, by_category: [] };
     let currentAdminUser = null;
     let currentImportState = null;
     let targetImageProduct = null;
@@ -1900,17 +1906,51 @@
     };
 
     // --- CARGA DE DATOS INICIAL ---
+    // DEV-20261005-022 (panel admin): el catálogo paso de cientos a 2773+ productos y sigue
+    // creciendo. Antes se traían TODOS de una sola vez (SELECT * sin límite) y se filtraba/
+    // paginaba en el navegador; con miles de filas eso deja de sostenerse (la tabla y las
+    // ~2700 imágenes de cada fila saturaban la pestaña de red al abrir el editor). Ahora:
+    // - admin-products trae una página a la vez, filtrada en SQL con los mismos criterios
+    //   que antes se aplicaban en memoria (getFilteredProducts).
+    // - admin-products-stats trae los totales (tarjetas, conteo por categoría) con consultas
+    //   de agregación, sin transferir las filas.
+    const currentProductFilters = () => ({
+      q: (document.getElementById('productSearchInput')?.value || '').trim(),
+      category: document.getElementById('filterMacroCat')?.value || 'all',
+      subcategory: document.getElementById('filterSubCat')?.value || 'all',
+      visible: document.getElementById('filterVisibility')?.value || 'all',
+      photo: document.getElementById('filterPhoto')?.value || 'all',
+      price: document.getElementById('filterPrice')?.value || 'all',
+    });
+
+    const loadProductsPage = async (page = productsPage) => {
+      const filters = currentProductFilters();
+      const params = new URLSearchParams({ page: String(page), limit: String(productsPageSize) });
+      Object.entries(filters).forEach(([key, value]) => { if (value && value !== 'all') params.set(key, value); });
+      const res = await api(`admin-products?${params.toString()}`);
+      productsList = res.products || [];
+      productsPage = res.page || page;
+      productsTotal = res.total || 0;
+      productsTotalPages = res.totalPages || 1;
+      renderProductsTab();
+    };
+
+    const loadProductsStats = async () => {
+      productsStats = await api('admin-products-stats');
+      renderCategoriesTab();
+    };
+
+    // Llamar después de cualquier alta/edición/borrado: refresca la página visible y las
+    // estadísticas (tarjetas, conteo por categoría), que ya no viven en productsList completo.
+    const refreshProducts = async (resetToFirstPage = false) => {
+      await Promise.all([loadProductsPage(resetToFirstPage ? 1 : productsPage), loadProductsStats()]);
+    };
+
     const loadAllData = async () => {
       try {
-        const [catsRes, prodsRes] = await Promise.all([
-          api('categories'),
-          api('admin-products')
-        ]);
+        const catsRes = await api('categories');
         categoriesList = catsRes.categories || [];
-        productsList = prodsRes.products || [];
-
-        renderCategoriesTab();
-        renderProductsTab();
+        await Promise.all([loadProductsPage(1), loadProductsStats()]);
         renderCategorySelects();
       } catch (err) {
         console.error('Error cargando catálogo:', err);
@@ -1932,12 +1972,10 @@
 
       let totalSubs = 0;
       let totalKws = 0;
-      const catCountMap = new Map();
-
-      productsList.forEach(p => {
-        const cat = String(p.category || 'General').trim();
-        catCountMap.set(cat, (catCountMap.get(cat) || 0) + 1);
-      });
+      // Conteo por categoría via admin-products-stats (agregado en SQL sobre TODO el catálogo),
+      // no sobre productsList: desde que se paginó (DEV-20261005-022), productsList solo trae
+      // la página visible y contar ahí daría números falsos (solo de esa página).
+      const catCountMap = new Map((productsStats.by_category || []).map(c => [c.category, c.total]));
 
       categoriesList.forEach(c => {
         if (Array.isArray(c.subcategories)) totalSubs += c.subcategories.length;
@@ -1946,7 +1984,7 @@
 
       if (statSubs) statSubs.textContent = totalSubs;
       if (statKws) statKws.textContent = totalKws;
-      if (statProds) statProds.textContent = productsList.length;
+      if (statProds) statProds.textContent = productsStats.total || 0;
 
       container.innerHTML = categoriesList.map((cat, idx) => {
         const pCount = catCountMap.get(cat.name) || 0;
@@ -2032,7 +2070,7 @@
       if (filterMacro) {
         filterMacro.value = catName;
         updateSubcategoryOptions();
-        renderProductsTab();
+        loadProductsPage(1);
       }
     };
 
@@ -2320,29 +2358,43 @@
       });
     };
 
+    const renderProductsPager = () => {
+      const pager = document.getElementById('productsPager');
+      if (!pager) return;
+      if (productsTotalPages <= 1) { pager.innerHTML = ''; return; }
+      const from = productsTotal === 0 ? 0 : (productsPage - 1) * productsPageSize + 1;
+      const to = Math.min(productsPage * productsPageSize, productsTotal);
+      pager.innerHTML = `
+        <button type="button" class="btn btn-secondary" id="productsPagerPrev" ${productsPage <= 1 ? 'disabled' : ''}>← Anterior</button>
+        <span>${from}–${to} de ${productsTotal} · página ${productsPage} de ${productsTotalPages}</span>
+        <button type="button" class="btn btn-secondary" id="productsPagerNext" ${productsPage >= productsTotalPages ? 'disabled' : ''}>Siguiente →</button>
+      `;
+      document.getElementById('productsPagerPrev')?.addEventListener('click', () => loadProductsPage(productsPage - 1));
+      document.getElementById('productsPagerNext')?.addEventListener('click', () => loadProductsPage(productsPage + 1));
+    };
+
     const renderProductsTab = () => {
       const tbody = document.getElementById('productsTableBody');
       const countTab = document.getElementById('countProdTab');
-      const total = productsList.length;
-      if (countTab) countTab.textContent = total;
-
-      // Actualizar contadores de estadísticas
-      const visibleCount = productsList.filter(p => p.visible !== false).length;
-      const withPhotoCount = productsList.filter(p => Boolean(p.imageUrl)).length;
-      const withoutPhotoCount = total - withPhotoCount;
+      // Las 4 tarjetas y el contador de la pestaña son del catálogo completo (admin-products-stats),
+      // no de la página actual: antes salían de productsList cuando ese array traía todo; desde la
+      // paginación (DEV-20261005-022) solo tiene la página visible.
+      if (countTab) countTab.textContent = productsStats.total ?? 0;
 
       const statTotal = document.getElementById('statProductsTotal');
       const statVis = document.getElementById('statProductsVisible');
       const statWithPhoto = document.getElementById('statProductsWithPhoto');
       const statWithoutPhoto = document.getElementById('statProductsWithoutPhoto');
 
-      if (statTotal) statTotal.textContent = total;
-      if (statVis) statVis.textContent = visibleCount;
-      if (statWithPhoto) statWithPhoto.textContent = withPhotoCount;
-      if (statWithoutPhoto) statWithoutPhoto.textContent = withoutPhotoCount;
+      if (statTotal) statTotal.textContent = productsStats.total ?? 0;
+      if (statVis) statVis.textContent = productsStats.visible ?? 0;
+      if (statWithPhoto) statWithPhoto.textContent = productsStats.with_photo ?? 0;
+      if (statWithoutPhoto) statWithoutPhoto.textContent = productsStats.without_photo ?? 0;
 
-      // Estado vacío si no hay ningún producto registrado
-      if (!total) {
+      renderProductsPager();
+
+      // Estado vacío si no hay ningún producto registrado en todo el catálogo (no solo esta página)
+      if (!productsTotal) {
         tbody.innerHTML = `
           <tr>
             <td colspan="7" style="text-align:center; padding:50px 20px;">
@@ -2368,7 +2420,9 @@
         return;
       }
 
-      const items = getFilteredProducts();
+      // productsList ya viene filtrada y paginada desde el servidor (loadProductsPage); no se
+      // vuelve a filtrar aquí.
+      const items = productsList;
 
       if (!items.length) {
         tbody.innerHTML = `
@@ -2440,10 +2494,15 @@
       lucide.createIcons();
     };
 
+    let productFilterDebounceTimer = null;
     ['productSearchInput', 'filterMacroCat', 'filterSubCat', 'filterVisibility', 'filterPhoto', 'filterPrice'].forEach(id => {
       document.getElementById(id)?.addEventListener('input', () => {
         if (id === 'filterMacroCat') updateSubcategoryOptions();
-        renderProductsTab();
+        // Cualquier cambio de filtro vuelve a pedir la página 1 al servidor (ya no se filtra en
+        // memoria). La búsqueda de texto se demora un poco para no disparar una petición por tecla.
+        clearTimeout(productFilterDebounceTimer);
+        const delay = id === 'productSearchInput' ? 350 : 0;
+        productFilterDebounceTimer = setTimeout(() => loadProductsPage(1), delay);
       });
     });
 
@@ -2464,7 +2523,7 @@
         fd.append('visible', isVisible ? '1' : '0');
         await api('admin-products', { method: 'POST', body: fd });
         showToast(`Producto ${isVisible ? 'visible en tienda' : 'oculto de la tienda'}.`);
-        renderProductsTab();
+        refreshProducts();
       } catch (err) {
         showToast(err.message, 'error');
       }
@@ -2476,10 +2535,8 @@
       if (!confirm(`¿Eliminar definitivamente el producto "${prod.name}"?`)) return;
       try {
         await api(`admin-products?id=${encodeURIComponent(productId)}`, { method: 'DELETE' });
-        productsList = productsList.filter(p => String(p.id) !== String(productId));
-        renderProductsTab();
-        renderCategoriesTab();
         showToast('Producto eliminado.');
+        refreshProducts();
       } catch (err) {
         showToast(err.message, 'error');
       }
@@ -2489,12 +2546,15 @@
     const btnDeleteAll = document.getElementById('btnDeleteAllProducts');
     if (btnDeleteAll) {
       btnDeleteAll.addEventListener('click', () => {
-        if (!productsList.length) {
+        if (!productsStats.total) {
           showToast('No hay productos en el catálogo para eliminar.', 'error');
           return;
         }
+        // Total real del catálogo (productsStats), no productsList.length: desde la paginación
+        // (DEV-20261005-022) productsList solo trae la página visible y mostraría un número
+        // mucho menor al real en este aviso de "vas a borrar todo".
         const countSpan = document.getElementById('deleteAllCountText');
-        if (countSpan) countSpan.textContent = `${productsList.length}`;
+        if (countSpan) countSpan.textContent = `${productsStats.total}`;
         openModal('deleteAllModal');
       });
     }
@@ -2506,9 +2566,7 @@
           btnConfirmDeleteAll.disabled = true;
           btnConfirmDeleteAll.textContent = 'Eliminando catálogo...';
           await api('admin-products-clear', { method: 'POST' });
-          productsList = [];
-          renderProductsTab();
-          renderCategoriesTab();
+          await refreshProducts(true);
           closeModal('deleteAllModal');
           showToast('Todos los productos han sido eliminados correctamente.');
         } catch (err) {
@@ -2770,10 +2828,8 @@
         if (!confirm(`¿Eliminar definitivamente el producto "${prod?.name || 'seleccionado'}"?`)) return;
         try {
           await api(`admin-products?id=${encodeURIComponent(prodId)}`, { method: 'DELETE' });
-          productsList = productsList.filter(p => String(p.id) !== String(prodId));
           closeModal('productModal');
-          renderProductsTab();
-          renderCategoriesTab();
+          refreshProducts();
           showToast('Producto eliminado.');
         } catch (err) {
           showToast(err.message, 'error');
@@ -3039,7 +3095,7 @@
         await api('admin-products', { method: 'POST', body: fd });
         showToast('Foto asignada al producto.');
         closeModal('imageSearchModal');
-        renderProductsTab();
+        refreshProducts();
       } catch (err) {
         showToast(err.message, 'error');
       }
@@ -3667,7 +3723,7 @@
         if (filterMacro) {
           filterMacro.value = initialCat;
           updateSubcategoryOptions();
-          renderProductsTab();
+          loadProductsPage(1);
         }
       }
     })();

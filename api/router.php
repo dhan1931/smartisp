@@ -466,15 +466,102 @@ if ($action === 'catalog' && $method === 'GET') {
 // -------------------------------------------------------------
 // 2. GESTIÓN DE PRODUCTOS PARA EL EDITOR (/api/auth/admin-products)
 // -------------------------------------------------------------
+if ($action === 'admin-products-stats') {
+    requireAdminAuth();
+    $pTable = getProductsTableName($pdo);
+    ensureProductTableColumns($pdo, $pTable);
+
+    $totals = $pdo->query("SELECT COUNT(*) AS total,
+        SUM(visible = 1) AS visible_count,
+        SUM(image_url IS NOT NULL AND image_url != '') AS with_photo,
+        SUM(image_url IS NULL OR image_url = '') AS without_photo
+        FROM `$pTable`")->fetch(PDO::FETCH_ASSOC) ?: [];
+
+    $byCategory = $pdo->query("SELECT COALESCE(NULLIF(TRIM(category), ''), 'General') AS category, COUNT(*) AS total
+        FROM `$pTable` GROUP BY category ORDER BY total DESC")->fetchAll(PDO::FETCH_ASSOC);
+
+    echo json_encode([
+        'total'         => (int)($totals['total'] ?? 0),
+        'visible'       => (int)($totals['visible_count'] ?? 0),
+        'with_photo'    => (int)($totals['with_photo'] ?? 0),
+        'without_photo' => (int)($totals['without_photo'] ?? 0),
+        'by_category'   => array_map(fn($r) => ['category' => $r['category'], 'total' => (int)$r['total']], $byCategory),
+    ]);
+    exit;
+}
+
 if ($action === 'admin-products') {
     requireAdminAuth();
     $pTable = getProductsTableName($pdo);
 
     if ($method === 'GET') {
-        $stmt = $pdo->query("SELECT * FROM `$pTable` ORDER BY created_at DESC");
-        $rows = $stmt->fetchAll();
-        $products = array_map('normalizeProductRow', $rows);
-        echo json_encode(['products' => $products]);
+        // Paginado y filtrado real en SQL (DEV-20261005-022, panel admin): la tabla llegó a
+        // 2773 filas y crece; cargar todo de una sin límite no se sostiene. Mismos filtros
+        // que ya aplicaba el front en memoria (getFilteredProducts), movidos al servidor.
+        ensureProductTableColumns($pdo, $pTable);
+
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $limit = min(500, max(1, (int)($_GET['limit'] ?? 100)));
+        $offset = ($page - 1) * $limit;
+
+        $where = ['1=1'];
+        $params = [];
+
+        $category = trim((string)($_GET['category'] ?? ''));
+        if ($category !== '' && $category !== 'all') {
+            $where[] = 'category = :category';
+            $params[':category'] = $category;
+        }
+        $subcategory = trim((string)($_GET['subcategory'] ?? ''));
+        if ($subcategory !== '' && $subcategory !== 'all') {
+            $where[] = 'subcategory = :subcategory';
+            $params[':subcategory'] = $subcategory;
+        }
+        $visible = trim((string)($_GET['visible'] ?? ''));
+        if ($visible === 'visible') $where[] = 'visible = 1';
+        elseif ($visible === 'hidden') $where[] = 'visible = 0';
+
+        $photo = trim((string)($_GET['photo'] ?? ''));
+        if ($photo === 'with_photo') $where[] = "(image_url IS NOT NULL AND image_url != '')";
+        elseif ($photo === 'without_photo') $where[] = "(image_url IS NULL OR image_url = '')";
+
+        $price = trim((string)($_GET['price'] ?? ''));
+        if ($price === 'with_price') $where[] = '(price IS NOT NULL AND price > 0)';
+        elseif ($price === 'quote') $where[] = '(price IS NULL OR price <= 0)';
+
+        $search = trim((string)($_GET['q'] ?? ''));
+        if ($search !== '') {
+            $where[] = '(name LIKE :q_name OR sku LIKE :q_sku OR category LIKE :q_cat OR subcategory LIKE :q_sub OR description LIKE :q_desc)';
+            $likeSearch = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $search) . '%';
+            $params[':q_name'] = $likeSearch;
+            $params[':q_sku'] = $likeSearch;
+            $params[':q_cat'] = $likeSearch;
+            $params[':q_sub'] = $likeSearch;
+            $params[':q_desc'] = $likeSearch;
+        }
+
+        $whereSql = implode(' AND ', $where);
+
+        $totalStmt = $pdo->prepare("SELECT COUNT(*) FROM `$pTable` WHERE $whereSql");
+        $totalStmt->execute($params);
+        $total = (int)$totalStmt->fetchColumn();
+
+        $stmt = $pdo->prepare("SELECT * FROM `$pTable` WHERE $whereSql ORDER BY created_at DESC, id ASC LIMIT :limit OFFSET :offset");
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $products = array_map('normalizeProductRow', $stmt->fetchAll());
+
+        echo json_encode([
+            'products'   => $products,
+            'total'      => $total,
+            'page'       => $page,
+            'limit'      => $limit,
+            'totalPages' => (int)ceil($total / max(1, $limit)),
+        ]);
         exit;
     }
 
