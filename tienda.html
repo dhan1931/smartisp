@@ -1456,6 +1456,65 @@
 	<script>
 		let products = [];
 		let isCatalogLoading = true;
+		let fullCatalogState = 'idle'; // 'idle' | 'loading' | 'loaded'
+
+		// Trae el resto del catálogo (más allá de los primeros 36) solo cuando realmente hace falta:
+		// al buscar, filtrar por categoría o pedir "ver más", o en un momento ocioso del navegador
+		// como red de seguridad. Antes se pedía sin excepción 1.2s después de abrir la tienda, aunque
+		// la persona nunca buscara ni pasara de la primera página (DEV-20261005-022, parte del front).
+		const ensureFullCatalog = async () => {
+			if (fullCatalogState !== 'idle') return;
+			fullCatalogState = 'loading';
+			// El backend pagina de verdad (máximo 100 por página, DEV-20261005-022): pedir
+			// "todo sin parámetros" ya no trae más de una página. Se recorren las páginas que
+			// hagan falta y se arma el listado completo en el navegador para que buscar, filtrar
+			// por categoría y "ver más" sigan funcionando como antes.
+			const PAGE_SIZE = 100;
+			const MAX_PAGES = 60; // tope de seguridad (~6000 productos); evita un bucle sin fin
+			try {
+				const first = await fetch(`/api/auth/catalog?page=1&limit=${PAGE_SIZE}&_t=${Date.now()}`, { cache: 'no-store' });
+				if (!first.ok) throw new Error('catalog page 1 failed');
+				const firstData = await first.json();
+				let all = Array.isArray(firstData.products) ? firstData.products.slice() : [];
+				const totalPages = Math.min(MAX_PAGES, Number(firstData.totalPages) || 1);
+
+				for (let page = 2; page <= totalPages; page++) {
+					const res = await fetch(`/api/auth/catalog?page=${page}&limit=${PAGE_SIZE}&_t=${Date.now()}`, { cache: 'no-store' });
+					if (!res.ok) break;
+					const data = await res.json();
+					if (!Array.isArray(data.products) || !data.products.length) break;
+					all = all.concat(data.products);
+				}
+
+				fullCatalogState = 'loaded';
+				if (all.length > products.length) {
+					products = all.map(product => ({
+						...product,
+						brand: product.category || 'SmartISP',
+						image: getProductImageUrl(product),
+						reviews: Number(product.reviews || 0),
+						tag: product.tag || '',
+						specs: Array.isArray(product.specs) ? product.specs : []
+					}));
+					render();
+					if (typeof renderSidebarCategories === 'function') renderSidebarCategories();
+					if (typeof checkDirectProductLanding === 'function') checkDirectProductLanding();
+				}
+			} catch (e) {
+				fullCatalogState = 'idle'; // puede reintentarse en la próxima interacción
+				console.warn('Carga del resto del catálogo:', e);
+			}
+		};
+
+		const scheduleFullCatalogIdle = () => {
+			// Red de seguridad pasiva: si la persona no interactúa, igual queda listo sin competir
+			// con la carga inicial (requestIdleCallback espera a que el navegador esté libre).
+			if (typeof requestIdleCallback === 'function') {
+				requestIdleCallback(ensureFullCatalog, { timeout: 4000 });
+			} else {
+				setTimeout(ensureFullCatalog, 2500);
+			}
+		};
 		let selectedFilter = 'all';
 		let expandedGroups = new Set();
 		const renderSkeletons = (count = 8) => {
@@ -2026,6 +2085,7 @@
 			const loadMoreBtn = document.querySelector('#loadMoreProductsBtn');
 			if (loadMoreBtn) {
 				loadMoreBtn.addEventListener('click', () => {
+					ensureFullCatalog();
 					visibleProductLimit += 36;
 					render();
 				});
@@ -2394,6 +2454,7 @@
 		};
 		updateCart(false);
 		const setCategoryFilter = filter => {
+			ensureFullCatalog();
 			visibleProductLimit = 36;
 			if (!filter || filter === 'all' || (typeof filter === 'string' && filter.toLowerCase() === 'all')) {
 				selectedFilter = 'all';
@@ -2514,9 +2575,9 @@
 				}
 			});
 		}
-		document.querySelector('#searchForm').addEventListener('submit', event => { event.preventDefault(); visibleProductLimit = 36; render(); document.querySelector('#catalogo').scrollIntoView({ behavior: 'smooth' }); });
-		document.querySelector('#searchInput').addEventListener('input', () => { visibleProductLimit = 36; render(); });
-		document.querySelector('#sortSelect').addEventListener('change', () => { visibleProductLimit = 36; render(); });
+		document.querySelector('#searchForm').addEventListener('submit', event => { event.preventDefault(); ensureFullCatalog(); visibleProductLimit = 36; render(); document.querySelector('#catalogo').scrollIntoView({ behavior: 'smooth' }); });
+		document.querySelector('#searchInput').addEventListener('input', () => { ensureFullCatalog(); visibleProductLimit = 36; render(); });
+		document.querySelector('#sortSelect').addEventListener('change', () => { ensureFullCatalog(); visibleProductLimit = 36; render(); });
 		document.querySelector('#openCart').addEventListener('click', () => document.querySelector('#drawer').classList.add('open')); document.querySelector('#closeCart').addEventListener('click', () => document.querySelector('#drawer').classList.remove('open')); document.querySelector('#drawer').addEventListener('click', event => { if (event.target.id === 'drawer') event.target.classList.remove('open'); });
 		document.querySelectorAll('[data-close-modal]').forEach(button => button.addEventListener('click', () => {
 			const modalId = button.dataset.closeModal;
@@ -2629,31 +2690,10 @@
 					if (typeof renderSidebarCategories === 'function') renderSidebarCategories();
 					checkDirectProductLanding();
 
-					if (remote.totalPages > 1) {
-						setTimeout(async () => {
-							try {
-								const fullRes = await fetch('/api/auth/catalog?_t=' + Date.now(), { cache: 'no-store' });
-								if (fullRes.ok) {
-									const fullData = await fullRes.json();
-									if (fullData.products && fullData.products.length > products.length) {
-										products = fullData.products.map(product => ({
-											...product,
-											brand: product.category || 'SmartISP',
-											image: getProductImageUrl(product),
-											reviews: Number(product.reviews || 0),
-											tag: product.tag || '',
-											specs: Array.isArray(product.specs) ? product.specs : []
-										}));
-										render();
-										if (typeof renderSidebarCategories === 'function') renderSidebarCategories();
-										checkDirectProductLanding();
-									}
-								}
-							} catch (e) {
-								console.warn('Sincronización secundaria de catálogo:', e);
-							}
-						}, 1200);
-					}
+					// El resto del catálogo (filtro, búsqueda y "ver más" en la vista "todas") se carga
+					// aparte y solo cuando hace falta (abajo: ensureFullCatalog), en vez de traer todos
+					// los productos sin pedirlo en cada apertura de la tienda.
+					if (remote.totalPages > 1) scheduleFullCatalogIdle();
 				} else {
 					isCatalogLoading = false;
 					render();
