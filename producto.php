@@ -110,7 +110,7 @@ $canonicalSlug = $product ? ($product['id'] . '-' . slugify($product['name'])) :
 $canonicalUrl = $siteUrl . '/producto/' . $canonicalSlug;
 
 // Imagen absoluta para redes sociales y Googlebot
-$imgSrc = $product ? $product['imageUrl'] : ($siteUrl . '/favicon-512x512.png');
+$imgSrc = $product ? $product['imageUrl'] : ($siteUrl . '/assets/favicons/favicon-512x512.png');
 if (strpos($imgSrc, '/') === 0) {
     $imgSrc = $siteUrl . $imgSrc;
 }
@@ -142,12 +142,12 @@ $waUrl = "https://wa.me/593983576667?text={$waMessage}";
     <meta name="robots" content="index, follow, max-image-preview:large">
 
     <!-- Favicon -->
-    <link rel="shortcut icon" type="image/x-icon" href="<?= $siteUrl ?>/favicon.ico">
-    <link rel="icon" type="image/svg+xml" href="<?= $siteUrl ?>/favicon.svg">
-    <link rel="icon" type="image/png" sizes="48x48" href="<?= $siteUrl ?>/favicon-48x48.png">
-    <link rel="icon" type="image/png" sizes="96x96" href="<?= $siteUrl ?>/favicon-96x96.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="<?= $siteUrl ?>/favicon-192x192.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="<?= $siteUrl ?>/apple-touch-icon.png">
+    <link rel="shortcut icon" type="image/x-icon" href="<?= $siteUrl ?>/assets/favicons/favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="<?= $siteUrl ?>/assets/favicons/favicon.svg">
+    <link rel="icon" type="image/png" sizes="48x48" href="<?= $siteUrl ?>/assets/favicons/favicon-48x48.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="<?= $siteUrl ?>/assets/favicons/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="<?= $siteUrl ?>/assets/favicons/favicon-192x192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="<?= $siteUrl ?>/assets/favicons/apple-touch-icon.png">
     <meta name="theme-color" content="#102a43">
 
     <!-- Open Graph / Redes Sociales (Facebook, WhatsApp, LinkedIn) -->
@@ -353,7 +353,7 @@ $waUrl = "https://wa.me/593983576667?text={$waMessage}";
     <header>
         <div class="header-wrap">
             <a href="/" class="logo">
-                <img src="/favicon-48x48.png" alt="SmartISP Logo">
+                <img src="/assets/favicons/favicon-48x48.png" alt="SmartISP Logo">
                 Smart<span>ISP</span>
             </a>
             <div class="header-nav">
@@ -389,7 +389,7 @@ $waUrl = "https://wa.me/593983576667?text={$waMessage}";
                          alt="<?= $productName ?>" 
                          loading="eager"
                          fetchpriority="high"
-                         onerror="this.src='/favicon-512x512.png'">
+                         onerror="this.src='/assets/favicons/favicon-512x512.png'">
                 </div>
 
                 <!-- Información y Compra -->
@@ -464,7 +464,7 @@ $waUrl = "https://wa.me/593983576667?text={$waMessage}";
                                     <img src="<?= htmlspecialchars($rel['imageUrl'], ENT_QUOTES, 'UTF-8') ?>" 
                                          alt="<?= htmlspecialchars($rel['name'], ENT_QUOTES, 'UTF-8') ?>" 
                                          loading="lazy" 
-                                         onerror="this.src='/favicon-512x512.png'">
+                                         onerror="this.src='/assets/favicons/favicon-512x512.png'">
                                 </div>
                                 <div class="rel-name"><?= htmlspecialchars($rel['name'], ENT_QUOTES, 'UTF-8') ?></div>
                                 <div class="rel-price">
