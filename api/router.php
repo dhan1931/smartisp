@@ -395,7 +395,9 @@ if ($action === 'catalog' && $method === 'GET') {
         $cols = 'id, name, description, price, category, subcategory, image_url, external_url, sku, visible';
         // id como desempate: en los datos reales created_at está vacío en todas las filas, así que sin un
         // criterio estable la paginación podía devolver un producto repetido o saltarse otro entre páginas.
-        $stmt = $pdo->prepare("SELECT $cols FROM `$pTable` WHERE $where ORDER BY created_at DESC, id DESC LIMIT :limit OFFSET :offset");
+        // ASC (no DESC): hay productos de prueba con id que empieza por "test_"/"prod_test_" e imagen rota;
+        // con DESC ordenaban primero por el alfabeto y aparecían arriba del catálogo real.
+        $stmt = $pdo->prepare("SELECT $cols FROM `$pTable` WHERE $where ORDER BY created_at DESC, id ASC LIMIT :limit OFFSET :offset");
         foreach ($params as $key => $value) {
             $stmt->bindValue($key, $value);
         }
