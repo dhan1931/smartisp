@@ -1603,6 +1603,16 @@
     const loadContent = async () => {
       const result = await api('admin-content');
       const values = { ...DEFAULT_CONTENT, ...Object.fromEntries(result.content.map(item => [item.key, item.value])) };
+
+      // Valores pesados (logos en base64) ya no vienen en la respuesta de arriba (DEV-20261005-022):
+      // se piden aparte, en paralelo, solo ahora que se abre el panel de Apariencia/Contenido.
+      const heavyKeys = result.content.filter(item => item.truncated).map(item => item.key);
+      if (heavyKeys.length) {
+        const heavyValues = await Promise.all(heavyKeys.map(key =>
+          api(`admin-content?key=${encodeURIComponent(key)}`).then(r => [key, r.value || '']).catch(() => [key, ''])
+        ));
+        heavyValues.forEach(([key, value]) => { values[key] = value; });
+      }
       document.querySelectorAll('#contentForm [name]').forEach(input => { if (input.type !== 'file' && values[input.name] !== undefined) input.value = values[input.name]; });
       document.querySelectorAll('#visibilityForm [name]').forEach(input => { if (values[input.name] !== undefined) input.value = values[input.name]; });
       

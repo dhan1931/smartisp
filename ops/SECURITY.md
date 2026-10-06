@@ -22,3 +22,9 @@
 
 Sin hallazgo: `npm audit --omit=dev` = 0 vulnerabilidades; consultas SQL con valores usan prepared statements (nombres de tabla/columna vienen de DESCRIBE, no del usuario).
 Limitaciones: no se revisó uploads, server.js completo, headers del servidor ni configuración de Hostinger.
+
+## Revisión 2026-10-06 (copia local de datos reales)
+
+| ID | Sev | Hallazgo | Ubicación |
+|---|---|---|---|
+| SEC-016 | CRITICAL | El desempaquetado del `payload` en base64 (bypass de WAF) mezclaba sus claves en `$body` pero nunca borraba la clave `payload` original. Cualquier handler que guarda "cada clave del body como un ajuste" (admin-content POST, y potencialmente otros) terminaba guardando una fila `settings_rows` llamada literalmente `payload` con el blob completo, **incluida la contraseña SMTP real sin enmascarar**. Confirmado en los datos reales: una fila `payload` con fecha 2026-10-04 (anterior a esta sesión) traía el `smtp_pass` real en texto plano al decodificar. Corregido con `unset($body['payload'])` tras desempaquetar. **Acción pendiente en producción:** borrar la fila `settings_rows` con `setting_key='payload'` y rotar la contraseña SMTP, ya estaba expuesta. | api/router.php:168-176 |

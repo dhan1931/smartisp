@@ -173,6 +173,11 @@ if (is_array($body) && !empty($body['payload']) && is_string($body['payload'])) 
             $body = array_merge($body, $unpacked);
         }
     }
+    // El 'payload' original (base64 del body completo, incluidas contraseñas como smtp_pass)
+    // quedaba en $body después de desempacarlo. Los handlers que guardan "cada clave del body
+    // como un ajuste" (p. ej. admin-content POST) lo guardaban tal cual bajo una clave llamada
+    // literalmente "payload", exponiendo la contraseña SMTP real sin enmascarar.
+    unset($body['payload']);
 }
 
 $action = $_GET['action'] ?? ($_GET['route'] ?? '');
@@ -855,11 +860,25 @@ if ($action === 'admin-content') {
     requireAdminAuth();
 
     if ($method === 'GET') {
+        // Un solo valor pesado (p. ej. un logo en base64), para cargarlo aparte cuando
+        // realmente se necesita, en vez de traerlo siempre junto con el resto de los ajustes.
+        $singleKey = trim((string)($_GET['key'] ?? ''));
+        if ($singleKey !== '' && $singleKey !== 'smtp_pass' && $singleKey !== 'resend_api_key') {
+            $stmt = $pdo->prepare('SELECT setting_value FROM settings_rows WHERE setting_key = :key LIMIT 1');
+            $stmt->execute([':key' => $singleKey]);
+            echo json_encode(['key' => $singleKey, 'value' => (string)($stmt->fetchColumn() ?: '')]);
+            exit;
+        }
+
         $stmt = $pdo->query("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows");
         $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
         $maskedRows = [];
         $hasSmtpPass = false;
         $hasResendKey = false;
+        // DEV-20261005-022 (parte del panel): valores grandes (logos en base64, HTML largo)
+        // no viajan por defecto; solo se avisa que existen y cuánto pesan. El front los pide
+        // uno por uno con ?key=<nombre> solo cuando la sección que los muestra está abierta.
+        $largeValueThreshold = 20 * 1024; // 20 KB
         foreach ($rows as $r) {
             $k = $r['key'] ?? '';
             $v = $r['value'] ?? '';
@@ -869,6 +888,9 @@ if ($action === 'admin-content') {
             } elseif ($k === 'resend_api_key') {
                 if (!empty($v)) $hasResendKey = true;
                 $v = !empty($v) ? '••••••••' : '';
+            } elseif (strlen($v) > $largeValueThreshold) {
+                $maskedRows[] = ['key' => $k, 'value' => '', 'truncated' => true, 'size_kb' => (int)round(strlen($v) / 1024)];
+                continue;
             }
             $maskedRows[] = ['key' => $k, 'value' => $v];
         }
