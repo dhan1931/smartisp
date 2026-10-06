@@ -1,0 +1,116 @@
+/* Navbar compartido del área de administración (admin.html, editor-catalogo.html, editor-landing.html).
+   Maqueta inicial de DEV-20261005-012 / 037-039: un solo lugar para moverse entre secciones,
+   en vez de botones sueltos repetidos en cada página. Mismos tokens de color que admin.html. */
+:root {
+  --nav-ink: #163342;
+  --nav-muted: #6b7f88;
+  --nav-line: #d8e5e7;
+  --nav-blue: #087ea4;
+  --nav-blue-dark: #075d7d;
+  --nav-danger: #a53b3b;
+}
+
+#smartisp-admin-nav {
+  font: 14px Arial, sans-serif;
+  color: var(--nav-ink);
+  background: linear-gradient(120deg, #102c3d, #075d7d);
+  box-shadow: 0 8px 20px rgba(16, 44, 61, .15);
+  position: sticky;
+  top: 0;
+  z-index: 500;
+}
+
+#smartisp-admin-nav .admin-nav-inner {
+  width: min(1180px, 94vw);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 10px 0;
+  flex-wrap: wrap;
+}
+
+#smartisp-admin-nav .admin-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+#smartisp-admin-nav .admin-nav-links {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+#smartisp-admin-nav .admin-nav-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  color: #cfe7ec;
+  text-decoration: none;
+  font-weight: 600;
+  transition: background .15s, color .15s;
+}
+
+#smartisp-admin-nav .admin-nav-links a:hover {
+  background: rgba(255, 255, 255, .1);
+  color: #fff;
+}
+
+#smartisp-admin-nav .admin-nav-links a.is-active {
+  background: rgba(255, 255, 255, .16);
+  color: #fff;
+}
+
+#smartisp-admin-nav .admin-nav-links a.is-disabled {
+  opacity: .45;
+  pointer-events: none;
+}
+
+#smartisp-admin-nav .admin-nav-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #cfe7ec;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+#smartisp-admin-nav .admin-nav-user strong {
+  color: #fff;
+}
+
+#smartisp-admin-nav .admin-nav-logout {
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, .3);
+  border-radius: 7px;
+  background: transparent;
+  color: #fff;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+#smartisp-admin-nav .admin-nav-logout:hover {
+  background: rgba(165, 59, 59, .85);
+  border-color: transparent;
+}
+
+#smartisp-admin-nav.is-loading .admin-nav-user,
+#smartisp-admin-nav.is-loading .admin-nav-logout {
+  visibility: hidden;
+}
+
+@media (max-width: 720px) {
+  #smartisp-admin-nav .admin-nav-inner { gap: 10px; }
+  #smartisp-admin-nav .admin-nav-links a span.label { display: none; }
+}
