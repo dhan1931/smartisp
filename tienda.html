@@ -2658,7 +2658,14 @@
 				}
 				const remote = await response.json();
 				if (Array.isArray(remote.categories) && remote.categories.length) {
-					const hasCustomHierarchy = remote.categories.some(c => Array.isArray(c.subcategories) && c.subcategories.length > 0 && c.subcategories.some(s => s !== c.name));
+					// DEV-20261006-003: antes bastaba con que UNA sola categoria tuviera subcategorias
+					// para confiar en las 57 categorias crudas de la base como si fueran una jerarquia
+					// armada (la mayoria son planas, sin subcategoria real: en los datos reales, solo
+					// ~7 de 57 calificaban). El resultado era un sidebar con 57 entradas sueltas en vez
+					// de los grupos prolijos de MACRO_CATEGORIES ya definidos como respaldo. Ahora se
+					// exige que una porcion real (30%+) tenga subcategorias antes de confiar en ellas.
+					const withRealSubs = remote.categories.filter(c => Array.isArray(c.subcategories) && c.subcategories.length > 0 && c.subcategories.some(s => s !== c.name));
+					const hasCustomHierarchy = remote.categories.length > 0 && (withRealSubs.length / remote.categories.length) >= 0.3;
 					if (hasCustomHierarchy) {
 						MACRO_CATEGORIES = remote.categories;
 					}
