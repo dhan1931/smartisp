@@ -56,7 +56,18 @@ if ($action === 'catalog' && $method === 'GET') {
         // criterio estable la paginación podía devolver un producto repetido o saltarse otro entre páginas.
         // ASC (no DESC): hay productos de prueba con id que empieza por "test_"/"prod_test_" e imagen rota;
         // con DESC ordenaban primero por el alfabeto y aparecían arriba del catálogo real.
-        $stmt = $pdo->prepare("SELECT $cols FROM `$pTable` WHERE $where ORDER BY created_at DESC, id ASC LIMIT :limit OFFSET :offset");
+        $orderBy = 'created_at DESC, id ASC';
+        $sort = trim((string)($_GET['sort'] ?? ''));
+        // DEV-20261006-002: antes el ordenar por precio era solo en el navegador sobre el catalogo
+        // ya cargado; con paginacion real por filtro, el orden tiene que venir del propio SQL para
+        // que tenga sentido entre paginas. (price <= 0) primero agrupa "a cotizar" al final siempre,
+        // igual que ya hacia el comparador en JS.
+        if ($sort === 'low') {
+            $orderBy = '(price <= 0) ASC, price ASC, id ASC';
+        } elseif ($sort === 'high') {
+            $orderBy = '(price <= 0) ASC, price DESC, id ASC';
+        }
+        $stmt = $pdo->prepare("SELECT $cols FROM `$pTable` WHERE $where ORDER BY $orderBy LIMIT :limit OFFSET :offset");
         foreach ($params as $key => $value) {
             $stmt->bindValue($key, $value);
         }

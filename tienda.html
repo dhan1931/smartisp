@@ -1429,6 +1429,65 @@
 		};
 		let selectedFilter = 'all';
 		let expandedGroups = new Set();
+
+		// DEV-20261006-002: buscar o filtrar por subcategoria forzaba a descargar el catalogo
+		// completo (ensureFullCatalog) solo para filtrar en el navegador. El backend ya soporta
+		// q/category/subcategory/sort en SQL real -- se usa directo en estos dos casos (busqueda
+		// activa, o filtro de subcategoria), que son los mas frecuentes y los que mas se benefician.
+		// "Ver todo" y los filtros de macro-categoria (agrupacion sintetica del lado del cliente,
+		// sin equivalente 1:1 en una sola columna de la base) siguen con el catalogo completo en
+		// memoria, igual que antes.
+		let serverView = { active: false, page: 1, totalPages: 1, total: 0, items: [] };
+		const isServerMode = () => {
+			const q = document.querySelector('#searchInput').value.trim();
+			return q !== '' || (selectedFilter && selectedFilter.type === 'sub');
+		};
+		const fetchServerPage = async reset => {
+			if (reset) serverView.page = 1;
+			const query = document.querySelector('#searchInput').value.trim();
+			const sort = document.querySelector('#sortSelect').value;
+			const params = new URLSearchParams({ page: serverView.page, limit: 36 });
+			if (query) params.set('q', query);
+			if (sort === 'low' || sort === 'high') params.set('sort', sort);
+			if (selectedFilter && selectedFilter.type === 'sub') params.set('subcategory', selectedFilter.category);
+			try {
+				const res = await fetch(`/api/auth/catalog?${params.toString()}&_t=${Date.now()}`, { cache: 'no-store' });
+				if (!res.ok) throw new Error('catalog view fetch failed');
+				const data = await res.json();
+				const mapped = (data.products || []).map(product => ({
+					...product,
+					brand: product.category || 'SmartISP',
+					image: getProductImageUrl(product),
+					reviews: Number(product.reviews || 0),
+					tag: product.tag || '',
+					specs: Array.isArray(product.specs) ? product.specs : []
+				}));
+				serverView.active = true;
+				serverView.total = data.total || 0;
+				serverView.totalPages = data.totalPages || 1;
+				serverView.items = reset ? mapped : serverView.items.concat(mapped);
+
+				// products sigue siendo donde viven los objetos que data-index/cart/ficha buscan por
+				// posicion; se fusiona lo nuevo ahi (sin duplicar) para que esas partes no cambien.
+				const existingIds = new Set(products.map(p => String(p.id)));
+				let changed = false;
+				mapped.forEach(p => { if (!existingIds.has(String(p.id))) { products.push(p); existingIds.add(String(p.id)); changed = true; } });
+				if (changed) rebuildProductIndex();
+			} catch (e) {
+				console.warn('Error cargando la vista filtrada del catálogo:', e);
+				serverView.active = false;
+			}
+		};
+		const refreshView = async (resetPage = true) => {
+			if (isServerMode()) {
+				await fetchServerPage(resetPage);
+			} else {
+				serverView.active = false;
+				ensureFullCatalog();
+			}
+			if (resetPage) visibleProductLimit = 36;
+			render();
+		};
 		const renderSkeletons = (count = 8) => {
 			const productsEl = document.querySelector('#products');
 			if (!productsEl) return;
@@ -1914,21 +1973,27 @@
 			}
 			const query = document.querySelector('#searchInput').value.toLowerCase();
 			const sort = document.querySelector('#sortSelect').value;
-			let shown = products.filter(product => productMatchesFilter(product, selectedFilter) && `${product.name} ${product.brand} ${product.category}`.toLowerCase().includes(query));
-			if (sort === 'low') shown.sort((a,b) => {
-				const pA = Number(a.price || 0), pB = Number(b.price || 0);
-				if (pA <= 0 && pB <= 0) return 0;
-				if (pA <= 0) return 1;
-				if (pB <= 0) return -1;
-				return pA - pB;
-			});
-			if (sort === 'high') shown.sort((a,b) => {
-				const pA = Number(a.price || 0), pB = Number(b.price || 0);
-				if (pA <= 0 && pB <= 0) return 0;
-				if (pA <= 0) return 1;
-				if (pB <= 0) return -1;
-				return pB - pA;
-			});
+			const serverMode = isServerMode();
+			// Modo servidor (busqueda activa o filtro de subcategoria): el backend ya filtro,
+			// ordeno y pagino en SQL (fetchServerPage) -- se usa tal cual, sin repetir el trabajo.
+			let shown = serverMode ? serverView.items : products.filter(product => productMatchesFilter(product, selectedFilter) && `${product.name} ${product.brand} ${product.category}`.toLowerCase().includes(query));
+			if (!serverMode) {
+				if (sort === 'low') shown.sort((a,b) => {
+					const pA = Number(a.price || 0), pB = Number(b.price || 0);
+					if (pA <= 0 && pB <= 0) return 0;
+					if (pA <= 0) return 1;
+					if (pB <= 0) return -1;
+					return pA - pB;
+				});
+				if (sort === 'high') shown.sort((a,b) => {
+					const pA = Number(a.price || 0), pB = Number(b.price || 0);
+					if (pA <= 0 && pB <= 0) return 0;
+					if (pA <= 0) return 1;
+					if (pB <= 0) return -1;
+					return pB - pA;
+				});
+			}
+			const totalMatching = serverMode ? serverView.total : shown.length;
 
 			let activeFilterLabel = '';
 			let breadcrumbLabel = '';
@@ -1954,7 +2019,7 @@
 			if (countEl) {
 				const filterNote = breadcrumbLabel ? ` en ${breadcrumbLabel}` : '';
 				const queryNote = query ? ` para "${query}"` : (!breadcrumbLabel ? ' destacados' : '');
-				countEl.textContent = `Mostrando ${shown.length} producto${shown.length === 1 ? '' : 's'}${filterNote}${queryNote}`;
+				countEl.textContent = `Mostrando ${totalMatching} producto${totalMatching === 1 ? '' : 's'}${filterNote}${queryNote}`;
 			}
 
 			const badge = document.querySelector('#activeCategoryBadge');
@@ -1968,8 +2033,9 @@
 				}
 			}
 
-			const toDisplay = shown.slice(0, visibleProductLimit);
-			const hasMore = shown.length > toDisplay.length;
+			const toDisplay = serverMode ? shown : shown.slice(0, visibleProductLimit);
+			const hasMore = serverMode ? (serverView.page < serverView.totalPages) : (shown.length > toDisplay.length);
+			const remainingCount = serverMode ? Math.max(0, totalMatching - toDisplay.length) : (shown.length - toDisplay.length);
 
 			const productsHtml = toDisplay.map(product => {
 				const pImg = getProductImageUrl(product);
@@ -1985,7 +2051,7 @@
 			const loadMoreHtml = hasMore ? `
 				<div class="load-more-container" style="grid-column: 1 / -1; display:flex; justify-content:center; padding: 24px 0 16px;">
 					<button type="button" id="loadMoreProductsBtn" class="primary" style="padding: 12px 28px; border-radius: 99px; font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; box-shadow: 0 4px 14px rgba(17, 119, 201, 0.25);">
-						<span>Ver más productos (+${Math.min(36, shown.length - toDisplay.length)} de ${shown.length - toDisplay.length} restantes)</span>
+						<span>Ver más productos (+${Math.min(36, remainingCount)} de ${remainingCount} restantes)</span>
 						<i data-lucide="arrow-down" width="16"></i>
 					</button>
 				</div>
@@ -1997,9 +2063,14 @@
 			const loadMoreBtn = document.querySelector('#loadMoreProductsBtn');
 			if (loadMoreBtn) {
 				loadMoreBtn.addEventListener('click', () => {
-					ensureFullCatalog();
-					visibleProductLimit += 36;
-					render();
+					if (serverMode) {
+						serverView.page += 1;
+						fetchServerPage(false).then(render);
+					} else {
+						ensureFullCatalog();
+						visibleProductLimit += 36;
+						render();
+					}
 				});
 			}
 
@@ -2366,8 +2437,6 @@
 		};
 		updateCart(false);
 		const setCategoryFilter = filter => {
-			ensureFullCatalog();
-			visibleProductLimit = 36;
 			if (!filter || filter === 'all' || (typeof filter === 'string' && filter.toLowerCase() === 'all')) {
 				selectedFilter = 'all';
 			} else if (typeof filter === 'string') {
@@ -2380,7 +2449,7 @@
 				if (filter.type === 'sub') expandedGroups.add(filter.macroId);
 			}
 			updateSidebarActiveStates();
-			render();
+			refreshView(true);
 		};
 		document.addEventListener('click', event => {
 			// 1. Quitar filtro / Ver todas las categorías
@@ -2487,16 +2556,15 @@
 				}
 			});
 		}
-		document.querySelector('#searchForm').addEventListener('submit', event => { event.preventDefault(); ensureFullCatalog(); visibleProductLimit = 36; render(); document.querySelector('#catalogo').scrollIntoView({ behavior: 'smooth' }); });
+		document.querySelector('#searchForm').addEventListener('submit', event => { event.preventDefault(); refreshView(true); document.querySelector('#catalogo').scrollIntoView({ behavior: 'smooth' }); });
 		let searchDebounceTimer = null;
 		document.querySelector('#searchInput').addEventListener('input', () => {
 			// DEV-20261006-002: antes cada tecla disparaba un render() completo (filtrar+ordenar
 			// sobre todo el catalogo) sin esperar a que la persona termine de escribir.
-			ensureFullCatalog();
 			clearTimeout(searchDebounceTimer);
-			searchDebounceTimer = setTimeout(() => { visibleProductLimit = 36; render(); }, 250);
+			searchDebounceTimer = setTimeout(() => { refreshView(true); }, 250);
 		});
-		document.querySelector('#sortSelect').addEventListener('change', () => { ensureFullCatalog(); visibleProductLimit = 36; render(); });
+		document.querySelector('#sortSelect').addEventListener('change', () => { refreshView(true); });
 		document.querySelector('#openCart').addEventListener('click', () => document.querySelector('#drawer').classList.add('open')); document.querySelector('#closeCart').addEventListener('click', () => document.querySelector('#drawer').classList.remove('open')); document.querySelector('#drawer').addEventListener('click', event => { if (event.target.id === 'drawer') event.target.classList.remove('open'); });
 		document.querySelectorAll('[data-close-modal]').forEach(button => button.addEventListener('click', () => {
 			const modalId = button.dataset.closeModal;
