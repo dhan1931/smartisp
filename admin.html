@@ -177,6 +177,11 @@
       <div class="toolbar">
         <div><h2>Panel de control</h2><span id="adminIdentity"></span></div>
       </div>
+      <!-- DEV-20261006-006: antes habia 4 tarjetas grandes de enlace (Presentacion, Catalogo,
+           Configuracion, Pedidos), cada una con insignia+titulo+parrafo descriptivo repitiendo lo
+           que el navbar compartido ya resuelve con un clic. El inicio ahora es solo numeros reales:
+           pedidos (igual que antes) + catalogo (antes escondidos dentro de la tarjeta "Catalogo y
+           Taxonomia" que se quito). La navegacion vive en el navbar; esta pantalla informa. -->
       <div id="dashboardStatsRow" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 20px;">
         <a href="pedidos.html?status=pending" style="text-decoration:none; color:inherit; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; box-shadow:0 2px 8px rgba(0,0,0,.03); transition:transform .15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
           <div style="font-size:24px; font-weight:800; color:#b45309;" id="dashPendingCount">—</div>
@@ -194,112 +199,16 @@
           <div style="font-size:24px; font-weight:800; color:#0d9488;" id="dashRevenue">—</div>
           <div style="font-size:11.5px; color:#64748b; font-weight:700; text-transform:uppercase;">Ingresos (no cancelados)</div>
         </a>
+        <a href="editor-catalogo.html" style="text-decoration:none; color:inherit; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; box-shadow:0 2px 8px rgba(0,0,0,.03); transition:transform .15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+          <div style="font-size:24px; font-weight:800; color:#0f172a;" id="adminCatalogProdCount">—</div>
+          <div style="font-size:11.5px; color:#64748b; font-weight:700; text-transform:uppercase;">Productos en catálogo</div>
+        </a>
+        <a href="editor-catalogo.html?tab=tab-categories" style="text-decoration:none; color:inherit; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; box-shadow:0 2px 8px rgba(0,0,0,.03); transition:transform .15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+          <div style="font-size:24px; font-weight:800; color:#0f172a;" id="adminCatalogCatCount">—</div>
+          <div style="font-size:11.5px; color:#64748b; font-weight:700; text-transform:uppercase;">Macro-categorías</div>
+        </a>
       </div>
       <div class="grid">
-        <section class="panel wide" style="background: linear-gradient(135deg, #0f2d3f 0%, #163e56 100%); color: #fff; border: 1px solid #20506e; padding: 20px 24px; border-radius: 12px; margin-bottom: 4px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
-            <div style="max-width: 650px;">
-              <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(8,126,164,0.4); border:1px solid rgba(128,214,255,0.4); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; color:#80d6ff; margin-bottom:8px;">
-                <span><i data-lucide="globe"></i> PÁGINA PRINCIPAL</span> • Editor Visual Interactivo
-              </div>
-              <h3 style="margin:0 0 6px; font-size:19px; color:#ffffff; font-weight:700; font-family:'Space Grotesk',sans-serif;">
-                Editar Página de Presentación Corporativa
-              </h3>
-              <p style="margin:0; font-size:13px; color:#c7e1f0; line-height:1.5;">
-                Abre una copia interactiva de la página de presentación para editar en vivo textos, imágenes, estadísticas, datos de contacto y un logotipo exclusivo que no afecta a la tienda.
-              </p>
-            </div>
-            <div>
-              <a href="editor-landing.html" target="_blank" class="button" style="background:#087ea4; color:#fff; border:none; padding:12px 20px; font-size:13.5px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:8px; border-radius:8px; box-shadow:0 6px 18px rgba(8,126,164,.45);">
-                <span><i data-lucide="pencil"></i> Editar Página de Presentación</span>
-                <i data-lucide="external-link" style="width:15px;height:15px;"></i>
-              </a>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel wide" style="background: linear-gradient(135deg, #093349 0%, #104c6d 100%); color: #fff; border: 1px solid #1a5c80; padding: 26px 28px; border-radius: 12px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px;">
-            <div style="max-width: 680px;">
-              <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(56,189,248,0.2); border:1px solid rgba(56,189,248,0.4); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; color:#7dd3fc; margin-bottom:10px;">
-                <span><i data-lucide="package"></i> CATÁLOGO Y TAXONOMÍA</span> • Gestión Exclusiva
-              </div>
-              <h3 style="margin:0 0 8px; font-size:20px; color:#ffffff; font-weight:700; font-family:'Space Grotesk',sans-serif;">
-                Gestión de Catálogo, Productos y Categorías
-              </h3>
-              <p style="margin:0 0 16px; font-size:13.5px; color:#d8f1f5; line-height:1.5;">
-                La visualización de productos, edición de características (nombre, SKU, precios, fotos, enlaces, descripción), macro-categorías, subcategorías y la importación masiva inteligente desde Excel se administran exclusivamente desde el <strong>Editor de Catálogo</strong>.
-              </p>
-              <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap;">
-                <div style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); padding:8px 16px; border-radius:8px; display:inline-flex; align-items:center; gap:10px;">
-                  <i data-lucide="package" style="width:20px;height:20px;"></i>
-                  <div>
-                    <span style="font-size:11px; color:#bae6fd; display:block; text-transform:uppercase; font-weight:600;">Productos en Catálogo</span>
-                    <strong id="adminCatalogProdCount" style="font-size:17px; color:#ffffff;">0</strong>
-                  </div>
-                </div>
-                <div style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); padding:8px 16px; border-radius:8px; display:inline-flex; align-items:center; gap:10px;">
-                  <i data-lucide="folder" style="width:20px;height:20px;"></i>
-                  <div>
-                    <span style="font-size:11px; color:#bae6fd; display:block; text-transform:uppercase; font-weight:600;">Macro-Categorías</span>
-                    <strong id="adminCatalogCatCount" style="font-size:17px; color:#ffffff;">0</strong>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div>
-              <a href="editor-catalogo.html" class="button" style="background:#0284c7; color:#fff; border:none; padding:14px 24px; font-size:14px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:10px; border-radius:8px; box-shadow:0 6px 20px rgba(2,132,199,.4);">
-                <span><i data-lucide="folder"></i> Ir al Editor de Catálogo y Categorías</span>
-                <i data-lucide="external-link" style="width:16px;height:16px;"></i>
-              </a>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel wide" style="background: linear-gradient(135deg, #2b3a4a 0%, #3a5068 100%); color: #fff; border: 1px solid #45607a; padding: 22px 26px; border-radius: 12px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:18px;">
-            <div style="max-width: 680px;">
-              <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(148,163,184,0.25); border:1px solid rgba(203,213,225,0.4); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; color:#e2e8f0; margin-bottom:8px;">
-                <span><i data-lucide="settings"></i> CONFIGURACIÓN</span> • Apariencia, visibilidad y correo
-              </div>
-              <h3 style="margin:0 0 6px; font-size:18px; color:#ffffff; font-weight:700; font-family:'Space Grotesk',sans-serif;">
-                Apariencia, visibilidad de secciones y correo SMTP
-              </h3>
-              <p style="margin:0; font-size:13px; color:#dbe4ec; line-height:1.5;">
-                Logo, banner y colores de la tienda, qué secciones se muestran y el correo real con el que se despachan las notificaciones de compra.
-              </p>
-            </div>
-            <div>
-              <a href="configuracion.html" class="button secondary" style="padding:11px 18px; font-size:13.5px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
-                <span><i data-lucide="settings"></i> Ir a Configuración</span>
-                <i data-lucide="external-link" style="width:15px;height:15px;"></i>
-              </a>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel wide" style="background: linear-gradient(135deg, #0c4a6e 0%, #075d7d 100%); color: #fff; border: 1px solid #0e7490; padding: 22px 26px; border-radius: 12px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:18px;">
-            <div style="max-width: 680px;">
-              <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(125,211,252,0.2); border:1px solid rgba(125,211,252,0.4); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; color:#bae6fd; margin-bottom:8px;">
-                <span><i data-lucide="receipt"></i> PEDIDOS</span> • Centro de pedidos
-              </div>
-              <h3 style="margin:0 0 6px; font-size:18px; color:#ffffff; font-weight:700; font-family:'Space Grotesk',sans-serif;">
-                Pedidos, cotizaciones y cambios de estado con historial
-              </h3>
-              <p style="margin:0; font-size:13px; color:#d8f1f5; line-height:1.5;">
-                Lista completa con filtros por estado, detalle de cada pedido y cambio de estado que notifica por correo al cliente.
-              </p>
-            </div>
-            <div>
-              <a href="pedidos.html" class="button secondary" style="padding:11px 18px; font-size:13.5px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
-                <span><i data-lucide="receipt"></i> Ir a Pedidos</span>
-                <i data-lucide="external-link" style="width:15px;height:15px;"></i>
-              </a>
-            </div>
-          </div>
-        </section>
-
         <!-- SECCIÓN DE MACRO-CATEGORÍAS SINCRONIZADAS -->
         <section class="panel wide" id="adminMacroCategoriesSection" style="margin-top: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px 26px; box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
           <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px; margin-bottom:18px;">

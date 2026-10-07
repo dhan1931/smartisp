@@ -14,7 +14,7 @@ y Sprint 2 se documenta aquí mientras tanto; cada tarea ya existe como task rea
 - [x] **DEV-20261006-002** `medium` `feature` — Fichas de producto, paginación real y filtros en la tienda pública (incluye: filtro category/subcategory/sort en SQL, fix O(n²) + debounce, producto.php respeta visible=0, checklist de deploy)
 - [x] **DEV-20261006-003** `medium` `bug` — Sidebar de categorías: agrupación prolija en vez de 57 categorías planas
 - [x] **DEV-20261006-004** `low` `bug` — Botón "Ver tienda" del navbar ilegible (texto blanco sobre fondo casi blanco)
-- [ ] **DEV-20261006-005** `high` `devops` — Archivo único de migración manual consolidada + guía paso a paso para Hostinger
+- [x] **DEV-20261006-005** `high` `devops` — Archivo único de migración manual consolidada + guía paso a paso para Hostinger
 
 ### Sprint 2 — por hacer
 
