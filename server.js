@@ -234,6 +234,14 @@ app.get(['/api/test-db', '/api/auth/test-db'], async (req, res) => {
   }
 });
 
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'tienda.html'));
+});
+
+app.get('/index.html', (req, res) => {
+  res.redirect(301, '/');
+});
+
 app.use(express.static(__dirname));
 
 app.post('/api/auth/login', async (req, res) => {
