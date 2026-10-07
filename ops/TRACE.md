@@ -2,8 +2,8 @@
 
 ## Snapshot
 
-- Last sync: 2026-10-06T22:52:59-05:00
-- Revision: 9b00141
+- Last sync: 2026-10-06T23:12:23-05:00
+- Revision: 9000a80
 - Overall status: working-tree-dirty
 
 ## Pending
@@ -1107,6 +1107,160 @@ StellarCode task id: 125
 DEV-20261006-003 arreglo el sintoma en tienda.html (umbral de confianza en la jerarquia), pero la causa de fondo sigue: de 57 categorias reales en products_rows, solo 7 (~12%) tienen alguna subcategoria asignada -- probablemente productos importados del feed del proveedor sin categorizar a fondo. Revisar el proceso de importacion/categorizacion y decidir si vale la pena re-categorizar el catalogo existente.
 
 StellarCode task id: 126
+
+#### Acceptance criteria
+
+- TODO: definir criterios verificables
+
+#### Evidence
+
+- Pending
+
+### DEV-20261006-010 — Sidebar de navegacion (reemplazar navbar horizontal) para el panel admin
+
+- Status: `planned`
+- Type: `refactor`
+- Priority: `high`
+- Started: 2026-10-06T23:11:31-05:00
+- Updated: 2026-10-06T23:11:31-05:00
+
+#### Goal
+
+Mockup de referencia: sidebar fijo a la izquierda, agrupado por secciones (Operacion, Catalogo, Tienda, Analisis, Sistema) en vez del navbar horizontal actual de 1 fila. Primer paso de la epica de rediseno de dashboard tipo SaaS. Solo enlaza a paginas que ya existen (Inicio, Pedidos, Catalogo, Categorias, Contenido, Configuracion); los modulos que no existen (Clientes, Clasificacion IA, Inventario, Estadisticas, Reportes) quedan como 'Proximamente' deshabilitados, no como links muertos.
+
+StellarCode task id: 127
+
+#### Acceptance criteria
+
+- TODO: definir criterios verificables
+
+#### Evidence
+
+- Pending
+
+### DEV-20261006-011 — Bloque 'Necesita tu atencion' en el dashboard
+
+- Status: `planned`
+- Type: `feature`
+- Priority: `medium`
+- Started: 2026-10-06T23:11:37-05:00
+- Updated: 2026-10-06T23:11:37-05:00
+
+#### Goal
+
+Lista clickeable de alertas operativas: pedidos pendientes de pago (con monto), productos sin imagen, productos sin categoria, pedidos por despachar. Convierte el dashboard de 'te muestro numeros' a 'te digo que resolver'. Depende de datos que ya existen (admin-orders-stats, admin-products-stats) salvo 'stock bajo' que requiere DEV-20261005-025 (stock aun no existe como campo real).
+
+StellarCode task id: 128
+
+#### Acceptance criteria
+
+- TODO: definir criterios verificables
+
+#### Evidence
+
+- Pending
+
+### DEV-20261006-012 — Ventas: grafica 30 dias, ventas hoy/7d/30d/mes, ticket promedio
+
+- Status: `planned`
+- Type: `feature`
+- Priority: `medium`
+- Started: 2026-10-06T23:11:41-05:00
+- Updated: 2026-10-06T23:11:41-05:00
+
+#### Goal
+
+Hoy no existe ningun reporte de ventas por fecha -- requiere una consulta nueva agregando orders_rows por dia/semana/mes (backend nuevo, no es solo UI). Incluye comparacion vs periodo anterior (variacion %) y selector Hoy/7 dias/30 dias/Este mes, como en el mockup de referencia.
+
+StellarCode task id: 129
+
+#### Acceptance criteria
+
+- TODO: definir criterios verificables
+
+#### Evidence
+
+- Pending
+
+### DEV-20261006-013 — Pedidos recientes en el dashboard (tabla en vivo)
+
+- Status: `planned`
+- Type: `feature`
+- Priority: `low`
+- Started: 2026-10-06T23:11:46-05:00
+- Updated: 2026-10-06T23:11:46-05:00
+
+#### Goal
+
+Tabla de los ultimos N pedidos con cliente/estado/total/hora directamente en el inicio, para no tener que entrar a Pedidos solo para ver que paso. Usa el mismo admin-orders ya existente con limit bajo.
+
+StellarCode task id: 130
+
+#### Acceptance criteria
+
+- TODO: definir criterios verificables
+
+#### Evidence
+
+- Pending
+
+### DEV-20261006-014 — Salud del catalogo: % completitud, productos sin imagen/precio/categoria/descripcion
+
+- Status: `planned`
+- Type: `feature`
+- Priority: `medium`
+- Started: 2026-10-06T23:11:51-05:00
+- Updated: 2026-10-06T23:11:51-05:00
+
+#### Goal
+
+Reemplaza los numeros sueltos de productos/categorias del dashboard actual por un bloque con barra de completitud y desglose real (cuantos sin imagen, sin precio, sin categoria, sin descripcion). Se relaciona con DEV-20261006-009 (por que solo 7 de 57 categorias tienen subcategoria real).
+
+StellarCode task id: 131
+
+#### Acceptance criteria
+
+- TODO: definir criterios verificables
+
+#### Evidence
+
+- Pending
+
+### DEV-20261006-015 — Busqueda global (Ctrl+K) de pedidos/productos/clientes
+
+- Status: `planned`
+- Type: `feature`
+- Priority: `low`
+- Started: 2026-10-06T23:11:55-05:00
+- Updated: 2026-10-06T23:11:55-05:00
+
+#### Goal
+
+Input de busqueda en el header que encuentre un pedido por numero o un producto por nombre sin tener que ir a cada seccion por separado. Con 2789 productos deja de ser lujo rapido.
+
+StellarCode task id: 132
+
+#### Acceptance criteria
+
+- TODO: definir criterios verificables
+
+#### Evidence
+
+- Pending
+
+### DEV-20261006-016 — Modulos nuevos del mockup sin backend real: Clientes, Clasificacion IA, Inventario/Stock, Analitica/Reportes
+
+- Status: `planned`
+- Type: `feature`
+- Priority: `low`
+- Started: 2026-10-06T23:11:59-05:00
+- Updated: 2026-10-06T23:11:59-05:00
+
+#### Goal
+
+El mockup de referencia muestra modulos que hoy no existen en el backend en absoluto (no son ajustes de UI, son features nuevas de alcance propio, cada una necesitaria su propio diseno): gestion de clientes, clasificacion automatica de categorias por IA, control de inventario/stock real, reportes/analitica. No se estiman ni se empiezan hasta decidir alcance de cada una por separado -- se documentan aqui para no perder la idea del mockup.
+
+StellarCode task id: 133
 
 #### Acceptance criteria
 

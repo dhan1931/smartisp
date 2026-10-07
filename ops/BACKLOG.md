@@ -22,6 +22,32 @@ y Sprint 2 se documenta aquí mientras tanto; cada tarea ya existe como task rea
 - [x] **DEV-20261006-008** `medium` `feature` — Pantalla dedicada de Macro-Categorías (sacarla del inicio del admin)
 - [ ] **DEV-20261006-009** `low` `data` — Calidad de datos: solo 7 de 57 categorías tienen subcategoría real
 
+## Épica: Dashboard tipo SaaS (sidebar, métricas operativas, salud de catálogo)
+
+A partir de un mockup de referencia (captura + propuesta escrita del usuario, 2026-10-06): el
+"Inicio" del panel debe responder *"¿cómo está mi tienda, qué pasó hoy, qué necesita mi atención?"*
+en vez de ser mayormente enlaces. Se arranca por lo más chico y seguro (navegación), y cada bloque
+de datos reales es su propia tarea porque varios requieren backend nuevo, no solo maquetado.
+
+### Sprint 3 — navegación (empezando ahora)
+
+- [ ] **DEV-20261006-010** `high` `refactor` — Sidebar de navegación (reemplazar el navbar horizontal actual)
+- [ ] **DEV-20261006-015** `low` `feature` — Búsqueda global (Ctrl+K) de pedidos/productos/clientes
+
+### Sprint 4 — ventas y pedidos reales (requiere backend nuevo)
+
+- [ ] **DEV-20261006-011** `medium` `feature` — Bloque "Necesita tu atención" (alertas clickeables)
+- [ ] **DEV-20261006-012** `medium` `feature` — Ventas: gráfica 30 días, ventas hoy/7d/30d/mes, ticket promedio
+- [ ] **DEV-20261006-013** `low` `feature` — Pedidos recientes en el dashboard (tabla en vivo)
+
+### Sprint 5 — salud de catálogo
+
+- [ ] **DEV-20261006-014** `medium` `feature` — Salud del catálogo: % completitud, sin imagen/precio/categoría/descripción (se relaciona con DEV-20261006-009)
+
+### Sprint 6 — módulos nuevos sin backend hoy (alcance propio, sin estimar todavía)
+
+- [ ] **DEV-20261006-016** `low` `feature` — Clientes, Clasificación IA, Inventario/Stock, Analítica/Reportes: el mockup los muestra, pero ninguno existe en el backend; cada uno necesita su propio diseño de alcance antes de empezar.
+
 ## Now
 
 - [ ] **DEV-20261005-001** `critical` `security` — Rotar credenciales de MySQL y eliminar fallbacks con secretos (SEC-004, SEC-014)
@@ -90,3 +116,17 @@ y Sprint 2 se documenta aquí mientras tanto; cada tarea ya existe como task rea
 - [x] **DEV-20261006-008** `medium` `feature` — Pantalla dedicada de Macro-Categorias (sacarla del inicio del admin)
 
 - [ ] **DEV-20261006-009** `low` `data` — Calidad de datos: solo 7 de 57 categorias tienen subcategoria real
+
+- [ ] **DEV-20261006-010** `high` `refactor` — Sidebar de navegacion (reemplazar navbar horizontal) para el panel admin
+
+- [ ] **DEV-20261006-011** `medium` `feature` — Bloque 'Necesita tu atencion' en el dashboard
+
+- [ ] **DEV-20261006-012** `medium` `feature` — Ventas: grafica 30 dias, ventas hoy/7d/30d/mes, ticket promedio
+
+- [ ] **DEV-20261006-013** `low` `feature` — Pedidos recientes en el dashboard (tabla en vivo)
+
+- [ ] **DEV-20261006-014** `medium` `feature` — Salud del catalogo: % completitud, productos sin imagen/precio/categoria/descripcion
+
+- [ ] **DEV-20261006-015** `low` `feature` — Busqueda global (Ctrl+K) de pedidos/productos/clientes
+
+- [ ] **DEV-20261006-016** `low` `feature` — Modulos nuevos del mockup sin backend real: Clientes, Clasificacion IA, Inventario/Stock, Analitica/Reportes
