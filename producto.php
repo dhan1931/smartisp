@@ -79,7 +79,11 @@ if ($pdo && !empty($slug)) {
             }
         }
 
-        if ($row) {
+        // DEV-20261006-002: esta consulta (y los 2 fallback de arriba) no filtraban por visible=1 --
+        // un producto que el admin oculto del catalogo seguia totalmente accesible, indexable por
+        // Google y comprable en su URL directa /producto/<slug>, igual que uno visible. Las
+        // relacionadas (abajo) ya si filtraban visible=1; se iguala el mismo criterio aqui.
+        if ($row && (int)($row['visible'] ?? 1) === 1) {
             $product = normalizeProductRow($row);
         }
     } catch (Throwable $e) {
