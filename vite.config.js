@@ -18,6 +18,7 @@ export default defineConfig({
         admin: 'admin.html',
         configuracion: 'configuracion.html',
         pedidos: 'pedidos.html',
+        categorias: 'categorias.html',
         editorCatalogo: 'editor-catalogo.html',
         editorLanding: 'editor-landing.html',
         resetPassword: 'reset-password.html',

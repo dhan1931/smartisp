@@ -14,6 +14,7 @@
   var LINKS = [
     { key: 'inicio', href: '/admin.html', label: 'Inicio', icon: 'home' },
     { key: 'catalogo', href: '/editor-catalogo.html', label: 'Catálogo', icon: 'package' },
+    { key: 'categorias', href: '/categorias.html', label: 'Categorías', icon: 'folder' },
     { key: 'contenido', href: '/editor-landing.html', label: 'Contenido', icon: 'palette' },
     { key: 'config', href: '/configuracion.html', label: 'Configuración', icon: 'settings' },
     { key: 'pedidos', href: '/pedidos.html', label: 'Pedidos', icon: 'receipt' }
