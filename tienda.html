@@ -1361,6 +1361,11 @@
 		<div class="modal" id="accountModal" style="display:none;" aria-hidden="true"></div>
 	<script>
 		let products = [];
+		// DEV-20261006-002: products.indexOf(product) en cada tarjeta era O(n) por producto, O(n^2)
+		// por render completo -- con 2700+ productos (y de nuevo en cada tecla al buscar, sin
+		// debounce) esto se sentia. Un Map por referencia de objeto da la misma posicion en O(1).
+		let productIndexMap = new Map();
+		const rebuildProductIndex = () => { productIndexMap = new Map(products.map((p, i) => [p, i])); };
 		let isCatalogLoading = true;
 		let fullCatalogState = 'idle'; // 'idle' | 'loading' | 'loaded'
 
@@ -1402,6 +1407,7 @@
 						tag: product.tag || '',
 						specs: Array.isArray(product.specs) ? product.specs : []
 					}));
+					rebuildProductIndex();
 					render();
 					if (typeof renderSidebarCategories === 'function') renderSidebarCategories();
 					if (typeof checkDirectProductLanding === 'function') checkDirectProductLanding();
@@ -1973,7 +1979,7 @@
 				const reviewsHtml = hasReviews
 					? `<div><span class="stars">★★★★★</span><span class="reviews">(${product.reviews})</span></div>`
 					: `<div><span class="reviews" style="margin-left:0;font-style:italic;">Sin reseñas aún</span></div>`;
-				return `<article class="product" data-index="${products.indexOf(product)}" tabindex="0" role="group" aria-label="Ver especificaciones de ${product.name}"><div class="product-image">${product.tag ? `<span class="tag">${product.tag}</span>` : ''}<button class="heart" aria-label="Agregar a favoritos"><i data-lucide="heart" width="16"></i></button><a href="${pUrl}" class="product-card-link" aria-label="${product.name}" tabindex="-1"><img src="${pImg}" alt="${product.name}" loading="lazy" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></a></div><div class="product-info"><div class="product-brand">${product.brand}</div><a href="${pUrl}" class="product-title-link" title="${product.name}"><h3>${product.name}</h3></a>${reviewsHtml}<div class="price-row"><div class="price-block"><span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span>${Number(product.price || 0) > 0 ? '<span class="price-tax-label">Precios incluye iva</span>' : ''}</div><div class="card-btn-group"><a href="${pUrl}" class="btn-card-view" title="Ver producto en página completa" aria-label="Ver ficha completa de ${product.name}"><i data-lucide="external-link" width="15"></i></a><button class="add" data-index="${products.indexOf(product)}" aria-label="Agregar ${product.name} al carrito"><i data-lucide="plus" width="18"></i></button></div></div></div></article>`;
+				return `<article class="product" data-index="${productIndexMap.get(product)}" tabindex="0" role="group" aria-label="Ver especificaciones de ${product.name}"><div class="product-image">${product.tag ? `<span class="tag">${product.tag}</span>` : ''}<button class="heart" aria-label="Agregar a favoritos"><i data-lucide="heart" width="16"></i></button><a href="${pUrl}" class="product-card-link" aria-label="${product.name}" tabindex="-1"><img src="${pImg}" alt="${product.name}" loading="lazy" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></a></div><div class="product-info"><div class="product-brand">${product.brand}</div><a href="${pUrl}" class="product-title-link" title="${product.name}"><h3>${product.name}</h3></a>${reviewsHtml}<div class="price-row"><div class="price-block"><span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span>${Number(product.price || 0) > 0 ? '<span class="price-tax-label">Precios incluye iva</span>' : ''}</div><div class="card-btn-group"><a href="${pUrl}" class="btn-card-view" title="Ver producto en página completa" aria-label="Ver ficha completa de ${product.name}"><i data-lucide="external-link" width="15"></i></a><button class="add" data-index="${productIndexMap.get(product)}" aria-label="Agregar ${product.name} al carrito"><i data-lucide="plus" width="18"></i></button></div></div></div></article>`;
 			}).join('');
 
 			const loadMoreHtml = hasMore ? `
@@ -2189,7 +2195,7 @@
 						<p class="detail-description">${product.description || ''}</p>
 						<div class="specs">${(product.specs || []).map(spec => `<div class="spec"><span>${spec[0]}</span><strong>${spec[1]}</strong></div>`).join('')}</div>
 						<div class="modal-actions">
-							<button class="primary" data-detail-add="${products.indexOf(product)}">
+							<button class="primary" data-detail-add="${productIndexMap.get(product)}">
 								Agregar al carrito <i data-lucide="shopping-cart" width="16"></i>
 							</button>
 							<button type="button" class="btn-share-link" id="btnShareModal" title="Copiar enlace único para compartir">
@@ -2482,7 +2488,14 @@
 			});
 		}
 		document.querySelector('#searchForm').addEventListener('submit', event => { event.preventDefault(); ensureFullCatalog(); visibleProductLimit = 36; render(); document.querySelector('#catalogo').scrollIntoView({ behavior: 'smooth' }); });
-		document.querySelector('#searchInput').addEventListener('input', () => { ensureFullCatalog(); visibleProductLimit = 36; render(); });
+		let searchDebounceTimer = null;
+		document.querySelector('#searchInput').addEventListener('input', () => {
+			// DEV-20261006-002: antes cada tecla disparaba un render() completo (filtrar+ordenar
+			// sobre todo el catalogo) sin esperar a que la persona termine de escribir.
+			ensureFullCatalog();
+			clearTimeout(searchDebounceTimer);
+			searchDebounceTimer = setTimeout(() => { visibleProductLimit = 36; render(); }, 250);
+		});
 		document.querySelector('#sortSelect').addEventListener('change', () => { ensureFullCatalog(); visibleProductLimit = 36; render(); });
 		document.querySelector('#openCart').addEventListener('click', () => document.querySelector('#drawer').classList.add('open')); document.querySelector('#closeCart').addEventListener('click', () => document.querySelector('#drawer').classList.remove('open')); document.querySelector('#drawer').addEventListener('click', event => { if (event.target.id === 'drawer') event.target.classList.remove('open'); });
 		document.querySelectorAll('[data-close-modal]').forEach(button => button.addEventListener('click', () => {
@@ -2591,6 +2604,7 @@
 						tag: product.tag || '',
 						specs: Array.isArray(product.specs) ? product.specs : []
 					}));
+					rebuildProductIndex();
 					isCatalogLoading = false;
 					render();
 					if (typeof renderSidebarCategories === 'function') renderSidebarCategories();

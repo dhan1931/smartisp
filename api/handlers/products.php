@@ -18,6 +18,8 @@ if ($action === 'catalog' && $method === 'GET') {
         $limit = min(100, max(1, (int)($_GET['limit'] ?? 36)));
         $offset = ($page - 1) * $limit;
         $search = trim((string)($_GET['q'] ?? ''));
+        $category = trim((string)($_GET['category'] ?? ''));
+        $subcategory = trim((string)($_GET['subcategory'] ?? ''));
 
         $where = 'visible = 1';
         $params = [];
@@ -30,6 +32,18 @@ if ($action === 'catalog' && $method === 'GET') {
             $params[':search_id'] = $search;
             $params[':search_sku'] = $search;
             $params[':search_like'] = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $search) . '%';
+        }
+        // DEV-20261006-002: antes el filtro por categoria/subcategoria de la tienda publica era
+        // 100% del lado del cliente -- forzaba a descargar el catalogo completo (2700+ productos)
+        // solo para mostrar una subcategoria de 15. admin-products ya filtraba asi por SQL; se
+        // repite el mismo patron aqui para el catalogo publico.
+        if ($category !== '') {
+            $where .= ' AND category = :category';
+            $params[':category'] = $category;
+        }
+        if ($subcategory !== '') {
+            $where .= ' AND subcategory = :subcategory';
+            $params[':subcategory'] = $subcategory;
         }
 
         $totalStmt = $pdo->prepare("SELECT COUNT(*) FROM `$pTable` WHERE $where");
