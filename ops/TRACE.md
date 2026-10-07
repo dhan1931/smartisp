@@ -2,8 +2,8 @@
 
 ## Snapshot
 
-- Last sync: 2026-10-05T20:06:51-05:00
-- Revision: 0b29817
+- Last sync: 2026-10-06T22:52:59-05:00
+- Revision: 9b00141
 - Overall status: working-tree-dirty
 
 ## Pending
@@ -975,6 +975,138 @@ StellarCode task id: 119
 Mejorar fichas de producto, paginacion real y filtros en la tienda publica
 
 StellarCode task id: 120
+
+#### Acceptance criteria
+
+- TODO: definir criterios verificables
+
+#### Evidence
+
+- Pending
+
+### DEV-20261006-003 — Sidebar de categorias: usar agrupacion prolija en vez de 57 categorias planas
+
+- Status: `planned`
+- Type: `bug`
+- Priority: `medium`
+- Started: 2026-10-06T22:51:33-05:00
+- Updated: 2026-10-06T22:51:33-05:00
+
+#### Goal
+
+hasCustomHierarchy confiaba en la jerarquia real con que UNA sola categoria tuviera subcategoria; con 7/57 (~12%) calificando, el sidebar mostraba 57 entradas sueltas en vez de los 5 grupos prolijos ya definidos como respaldo. Umbral subido a 30%.
+
+StellarCode task id: 121
+
+#### Acceptance criteria
+
+- TODO: definir criterios verificables
+
+#### Evidence
+
+- Pending
+
+### DEV-20261006-004 — Boton Ver tienda del navbar: texto blanco sobre fondo casi blanco, ilegible
+
+- Status: `planned`
+- Type: `bug`
+- Priority: `low`
+- Started: 2026-10-06T22:51:38-05:00
+- Updated: 2026-10-06T22:51:38-05:00
+
+#### Goal
+
+Reutilizaba class=button secondary, que cada pagina redefine con background casi blanco. Se le dio clase propia (admin-nav-storelink) para que no dependa del CSS de la pagina host.
+
+StellarCode task id: 122
+
+#### Acceptance criteria
+
+- TODO: definir criterios verificables
+
+#### Evidence
+
+- Pending
+
+### DEV-20261006-005 — Archivo unico de migracion manual consolidada + guia paso a paso para Hostinger
+
+- Status: `planned`
+- Type: `devops`
+- Priority: `high`
+- Started: 2026-10-06T22:52:08-05:00
+- Updated: 2026-10-06T22:52:08-05:00
+
+#### Goal
+
+Un solo .sql con todos los cambios de esquema desde el dump original (u606699314_smart_isp.sql) hasta hoy, para aplicar a mano si hace falta sin correr migrate.php; mas una guia paso a paso del flujo completo de despliegue. Las 6 migraciones versionadas (migrations/001-006) se mantienen igual, esto es un documento/archivo adicional, no un reemplazo.
+
+StellarCode task id: 123
+
+#### Acceptance criteria
+
+- TODO: definir criterios verificables
+
+#### Evidence
+
+- Pending
+
+### DEV-20261006-006 — Rediseñar el inicio del panel admin: metricas reales, quitar lo redundante
+
+- Status: `planned`
+- Type: `refactor`
+- Priority: `medium`
+- Started: 2026-10-06T22:52:22-05:00
+- Updated: 2026-10-06T22:52:22-05:00
+
+#### Goal
+
+El dashboard de admin.html hoy es mayormente tarjetas de enlace sin informacion real. Quitar botones/descripciones que ya se sienten innecesarios (texto largo repetido en cada tarjeta), agregar metricas reales adicionales (mas alla de pedidos: catalogo, actividad reciente), y que el inicio 'diga algo' en vez de solo enlazar a otras pantallas. Parte del mismo trabajo: DEV-20261006-007 (pantalla dedicada de macro-categorias) libera espacio en este dashboard.
+
+StellarCode task id: 124
+
+#### Acceptance criteria
+
+- TODO: definir criterios verificables
+
+#### Evidence
+
+- Pending
+
+### DEV-20261006-008 — Pantalla dedicada de Macro-Categorias (sacarla del inicio del admin)
+
+- Status: `planned`
+- Type: `feature`
+- Priority: `medium`
+- Started: 2026-10-06T22:52:25-05:00
+- Updated: 2026-10-06T22:52:25-05:00
+
+#### Goal
+
+El grid de Macro-Categorias Activas vive hoy dentro de admin.html (dashboard de inicio), pesado visualmente y mezclado con enlaces. Darle su propia pantalla/ruta en el panel (ej. categorias.html o seccion dedicada), navegable desde el navbar compartido, dejando el inicio mas liviano. Depende de / se relaciona con DEV-20261006-006 (rediseño del inicio).
+
+StellarCode task id: 125
+
+#### Acceptance criteria
+
+- TODO: definir criterios verificables
+
+#### Evidence
+
+- Pending
+
+### DEV-20261006-009 — Calidad de datos: solo 7 de 57 categorias tienen subcategoria real
+
+- Status: `planned`
+- Type: `data`
+- Priority: `low`
+- Started: 2026-10-06T22:52:29-05:00
+- Updated: 2026-10-06T22:52:29-05:00
+
+#### Goal
+
+DEV-20261006-003 arreglo el sintoma en tienda.html (umbral de confianza en la jerarquia), pero la causa de fondo sigue: de 57 categorias reales en products_rows, solo 7 (~12%) tienen alguna subcategoria asignada -- probablemente productos importados del feed del proveedor sin categorizar a fondo. Revisar el proceso de importacion/categorizacion y decidir si vale la pena re-categorizar el catalogo existente.
+
+StellarCode task id: 126
 
 #### Acceptance criteria
 

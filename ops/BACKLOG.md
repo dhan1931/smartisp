@@ -1,5 +1,27 @@
 # Backlog
 
+## Épica: Catálogo público y panel admin — calidad de datos, UX y despliegue listo
+
+StellarCode no tiene todavía un comando de CLI para épicas/sprints como objetos propios
+(`stellar-capabilities` reporta `phases: native` del lado del servidor, pero `devflow` aún no
+expone un subcomando para crearlos — ver `devflow planificar --help`). Esta agrupación en Sprint 1
+y Sprint 2 se documenta aquí mientras tanto; cada tarea ya existe como task real en StellarCode
+(ver su `DEV-YYYYMMDD-NNN`).
+
+### Sprint 1 — cerrado 2026-10-06
+
+- [x] **DEV-20261006-001** `medium` `refactor` — Dividir admin.html en dashboard resumen y Configuración aparte
+- [x] **DEV-20261006-002** `medium` `feature` — Fichas de producto, paginación real y filtros en la tienda pública (incluye: filtro category/subcategory/sort en SQL, fix O(n²) + debounce, producto.php respeta visible=0, checklist de deploy)
+- [x] **DEV-20261006-003** `medium` `bug` — Sidebar de categorías: agrupación prolija en vez de 57 categorías planas
+- [x] **DEV-20261006-004** `low` `bug` — Botón "Ver tienda" del navbar ilegible (texto blanco sobre fondo casi blanco)
+- [ ] **DEV-20261006-005** `high` `devops` — Archivo único de migración manual consolidada + guía paso a paso para Hostinger
+
+### Sprint 2 — por hacer
+
+- [ ] **DEV-20261006-006** `medium` `refactor` — Rediseñar el inicio del panel admin: métricas reales, quitar lo redundante
+- [ ] **DEV-20261006-008** `medium` `feature` — Pantalla dedicada de Macro-Categorías (sacarla del inicio del admin)
+- [ ] **DEV-20261006-009** `low` `data` — Calidad de datos: solo 7 de 57 categorías tienen subcategoría real
+
 ## Now
 
 - [ ] **DEV-20261005-001** `critical` `security` — Rotar credenciales de MySQL y eliminar fallbacks con secretos (SEC-004, SEC-014)
@@ -56,3 +78,15 @@
 - [ ] **DEV-20261006-001** `medium` `refactor` — Dividir admin.html en dashboard resumen y Configuracion aparte
 
 - [ ] **DEV-20261006-002** `medium` `feature` — Mejorar fichas de producto, paginacion real y filtros en la tienda publica
+
+- [ ] **DEV-20261006-003** `medium` `bug` — Sidebar de categorias: usar agrupacion prolija en vez de 57 categorias planas
+
+- [ ] **DEV-20261006-004** `low` `bug` — Boton Ver tienda del navbar: texto blanco sobre fondo casi blanco, ilegible
+
+- [ ] **DEV-20261006-005** `high` `devops` — Archivo unico de migracion manual consolidada + guia paso a paso para Hostinger
+
+- [ ] **DEV-20261006-006** `medium` `refactor` — Rediseñar el inicio del panel admin: metricas reales, quitar lo redundante
+
+- [ ] **DEV-20261006-008** `medium` `feature` — Pantalla dedicada de Macro-Categorias (sacarla del inicio del admin)
+
+- [ ] **DEV-20261006-009** `low` `data` — Calidad de datos: solo 7 de 57 categorias tienen subcategoria real
