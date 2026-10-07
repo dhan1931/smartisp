@@ -146,7 +146,7 @@
   <link rel="stylesheet" href="/assets/css/admin-nav.css">
   <div id="smartisp-admin-nav" class="is-loading" data-active="inicio"></div>
   <script src="/assets/js/admin-nav.js" defer></script>
-  <header class="top"><div><h1>SmartISP Administracion</h1><span>Gestiona tu tienda sin editar el codigo</span></div><div style="display:flex;gap:8px;"><a class="button secondary" href="/">Ver presentación</a><a class="button secondary" href="/tienda.html">Ver tienda</a></div></header>
+  <header class="top"><div><h1>SmartISP Administracion</h1><span>Gestiona tu tienda sin editar el codigo</span></div><div style="display:flex;gap:8px;"><a class="button secondary" href="/">Ver presentación</a></div></header>
   <main class="shell">
     <section id="accessDeniedPanel" class="login hidden">
       <div style="text-align: center; padding: 10px 0;">
@@ -176,17 +176,6 @@
     <section id="adminPanel" class="hidden">
       <div class="toolbar">
         <div><h2>Panel de control</h2><span id="adminIdentity"></span></div>
-        <div style="display:flex; gap:10px; align-items:center;">
-          <a href="editor-catalogo.html" class="button" style="background:#075d7d; color:#fff; text-decoration:none; display:inline-flex; align-items:center; gap:8px; font-weight:700; box-shadow:0 3px 10px rgba(7,93,125,0.25);">
-            <span><i data-lucide="package"></i> Editor de Catálogo y Categorías</span>
-            <span style="font-size:11px; background:rgba(255,255,255,0.22); padding:2px 7px; border-radius:10px;">Nuevo <i data-lucide="external-link" style="width:12px;height:12px;"></i></span>
-          </a>
-          <a href="editor-landing.html" target="_blank" class="button" style="background:#087ea4; color:#fff; text-decoration:none; display:inline-flex; align-items:center; gap:8px; font-weight:700; box-shadow:0 3px 10px rgba(8,126,164,0.25);">
-            <span><i data-lucide="palette"></i> Editar Página de Presentación</span>
-            <span style="font-size:11px; background:rgba(255,255,255,0.22); padding:2px 7px; border-radius:10px;">Abrir <i data-lucide="external-link" style="width:12px;height:12px;"></i></span>
-          </a>
-          <button id="logoutButton" class="button danger">Cerrar sesion</button>
-        </div>
       </div>
       <div id="dashboardStatsRow" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 20px;">
         <a href="pedidos.html?status=pending" style="text-decoration:none; color:inherit; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; box-shadow:0 2px 8px rgba(0,0,0,.03); transition:transform .15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
@@ -735,15 +724,7 @@
       btn.disabled = false;
     });
 
-    $('#logoutButton').addEventListener('click', async () => {
-      try { await api('logout', { method: 'POST' }); } catch (e) {}
-      localStorage.removeItem('smartisp.accountUser');
-      localStorage.removeItem('smartisp.accountRemembered');
-      localStorage.removeItem('smartisp.adminToken');
-      sessionStorage.removeItem('smartisp.accountUser');
-      sessionStorage.removeItem('smartisp.adminToken');
-      location.reload();
-    });
+    // El logout ya lo provee el navbar compartido (assets/js/admin-nav.js, .admin-nav-logout).
 
     $('#switchAccountBtn')?.addEventListener('click', async () => {
       try { await api('logout', { method: 'POST' }); } catch (e) {}

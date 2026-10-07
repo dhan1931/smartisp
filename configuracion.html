@@ -60,7 +60,7 @@
   <link rel="stylesheet" href="/assets/css/admin-nav.css">
   <div id="smartisp-admin-nav" class="is-loading" data-active="config"></div>
   <script src="/assets/js/admin-nav.js" defer></script>
-  <header class="top"><div><h1>SmartISP Administracion</h1><span>Configuración de apariencia, visibilidad y correo</span></div><div style="display:flex;gap:8px;"><a class="button secondary" href="/">Ver presentación</a><a class="button secondary" href="/tienda.html">Ver tienda</a></div></header>
+  <header class="top"><div><h1>SmartISP Administracion</h1><span>Configuración de apariencia, visibilidad y correo</span></div><div style="display:flex;gap:8px;"><a class="button secondary" href="/">Ver presentación</a></div></header>
   <main class="shell">
     <section id="accessDeniedPanel" class="login hidden">
       <div style="text-align: center; padding: 10px 0;">
@@ -90,10 +90,6 @@
     <section id="adminPanel" class="hidden">
       <div class="toolbar">
         <div><h2>Configuración</h2><span id="adminIdentity"></span></div>
-        <div style="display:flex; gap:10px; align-items:center;">
-          <a href="/admin.html" class="button secondary" style="text-decoration:none;"><i data-lucide="home"></i> Volver al Panel</a>
-          <button id="logoutButton" class="button danger">Cerrar sesion</button>
-        </div>
       </div>
       <div class="grid">
         <section class="panel"><div class="section-heading"><h3>Apariencia y contenido</h3><button id="resetContentButton" class="button secondary" type="button">Restaurar predeterminado</button></div><form id="contentForm">
@@ -1237,15 +1233,7 @@
     $('#cancelCropButton')?.addEventListener('click', () => closeCropEditor(true));
     $('#applyCropButton')?.addEventListener('click', applyCrop);
 
-    $('#logoutButton').addEventListener('click', async () => {
-      try { await api('logout', { method: 'POST' }); } catch (e) {}
-      localStorage.removeItem('smartisp.accountUser');
-      localStorage.removeItem('smartisp.accountRemembered');
-      localStorage.removeItem('smartisp.adminToken');
-      sessionStorage.removeItem('smartisp.accountUser');
-      sessionStorage.removeItem('smartisp.adminToken');
-      location.reload();
-    });
+    // El logout ya lo provee el navbar compartido (assets/js/admin-nav.js, .admin-nav-logout).
 
     $('#switchAccountBtn')?.addEventListener('click', async () => {
       try { await api('logout', { method: 'POST' }); } catch (e) {}

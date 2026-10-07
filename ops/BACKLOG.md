@@ -54,3 +54,5 @@
 - [ ] **DEV-20261005-042** `low` `devops` — Entorno local (PHP/MariaDB) y documentacion operativa de la sesion
 
 - [ ] **DEV-20261006-001** `medium` `refactor` — Dividir admin.html en dashboard resumen y Configuracion aparte
+
+- [ ] **DEV-20261006-002** `medium` `feature` — Mejorar fichas de producto, paginacion real y filtros en la tienda publica

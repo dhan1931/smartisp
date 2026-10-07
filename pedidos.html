@@ -69,7 +69,7 @@
   <link rel="stylesheet" href="/assets/css/admin-nav.css">
   <div id="smartisp-admin-nav" class="is-loading" data-active="pedidos"></div>
   <script src="/assets/js/admin-nav.js" defer></script>
-  <header class="top"><div><h1>SmartISP Administracion</h1><span>Centro de pedidos</span></div><div style="display:flex;gap:8px;"><a class="button secondary" href="/admin.html" style="text-decoration:none;"><i data-lucide="home"></i> Panel</a></div></header>
+  <header class="top"><div><h1>SmartISP Administracion</h1><span>Centro de pedidos</span></div></header>
   <main class="shell">
     <section id="accessDeniedPanel" class="login hidden">
       <div style="text-align: center; padding: 10px 0;">
@@ -100,7 +100,6 @@
     <section id="ordersPanel" class="hidden">
       <div class="toolbar">
         <div><h2 style="margin:0;">Pedidos</h2><span id="adminIdentity" style="color:var(--muted);font-size:12.5px;"></span></div>
-        <button id="logoutButton" class="button danger">Cerrar sesion</button>
       </div>
 
       <div class="stats-row" id="statsRow"></div>
@@ -424,15 +423,7 @@
       }
     });
 
-    $('#logoutButton').addEventListener('click', async () => {
-      try { await api('logout', { method: 'POST' }); } catch (e) {}
-      localStorage.removeItem('smartisp.accountUser');
-      localStorage.removeItem('smartisp.accountRemembered');
-      localStorage.removeItem('smartisp.adminToken');
-      sessionStorage.removeItem('smartisp.accountUser');
-      sessionStorage.removeItem('smartisp.adminToken');
-      location.reload();
-    });
+    // El logout ya lo provee el navbar compartido (assets/js/admin-nav.js, .admin-nav-logout).
 
     $('#switchAccountBtn')?.addEventListener('click', async () => {
       try { await api('logout', { method: 'POST' }); } catch (e) {}

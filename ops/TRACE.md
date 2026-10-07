@@ -962,3 +962,25 @@ StellarCode task id: 119
 
 - Pending
 
+### DEV-20261006-002 — Mejorar fichas de producto, paginacion real y filtros en la tienda publica
+
+- Status: `planned`
+- Type: `feature`
+- Priority: `medium`
+- Started: 2026-10-06T22:27:22-05:00
+- Updated: 2026-10-06T22:27:22-05:00
+
+#### Goal
+
+Mejorar fichas de producto, paginacion real y filtros en la tienda publica
+
+StellarCode task id: 120
+
+#### Acceptance criteria
+
+- TODO: definir criterios verificables
+
+#### Evidence
+
+- Pending
+
