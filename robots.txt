@@ -1,14 +1,19 @@
 # Robots.txt for SmartISP
 User-agent: *
 Allow: /
+Allow: /api/auth/product-image
 
 # Páginas privadas/transaccionales: no deben indexarse ni rastrearse
 Disallow: /admin.html
+Disallow: /pedidos.html
+Disallow: /configuracion.html
+Disallow: /categorias.html
 Disallow: /editor-catalogo.html
 Disallow: /editor-landing.html
 Disallow: /login.html
 Disallow: /checkout.html
 Disallow: /reset-password.html
+Disallow: /index-presentacion.html
 Disallow: /api/
 
 Sitemap: https://smart-isp.com.ec/sitemap.xml

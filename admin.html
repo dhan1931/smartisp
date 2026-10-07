@@ -30,8 +30,54 @@
     .form-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; } .section-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; } .section-heading h3 { margin-bottom: 0; }
     .hidden { display: none !important; } .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; } .wide { grid-column: 1 / -1; }
     .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 24px; } .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .dashboard-hero { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin-bottom:18px; }
+    .dashboard-hero h2 { margin:0; color:#0f172a; font-size:28px; letter-spacing:-.02em; }
+    .dashboard-hero p { margin:5px 0 0; color:#64748b; }
+    .dashboard-date { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:9px 12px; color:#0f172a; font-weight:700; font-size:13px; box-shadow:0 2px 8px rgba(15,23,42,.03); }
+    .dashboard-grid { display:grid; grid-template-columns:minmax(0, 1.8fr) minmax(300px, .9fr); gap:14px; margin-bottom:14px; }
+    .dashboard-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 2px 10px rgba(15,23,42,.04); }
+    .kpi-row { display:grid; grid-template-columns:repeat(auto-fit, minmax(165px, 1fr)); gap:14px; margin-bottom:14px; }
+    .kpi-card { min-height:112px; padding:16px; color:inherit; text-decoration:none; }
+    .kpi-card:hover { border-color:#bfdbfe; }
+    .kpi-head { display:flex; align-items:center; gap:10px; color:#0f172a; font-size:13px; font-weight:800; margin-bottom:12px; }
+    .kpi-icon { width:32px; height:32px; border-radius:9px; display:grid; place-items:center; background:#e0f2fe; color:#0369a1; }
+    .kpi-value { color:#020617; font-size:27px; font-weight:800; letter-spacing:-.03em; }
+    .kpi-foot { margin-top:5px; color:#64748b; font-size:12px; }
+    .kpi-card.is-green .kpi-icon { background:#dcfce7; color:#15803d; }
+    .kpi-card.is-red .kpi-icon { background:#fee2e2; color:#dc2626; }
+    .kpi-card.is-violet .kpi-icon { background:#ede9fe; color:#6d28d9; }
+    .chart-panel { padding:18px; min-height:250px; }
+    .panel-title-row { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }
+    .panel-title-row h3 { margin:0; color:#0f172a; font-size:17px; }
+    .panel-title-row a { color:#0369a1; text-decoration:none; font-size:12.5px; font-weight:800; }
+    .mini-chart { height:165px; display:flex; align-items:end; gap:8px; padding:14px 8px 0; border-bottom:1px solid #e2e8f0; background:linear-gradient(#eef2f7 1px, transparent 1px) 0 16px / 100% 38px; }
+    .mini-bar { flex:1; min-width:12px; border-radius:8px 8px 0 0; background:linear-gradient(180deg, #60a5fa, #0ea5e9); opacity:.9; }
+    .mini-chart-labels { display:flex; justify-content:space-between; color:#64748b; font-size:11px; padding:8px 6px 0; }
+    .attention-panel { padding:18px; }
+    .attention-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px; }
+    .attention-head h3 { margin:0 0 4px; font-size:16px; color:#0f172a; }
+    .attention-head p { margin:0; color:#64748b; font-size:12.5px; }
+    .attention-list { display:grid; gap:10px; }
+    .attention-item { display:flex; align-items:flex-start; gap:10px; padding:12px; border:1px solid #e2e8f0; border-radius:10px; color:inherit; text-decoration:none; background:#f8fafc; }
+    .attention-item:hover { border-color:#bae6fd; background:#f0f9ff; }
+    .attention-icon { width:30px; height:30px; border-radius:8px; display:grid; place-items:center; flex-shrink:0; background:#e0f2fe; color:#0369a1; }
+    .attention-item strong { display:block; color:#0f172a; font-size:13.5px; margin-bottom:2px; }
+    .attention-item span { display:block; color:#64748b; font-size:12px; line-height:1.35; }
+    .attention-item.is-warning .attention-icon { background:#fef3c7; color:#b45309; }
+    .attention-item.is-danger .attention-icon { background:#fee2e2; color:#b91c1c; }
+    .dashboard-lower { display:grid; grid-template-columns:minmax(0, 1fr) minmax(280px, .65fr); gap:14px; }
+    .recent-panel, .health-panel { padding:18px; }
+    .recent-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+    .recent-table th { text-align:left; color:#64748b; font-size:11.5px; padding:9px 8px; border-bottom:1px solid #e2e8f0; }
+    .recent-table td { padding:10px 8px; border-bottom:1px solid #eef2f7; color:#0f172a; }
+    .status-pill { display:inline-flex; align-items:center; padding:3px 8px; border-radius:999px; background:#e0f2fe; color:#0369a1; font-weight:800; font-size:11px; }
+    .health-meter { height:12px; background:#e2e8f0; border-radius:999px; overflow:hidden; margin:12px 0; }
+    .health-meter span { display:block; height:100%; width:0%; background:linear-gradient(90deg, #22c55e, #0ea5e9); border-radius:999px; transition:width .3s; }
+    .health-summary { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-top:14px; }
+    .health-summary strong { display:block; color:#0f172a; font-size:21px; }
+    .health-summary span { color:#64748b; font-size:11.5px; }
     @keyframes save-confirm { 0% { opacity: 0; transform: translateY(-8px) scale(.98); } 55% { transform: translateY(0) scale(1.02); } 100% { opacity: 1; transform: translateY(0) scale(1); } } @keyframes rise-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .panel { animation: rise-in .45s ease both; } @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } .top, .toolbar, .section-heading { align-items: flex-start; flex-direction: column; } } @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+    .panel { animation: rise-in .45s ease both; } @media (max-width: 980px) { .dashboard-grid, .dashboard-lower { grid-template-columns:1fr; } } @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } .top, .toolbar, .section-heading, .dashboard-hero { align-items: flex-start; flex-direction: column; } .health-summary { grid-template-columns:1fr; } } @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 
     svg.lucide { width: 1em; height: 1em; vertical-align: -0.125em; stroke-width: 2; flex-shrink: 0; }
   </style>
@@ -41,7 +87,7 @@
   <link rel="stylesheet" href="/assets/css/admin-nav.css">
   <div id="smartisp-admin-nav" class="is-loading" data-active="inicio"></div>
   <script src="/assets/js/admin-nav.js" defer></script>
-  <header class="top"><div><h1>SmartISP Administracion</h1><span>Gestiona tu tienda sin editar el codigo</span></div><div style="display:flex;gap:8px;"><a class="button secondary" href="/">Ver presentación</a></div></header>
+  <header class="top"><div><h1>SmartISP Administracion</h1><span>Gestiona tu tienda sin editar el codigo</span></div><div style="display:flex;gap:8px;"><a class="button secondary" href="/" target="_blank" rel="noopener">Ver tienda online</a></div></header>
   <main class="shell">
     <section id="accessDeniedPanel" class="login hidden">
       <div style="text-align: center; padding: 10px 0;">
@@ -69,49 +115,85 @@
       </form>
     </section>
     <section id="adminPanel" class="hidden">
-      <div class="toolbar">
-        <div><h2>Panel de control</h2><span id="adminIdentity"></span></div>
+      <div class="dashboard-hero">
+        <div>
+          <h2 id="dashboardGreeting">Buenos días</h2>
+          <p><span id="adminIdentity"></span> · Resumen operativo de tu tienda</p>
+        </div>
+        <div class="dashboard-date"><i data-lucide="calendar-days"></i> <span id="dashboardDate">Hoy</span></div>
       </div>
-      <!-- DEV-20261006-006: antes habia 4 tarjetas grandes de enlace (Presentacion, Catalogo,
-           Configuracion, Pedidos), cada una con insignia+titulo+parrafo descriptivo repitiendo lo
-           que el navbar compartido ya resuelve con un clic. El inicio ahora es solo numeros reales:
-           pedidos (igual que antes) + catalogo (antes escondidos dentro de la tarjeta "Catalogo y
-           Taxonomia" que se quito). La navegacion vive en el navbar; esta pantalla informa. -->
-      <div id="dashboardStatsRow" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 20px;">
-        <a href="pedidos.html?status=pending" style="text-decoration:none; color:inherit; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; box-shadow:0 2px 8px rgba(0,0,0,.03); transition:transform .15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-          <div style="font-size:24px; font-weight:800; color:#b45309;" id="dashPendingCount">—</div>
-          <div style="font-size:11.5px; color:#64748b; font-weight:700; text-transform:uppercase;">Pendientes de pago</div>
+      <div id="dashboardStatsRow" class="kpi-row">
+        <a class="dashboard-card kpi-card is-green" href="pedidos.html">
+          <div class="kpi-head"><span class="kpi-icon"><i data-lucide="shopping-bag"></i></span>Ingresos</div>
+          <div class="kpi-value" id="dashRevenue">—</div>
+          <div class="kpi-foot">Pedidos no cancelados</div>
         </a>
-        <a href="pedidos.html" style="text-decoration:none; color:inherit; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; box-shadow:0 2px 8px rgba(0,0,0,.03); transition:transform .15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-          <div style="font-size:24px; font-weight:800; color:#0f172a;" id="dashTodayCount">—</div>
-          <div style="font-size:11.5px; color:#64748b; font-weight:700; text-transform:uppercase;">Pedidos hoy</div>
+        <a class="dashboard-card kpi-card" href="pedidos.html">
+          <div class="kpi-head"><span class="kpi-icon"><i data-lucide="shopping-cart"></i></span>Pedidos hoy</div>
+          <div class="kpi-value" id="dashTodayCount">—</div>
+          <div class="kpi-foot"><span id="dashTotalCount">—</span> pedidos en total</div>
         </a>
-        <a href="pedidos.html" style="text-decoration:none; color:inherit; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; box-shadow:0 2px 8px rgba(0,0,0,.03); transition:transform .15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-          <div style="font-size:24px; font-weight:800; color:#0f172a;" id="dashTotalCount">—</div>
-          <div style="font-size:11.5px; color:#64748b; font-weight:700; text-transform:uppercase;">Total de pedidos</div>
+        <a class="dashboard-card kpi-card is-red" href="pedidos.html?status=pending">
+          <div class="kpi-head"><span class="kpi-icon"><i data-lucide="credit-card"></i></span>Pendientes de pago</div>
+          <div class="kpi-value" id="dashPendingCount">—</div>
+          <div class="kpi-foot">Requieren seguimiento</div>
         </a>
-        <a href="pedidos.html" style="text-decoration:none; color:inherit; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; box-shadow:0 2px 8px rgba(0,0,0,.03); transition:transform .15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-          <div style="font-size:24px; font-weight:800; color:#0d9488;" id="dashRevenue">—</div>
-          <div style="font-size:11.5px; color:#64748b; font-weight:700; text-transform:uppercase;">Ingresos (no cancelados)</div>
-        </a>
-        <a href="editor-catalogo.html" style="text-decoration:none; color:inherit; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; box-shadow:0 2px 8px rgba(0,0,0,.03); transition:transform .15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-          <div style="font-size:24px; font-weight:800; color:#0f172a;" id="adminCatalogProdCount">—</div>
-          <div style="font-size:11.5px; color:#64748b; font-weight:700; text-transform:uppercase;">Productos en catálogo</div>
-        </a>
-        <a href="editor-catalogo.html?tab=tab-categories" style="text-decoration:none; color:inherit; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:16px 18px; box-shadow:0 2px 8px rgba(0,0,0,.03); transition:transform .15s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-          <div style="font-size:24px; font-weight:800; color:#0f172a;" id="adminCatalogCatCount">—</div>
-          <div style="font-size:11.5px; color:#64748b; font-weight:700; text-transform:uppercase;">Macro-categorías</div>
+        <a class="dashboard-card kpi-card is-violet" href="editor-catalogo.html">
+          <div class="kpi-head"><span class="kpi-icon"><i data-lucide="package"></i></span>Catálogo</div>
+          <div class="kpi-value" id="adminCatalogProdCount">—</div>
+          <div class="kpi-foot"><span id="adminCatalogCatCount">—</span> macro-categorías</div>
         </a>
       </div>
-      <div class="grid">
-        <section class="panel wide" style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:20px 24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
-          <div>
-            <h3 style="margin:0 0 4px; font-size:15px; color:#0f172a;"><i data-lucide="folder" style="width:16px;height:16px;"></i> Macro-Categorías</h3>
-            <p style="margin:0; font-size:12.5px; color:#64748b;">Ver, buscar y explorar las categorías del catálogo tiene su propia pantalla.</p>
+      <div class="dashboard-grid">
+        <section class="dashboard-card chart-panel">
+          <div class="panel-title-row">
+            <h3>Actividad por estado</h3>
+            <a href="pedidos.html">Ver pedidos</a>
           </div>
-          <a href="categorias.html" class="button secondary" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
-            Ir a Macro-Categorías <i data-lucide="external-link" style="width:13px;height:13px;"></i>
-          </a>
+          <div id="ordersStatusChart" class="mini-chart"></div>
+          <div class="mini-chart-labels"><span>Cotizaciones</span><span>Pagos</span><span>Preparación</span><span>Enviados</span><span>Entregados</span></div>
+        </section>
+        <section class="dashboard-card attention-panel" aria-labelledby="attentionTitle">
+          <div class="attention-head">
+            <div>
+              <h3 id="attentionTitle"><i data-lucide="bell-ring"></i> Necesita tu atención</h3>
+              <p>Atajos accionables con los datos disponibles hoy.</p>
+            </div>
+          </div>
+          <div id="attentionList" class="attention-list">
+            <div class="attention-item">
+              <div class="attention-icon"><i data-lucide="loader-circle"></i></div>
+              <div><strong>Cargando alertas</strong><span>Revisando pedidos y catálogo.</span></div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <div class="dashboard-lower">
+        <section class="dashboard-card recent-panel">
+          <div class="panel-title-row">
+            <h3>Pedidos recientes</h3>
+            <a href="pedidos.html">Ver todos</a>
+          </div>
+          <table class="recent-table">
+            <thead><tr><th>#</th><th>Cliente</th><th>Estado</th><th>Total</th></tr></thead>
+            <tbody id="recentOrdersBody"><tr><td colspan="4">Cargando pedidos recientes...</td></tr></tbody>
+          </table>
+        </section>
+        <section class="dashboard-card health-panel">
+          <div class="panel-title-row">
+            <h3>Salud del catálogo</h3>
+            <a href="editor-catalogo.html">Revisar catálogo</a>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+            <span style="color:#64748b; font-size:12.5px;">Completitud básica</span>
+            <strong id="catalogHealthPct" style="font-size:24px; color:#16a34a;">—</strong>
+          </div>
+          <div class="health-meter"><span id="catalogHealthBar"></span></div>
+          <div class="health-summary">
+            <div><strong id="healthProducts">—</strong><span>Productos</span></div>
+            <div><strong id="healthWithImage">—</strong><span>Con imagen</span></div>
+            <div><strong id="healthWithoutImage">—</strong><span>Sin imagen</span></div>
+          </div>
         </section>
       </div>
     </section>
@@ -265,34 +347,143 @@
       }
     };
 
+    const dashboardState = { orders: null, products: null };
+    const statusLabels = {
+      quote_requested: 'Cotización',
+      pending: 'Pendiente',
+      paid: 'Pagado',
+      preparing: 'En preparación',
+      shipped: 'Enviado',
+      delivered: 'Entregado',
+      cancelled: 'Cancelado',
+      received: 'Recibido'
+    };
+
+    const formatMoney = value => '$' + Number(value || 0).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const renderStatusChart = stats => {
+      const chart = document.getElementById('ordersStatusChart');
+      if (!chart) return;
+      const byStatus = Object.fromEntries((stats.by_status || []).map(s => [s.status, s.total]));
+      const values = ['quote_requested', 'pending', 'preparing', 'shipped', 'delivered'].map(key => byStatus[key] || 0);
+      const max = Math.max(1, ...values);
+      chart.innerHTML = values.map(value => {
+        const height = Math.max(10, Math.round((value / max) * 100));
+        return `<span class="mini-bar" title="${value} pedidos" style="height:${height}%"></span>`;
+      }).join('');
+    };
+
+    const renderCatalogHealth = stats => {
+      const total = Number(stats.total || 0);
+      const withImage = Number(stats.with_photo || 0);
+      const withoutImage = Number(stats.without_photo || 0);
+      const pct = total > 0 ? Math.round((withImage / total) * 100) : 0;
+      document.getElementById('catalogHealthPct').textContent = pct + '%';
+      document.getElementById('catalogHealthBar').style.width = pct + '%';
+      document.getElementById('healthProducts').textContent = total.toLocaleString('es-EC');
+      document.getElementById('healthWithImage').textContent = withImage.toLocaleString('es-EC');
+      document.getElementById('healthWithoutImage').textContent = withoutImage.toLocaleString('es-EC');
+    };
+
+    const renderAttention = () => {
+      const list = document.getElementById('attentionList');
+      if (!list) return;
+      const alerts = [];
+      const orderStats = dashboardState.orders;
+      const productStats = dashboardState.products;
+      if (orderStats) {
+        const byStatus = Object.fromEntries((orderStats.by_status || []).map(s => [s.status, s.total]));
+        const quotes = byStatus.quote_requested || 0;
+        const pending = byStatus.pending || 0;
+        if (quotes > 0) alerts.push({ cls: 'is-warning', icon: 'file-question', href: 'pedidos.html?status=quote_requested', title: `${quotes} cotización${quotes === 1 ? '' : 'es'} por responder`, text: 'Revisar solicitudes sin precio final.' });
+        if (pending > 0) alerts.push({ cls: 'is-warning', icon: 'credit-card', href: 'pedidos.html?status=pending', title: `${pending} pedido${pending === 1 ? '' : 's'} pendiente${pending === 1 ? '' : 's'} de pago`, text: 'Confirmar pago o contactar al cliente.' });
+      }
+      if (productStats && productStats.without_photo > 0) {
+        alerts.push({ cls: 'is-danger', icon: 'image-off', href: 'editor-catalogo.html?photo=without_photo', title: `${productStats.without_photo} producto${productStats.without_photo === 1 ? '' : 's'} sin imagen`, text: 'Completar fotos mejora confianza y conversión.' });
+      }
+      if (!alerts.length && orderStats && productStats) {
+        alerts.push({ cls: '', icon: 'check-circle-2', href: 'editor-catalogo.html', title: 'Sin alertas críticas por ahora', text: 'Pedidos y catálogo no muestran pendientes básicos.' });
+      }
+      list.innerHTML = alerts.map(a => `
+        <a class="attention-item ${a.cls}" href="${a.href}">
+          <div class="attention-icon"><i data-lucide="${a.icon}"></i></div>
+          <div><strong>${escapeHtml(a.title)}</strong><span>${escapeHtml(a.text)}</span></div>
+        </a>
+      `).join('');
+      if (window.lucide) window.lucide.createIcons();
+    };
+
     const loadProductCount = async () => {
       try {
         const stats = await api('admin-products-stats');
+        dashboardState.products = stats;
         const prodCountEl = document.getElementById('adminCatalogProdCount');
         if (prodCountEl) prodCountEl.textContent = stats.total ?? 0;
+        renderCatalogHealth(stats);
+        renderAttention();
       } catch (e) {
         console.warn('Error al cargar el total de productos:', e);
+      }
+    };
+
+    const loadRecentOrders = async () => {
+      const body = document.getElementById('recentOrdersBody');
+      if (!body) return;
+      try {
+        const result = await api('admin-orders?limit=5');
+        const orders = result.orders || [];
+        if (!orders.length) {
+          body.innerHTML = '<tr><td colspan="4">Todavía no hay pedidos registrados.</td></tr>';
+          return;
+        }
+        body.innerHTML = orders.map(order => {
+          const shipping = order.shipping || {};
+          const client = order.customer_name || shipping.name || order.customer_email || shipping.email || 'Cliente';
+          const status = statusLabels[order.status] || order.status || 'Sin estado';
+          return `<tr>
+            <td><strong>${escapeHtml(order.id || '-')}</strong></td>
+            <td>${escapeHtml(client)}</td>
+            <td><span class="status-pill">${escapeHtml(status)}</span></td>
+            <td>${formatMoney(order.total)}</td>
+          </tr>`;
+        }).join('');
+      } catch (e) {
+        body.innerHTML = '<tr><td colspan="4">No se pudieron cargar los pedidos recientes.</td></tr>';
       }
     };
 
     const loadOrderStats = async () => {
       try {
         const stats = await api('admin-orders-stats');
+        dashboardState.orders = stats;
         const byStatus = Object.fromEntries((stats.by_status || []).map(s => [s.status, s.total]));
         document.getElementById('dashPendingCount').textContent = byStatus.pending || 0;
         document.getElementById('dashTodayCount').textContent = stats.today_count || 0;
         document.getElementById('dashTotalCount').textContent = stats.total || 0;
-        document.getElementById('dashRevenue').textContent = '$' + Number(stats.revenue || 0).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('dashRevenue').textContent = formatMoney(stats.revenue);
+        renderStatusChart(stats);
+        renderAttention();
       } catch (e) {
         console.warn('Error al cargar estadisticas de pedidos:', e);
       }
     };
 
+    const hydrateDashboardHeader = user => {
+      const now = new Date();
+      const hour = now.getHours();
+      const greeting = hour < 12 ? 'Buenos días' : (hour < 19 ? 'Buenas tardes' : 'Buenas noches');
+      const name = String(user?.name || user?.email || 'admin').split(' ')[0];
+      document.getElementById('dashboardGreeting').textContent = `${greeting}, ${name}`;
+      document.getElementById('dashboardDate').textContent = now.toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' });
+    };
+
     const openPanel = async user => {
       $('#loginPanel').classList.add('hidden');
       $('#adminPanel').classList.remove('hidden');
-      $('#adminIdentity').textContent = `${user.name} ${user.surname || ''} - ${user.email}`;
+      hydrateDashboardHeader(user);
+      $('#adminIdentity').textContent = `${user.name || 'Administrador'}${user.email ? ' · ' + user.email : ''}`;
       await loadOrderStats();
+      await loadRecentOrders();
       await loadCategories();
       await loadProductCount();
     };

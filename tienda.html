@@ -6,8 +6,20 @@
 	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 	<meta http-equiv="Pragma" content="no-cache">
 	<meta http-equiv="Expires" content="0">
-	<meta name="description" content="SmartISP: infraestructura de red y tecnología para proveedores de internet.">
+	<meta name="description" content="SmartISP Ecuador: tienda online de equipamiento tecnologico, redes, servidores, fibra optica, seguridad y soluciones TI para empresas e ISP.">
+	<meta name="robots" content="index, follow, max-image-preview:large">
+	<link rel="canonical" href="https://smart-isp.com.ec/">
 	<title>SmartISP | Tienda Online & Equipamiento TI</title>
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="SmartISP Ecuador">
+	<meta property="og:title" content="SmartISP Ecuador | Tienda Online de Equipamiento TI">
+	<meta property="og:description" content="Catalogo de equipos de red, fibra optica, servidores, seguridad y tecnologia para empresas e ISP en Ecuador.">
+	<meta property="og:url" content="https://smart-isp.com.ec/">
+	<meta property="og:image" content="https://smart-isp.com.ec/assets/favicons/favicon-512x512.png">
+	<meta name="twitter:card" content="summary_large_image">
+	<meta name="twitter:title" content="SmartISP Ecuador | Tienda Online de Equipamiento TI">
+	<meta name="twitter:description" content="Catalogo de equipos de red, fibra optica, servidores, seguridad y tecnologia para empresas e ISP en Ecuador.">
+	<meta name="twitter:image" content="https://smart-isp.com.ec/assets/favicons/favicon-512x512.png">
 
 	<!-- Favicon oficial para Google Search, Navegadores y Móviles -->
 	<link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
@@ -22,6 +34,50 @@
 	<link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
 	<link rel="manifest" href="/assets/site.webmanifest">
 	<meta name="theme-color" content="#102a43">
+	<script src="/assets/js/public-brand.js" defer></script>
+	<script type="application/ld+json">
+	{
+		"@context": "https://schema.org",
+		"@graph": [
+			{
+				"@type": "Organization",
+				"@id": "https://smart-isp.com.ec/#organization",
+				"name": "SmartISP Ecuador",
+				"url": "https://smart-isp.com.ec/",
+				"logo": "https://smart-isp.com.ec/assets/favicons/favicon-512x512.png",
+				"contactPoint": {
+					"@type": "ContactPoint",
+					"telephone": "+593983576667",
+					"contactType": "sales",
+					"areaServed": "EC",
+					"availableLanguage": ["es"]
+				}
+			},
+			{
+				"@type": "WebSite",
+				"@id": "https://smart-isp.com.ec/#website",
+				"url": "https://smart-isp.com.ec/",
+				"name": "SmartISP Ecuador",
+				"publisher": { "@id": "https://smart-isp.com.ec/#organization" },
+				"potentialAction": {
+					"@type": "SearchAction",
+					"target": "https://smart-isp.com.ec/tienda.html?q={search_term_string}",
+					"query-input": "required name=search_term_string"
+				}
+			},
+			{
+				"@type": "Store",
+				"@id": "https://smart-isp.com.ec/#store",
+				"name": "SmartISP Tienda Online",
+				"url": "https://smart-isp.com.ec/",
+				"image": "https://smart-isp.com.ec/assets/favicons/favicon-512x512.png",
+				"telephone": "+593983576667",
+				"areaServed": "Ecuador",
+				"parentOrganization": { "@id": "https://smart-isp.com.ec/#organization" }
+			}
+		]
+	}
+	</script>
 
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -55,15 +111,22 @@
 		button { cursor: pointer; }
 		.topbar { background: var(--navy); color: #d9efff; font-size: 12px; letter-spacing: .02em; padding: 9px 5vw; display: flex; justify-content: space-between; }
 		.topbar span { display: flex; align-items: center; gap: 7px; }
-		.nav { background: var(--white); border-bottom: 1px solid var(--line); padding: 18px 5vw; display: flex; align-items: center; gap: 28px; position: sticky; top: 0; z-index: 5; }
+		.nav { background: var(--white); border-bottom: 1px solid var(--line); padding: 16px 5vw; display: grid; grid-template-columns: minmax(120px, 220px) minmax(0, 680px) minmax(150px, 1fr); align-items: center; gap: 20px; position: sticky; top: 0; z-index: 5; }
 		.logo { font-family: 'Space Grotesk', sans-serif; font-size: 23px; font-weight: 700; color: var(--navy); white-space: nowrap; letter-spacing: -.06em; display: inline-flex; align-items: center; text-decoration: none; }
+		html:not(.public-brand-ready) .logo { opacity: 0; }
+		.public-brand-ready .logo { opacity: 1; transition: opacity .12s ease; }
 		.logo b { color: var(--blue); }
 		.logo img { display: block; object-fit: contain; width: auto; max-width: 100%; }
-		.search { display: flex; flex: 1; max-width: 640px; background: var(--pale); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
-		.search input { width: 100%; border: 0; outline: 0; padding: 12px 15px; background: transparent; color: var(--ink); }
+		.search { display: flex; width: 100%; min-width: 0; justify-self: center; background: #fff; border: 2px solid #d8e8f1; border-radius: 10px; overflow: hidden; box-shadow: 0 8px 20px rgba(16,44,61,.06); }
+		.search:focus-within { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(17,119,201,.12); }
+		.search input { width: 100%; border: 0; outline: 0; padding: 13px 16px; background: transparent; color: var(--ink); text-align: center; }
+		.search input::placeholder { color: #6e879b; }
 		.search button { background: var(--blue); border: 0; color: var(--white); width: 48px; display: grid; place-items: center; }
-		.nav-actions { margin-left: auto; display: flex; gap: 18px; align-items: center; }
+		.nav-actions { margin-left: auto; display: flex; gap: 18px; align-items: center; justify-self: end; }
 		.nav-action { border: 0; background: transparent; color: var(--navy); display: flex; align-items: center; gap: 7px; font-weight: 600; padding: 4px; }
+		.public-nav { background: var(--navy); color: #fff; display: flex; justify-content: center; gap: clamp(22px, 5vw, 80px); padding: 11px 5vw; font-weight: 800; font-size: 15px; box-shadow: inset 0 1px rgba(255,255,255,.08); }
+		.public-nav a { color: #fff; text-decoration: none; white-space: nowrap; opacity: .96; }
+		.public-nav a:hover { color: #ffd166; }
 		.admin-nav-link { display: none !important; color: #087ea4; border: 1px solid #a9d8d0; background: #eaf7f5; padding: 8px 12px; border-radius: 7px; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; text-decoration: none; transition: all .2s ease; }
 		.admin-nav-link.is-visible { display: inline-flex !important; }
 		.admin-nav-link:hover { background: #d7f0e8; border-color: #087ea4; transform: translateY(-1px); }
@@ -173,6 +236,16 @@
 		body.dark-mode .sidebar-subcat-btn.active { background: rgba(17,119,201,.2); border-color: rgba(17,119,201,.4); color: #5dade2; }
 		body.dark-mode .sidebar-subcat-count { background: rgba(255,255,255,.08); color: var(--muted); }
 
+		.catalog-intro { display:grid; grid-template-columns:minmax(0, 1fr) repeat(3, minmax(150px, 210px)); gap:14px; align-items:stretch; margin-bottom:20px; }
+		.catalog-intro-main { background:#fff; border:1px solid var(--line); border-left:5px solid var(--blue); border-radius:12px; padding:18px 20px; }
+		.catalog-intro-main h2 { font-size:25px; color:var(--navy); margin-bottom:5px; }
+		.catalog-intro-main p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
+		.catalog-feature-link { background:#fff; border:1px solid var(--line); border-radius:12px; padding:15px; display:flex; flex-direction:column; gap:8px; box-shadow:0 4px 14px rgba(16,44,61,.04); transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+		.catalog-feature-link i { color:var(--blue); }
+		.catalog-feature-link strong { color:var(--navy); font-size:13px; }
+		.catalog-feature-link span { color:var(--muted); font-size:12px; line-height:1.35; }
+		.catalog-feature-link:hover { border-color:#9acfe9; transform:translateY(-2px); box-shadow:0 10px 24px rgba(16,44,61,.08); }
+
 		/* Toolbar y productos */
 		.store-main { min-width: 0; }
 		.toolbar { display: flex; justify-content: space-between; align-items: center; margin: 0 0 16px; flex-wrap: wrap; gap: 10px; }
@@ -183,15 +256,15 @@
 		.result-count { color: var(--muted); font-size: 13px; }
 		.select { border: 1px solid var(--line); background: white; padding: 10px 13px; color: var(--ink); border-radius: 4px; }
 		.products { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 15px; }
-		.product { background: white; border: 1px solid var(--line); position: relative; padding: 12px; display: flex; flex-direction: column; min-width: 0; border-radius: 10px; transition: transform .25s ease, box-shadow .25s ease; }
-		.product:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(16,44,61,.1); }
-		.product-image { background: #ffffff; aspect-ratio: 1.15; display: grid; place-items: center; overflow: hidden; position: relative; border-radius: 8px; border: 1px solid #ebf2f5; padding: 10px; }
+		.product { background: white; border: 1px solid var(--line); border-top: 4px solid #d7e7f1; position: relative; padding: 12px; display: flex; flex-direction: column; min-width: 0; border-radius: 10px; transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+		.product:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(16,44,61,.1); border-top-color: var(--blue); }
+		.product-image { background: linear-gradient(180deg, #f8fcff, #fff); aspect-ratio: 1.15; display: grid; place-items: center; overflow: hidden; position: relative; border-radius: 8px; border: 1px solid #ebf2f5; padding: 10px; }
 		.product-image img { width: 100%; height: 100%; object-fit: contain; image-rendering: -webkit-optimize-contrast; transition: transform .35s cubic-bezier(.2,.8,.2,1); }
 		.product:hover .product-image img { transform: scale(1.06); }
 		.tag { background: var(--orange); color: #603b18; font-size: 10px; font-weight: 700; padding: 5px 8px; position: absolute; top: 10px; left: 10px; z-index: 1; border-radius: 4px; }
 		.heart { position: absolute; z-index: 1; top: 9px; right: 9px; border: 0; background: white; border-radius: 50%; width: 32px; height: 32px; display: grid; place-items: center; color: var(--muted); }
 		.product-info { padding: 16px 4px 4px; }
-		.product-brand { color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+		.product-brand { color: var(--blue); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
 		.product h3 { font-family: 'DM Sans', sans-serif; font-size: 15px; letter-spacing: 0; line-height: 1.35; margin: 6px 0 10px; min-height: 41px; }
 		.product-card-link { display: contents; text-decoration: none; color: inherit; }
 		.product-title-link { text-decoration: none; color: inherit; display: block; }
@@ -220,6 +293,11 @@
 		footer .logo { color: var(--navy); margin-bottom: 9px; }
 		.footer-links { display: flex; gap: 30px; }
 		.footer-links a:hover { color: var(--blue); }
+		@media (max-width: 1080px) {
+			.nav { display:flex; flex-wrap:wrap; }
+			.search { order:3; flex:1 1 100%; }
+			.search input { text-align:left; }
+		}
 		.empty { grid-column: 1/-1; padding: 50px; text-align: center; color: var(--muted); background: white; border: 1px dashed var(--line); }
 		.product { cursor: pointer; transition: .2s; }
 		.product:hover { border-color: #9acfe9; box-shadow: 0 12px 24px rgba(30,103,150,.12); transform: translateY(-3px); }
@@ -737,6 +815,16 @@
 			.topbar {
 				display: none !important;
 			}
+			.public-nav {
+				justify-content: flex-start !important;
+				overflow-x: auto !important;
+				gap: 24px !important;
+				padding: 10px 16px !important;
+				scrollbar-width: none !important;
+			}
+			.public-nav::-webkit-scrollbar {
+				display: none !important;
+			}
 
 			/* Prevenir auto-zoom en iOS Safari */
 			input, select, textarea {
@@ -747,6 +835,7 @@
 			.nav {
 				width: 100% !important;
 				max-width: 100% !important;
+				display: flex !important;
 				flex-wrap: wrap !important;
 				gap: 10px !important;
 				padding: 12px 4vw !important;
@@ -798,6 +887,7 @@
 				padding: 9px 14px !important;
 				font-size: 15px !important;
 				min-width: 0 !important;
+				text-align: left !important;
 			}
 			.search button {
 				width: 44px !important;
@@ -822,6 +912,10 @@
 				box-shadow: 0 8px 24px rgba(16, 44, 61, 0.08) !important;
 				box-sizing: border-box !important;
 				overflow: hidden !important;
+			}
+			.catalog-intro {
+				grid-template-columns: 1fr !important;
+				margin-bottom: 14px !important;
 			}
 			.hero::after {
 				background: linear-gradient(90deg, rgba(228, 245, 243, 0.98) 0%, rgba(228, 245, 243, 0.90) 58%, rgba(228, 245, 243, 0.45) 100%) !important;
@@ -1259,15 +1353,43 @@
 	</style>
 </head>
 <body>
-	<div class="topbar"><span><i data-lucide="truck" width="14"></i> Envío gratis en Guayas</span><span><a href="index.html" style="color:#d9efff;text-decoration:none;margin-right:16px;display:inline-flex;align-items:center;gap:4px;"><i data-lucide="building-2" width="13"></i> Conoce nuestra empresa</a> Atención experta · Lun a Vie 9:00 a 18:00</span></div>
+	<div class="topbar"><span><i data-lucide="truck" width="14"></i> Envío gratis en Guayas</span><span><i data-lucide="clock" width="13"></i> Atención experta · Lun a Vie 9:00 a 18:00</span></div>
 	<header class="nav">
-		<a class="logo" href="index.html" title="SmartISP - Volver a la presentación">smart<b>isp</b><span style="color:#f5a524">.</span></a>
+		<a class="logo" href="/" title="SmartISP Tienda Online"><img src="/assets/favicons/favicon-192x192.png" alt="SmartISP" style="height:38px;width:auto;object-fit:contain;"></a>
 		<form class="search" id="searchForm"><input id="searchInput" type="search" placeholder="¿Qué estás buscando hoy?" aria-label="Buscar productos"><button aria-label="Buscar"><i data-lucide="search" width="18"></i></button></form>
-		<div class="nav-actions"><a class="nav-action" href="index.html" title="Conocer sobre la empresa"><i data-lucide="building-2" width="16"></i><span>Empresa</span></a><button class="nav-action" id="openAccount"><i data-lucide="user" width="16"></i><span id="accountLabel">Mi cuenta</span></button><a class="admin-nav-link" id="adminNavLink" href="admin.html" style="display: none;"><i data-lucide="layout-dashboard" width="16"></i><span>Panel admin</span></a><button class="nav-action cart-button" id="openCart"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="cart-count" id="cartCount">0</b></button></div>
+		<div class="nav-actions"><button class="nav-action" id="openAccount"><i data-lucide="user" width="16"></i><span id="accountLabel">Mi cuenta</span></button><a class="admin-nav-link" id="adminNavLink" href="admin.html" style="display: none;"><i data-lucide="layout-dashboard" width="16"></i><span>Panel admin</span></a><button class="nav-action cart-button" id="openCart"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="cart-count" id="cartCount">0</b></button></div>
 	</header>
+	<nav class="public-nav" aria-label="Secciones principales">
+		<a href="/categorias-destacadas">Categorías Destacadas</a>
+		<a href="/productos-destacados">Productos Destacados</a>
+		<a href="/servicios">Servicios</a>
+		<a href="/nosotros">Nosotros</a>
+		<a href="#catalogo">Catálogo</a>
+	</nav>
 	<main>
 		<section class="hero"><div class="hero-content"><div class="eyebrow" id="heroEyebrow">Tecnología, Gaming y Conectividad</div><h1 id="heroTitle">Equipos y Soluciones Tecnológicas de Alta Gama</h1><p id="heroText">Laptops, componentes, consolas, networking y periféricos con garantía oficial y entrega rápida.</p><a class="primary" id="heroButton" href="#catalogo"><span id="heroButtonText">Explorar catálogo</span> <i data-lucide="arrow-right" width="17"></i></a></div></section>
 		<section class="content" id="catalogo">
+			<div class="catalog-intro">
+				<div class="catalog-intro-main">
+					<h2>Catálogo SmartISP</h2>
+					<p>Compra por necesidad: conectividad, cómputo, energía, seguridad, impresión, accesorios y soluciones TI para empresas, hogares técnicos e ISP.</p>
+				</div>
+				<a class="catalog-feature-link" href="/categorias-destacadas">
+					<i data-lucide="layout-grid" width="20"></i>
+					<strong>Categorías destacadas</strong>
+					<span>Explora familias ordenadas del catálogo.</span>
+				</a>
+				<a class="catalog-feature-link" href="/productos-destacados">
+					<i data-lucide="sparkles" width="20"></i>
+					<strong>Productos destacados</strong>
+					<span>Revisa novedades y artículos de alta demanda.</span>
+				</a>
+				<a class="catalog-feature-link" href="/servicios">
+					<i data-lucide="headphones" width="20"></i>
+					<strong>Asesoría y servicios</strong>
+					<span>Te ayudamos a elegir e implementar.</span>
+				</a>
+			</div>
 			<div class="store-layout">
 				<aside class="store-sidebar" aria-label="Filtrar por categorías">
 					<div class="sidebar-card">
@@ -1318,6 +1440,7 @@
 							<p style="color:#6c8195;font-size:14px;margin-bottom:14px;">Esta tienda necesita JavaScript para mostrar el catálogo. El listado completo de productos está disponible para motores de búsqueda en:</p>
 							<ul style="line-height:2.2;font-size:14px;">
 								<li><a href="/sitemap.xml" style="color:#102a43;font-weight:700;">Mapa del Sitio XML Principal</a></li>
+								<li><a href="/sitemap-categories.xml" style="color:#102a43;font-weight:700;">Categorías públicas indexables</a></li>
 								<li><a href="/sitemap-products.xml" style="color:#102a43;font-weight:700;">Índice Completo de Productos para Google</a></li>
 							</ul>
 						</div>
@@ -1327,7 +1450,7 @@
 		</section>
 		<section class="benefits"><div class="benefit"><i data-lucide="shield-check" width="25"></i><div><strong>Compra segura</strong><span>Protegemos cada transacción</span></div></div><div class="benefit"><i data-lucide="headphones" width="25"></i><div><strong>Asesoría especializada</strong><span>Personas reales, respuestas claras</span></div></div><div class="benefit"><i data-lucide="package-check" width="25"></i><div><strong>Despacho a todo Ecuador</strong><span>Recibe donde estés</span></div></div></section>
 	</main>
-	<footer><div><div class="logo">smart<b>isp</b><span style="color:#f5a524">.</span></div><div>Infraestructura que mantiene tu red en movimiento.</div></div><div class="footer-links"><a href="index.html">Sobre la Empresa</a><a href="index.html#contacto">Contacto y Soporte</a><a href="/sitemap.xml" title="Mapa del Sitio XML">Sitemap XML</a><a href="/sitemap-products.xml" title="Directorio de Productos para Google">Productos XML (Google)</a></div><div>© 2026 SmartISP</div></footer>
+	<footer><div><div class="logo"><img src="/assets/favicons/favicon-192x192.png" alt="SmartISP" style="height:42px;width:auto;object-fit:contain;"></div><div>Infraestructura que mantiene tu red en movimiento.</div></div><div class="footer-links"><a href="#catalogo">Catálogo de Productos</a><a href="https://wa.me/593983576667" target="_blank" rel="noopener">Contacto y Soporte</a><a href="/sitemap.xml" title="Mapa del Sitio XML">Sitemap XML</a><a href="/sitemap-categories.xml" title="Directorio de categorías para Google">Categorías XML</a><a href="/sitemap-products.xml" title="Directorio de Productos para Google">Productos XML</a></div><div>© 2026 SmartISP</div></footer>
 
 	<!-- Barra de Navegación Inferior Móvil (Estilo App Nativa) -->
 	<nav class="mobile-bottom-nav" aria-label="Navegación rápida móvil">
@@ -2598,7 +2721,7 @@
 			}
 		});
 		const applySiteLogo = content => {
-			if (!content) return;
+			if (!content || window.__publicBrandManaged) return;
 			const mode = content.logo_type || content.landing_logo_type || ((content.logo_image || content.landing_logo_image) ? 'image' : 'text');
 			const brand = content.brand_name || content.landing_logo_text || 'SmartISP';
 			const lightHeight = parseInt(content.logo_height || content.landing_logo_height, 10) || 38;

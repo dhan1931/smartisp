@@ -259,6 +259,15 @@ app.get(['/api/test-db', '/api/auth/test-db'], async (req, res) => {
 // Los .php no se pueden ejecutar aquí, así que servirlos solo expondría su código fuente.
 const BLOCKED_STATIC = /\.php$|^\/(?:src|scripts|ops|docs|data|legacy|node_modules)(?:\/|$)|^\/(?:server\.js|db\.js|package(?:-lock)?\.json|vite\.config\.js|vercel\.json|[^/]*\.(?:env|token|yml|yaml|md|sql|gz|dump|bak|log))$/i;
 app.use((req, res, next) => (BLOCKED_STATIC.test(req.path) ? res.status(404).end() : next()));
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'tienda.html'));
+});
+
+app.get('/index.html', (req, res) => {
+  res.redirect(301, '/');
+});
+
 app.use(express.static(__dirname));
 
 app.post('/api/auth/login', async (req, res) => {

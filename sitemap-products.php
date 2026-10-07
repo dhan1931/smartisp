@@ -35,6 +35,7 @@ if (!$pdo) {
 }
 
 $pTable = getProductsTableName($pdo);
+ensureProductTableColumns($pdo, $pTable);
 $siteUrl = 'https://smart-isp.com.ec';
 
 ob_start();

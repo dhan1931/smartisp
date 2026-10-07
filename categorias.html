@@ -38,6 +38,16 @@
     .macro-cat-btn-view:hover { background: #0369a1; }
     .macro-cat-btn-edit { background: #f8fafc; color: #475569; border: 1px solid #cbd5e1; padding: 7px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 4px; transition: all .15s; }
     .macro-cat-btn-edit:hover { background: #e2e8f0; color: #0f172a; }
+    #adminMacroCategoriesSection { overflow: hidden; }
+    #adminMacroCategoriesSection > div { min-width: 0; }
+    #adminMacroActions { max-width: 100%; min-width: 0; }
+    #adminMacroSearchWrap { flex: 1 1 260px; min-width: min(260px, 100%); max-width: 100%; }
+    #adminMacroCategoriesGrid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)) !important; }
+    @media (max-width: 520px) {
+      .login, .panel { padding: 18px; }
+      #adminMacroCategoriesSection { padding: 18px !important; }
+      .macro-cat-btn-view, .macro-cat-btn-edit { width: 100%; }
+    }
     svg.lucide { width: 1em; height: 1em; vertical-align: -0.125em; stroke-width: 2; flex-shrink: 0; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
@@ -92,8 +102,8 @@
               Estas macro-categorías fueron creadas y asignadas automáticamente a los productos al procesar el catálogo. Puedes explorarlas, ver sus subcategorías y hacer clic en cualquiera para gestionar sus productos.
             </p>
           </div>
-          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-            <div style="position:relative; min-width:260px;">
+          <div id="adminMacroActions" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <div id="adminMacroSearchWrap" style="position:relative;">
               <input type="text" id="adminMacroSearchInput" placeholder="Buscar categoría o subcategoría..." style="width:100%; padding:9px 12px 9px 34px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; transition:border-color .2s; background:#f8fafc;" onfocus="this.style.borderColor='#0284c7'; this.style.background='#fff';" onblur="this.style.borderColor='#cbd5e1'; this.style.background='#f8fafc';">
               <span style="position:absolute; left:11px; top:50%; transform:translateY(-50%); color:#94a3b8; pointer-events:none;"><i data-lucide="search" style="width:13px;height:13px;"></i></span>
             </div>

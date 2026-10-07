@@ -50,6 +50,33 @@ if ($uri === '/sitemap-products.xml') {
     require $root . '/sitemap-products.php';
     exit;
 }
+if ($uri === '/sitemap-categories.xml') {
+    require $root . '/sitemap-categories.php';
+    exit;
+}
+if ($uri === '/productos-destacados') {
+    require $root . '/productos-destacados.php';
+    exit;
+}
+if ($uri === '/categorias-destacadas') {
+    require $root . '/categorias-destacadas.php';
+    exit;
+}
+if ($uri === '/servicios') {
+    header('Content-Type: text/html; charset=utf-8');
+    readfile($root . '/servicios.html');
+    exit;
+}
+if ($uri === '/nosotros') {
+    header('Content-Type: text/html; charset=utf-8');
+    readfile($root . '/nosotros.html');
+    exit;
+}
+if (preg_match('#^/categoria/([^/]+)/?$#', $uri, $m)) {
+    $_GET['slug'] = $m[1];
+    require $root . '/categoria.php';
+    exit;
+}
 if (preg_match('#^/productos?/([^/]+)/?$#', $uri, $m)) {
     $_GET['slug'] = $m[1];
     require $root . '/producto.php';

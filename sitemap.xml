@@ -2,10 +2,14 @@
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>
     <loc>https://smart-isp.com.ec/sitemap-main.xml</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-07</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://smart-isp.com.ec/sitemap-categories.xml</loc>
+    <lastmod>2026-10-07</lastmod>
   </sitemap>
   <sitemap>
     <loc>https://smart-isp.com.ec/sitemap-products.xml</loc>
-    <lastmod>2026-10-06</lastmod>
+    <lastmod>2026-10-07</lastmod>
   </sitemap>
 </sitemapindex>

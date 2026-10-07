@@ -110,8 +110,9 @@ if (empty($rawDesc) && $product) {
 }
 $metaDesc = htmlspecialchars(mb_substr($rawDesc, 0, 160), ENT_QUOTES, 'UTF-8');
 
-$canonicalSlug = $product ? ($product['id'] . '-' . slugify($product['name'])) : 'catalogo';
-$canonicalUrl = $siteUrl . '/producto/' . $canonicalSlug;
+$canonicalSlug = $product ? ($product['id'] . '-' . slugify($product['name'])) : '';
+$canonicalUrl = $product ? ($siteUrl . '/producto/' . $canonicalSlug) : ($siteUrl . '/tienda.html');
+$robotsMeta = $product ? 'index, follow, max-image-preview:large' : 'noindex, follow';
 
 // Imagen absoluta para redes sociales y Googlebot
 $imgSrc = $product ? $product['imageUrl'] : ($siteUrl . '/assets/favicons/favicon-512x512.png');
@@ -143,7 +144,7 @@ $waUrl = "https://wa.me/593983576667?text={$waMessage}";
     <title><?= $product ? "{$productName} - Precio \${$formattedPrice} | SmartISP Ecuador" : "Producto no encontrado | SmartISP" ?></title>
     <meta name="description" content="<?= $metaDesc ?>">
     <link rel="canonical" href="<?= $canonicalUrl ?>">
-    <meta name="robots" content="index, follow, max-image-preview:large">
+    <meta name="robots" content="<?= $robotsMeta ?>">
 
     <!-- Favicon -->
     <link rel="shortcut icon" type="image/x-icon" href="<?= $siteUrl ?>/assets/favicons/favicon.ico">
