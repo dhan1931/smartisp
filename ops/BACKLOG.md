@@ -18,7 +18,7 @@ y Sprint 2 se documenta aquí mientras tanto; cada tarea ya existe como task rea
 
 ### Sprint 2 — por hacer
 
-- [ ] **DEV-20261006-006** `medium` `refactor` — Rediseñar el inicio del panel admin: métricas reales, quitar lo redundante
+- [x] **DEV-20261006-006** `medium` `refactor` — Rediseñar el inicio del panel admin: métricas reales, quitar lo redundante
 - [ ] **DEV-20261006-008** `medium` `feature` — Pantalla dedicada de Macro-Categorías (sacarla del inicio del admin)
 - [ ] **DEV-20261006-009** `low` `data` — Calidad de datos: solo 7 de 57 categorías tienen subcategoría real
 
@@ -75,17 +75,17 @@ y Sprint 2 se documenta aquí mientras tanto; cada tarea ya existe como task rea
 
 - [ ] **DEV-20261005-042** `low` `devops` — Entorno local (PHP/MariaDB) y documentacion operativa de la sesion
 
-- [ ] **DEV-20261006-001** `medium` `refactor` — Dividir admin.html en dashboard resumen y Configuracion aparte
+- [x] **DEV-20261006-001** `medium` `refactor` — Dividir admin.html en dashboard resumen y Configuracion aparte
 
-- [ ] **DEV-20261006-002** `medium` `feature` — Mejorar fichas de producto, paginacion real y filtros en la tienda publica
+- [x] **DEV-20261006-002** `medium` `feature` — Mejorar fichas de producto, paginacion real y filtros en la tienda publica
 
-- [ ] **DEV-20261006-003** `medium` `bug` — Sidebar de categorias: usar agrupacion prolija en vez de 57 categorias planas
+- [x] **DEV-20261006-003** `medium` `bug` — Sidebar de categorias: usar agrupacion prolija en vez de 57 categorias planas
 
-- [ ] **DEV-20261006-004** `low` `bug` — Boton Ver tienda del navbar: texto blanco sobre fondo casi blanco, ilegible
+- [x] **DEV-20261006-004** `low` `bug` — Boton Ver tienda del navbar: texto blanco sobre fondo casi blanco, ilegible
 
-- [ ] **DEV-20261006-005** `high` `devops` — Archivo unico de migracion manual consolidada + guia paso a paso para Hostinger
+- [x] **DEV-20261006-005** `high` `devops` — Archivo unico de migracion manual consolidada + guia paso a paso para Hostinger
 
-- [ ] **DEV-20261006-006** `medium` `refactor` — Rediseñar el inicio del panel admin: metricas reales, quitar lo redundante
+- [x] **DEV-20261006-006** `medium` `refactor` — Rediseñar el inicio del panel admin: metricas reales, quitar lo redundante
 
 - [ ] **DEV-20261006-008** `medium` `feature` — Pantalla dedicada de Macro-Categorias (sacarla del inicio del admin)
 
