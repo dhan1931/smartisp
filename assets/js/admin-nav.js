@@ -48,7 +48,7 @@
       '<div class="admin-nav-links">' + buildLinksHtml(activeKey) + '</div>' +
       '<div class="admin-nav-user">' +
       '<span><strong>' + escapeHtml(name) + '</strong> · ' + role + '</span>' +
-      '<a class="button secondary" href="/tienda.html" style="padding:6px 12px;border-radius:7px;color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,.3);font-size:12px;font-weight:700;">Ver tienda</a>' +
+      '<a class="admin-nav-storelink" href="/tienda.html">Ver tienda</a>' +
       '<button type="button" class="admin-nav-logout">Cerrar sesión</button>' +
       '</div>' +
       '</div>';

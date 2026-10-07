@@ -94,6 +94,11 @@
   color: #fff;
 }
 
+/* Clase propia (no "button secondary") a proposito: ese nombre de clase tambien existe en el CSS
+   de cada pagina que incluye este navbar, y su regla de fondo (#e7f2f3, casi blanco) se colaba
+   aqui -- texto blanco sobre fondo casi blanco, ilegible. Con una clase exclusiva del navbar esto
+   no puede volver a pasar aunque una pagina cambie su propio .button.secondary. */
+#smartisp-admin-nav .admin-nav-storelink,
 #smartisp-admin-nav .admin-nav-logout {
   padding: 6px 12px;
   border: 1px solid rgba(255, 255, 255, .3);
@@ -102,8 +107,13 @@
   color: #fff;
   font-weight: 700;
   font-size: 12px;
+  text-decoration: none;
   cursor: pointer;
   transition: background .15s;
+}
+
+#smartisp-admin-nav .admin-nav-storelink:hover {
+  background: rgba(255, 255, 255, .1);
 }
 
 #smartisp-admin-nav .admin-nav-logout:hover {
