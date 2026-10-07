@@ -19,7 +19,7 @@ y Sprint 2 se documenta aquí mientras tanto; cada tarea ya existe como task rea
 ### Sprint 2 — por hacer
 
 - [x] **DEV-20261006-006** `medium` `refactor` — Rediseñar el inicio del panel admin: métricas reales, quitar lo redundante
-- [ ] **DEV-20261006-008** `medium` `feature` — Pantalla dedicada de Macro-Categorías (sacarla del inicio del admin)
+- [x] **DEV-20261006-008** `medium` `feature` — Pantalla dedicada de Macro-Categorías (sacarla del inicio del admin)
 - [ ] **DEV-20261006-009** `low` `data` — Calidad de datos: solo 7 de 57 categorías tienen subcategoría real
 
 ## Now
@@ -87,6 +87,6 @@ y Sprint 2 se documenta aquí mientras tanto; cada tarea ya existe como task rea
 
 - [x] **DEV-20261006-006** `medium` `refactor` — Rediseñar el inicio del panel admin: metricas reales, quitar lo redundante
 
-- [ ] **DEV-20261006-008** `medium` `feature` — Pantalla dedicada de Macro-Categorias (sacarla del inicio del admin)
+- [x] **DEV-20261006-008** `medium` `feature` — Pantalla dedicada de Macro-Categorias (sacarla del inicio del admin)
 
 - [ ] **DEV-20261006-009** `low` `data` — Calidad de datos: solo 7 de 57 categorias tienen subcategoria real
