@@ -300,10 +300,8 @@
 		.hero p { color: color-mix(in srgb, var(--hero-text-color, #102c3d) 72%, transparent); }
 		.eyebrow { color: #087ea4; letter-spacing: .17em; }
 		h1 { color: #102c3d; font-size: clamp(38px, 5vw, 64px); }
-		.hero p { color: #4e6974; font-size: 15px; }
-		.primary { background: #087ea4; border-radius: 7px; box-shadow: 0 8px 18px rgba(8,126,164,.2); }
-		.primary:hover { background: #06677f; transform: translateY(-1px); }
-		.content { padding-top: 48px; }
+		.hero { display: none !important; }
+		.content { padding-top: 24px; }
 		.section-heading { margin-bottom: 22px; }
 		.section-heading h2 { color: #102c3d; font-size: 31px; }
 		.product { border-radius: 9px; background: #fff; box-shadow: 0 5px 16px rgba(16,44,61,.04); }
@@ -1266,7 +1264,6 @@
 		<div class="nav-actions"><button class="nav-action" id="openAccount"><i data-lucide="user" width="16"></i><span id="accountLabel">Mi cuenta</span></button><a class="admin-nav-link" id="adminNavLink" href="admin.html" style="display: none;"><i data-lucide="layout-dashboard" width="16"></i><span>Panel admin</span></a><button class="nav-action cart-button" id="openCart"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="cart-count" id="cartCount">0</b></button></div>
 	</header>
 	<main>
-		<section class="hero"><div class="hero-content"><div class="eyebrow" id="heroEyebrow">Tecnología, Gaming y Conectividad</div><h1 id="heroTitle">Equipos y Soluciones Tecnológicas de Alta Gama</h1><p id="heroText">Laptops, componentes, consolas, networking y periféricos con garantía oficial y entrega rápida.</p><a class="primary" id="heroButton" href="#catalogo"><span id="heroButtonText">Explorar catálogo</span> <i data-lucide="arrow-right" width="17"></i></a></div></section>
 		<section class="content" id="catalogo">
 			<div class="store-layout">
 				<aside class="store-sidebar" aria-label="Filtrar por categorías">
@@ -2660,14 +2657,14 @@
 				}
 				const content = Object.fromEntries((remote.content || []).map(item => [item.key, item.value]));
 				applySiteLogo(content);
-				if (content.hero_title) document.querySelector('.hero h1').textContent = content.hero_title;
-				if (content.hero_text) document.querySelector('.hero p').textContent = content.hero_text;
-				if (content.hero_image) document.querySelector('.hero').style.backgroundImage = `url("${content.hero_image}")`;
+				if (content.hero_title && document.querySelector('.hero h1')) document.querySelector('.hero h1').textContent = content.hero_title;
+				if (content.hero_text && document.querySelector('.hero p')) document.querySelector('.hero p').textContent = content.hero_text;
+				if (content.hero_image && document.querySelector('.hero')) document.querySelector('.hero').style.backgroundImage = `url("${content.hero_image}")`;
 				if (content.primary_color) document.documentElement.style.setProperty('--blue', content.primary_color);
-				if (content.footer_text) document.querySelector('footer > div:first-child > div:last-child').textContent = content.footer_text;
-				if (content.catalog_visible === 'false') document.querySelector('#catalogo').hidden = true;
-				if (content.hero_visible === 'false') document.querySelector('.hero').hidden = true;
-				if (content.benefits_visible === 'false') document.querySelector('.benefits').hidden = true;
+				if (content.footer_text && document.querySelector('footer > div:first-child > div:last-child')) document.querySelector('footer > div:first-child > div:last-child').textContent = content.footer_text;
+				if (content.catalog_visible === 'false' && document.querySelector('#catalogo')) document.querySelector('#catalogo').hidden = true;
+				if (content.hero_visible === 'false' && document.querySelector('.hero')) document.querySelector('.hero').hidden = true;
+				if (content.benefits_visible === 'false' && document.querySelector('.benefits')) document.querySelector('.benefits').hidden = true;
 
 				// Aplicar diseño avanzado del hero directamente desde el mismo payload sin segunda petición
 				const hero = document.querySelector('.hero');
