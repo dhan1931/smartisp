@@ -1,14 +1,12 @@
 # Checklist de despliegue a producción (Hostinger)
 
-Este documento deja todo listo para cuando decidas desplegar. **Nada de esto se ejecuta automáticamente ni toca la base de datos real** — es la lista de pasos a seguir, en orden, con el porqué de cada uno.
-
-Estado al momento de escribir esto (rama `dev-session-20261006`): código committeado y empujado a GitHub, 6 migraciones probadas dos veces en local (contra la copia de desarrollo y contra una importación limpia del dump original), pendiente aplicar a producción.
+Esta guía cubre la publicación del código en Hostinger y la aplicación deliberada de cambios de esquema. El build no ejecuta migraciones ni modifica la base de datos. Verifica en hPanel el último despliegue y el estado real de las migraciones antes de operar producción.
 
 ## 1. Antes de tocar nada en producción
 
 - [ ] **Respaldo completo de la base real de Hostinger** (`mysqldump`, fuera del repo). Sin esto no se sigue.
 - [ ] Confirmar que nadie más está desplegando/editando el sitio en ese momento.
-- [ ] Revisar `git log main..dev-session-20261006` para saber exactamente qué va a cambiar (o el diff de la PR si ya la abriste: https://github.com/dhan1931/smartisp/pull/new/dev-session-20261006).
+- [ ] Revisar el commit que se publicará en `main` y confirmar que el build anterior terminó correctamente.
 
 ## 2. Migraciones de base de datos (6, ya probadas en local)
 
@@ -54,7 +52,7 @@ en un único archivo: **`docs/MIGRACION-MANUAL-PRODUCCION.sql`**. Mismo contenid
 migraciones, en el mismo orden, con una sección de verificación al final (conteos esperados: 2789
 productos, 12 pedidos, 4 usuarios — los del dump original `u606699314_smart_isp.sql`).
 
-Probado dos veces esta sesión contra una copia local limpia del dump original (`CREATE DATABASE`
+Probado dos veces contra una copia local limpia del dump original (`CREATE DATABASE`
 nueva + importar el dump + correr este archivo): corre de punta a punta sin errores, deja las 6
 migraciones registradas en `schema_migrations` (para que un futuro `--status` las reconozca como
 aplicadas), y los conteos de verificación coinciden exactamente.
@@ -101,14 +99,17 @@ El código lee primero las variables de entorno de Hostinger y solo después cae
 Eso permite que credenciales sensibles como `MYSQL_PASSWORD` y `SMTP_PASS` no vivan en la base ni
 en el repositorio.
 
-## 4. Subir el código
+## 4. Publicar el código
 
-Según `docs/ARQUITECTURA-Y-DEUDA.md`, Hostinger sirve la raíz del repo directamente (sin build de
-Vite en producción hoy). El método de subida (git pull en el servidor, FTP, panel de Hostinger)
-depende de cómo lo tengas configurado ahí — no se documenta aquí porque no se verificó esta sesión.
+El despliegue de Hostinger conectado a este repositorio toma la rama `main`, instala dependencias
+con npm, ejecuta `npm run build` y sincroniza `dist/` con `public_html`. El build multipágina de Vite
+incluye las páginas HTML, assets, endpoints PHP y reglas/archivos SEO declarados en `vite.config.js`.
+No edites `dist/` manualmente: se vuelve a generar en cada compilación.
 
-- [ ] Fusionar `dev-session-20261006` a `main` (o desplegar directo desde esa rama, según prefieras).
-- [ ] Subir los archivos al hosting.
+- [ ] Confirmar que el commit que se publicará está en `main`.
+- [ ] En los logs, comprobar `npm run build`, la lista de páginas esperadas en `dist/` y el resultado de publicación.
+- [ ] Confirmar que los secretos PHP siguen configurados en hPanel o en `.env` fuera de `public_html`.
+- [ ] Verificar el sitio y las peticiones de datos después del despliegue; una respuesta 200 de la página no confirma conexión a MySQL.
 
 ### Cómo debe quedar la raíz web en Hostinger tras un despliegue limpio
 
@@ -151,14 +152,14 @@ No hace falta subirlos ni borrarlos — no los sirve ninguna ruta mientras PHP s
       Si no existen, el código las crea solo en el primer uso (`@mkdir(..., true)`), pero conviene
       confirmar los permisos de escritura del usuario de PHP en Hostinger.
 
-## 5. Después de desplegar: verificación mínima
+## 5. Después de publicar: verificación mínima
 
 - [ ] `/` (portada) carga.
 - [ ] `/tienda.html` carga el catálogo, un filtro de subcategoría y una búsqueda funcionan.
 - [ ] El sidebar de categorías muestra grupos prolijos (Computación, Componentes, Redes,
       Monitores, Periféricos...), no decenas de categorías sueltas sin agrupar.
 - [ ] `/producto/<slug>` de un producto real carga bien.
-- [ ] Un producto **oculto** (`visible=0`) da 404 en su URL directa (fix de esta sesión).
+- [ ] Un producto **oculto** (`visible=0`) da 404 en su URL directa.
 - [ ] Login de admin funciona; `/admin.html`, `/pedidos.html`, `/configuracion.html` cargan y
       muestran datos reales (no solo el shell).
 - [ ] En el navbar del panel admin, el botón "Ver tienda" se lee bien (texto visible, no blanco

@@ -3,6 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<script>if (new URLSearchParams(location.search).has('embedAccount')) document.documentElement.classList.add('account-embed-mode');</script>
 	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 	<meta http-equiv="Pragma" content="no-cache">
 	<meta http-equiv="Expires" content="0">
@@ -34,7 +35,7 @@
 	<link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
 	<link rel="manifest" href="/assets/site.webmanifest">
 	<meta name="theme-color" content="#102a43">
-	<script src="/assets/js/public-brand.js" defer></script>
+	<script src="/assets/js/public-brand.js?v=landing-logo" defer></script>
 	<script type="application/ld+json">
 	{
 		"@context": "https://schema.org",
@@ -138,6 +139,7 @@
 		.nav-actions { margin-left: auto; display: flex; gap: 18px; align-items: center; justify-self: end; }
 		.nav-action { border: 0; background: transparent; color: var(--navy); display: flex; align-items: center; gap: 7px; font-weight: 600; padding: 4px; }
 		.public-menu-btn { display: none; align-items: center; justify-content: center; width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--navy); }
+		.public-menu-close { display: none; }
 		.public-menu-btn:hover { border-color: #9acfe9; color: var(--blue); }
 		.public-nav { position: sticky; top: var(--sticky-nav-height, 70px); z-index: 999; background: var(--navy); color: #fff; display: flex; justify-content: center; gap: clamp(22px, 5vw, 80px); padding: 11px 5vw; font-weight: 800; font-size: 15px; box-shadow: inset 0 1px rgba(255,255,255,.08); }
 		.public-nav a { color: #fff; text-decoration: none; white-space: nowrap; opacity: .96; }
@@ -335,7 +337,7 @@
 		.product { cursor: pointer; transition: .2s; }
 		.product:hover { border-color: #9acfe9; box-shadow: 0 12px 24px rgba(30,103,150,.12); transform: translateY(-3px); }
 		.product button { cursor: pointer; }
-		.modal { position: fixed; inset: 0; background: rgba(16,42,67,.45); z-index: 12; display: grid; place-items: center; padding: 20px; visibility: hidden; opacity: 0; transition: .2s; }
+		.modal { position: fixed; inset: 0; background: rgba(16,42,67,.45); z-index: 20000; display: grid; place-items: center; padding: 20px; visibility: hidden; opacity: 0; transition: .2s; }
 		.modal.open { visibility: visible; opacity: 1; }
 		.modal-panel { width: min(720px, 100%); max-height: min(680px, 92vh); overflow-y: auto; background: white; position: relative; padding: 30px; transform: translateY(12px); transition: .25s; }
 		.modal.open .modal-panel { transform: translateY(0); }
@@ -1350,7 +1352,7 @@
 			.modal {
 				align-items: flex-end !important;
 				padding: 0 !important;
-				z-index: 200 !important;
+				z-index: 20000 !important;
 			}
 			.modal-panel {
 				width: 100% !important;
@@ -1533,19 +1535,73 @@
 				height: 40px !important;
 			}
 		}
+		@media (max-width: 800px) {
+			.public-menu-btn { display: inline-flex !important; }
+			.public-menu-close { display: flex !important; align-items: center; justify-content: space-between; width: 100%; min-height: 48px; margin-bottom: 8px; padding: 0 4px; border: 0; border-bottom: 1px solid rgba(255,255,255,.18); background: transparent; color: #fff; font: inherit; font-weight: 800; text-align: left; }
+			.public-nav {
+				display: none !important;
+				position: fixed !important;
+				inset: 0 !important;
+				z-index: 12000 !important;
+				flex-direction: column !important;
+				align-items: stretch !important;
+				justify-content: flex-start !important;
+				gap: 0 !important;
+				padding: max(12px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom)) !important;
+				overflow-y: auto !important;
+				overscroll-behavior: contain;
+				white-space: normal !important;
+				background: var(--navy) !important;
+				box-shadow: none !important;
+			}
+			.public-nav.is-open { display: flex !important; }
+			.public-nav > a { flex: 0 0 auto !important; padding: 14px 4px !important; border-bottom: 1px solid rgba(255,255,255,.14) !important; white-space: normal !important; }
+			.public-nav-cats { display: grid !important; position: static !important; gap: 8px !important; padding: 14px 0 4px !important; border-top: 1px solid rgba(255,255,255,.14) !important; }
+			.public-cat-trigger { justify-content: space-between !important; width: 100% !important; min-height: 44px !important; color: #fff !important; }
+			.public-cat-panel {
+				position: static !important;
+				display: grid !important;
+				width: 100% !important;
+				max-height: none !important;
+				overflow: visible !important;
+				transform: none !important;
+				opacity: 1 !important;
+				visibility: visible !important;
+				pointer-events: auto !important;
+				box-shadow: none !important;
+				border: 1px solid rgba(255,255,255,.14) !important;
+				background: rgba(255,255,255,.06) !important;
+				color: #fff !important;
+			}
+			.public-nav-cats-head { display: flex !important; justify-content: space-between !important; padding: 0 4px !important; }
+			.public-nav-cats-title { color: #9fc7d9 !important; font-size: 11px !important; letter-spacing: .12em !important; padding: 0 !important; }
+			.public-nav-cats-head a { color: #ffd166 !important; padding: 0 !important; }
+			.public-nav-cat-search { background: rgba(255,255,255,.08) !important; color: #9fc7d9 !important; }
+			.public-nav-cat-search input { color: #fff !important; }
+			.public-nav-cat-search input::placeholder { color: #bdd8e5 !important; }
+			.public-nav-cat-list { padding: 0 8px 8px !important; }
+			.public-nav-cats .public-nav-cat-list a { padding: 0 10px !important; color: #fff !important; border-bottom: 1px solid rgba(255,255,255,.14) !important; }
+		}
+		html.account-embed-mode body, body.account-embed { min-height: 100vh; overflow: hidden; background: transparent; }
+		html.account-embed-mode body > :not(#accountSystemModal), body.account-embed > :not(#accountSystemModal) { display: none !important; }
+		body.account-embed #accountSystemModal { z-index: 1; background: rgba(16,44,61,.62); backdrop-filter: none; }
 	</style>
     <style>
         .nav, .public-nav { position: relative !important; top: auto !important; }
+        @media (max-width: 800px) {
+            .public-nav.is-open { position: fixed !important; inset: 0 !important; }
+        }
     </style>
 </head>
 <body>
 	<div class="topbar"><span><i data-lucide="truck" width="14"></i> Envío gratis en Guayas</span><span><i data-lucide="clock" width="13"></i> Atención experta · Lun a Vie 9:00 a 18:00</span></div>
 	<header class="nav">
-		<a class="logo" href="/" title="SmartISP Tienda Online"><img src="/assets/favicons/favicon-192x192.png" alt="SmartISP" style="height:38px;width:auto;object-fit:contain;"></a>
+		<a class="logo" href="/" title="SmartISP Tienda Online">SmartISP</a>
 		<form class="search" id="searchForm"><input id="searchInput" type="search" placeholder="¿Qué estás buscando hoy?" aria-label="Buscar productos"><button aria-label="Buscar"><i data-lucide="search" width="18"></i></button></form>
 		<div class="nav-actions"><button class="nav-action" id="openAccount"><i data-lucide="user" width="16"></i><span id="accountLabel">Mi cuenta</span></button><a class="admin-nav-link" id="adminNavLink" href="admin.html" style="display: none;"><i data-lucide="layout-dashboard" width="16"></i><span>Panel admin</span></a><button class="nav-action cart-button" id="openCart"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="cart-count" id="cartCount">0</b></button><button class="public-menu-btn" id="publicMenuBtn" type="button" aria-label="Abrir secciones" aria-expanded="false" aria-controls="publicNav"><i data-lucide="menu" width="20"></i></button></div>
 	</header>
 	<nav class="public-nav" id="publicNav" aria-label="Secciones principales">
+		<button class="public-menu-close" id="publicMenuClose" type="button"><span>Secciones</span><i data-lucide="x" width="20"></i></button>
 		<a href="/categorias-destacadas">Categorías Destacadas</a>
 		<a href="/productos-destacados">Productos Destacados</a>
 		<a href="/servicios">Servicios</a>
@@ -2960,6 +3016,7 @@
 		cartDrawer?.addEventListener('click', event => { if (event.target.id === 'drawer') setCartOpen(false); });
 		const publicMenuBtn = document.querySelector('#publicMenuBtn');
 		const publicNav = document.querySelector('#publicNav');
+		const publicMenuClose = document.querySelector('#publicMenuClose');
 		const updateStickyNavOffset = () => {
 			const header = document.querySelector('.nav');
 			document.documentElement.style.setProperty('--sticky-nav-height', `${header?.offsetHeight || 70}px`);
@@ -2980,6 +3037,12 @@
 				publicMenuBtn.innerHTML = '<i data-lucide="menu" width="20"></i>';
 				lucide?.createIcons();
 			}));
+			publicMenuClose?.addEventListener('click', () => {
+				publicNav.classList.remove('is-open');
+				publicMenuBtn.setAttribute('aria-expanded', 'false');
+				publicMenuBtn.innerHTML = '<i data-lucide="menu" width="20"></i>';
+				lucide?.createIcons();
+			});
 		}
 		const publicCategoryMenu = document.querySelector('#publicCategoryMenu');
 		const publicCategoryTrigger = document.querySelector('#publicCategoryTrigger');
@@ -3045,14 +3108,14 @@
 		});
 		const applySiteLogo = content => {
 			if (!content || window.__publicBrandManaged) return;
-			const mode = content.logo_type || content.landing_logo_type || ((content.logo_image || content.landing_logo_image) ? 'image' : 'text');
-			const brand = content.brand_name || content.landing_logo_text || 'SmartISP';
-			const lightHeight = parseInt(content.logo_height || content.landing_logo_height, 10) || 38;
-			const darkHeight = parseInt(content.logo_dark_height || content.landing_logo_dark_height, 10) || 42;
-			const darkInvert = (content.logo_dark_invert === 'true' || content.logo_dark_invert === true || content.landing_logo_dark_invert === 'true' || content.landing_logo_dark_invert === true);
-			const lightImg = content.logo_image || content.landing_logo_image || '';
-			const darkImg = content.logo_dark_image || content.landing_logo_dark_image || lightImg;
-			const text = (content.logo_text || content.landing_logo_text || brand || 'smartisp').trim();
+			const mode = content.landing_logo_type || (content.landing_logo_image ? 'image' : content.logo_type || (content.logo_image ? 'image' : 'text'));
+			const brand = content.landing_logo_text || content.brand_name || 'SmartISP';
+			const lightHeight = parseInt(content.landing_logo_height || content.logo_height, 10) || 38;
+			const darkHeight = parseInt(content.landing_logo_dark_height || content.logo_dark_height, 10) || 42;
+			const darkInvert = (content.landing_logo_dark_invert === 'true' || content.landing_logo_dark_invert === true || content.logo_dark_invert === 'true' || content.logo_dark_invert === true);
+			const lightImg = content.landing_logo_image || content.logo_image || '';
+			const darkImg = content.landing_logo_dark_image || content.logo_dark_image || lightImg;
+			const text = (content.landing_logo_text || content.logo_text || brand || 'smartisp').trim();
 
 			// 1. Barra superior / Navbar claro (.nav .logo)
 			const navLogo = document.querySelector('.nav .logo');
@@ -3253,6 +3316,12 @@
 				}, 300);
 			}
 			if (accountParam) {
+				urlParams.delete('openAccount');
+				urlParams.delete('cuenta');
+				const remainingParams = urlParams.toString();
+				const cleanUrl = `${window.location.pathname}${remainingParams ? `?${remainingParams}` : ''}${window.location.hash}`;
+				if (urlParams.has('embedAccount')) document.body.classList.add('account-embed');
+				window.history.replaceState(window.history.state, '', cleanUrl);
 				setTimeout(() => {
 					document.querySelector('#openAccount')?.click();
 				}, 300);
@@ -3792,6 +3861,9 @@
 
 		const closeAccountSystem = () => {
 			accountSystem.classList.remove('is-open');
+			if (new URLSearchParams(window.location.search).has('embedAccount')) {
+				window.parent.postMessage({ type: 'smartisp:close-account' }, window.location.origin);
+			}
 		};
 
 		const setAccountUser = (user, remember = localStorage.getItem('smartisp.accountRemembered') === 'true') => {

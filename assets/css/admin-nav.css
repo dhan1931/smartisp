@@ -87,6 +87,12 @@ body.has-admin-sidebar > .navbar * {
   padding: 22px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, .08);
   position: relative;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+
+#smartisp-admin-nav .admin-nav-brand:hover {
+  background: rgba(255, 255, 255, .035);
 }
 
 #smartisp-admin-nav .admin-nav-brand svg.lucide {
@@ -109,6 +115,7 @@ body.has-admin-sidebar > .navbar * {
 }
 
 #smartisp-admin-nav .admin-nav-toggle {
+  order: -1;
   width: 30px;
   height: 30px;
   border: 1px solid rgba(255, 255, 255, .18);
@@ -118,7 +125,7 @@ body.has-admin-sidebar > .navbar * {
   display: grid;
   place-items: center;
   cursor: pointer;
-  margin-left: auto;
+  margin-left: 0;
   flex-shrink: 0;
   transition: background .15s, color .15s;
 }
@@ -126,6 +133,24 @@ body.has-admin-sidebar > .navbar * {
 #smartisp-admin-nav .admin-nav-toggle:hover {
   background: rgba(255, 255, 255, .12);
   color: #fff;
+}
+
+#smartisp-admin-nav .admin-nav-toggle,
+#smartisp-admin-nav .admin-nav-mobile-toggle {
+  position: relative;
+  z-index: 1;
+}
+
+#smartisp-admin-nav .admin-nav-mobile-toggle {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .06);
+  color: #fff;
+  place-items: center;
+  cursor: pointer;
 }
 
 #smartisp-admin-nav .admin-nav-links {
@@ -272,7 +297,8 @@ body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-logout span {
 
 body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-toggle {
   position: absolute;
-  right: 8px;
+  left: 8px;
+  right: auto;
   top: 52px;
   margin-left: 0;
 }
@@ -301,70 +327,118 @@ body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-user-row {
   justify-content: center;
 }
 
-/* Pantallas chicas: un sidebar fijo de ancho completo se comeria toda la pantalla. Se convierte
-   en una barra horizontal arriba (como el navbar anterior a DEV-20261006-010), en vez de
-   esconderla del todo -- sin esto, alguien en el celular se queda sin forma de navegar. */
+/* En móvil, el panel se abre desde una cabecera compacta y no ocupa espacio hasta que se solicita. */
 @media (max-width: 900px) {
   :root { --nav-width: 0px; }
   #smartisp-admin-nav {
-    position: static;
-    width: auto;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: auto;
+    left: 0;
+    width: 100%;
     height: auto;
-    flex-direction: row;
-    align-items: center;
-    overflow: visible;
+    max-height: 60px;
+    flex-direction: column;
+    align-items: stretch;
+    overflow: hidden;
+    box-shadow: 0 3px 14px rgba(16, 44, 61, .22);
+    transition: width .2s ease, max-height .2s ease;
   }
+  #smartisp-admin-nav.is-mobile-open {
+    width: min(320px, 86vw);
+    height: 100dvh;
+    max-height: 100dvh;
+    right: auto;
+    bottom: 0;
+    overflow-y: auto;
+    box-shadow: 8px 0 30px rgba(16, 44, 61, .28);
+  }
+  #smartisp-admin-nav + .admin-nav-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    padding: 0;
+    border: 0;
+    background: rgba(8, 25, 35, .48);
+    z-index: calc(var(--nav-z-sidebar) - 1);
+  }
+  #smartisp-admin-nav.is-mobile-open + .admin-nav-backdrop { display: block; }
+  body.has-admin-sidebar { padding-top: 60px; }
   body.has-admin-sidebar > .top,
   body.has-admin-sidebar > .topbar,
   body.has-admin-sidebar > .navbar,
   body.has-admin-sidebar > main {
-    margin-left: 0;
-    width: 100vw;
-    max-width: 100vw;
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
   }
   body.has-admin-sidebar > main.shell {
-    width: min(1180px, 90vw);
-    max-width: 90vw;
-    margin-left: auto;
-    margin-right: auto;
+    width: min(1180px, calc(100% - 24px)) !important;
+    max-width: calc(100% - 24px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    margin-top: 16px;
   }
   body.has-admin-sidebar > .editor-top-bar {
     left: 0;
     right: 0;
     width: 100vw;
+    top: 60px;
   }
 
   #smartisp-admin-nav .admin-nav-brand {
     border-bottom: 0;
-    padding: 12px 14px;
+    min-height: 60px;
+    padding: 8px 14px;
+    justify-content: flex-start;
+    gap: 10px;
+    cursor: pointer;
   }
   #smartisp-admin-nav .admin-nav-toggle { display: none; }
-  #smartisp-admin-nav .admin-nav-brand span { display: none; }
+  #smartisp-admin-nav .admin-nav-brand > div { display: block; }
+  #smartisp-admin-nav .admin-nav-brand strong { font-size: 14px; }
+  #smartisp-admin-nav .admin-nav-brand span { display: block; font-size: 10px; }
+  #smartisp-admin-nav .admin-nav-mobile-toggle { display: grid; order: -1; margin: 0 2px 0 0; flex: 0 0 40px; }
+  #smartisp-admin-nav .admin-nav-toggle { order: -1; }
+  #smartisp-admin-nav .admin-nav-brand > div { flex: 1; }
   #smartisp-admin-nav .admin-nav-links {
-    flex: 1;
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding: 8px;
-    gap: 4px;
+    display: none;
+    flex: 0 1 auto;
+    flex-direction: column;
+    overflow-y: auto;
+    max-height: none;
+    padding: 8px 12px 14px;
+    gap: 0;
   }
+  #smartisp-admin-nav.is-mobile-open .admin-nav-links { display: flex; }
+  #smartisp-admin-nav.is-mobile-open .admin-nav-links { flex: 1 0 auto; }
   #smartisp-admin-nav .admin-nav-group {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-bottom: 0;
+    display: block;
+    margin: 0 0 10px;
   }
-  #smartisp-admin-nav .admin-nav-group-label { display: none; }
-  #smartisp-admin-nav .admin-nav-links a { white-space: nowrap; }
-  #smartisp-admin-nav .admin-nav-links a .label { display: none; }
+  #smartisp-admin-nav .admin-nav-group-label { display: block; padding: 8px 10px 4px; }
+  #smartisp-admin-nav .admin-nav-links a { min-height: 42px; white-space: normal; }
+  #smartisp-admin-nav .admin-nav-links a .label { display: inline; }
   #smartisp-admin-nav .admin-nav-user {
-    border-top: 0;
-    flex-direction: row;
-    align-items: center;
-    padding: 8px 12px;
+    display: none;
+    border-top: 1px solid rgba(255, 255, 255, .1);
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 16px max(14px, env(safe-area-inset-bottom));
   }
-  #smartisp-admin-nav .admin-nav-user-info { display: none; }
+  #smartisp-admin-nav.is-mobile-open .admin-nav-user { display: flex; }
+  #smartisp-admin-nav.is-mobile-open .admin-nav-user { margin-top: auto; }
+  #smartisp-admin-nav .admin-nav-user-info { display: block; }
   #smartisp-admin-nav .admin-nav-storelink span,
-  #smartisp-admin-nav .admin-nav-logout span { display: none; }
+  #smartisp-admin-nav .admin-nav-logout span { display: inline; }
+  body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-brand > div,
+  body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-user-info { display: block; }
+  body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-group-label { display: block; }
+  body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-links a .label,
+  body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-storelink span,
+  body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-logout span { display: inline; }
 }

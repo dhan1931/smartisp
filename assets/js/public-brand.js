@@ -12,14 +12,14 @@
   const applyLogo = content => {
     if (!content) return;
     window.__publicBrandManaged = true;
-    const mode = content.logo_type || content.landing_logo_type || ((content.logo_image || content.landing_logo_image) ? 'image' : 'text');
-    const brand = content.brand_name || content.logo_text || content.landing_logo_text || 'SmartISP';
-    const lightImg = content.logo_image || content.landing_logo_image || '';
-    const darkImg = content.logo_dark_image || content.landing_logo_dark_image || lightImg;
-    const text = content.logo_text || content.landing_logo_text || brand;
-    const lightHeight = parseInt(content.logo_height || content.landing_logo_height, 10) || 38;
-    const darkHeight = parseInt(content.logo_dark_height || content.landing_logo_dark_height, 10) || 42;
-    const darkInvert = content.logo_dark_invert === 'true' || content.logo_dark_invert === true || content.landing_logo_dark_invert === 'true' || content.landing_logo_dark_invert === true;
+    const mode = content.landing_logo_type || (content.landing_logo_image ? 'image' : content.logo_type || (content.logo_image ? 'image' : 'text'));
+    const brand = content.landing_logo_text || content.brand_name || content.logo_text || 'SmartISP';
+    const lightImg = content.landing_logo_image || content.logo_image || '';
+    const darkImg = content.landing_logo_dark_image || content.logo_dark_image || lightImg;
+    const text = content.landing_logo_text || content.logo_text || brand;
+    const lightHeight = parseInt(content.landing_logo_height || content.logo_height, 10) || 38;
+    const darkHeight = parseInt(content.landing_logo_dark_height || content.logo_dark_height, 10) || 42;
+    const darkInvert = content.landing_logo_dark_invert === 'true' || content.landing_logo_dark_invert === true || content.logo_dark_invert === 'true' || content.logo_dark_invert === true;
 
     document.querySelectorAll('.logo, [data-public-logo]').forEach(el => {
       const isFooter = !!el.closest('footer');

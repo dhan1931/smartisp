@@ -51,15 +51,16 @@
     .logo-quick-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; background: #f0f7fa; border: 1px solid #cce5ef; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; }
     .logo-badge-format { font-size: 11px; font-weight: 800; background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 6px; letter-spacing: 0.05em; }
     @keyframes save-confirm { 0% { opacity: 0; transform: translateY(-8px) scale(.98); } 55% { transform: translateY(0) scale(1.02); } 100% { opacity: 1; transform: translateY(0) scale(1); } } @keyframes rise-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .panel { animation: rise-in .45s ease both; } @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } .top, .toolbar, .section-heading { align-items: flex-start; flex-direction: column; } } @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+    .panel { animation: rise-in .45s ease both; } @media (max-width: 720px) { .grid, .design-controls, .logo-controls-grid { grid-template-columns: 1fr !important; } .top, .toolbar, .section-heading { align-items: flex-start; flex-direction: column; } .crop-options { align-items: stretch; flex-direction: column; } .crop-actions { flex-wrap: wrap; } .logo-quick-bar { align-items: flex-start; flex-direction: column; } }
+    @media (max-width: 420px) { .shell { width: calc(100% - 16px); padding: 14px; } .logo-customizer-card { padding: 14px 12px; } .crop-dialog { padding: 16px; } }
     svg.lucide { width: 1em; height: 1em; vertical-align: -0.125em; stroke-width: 2; flex-shrink: 0; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
-  <link rel="stylesheet" href="/assets/css/admin-nav.css">
+  <link rel="stylesheet" href="/assets/css/admin-nav.css?v=mobile-hitbox">
   <div id="smartisp-admin-nav" class="is-loading" data-active="config"></div>
-  <script src="/assets/js/admin-nav.js" defer></script>
+  <script src="/assets/js/admin-nav.js?v=mobile-hitbox" defer></script>
   <header class="top"><div><h1>SmartISP Administracion</h1><span>Configuración de apariencia, visibilidad y correo</span></div><div style="display:flex;gap:8px;"><a class="button secondary" href="/">Ver presentación</a></div></header>
   <main class="shell">
     <section id="accessDeniedPanel" class="login hidden">
@@ -283,7 +284,7 @@
             </div>
           </div>
           <form id="notificationsForm" style="margin-top:16px;">
-            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;margin-bottom:14px;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 280px), 1fr));gap:16px;margin-bottom:14px;">
               <div>
                 <label style="font-weight:700;">1. Correo de Destino de Notificaciones (Para recibir compras y datos del cliente)
                   <input name="admin_email" type="email" placeholder="gestion@smart-isp.es" value="gestion@smart-isp.es" required>

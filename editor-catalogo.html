@@ -268,7 +268,7 @@
     /* Categories Grid */
     .categories-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
       gap: 18px;
     }
     .category-card {
@@ -821,9 +821,9 @@
   </style>
 </head>
 <body>
-  <link rel="stylesheet" href="/assets/css/admin-nav.css">
+  <link rel="stylesheet" href="/assets/css/admin-nav.css?v=mobile-hitbox">
   <div id="smartisp-admin-nav" class="is-loading" data-active="catalogo"></div>
-  <script src="/assets/js/admin-nav.js" defer></script>
+  <script src="/assets/js/admin-nav.js?v=mobile-hitbox" defer></script>
 
   <!-- Top Navigation -->
   <header class="top-header">

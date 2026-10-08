@@ -1,213 +1,76 @@
-# TechStore - Tienda de Electrónica e Infraestructura TI
+# SmartISP
 
-Una plataforma de comercio electrónico moderna y responsive diseñada para la venta de productos electrónicos e infraestructura TI, con estética limpia y colores corporativos (azul, blanco y celeste).
+Tienda en línea de SmartISP Ecuador para productos de conectividad, cómputo, redes, energía, seguridad e infraestructura TI. Incluye catálogo público, páginas comerciales, checkout y un panel para administrar productos, categorías, pedidos y contenido.
 
-## 🎨 Características
+## Stack
 
-### Interfaz de Usuario
-- **Diseño Responsive**: Funciona perfectamente en desktop, tablet y móvil
-- **Navegación Intuitiva**: Header sticky con búsqueda y carrito de compras
-- **Paleta de Colores**:
-  - Azul Primario: `#003366`
-  - Azul Celeste: `#00A8E8`
-  - Blanco: `#FFFFFF`
+- Frontend multipágina: HTML, CSS y JavaScript.
+- API de producción: PHP con MySQL/MariaDB.
+- Compilación de páginas y assets: Vite (`npm run build`). El resultado se genera en `dist/`.
+- Hosting actual: Hostinger; el despliegue desde `main` compila y sincroniza `dist/` con `public_html`.
+- `server.js` y sus dependencias son un backend paralelo/legacy; no sustituyen la API PHP que usa la tienda en producción.
 
-### Funcionalidades Principales
+## Páginas principales
 
-#### 🔍 Búsqueda y Filtros
-- Búsqueda en tiempo real por nombre, descripción, especificaciones y marca
-- Filtros por categoría:
-  - Laptops & Computadoras
-  - Componentes
-  - Networking
-  - Almacenamiento
-  - Servidores
-  - Periféricos
-- Filtros por marca (Dell, HP, Lenovo, Cisco, NVIDIA, Intel, etc.)
-- Rango de precio ajustable (hasta $50,000)
+- `/` y `/tienda.html`: tienda y catálogo.
+- `/categorias-destacadas` y `/productos-destacados`: páginas comerciales.
+- `/servicios` y `/nosotros`: información de SmartISP.
+- `/login.html`: acceso de clientes y administradores.
+- `/admin.html`, `/pedidos.html`, `/categorias.html`, `/configuracion.html`, `/editor-catalogo.html` y `/editor-landing.html`: administración. El acceso depende del rol que devuelve el backend.
 
-#### 📊 Catálogo de Productos
-- 24 productos de electrónica e infraestructura TI
-- Información completa: nombre, descripción, especificaciones técnicas
-- Precios con descuentos visibles
-- Calificaciones en estrellas
-- Iconos emoji para identificación visual rápida
+## Desarrollo local en Windows
 
-#### 🛒 Carrito de Compras
-- Añadir/eliminar productos
-- Ajustar cantidades
-- Resumen de compra con subtotal, envío y total
-- Envío gratis para compras mayores a $1,000
-- Carrito persistente durante la sesión
+1. Instala Node.js 22, PHP con PDO MySQL y acceso a una base MySQL/MariaDB de desarrollo.
+2. Instala dependencias: `npm ci`.
+3. Copia `scripts/dev-db.env.example` como `scripts/dev-db.local.env` y completa **solo las credenciales de la base local**. Ese archivo está ignorado por Git.
+4. Inicia el sitio y la API PHP desde PowerShell:
 
-#### 📝 Ordenamiento
-- Por Relevancia
-- Precio: Mayor a Menor
-- Precio: Menor a Mayor
-- Nombre: A - Z
-- Nombre: Z - A
+   ```powershell
+   .\scripts\dev-php.ps1 -Target local
+   ```
 
-### 📱 Categorías de Productos
+   Abre `http://localhost:8080`. Si PHP no está en la ruta predeterminada del script, indica su ubicación con `-Php`.
 
-1. **Laptops & Computadoras**: Dell XPS, HP Pavilion, Lenovo ThinkPad, MacBook Pro
-2. **Componentes**: GPUs NVIDIA, CPUs Intel, RAM Kingston, SSDs Samsung
-3. **Networking**: Switches Cisco, APs Ubiquiti, Routers Netgear, Firewalls Fortinet
-4. **Almacenamiento**: HDD WD, Seagate, NetApp AFF, NAS Synology
-5. **Servidores**: Dell PowerEdge, HP ProLiant, Lenovo ThinkSystem, Supermicro
-6. **Periféricos**: Ratones, Teclados, Monitores profesionales
+Para validar la compilación de producción sin iniciar el servidor:
 
-## 🚀 Cómo Usar
-
-### Opción 1: Abrir directamente el archivo HTML
-
-1. **Ubicación**: El proyecto está en `e:\ale\gamedev\amazon 2\`
-2. **Archivos principales**:
-   - `index.html` - Estructura HTML
-   - `styles.css` - Estilos y diseño
-   - `app.js` - Lógica de la aplicación
-
-3. **Ejecutar**:
-   - Simplemente abre `index.html` en tu navegador web preferido (Chrome, Firefox, Edge, Safari)
-   - Haz doble clic en el archivo o arrastralo al navegador
-
-### Opción 2: Usar un servidor local (Recomendado)
-
-Si quieres evitar problemas CORS (Cross-Origin):
-
-#### Con Python (si está instalado):
-```bash
-cd "e:\ale\gamedev\amazon 2"
-python -m http.server 8000
-```
-Luego abre: `http://localhost:8000`
-
-#### Con Node.js (si está instalado):
-```bash
-cd "e:\ale\gamedev\amazon 2"
-npx http-server -p 8000
-```
-Luego abre: `http://localhost:8000`
-
-#### Con Live Server en VS Code:
-1. Instala la extensión "Live Server" de Ritwick Dey
-2. Click derecho en `index.html` → "Open with Live Server"
-
-## 📂 Estructura de Carpetas
-
-```
-e:\ale\gamedev\amazon 2\
-├── index.html          # Estructura HTML
-├── styles.css          # Estilos CSS
-├── app.js              # Lógica JavaScript
-└── README.md           # Este archivo
+```powershell
+npm ci
+npm run build
 ```
 
-## 🎯 Funcionalidades Detalladas
+Vite escribe las páginas y assets compilados en `dist/`. No edites `dist/` a mano.
 
-### Búsqueda
-- Introduce términos en la barra de búsqueda
-- Búsqueda instantánea a través de nombre, descripción, specs y marca
-- Presiona Enter o haz clic en el botón de búsqueda
+## Configuración
 
-### Filtros
-- Selecciona múltiples categorías y marcas
-- Ajusta el rango de precio con el slider
-- Los filtros se aplican automáticamente
-- Botón "Limpiar Filtros" para resetear todo
-
-### Ordenamiento
-- Selecciona el tipo de ordenamiento desde el dropdown
-- Instantáneamente reordena los productos mostrados
-
-### Carrito
-- Haz clic en "Añadir" en cualquier producto
-- El botón mostrará una confirmación ✓
-- Visualiza tu carrito haciendo clic en el botón 🛒
-- Ajusta cantidades o elimina productos
-- Procede al pago (funcionalidad visual)
-
-## 🎨 Paleta de Colores
-
-```
-Azul Primario:     #003366 (RGB: 0, 51, 102)
-Azul Celeste:      #00A8E8 (RGB: 0, 168, 232)
-Blanco:            #FFFFFF (RGB: 255, 255, 255)
-Gris Claro:        #F5F5F5 (RGB: 245, 245, 245)
-Gris Oscuro:       #333333 (RGB: 51, 51, 51)
-Éxito:             #28A745 (Verde)
-Advertencia:       #FFC107 (Amarillo)
-Peligro:           #DC3545 (Rojo)
-```
-
-## 💾 Características Técnicas
-
-- **Sin dependencias externas**: HTML5 + CSS3 + JavaScript vanilla
-- **Totalmente responsive**: Funciona en cualquier dispositivo
-- **Rendimiento optimizado**: Carga rápida y ejecución suave
-- **Accesibilidad**: Etiquetas aria-label y estructura HTML semántica
-- **Animaciones suaves**: Transiciones CSS para mejor UX
-
-## 📊 Datos de Ejemplo
-
-El proyecto incluye 24 productos de ejemplo con:
-- Precios realistas (desde $99 hasta $12,999)
-- Especificaciones técnicas auténticas
-- Descripciones detalladas
-- Calificaciones en estrellas
-- Iconos para visualización rápida
-
-## 🔐 Notas sobre la Seguridad
-
-Esta es una demostración/prototipo de frontend. Para una tienda real:
-- Implementar backend seguro
-- Validar datos en servidor
-- Usar HTTPS
-- Implementar autenticación
-- Integrar pasarela de pagos real
-- Proteger datos sensibles
-
-## 🗄️ Persistencia de Usuarios
-
-El backend usa PostgreSQL cuando existe la variable `DATABASE_URL`. Al iniciar crea automáticamente la tabla `users` y guarda los registros de forma permanente. Copia `.env.example` como `.env` y completa una conexión de PostgreSQL, por ejemplo de Neon o Supabase:
+En Hostinger, configura las variables en el entorno disponible para PHP o usa un archivo `.env` fuera de `public_html`. La API también admite `SMARTISP_ENV_FILE` para indicar una ruta absoluta. La configuración MySQL requiere:
 
 ```env
-DATABASE_URL=postgresql://usuario:contraseña@host:5432/base_de_datos
-SESSION_SECRET=una-clave-segura
-NODE_ENV=production
+MYSQL_HOST=
+MYSQL_PORT=3306
+MYSQL_DATABASE=
+MYSQL_USER=
+MYSQL_PASSWORD=
+SESSION_SECRET=
 ```
 
-En Vercel, configura estas variables en **Project Settings → Environment Variables**. No subas `.env` a GitHub. Sin `DATABASE_URL`, el proyecto usa memoria temporal únicamente para desarrollo local.
+El correo puede configurarse con `ADMIN_EMAIL`, `SMTP_PROVIDER`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `RESEND_API_KEY` y `EMAIL_FROM`, según el proveedor. Usa `.env.example` como referencia, reemplaza los valores de ejemplo y **no subas `.env`, credenciales ni volcados SQL al repositorio**.
 
-## 📝 Próximas Mejoras Posibles
+## Base de datos y despliegues
 
-- [ ] Backend con base de datos
-- [ ] Sistema de usuarios y login
-- [ ] Integración de pagos (Stripe, PayPal)
-- [ ] Historial de órdenes
-- [ ] Reseñas y comentarios de productos
-- [ ] Comparador de productos
-- [ ] Wishlist/Favoritos
-- [ ] Carrito persistente (localStorage)
-- [ ] Notificaciones en tiempo real
-- [ ] Panel de administración
+Las migraciones están en `migrations/` y no se ejecutan al compilar ni al publicar el sitio. Revisa el estado, respalda la base y aplica cambios de esquema de forma deliberada siguiendo [docs/DEPLOY.md](docs/DEPLOY.md). La propuesta de tablas futuras y el resultado de su Fase 0 son documentos de planificación; no significan que esas tablas estén instaladas en producción.
 
-## 🌐 Navegadores Soportados
+Un push a `main` puede disparar el despliegue configurado en Hostinger. Después de publicar, valida páginas públicas, catálogo, login, endpoints de API y disponibilidad de datos. Los logs de compilación no bastan para confirmar que PHP se conectó a MySQL.
 
-- Chrome/Chromium 90+
-- Firefox 88+
-- Safari 14+
-- Edge 90+
-- Opera 76+
+## Documentación
 
-## 📧 Contacto y Soporte
+- [Guía de despliegue](docs/DEPLOY.md)
+- [Arquitectura y deuda técnica](docs/ARQUITECTURA-Y-DEUDA.md)
+- [Plan de tablas futuras y Fase 0](tablasnuevas.md)
+- [Historial de cambios](CHANGELOG.md)
 
-Para preguntas o sugerencias sobre esta tienda de ejemplo, puedes:
-- Revisar la sección de FAQ en el footer
-- Contactar a través del formulario de contacto
-- Revisar la documentación técnica
+## Seguridad
 
----
-
-**Versión**: 1.0.0  
-**Última actualización**: 2026-08-18  
-**Licencia**: Uso educativo y comercial permitido
+- `.env`, archivos de secretos, cachés locales y volcados de base de datos están excluidos de Git.
+- No copies credenciales de producción a `scripts/dev-db.local.env` ni a ejemplos versionados.
+- Las migraciones de producción requieren respaldo y revisión previa.
+- No se realizan cambios de base de datos como parte de `npm run build`.

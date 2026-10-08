@@ -72,13 +72,14 @@
     document.body.classList.toggle('admin-sidebar-collapsed', collapsed);
     root.innerHTML =
       '<div class="admin-nav-brand">' +
+      '<button type="button" class="admin-nav-mobile-toggle" title="Abrir menú" aria-label="Abrir menú" aria-expanded="false" aria-controls="admin-nav-links"><i data-lucide="menu" aria-hidden="true"></i></button>' +
       '<i data-lucide="store" aria-hidden="true"></i>' +
       '<div><strong>SmartISP</strong><span>Panel Administrativo</span></div>' +
-      '<button type="button" class="admin-nav-toggle" title="' + (collapsed ? 'Expandir menú' : 'Contraer menú') + '" aria-label="' + (collapsed ? 'Expandir menú' : 'Contraer menú') + '" aria-expanded="' + (!collapsed) + '">' +
+      '<button type="button" class="admin-nav-toggle" title="' + (collapsed ? 'Expandir barra lateral' : 'Contraer barra lateral') + '" aria-label="' + (collapsed ? 'Expandir barra lateral' : 'Contraer barra lateral') + '" aria-controls="admin-nav-links" aria-expanded="' + (!collapsed) + '">' +
       '<i data-lucide="' + (collapsed ? 'panel-left-open' : 'panel-left-close') + '" aria-hidden="true"></i>' +
       '</button>' +
       '</div>' +
-      '<nav class="admin-nav-links">' + buildGroupsHtml(activeKey) + '</nav>' +
+      '<nav class="admin-nav-links" id="admin-nav-links" aria-label="Navegación administrativa">' + buildGroupsHtml(activeKey) + '</nav>' +
       '<div class="admin-nav-user">' +
       '<div class="admin-nav-user-row">' +
       '<span class="admin-nav-avatar">' + initial + '</span>' +
@@ -93,14 +94,55 @@
     root.querySelector('.admin-nav-toggle').addEventListener('click', function () {
       var nextCollapsed = !document.body.classList.contains('admin-sidebar-collapsed');
       document.body.classList.toggle('admin-sidebar-collapsed', nextCollapsed);
-      this.setAttribute('title', nextCollapsed ? 'Expandir menú' : 'Contraer menú');
-      this.setAttribute('aria-label', nextCollapsed ? 'Expandir menú' : 'Contraer menú');
+      this.setAttribute('title', nextCollapsed ? 'Expandir barra lateral' : 'Contraer barra lateral');
+      this.setAttribute('aria-label', nextCollapsed ? 'Expandir barra lateral' : 'Contraer barra lateral');
       this.setAttribute('aria-expanded', String(!nextCollapsed));
       this.innerHTML = '<i data-lucide="' + (nextCollapsed ? 'panel-left-open' : 'panel-left-close') + '" aria-hidden="true"></i>';
       try {
         localStorage.setItem('smartisp.adminSidebarCollapsed', nextCollapsed ? '1' : '0');
       } catch (e) { /* almacenamiento bloqueado; no es critico */ }
       if (window.lucide) window.lucide.createIcons();
+    });
+
+    var mobileToggle = root.querySelector('.admin-nav-mobile-toggle');
+    var brand = root.querySelector('.admin-nav-brand');
+    var backdrop = document.createElement('button');
+    backdrop.type = 'button';
+    backdrop.className = 'admin-nav-backdrop';
+    backdrop.setAttribute('aria-label', 'Cerrar menú');
+    backdrop.tabIndex = -1;
+    root.insertAdjacentElement('afterend', backdrop);
+    var setMobileOpen = function (open) {
+      root.classList.toggle('is-mobile-open', open);
+      mobileToggle.setAttribute('aria-expanded', String(open));
+      mobileToggle.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
+      mobileToggle.setAttribute('title', open ? 'Cerrar menú' : 'Abrir menú');
+      mobileToggle.innerHTML = '<i data-lucide="' + (open ? 'x' : 'menu') + '" aria-hidden="true"></i>';
+      if (window.lucide) window.lucide.createIcons();
+    };
+    mobileToggle.addEventListener('click', function () {
+      setMobileOpen(!root.classList.contains('is-mobile-open'));
+    });
+    brand.addEventListener('click', function (event) {
+      if (event.target.closest('button')) return;
+      if (window.matchMedia('(max-width: 900px)').matches) {
+        setMobileOpen(!root.classList.contains('is-mobile-open'));
+      } else {
+        root.querySelector('.admin-nav-toggle').click();
+      }
+    });
+    backdrop.addEventListener('click', function () { setMobileOpen(false); });
+    root.querySelectorAll('.admin-nav-links a').forEach(function (link) {
+      link.addEventListener('click', function () { setMobileOpen(false); });
+    });
+    document.addEventListener('click', function (event) {
+      if (root.classList.contains('is-mobile-open') && !root.contains(event.target)) setMobileOpen(false);
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && root.classList.contains('is-mobile-open')) {
+        setMobileOpen(false);
+        mobileToggle.focus();
+      }
     });
 
     root.querySelector('.admin-nav-logout').addEventListener('click', function () {
