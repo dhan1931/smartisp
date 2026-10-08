@@ -31,4 +31,4 @@
 ### Notes
 - La compilación no ejecuta migraciones ni altera la base de datos.
 - El workflow de GitHub valida código, artefactos y migraciones en una base temporal; el despliegue sigue a cargo de Hostinger.
-- `migrations/007_expandir_base_segura.sql` documenta expansión aditiva por fases; las tablas nuevas requieren backfill controlado y adaptación del backend antes de convertirse en fuente de escritura.
+- `docs/007_expandir_base_segura.sql` documenta expansión aditiva manual por fases y queda fuera del runner automático; requiere backfill controlado y adaptación del backend antes de convertirse en fuente de escritura.
