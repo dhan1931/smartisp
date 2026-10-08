@@ -530,6 +530,1103 @@
         showMessage($('#loginMessage'), error.message, true);
       }
     });
+    $('#contentForm').addEventListener('submit', async event => { event.preventDefault(); try { await saveForm(event.currentTarget, $('#contentMessage'), 'Apariencia guardada correctamente.'); } catch (error) { showMessage($('#contentMessage'), error.message, true); } });
+    $('#contentForm').addEventListener('input', updateDesignPreview);
+    $('#contentForm').addEventListener('change', updateDesignPreview);
+    $('#contentForm').addEventListener('image-applied', updateDesignPreview);
+    $('#visibilityForm').addEventListener('submit', async event => { event.preventDefault(); try { await saveForm(event.currentTarget, $('#visibilityMessage'), 'Visibilidad guardada correctamente.'); } catch (error) { showMessage($('#visibilityMessage'), error.message, true); } });
+    $('#smtpProviderSelect')?.addEventListener('change', event => {
+      updateProviderPanels(event.target.value);
+    });
+
+    $('#toggleGmailPass')?.addEventListener('click', () => {
+      const input = $('#gmailPass');
+      if (!input) return;
+      const isPass = input.type === 'password';
+      input.type = isPass ? 'text' : 'password';
+      $('#toggleGmailPass').textContent = isPass ? '🔒' : '👁️';
+    });
+
+    $('#toggleHostingerPass')?.addEventListener('click', () => {
+      const input = $('#hostingerPass');
+      if (!input) return;
+      const isPass = input.type === 'password';
+      input.type = isPass ? 'text' : 'password';
+      $('#toggleHostingerPass').textContent = isPass ? '🔒' : '👁️';
+    });
+
+    // Filtro y recarga de macro-categorías en panel de administración
+    $('#adminMacroSearchInput')?.addEventListener('input', e => {
+      renderMacroCategories(adminConfiguredCategories, e.target.value);
+    });
+
+    $('#refreshMacroCatsBtn')?.addEventListener('click', async () => {
+      const btn = $('#refreshMacroCatsBtn');
+      if (!btn) return;
+      btn.disabled = true;
+      const origText = btn.innerHTML;
+      btn.innerHTML = '<span>⏳</span> Recargando...';
+      await loadCategories();
+      btn.innerHTML = origText;
+      btn.disabled = false;
+    });
+
+    const getNotificationPayload = () => {
+      const form = $('#notificationsForm');
+      if (!form) return {};
+      const provider = $('#smtpProviderSelect')?.value || 'gmail';
+      const raw = Object.fromEntries(new FormData(form));
+      const payload = {
+        admin_email: String(raw.admin_email || '').trim(),
+        smtp_provider: provider
+      };
+
+      if (provider === 'hostinger') {
+        payload.smtp_user = String($('#hostingerUser')?.value || '').trim();
+        payload.smtp_pass = String($('#hostingerPass')?.value || '').trim();
+        payload.smtp_host = 'smtp.hostinger.com';
+        payload.smtp_port = '465';
+        payload.smtp_secure = 'true';
+        payload.smtp_from = payload.smtp_user ? `SmartISP <${payload.smtp_user}>` : '';
+      } else if (provider === 'gmail') {
+        payload.smtp_user = String($('#gmailUser')?.value || '').trim();
+        payload.smtp_pass = String($('#gmailPass')?.value || '').replace(/\s+/g, '');
+        payload.smtp_host = 'smtp.gmail.com';
+        payload.smtp_port = '465';
+        payload.smtp_secure = 'true';
+        payload.smtp_from = payload.smtp_user ? `SmartISP <${payload.smtp_user}>` : '';
+      } else if (provider === 'custom') {
+        payload.smtp_host = String(raw.smtp_host || '').trim();
+        payload.smtp_port = String(raw.smtp_port || '465').trim();
+        payload.smtp_user = String(raw.smtp_custom_user || '').trim();
+        payload.smtp_pass = String(raw.smtp_custom_pass || '').trim();
+        payload.smtp_secure = form.querySelector('[name="smtp_secure"]')?.checked ? 'true' : 'false';
+        payload.smtp_from = String(raw.smtp_from || '').trim();
+      } else if (provider === 'resend') {
+        payload.resend_api_key = String($('#resendApiKey')?.value || raw.resend_api_key || '').trim();
+        payload.email_from = String($('#emailFromInput')?.value || raw.email_from || '').trim();
+      }
+      return payload;
+    };
+
+    $('#notificationsForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      const payload = getNotificationPayload();
+
+      try {
+        await api('admin-content', { method: 'POST', body: JSON.stringify(payload) });
+        showMessage($('#notificationsMessage'), 'Configuración de correo guardada correctamente.');
+      } catch (error) {
+        showMessage($('#notificationsMessage'), error.message, true);
+      }
+    });
+
+    $('#testEmailButton')?.addEventListener('click', async () => {
+      const form = $('#notificationsForm');
+      const payload = getNotificationPayload();
+      const adminEmail = payload.admin_email;
+
+      if (!adminEmail || !adminEmail.includes('@')) {
+        showMessage($('#notificationsMessage'), 'Ingresa primero el correo del administrador en el campo 1 de arriba.', true);
+        form.querySelector('[name="admin_email"]')?.focus();
+        return;
+      }
+
+      if (payload.smtp_provider === 'gmail') {
+        if (!payload.smtp_user) {
+          showMessage($('#notificationsMessage'), 'Para enviar correos por Gmail, debes ingresar tu cuenta @gmail.com en el campo de abajo.', true);
+          $('#gmailUser')?.focus();
+          return;
+        }
+        if (!payload.smtp_pass) {
+          showMessage($('#notificationsMessage'), 'Ingresa la Contraseña de Aplicación de 16 caracteres generada en Google (no tu clave personal de Gmail).', true);
+          $('#gmailPass')?.focus();
+          return;
+        }
+      } else if (payload.smtp_provider === 'hostinger') {
+        if (!payload.smtp_user) {
+          showMessage($('#notificationsMessage'), 'Para Hostinger, ingresa tu cuenta de correo corporativo (ej: gestion@smart-isp.es).', true);
+          $('#hostingerUser')?.focus();
+          return;
+        }
+        if (!payload.smtp_pass) {
+          showMessage($('#notificationsMessage'), 'Ingresa la contraseña real con la que entras al correo de Hostinger (no una contraseña inventada).', true);
+          $('#hostingerPass')?.focus();
+          return;
+        }
+      } else if (payload.smtp_provider === 'resend') {
+        if (!payload.resend_api_key) {
+          showMessage($('#notificationsMessage'), 'Ingresa tu API Key de Resend (inicia con re_). Es gratuita en resend.com.', true);
+          $('#resendApiKey')?.focus();
+          return;
+        }
+      }
+
+      const btn = $('#testEmailButton');
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Guardando y enviando correo real...</span>';
+      showMessage($('#notificationsMessage'), `Conectando con el servidor de correo y despachando a ${adminEmail}...`);
+
+      try {
+        // 1. Guardar primero automáticamente
+        await api('admin-content', { method: 'POST', body: JSON.stringify(payload) });
+
+        // 2. Despachar prueba pasando credenciales en el cuerpo
+        const result = await api('test-email', {
+          method: 'POST',
+          body: JSON.stringify({
+            to: adminEmail,
+            ...payload
+          })
+        });
+        let successNote = result.message || `¡Correo de prueba enviado exitosamente a ${adminEmail}! Revisa tu bandeja de entrada o spam.`;
+        if (result.transport === 'resend') {
+          successNote = `🚀 ¡Excelente! Correo de prueba despachado de inmediato vía Resend REST API a ${adminEmail}. Revisa tu bandeja de entrada.`;
+        } else if (result.transport === 'smtp') {
+          successNote = `⚡ ¡Excelente! Conexión SMTP verificada y correo despachado con éxito a ${adminEmail}.`;
+        }
+        showMessage($('#notificationsMessage'), successNote);
+      } catch (error) {
+        showMessage($('#notificationsMessage'), error.message || 'Error al enviar correo de prueba.', true);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }
+    });
+    $('#resetContentButton').addEventListener('click', async () => { const form = $('#contentForm'); fillForm(form, DEFAULT_CONTENT); syncLogoSettings(DEFAULT_CONTENT); updateDesignPreview(); try { await saveForm(form, $('#contentMessage'), 'Apariencia restaurada al predeterminado.'); } catch (error) { showMessage($('#contentMessage'), error.message, true); } });
+    $('#resetVisibilityButton').addEventListener('click', async () => { const form = $('#visibilityForm'); fillForm(form, DEFAULT_VISIBILITY); try { await saveForm(form, $('#visibilityMessage'), 'Visibilidad restaurada al predeterminado.'); } catch (error) { showMessage($('#visibilityMessage'), error.message, true); } });
+    $('#clearContentButton').addEventListener('click', () => { fillForm($('#contentForm'), DEFAULT_CONTENT); syncLogoSettings(DEFAULT_CONTENT); updateDesignPreview(); showMessage($('#contentMessage'), 'Campos restablecidos. Guarda para aplicar los cambios.'); });
+    $('#adminPanel').addEventListener('change', event => { const input = event.target; if (input.type !== 'file' || !input.files[0]) return; if (input.name === 'logo_image_file') return; const form = input.closest('form'); if (input.name === 'imageFile') return openCropEditor(input.files[0], input, form.querySelector('[name="imageUrl"]')); const outputInput = form.querySelector('[name="hero_image"]'); try { openCropEditor(input.files[0], input, outputInput); } catch (error) { input.value = ''; showMessage($('#contentMessage'), error.message, true); } });
+    $('#cropAspect').addEventListener('change', updateCropBox);
+    $('#cropBox').addEventListener('pointerdown', event => { cropState.dragging = true; cropState.resizeHandle = event.target.dataset.resize || ''; cropState.startX = event.clientX; cropState.startY = event.clientY; cropState.startBoxX = cropState.box.x; cropState.startBoxY = cropState.box.y; cropState.startBoxW = cropState.box.w; cropState.startBoxH = cropState.box.h; event.currentTarget.setPointerCapture(event.pointerId); });
+    $('#cropBox').addEventListener('pointermove', event => { if (!cropState.dragging) return; const box = cropState.box; const dx = event.clientX - cropState.startX; const dy = event.clientY - cropState.startY; const handle = cropState.resizeHandle; if (handle) { if (handle.includes('e')) box.w = Math.max(40, Math.min(cropState.canvasWidth - box.x, cropState.startBoxW + dx)); if (handle.includes('s')) box.h = Math.max(40, Math.min(cropState.canvasHeight - box.y, cropState.startBoxH + dy)); if (handle.includes('w')) { const nextX = Math.max(0, Math.min(cropState.startBoxX + cropState.startBoxW - 40, cropState.startBoxX + dx)); box.x = nextX; box.w = cropState.startBoxW + cropState.startBoxX - nextX; } if (handle.includes('n')) { const nextY = Math.max(0, Math.min(cropState.startBoxY + cropState.startBoxH - 40, cropState.startBoxY + dy)); box.y = nextY; box.h = cropState.startBoxH + cropState.startBoxY - nextY; } } else { box.x = Math.max(0, Math.min(cropState.canvasWidth - box.w, cropState.startBoxX + dx)); box.y = Math.max(0, Math.min(cropState.canvasHeight - box.h, cropState.startBoxY + dy)); } event.currentTarget.style.left = `${cropState.offsetX + box.x}px`; event.currentTarget.style.top = `${cropState.offsetY + box.y}px`; event.currentTarget.style.width = `${box.w}px`; event.currentTarget.style.height = `${box.h}px`; });
+    $('#cropBox').addEventListener('pointerup', () => { cropState.dragging = false; });
+    $('#cancelCropButton')?.addEventListener('click', () => closeCropEditor(true));
+    $('#applyCropButton')?.addEventListener('click', applyCrop);
+    $('#newProductButton')?.addEventListener('click', () => openProductEditModal({}));
+
+    // ==========================================
+    // IMPORTADOR INTELIGENTE DE EXCEL / CSV
+    // ==========================================
+    let parsedImportProducts = [];
+    let currentImportState = {
+      filesData: [], // { fileName, sheetName, matrix, headerRowIndex, headers, mapping }
+      activeFileIdx: 0
+    };
+
+    const normalizeHeader = str => String(str || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '');
+
+    const matchCategoryAffinity = (rawCategoryStr, rawProductName, availableCats = adminConfiguredCategories) => {
+      const normalize = str => String(str || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      const normCat = normalize(rawCategoryStr);
+      const normProd = normalize(rawProductName);
+
+      if (!availableCats || !availableCats.length) {
+        return { category: rawCategoryStr || 'General', subcategory: '', confidence: 'fallback' };
+      }
+
+      // 1. Coincidencia con texto de categoría de Excel
+      if (normCat && normCat !== 'general' && normCat !== 'otros' && normCat !== 'n a' && normCat !== 'null') {
+        for (const cat of availableCats) {
+          if (normalize(cat.name) === normCat || normalize(cat.id) === normCat) {
+            return { category: cat.name, subcategory: '', confidence: 'exact' };
+          }
+        }
+        for (const cat of availableCats) {
+          if (Array.isArray(cat.subcategories)) {
+            for (const sub of cat.subcategories) {
+              if (normalize(sub) === normCat) {
+                return { category: cat.name, subcategory: sub, confidence: 'exact_sub' };
+              }
+            }
+          }
+        }
+        for (const cat of availableCats) {
+          if (Array.isArray(cat.keywords)) {
+            for (const kw of cat.keywords) {
+              const nKw = normalize(kw);
+              if (nKw && (normCat === nKw || normCat.split(' ').includes(nKw))) {
+                return { category: cat.name, subcategory: '', confidence: 'keyword' };
+              }
+            }
+          }
+        }
+        for (const cat of availableCats) {
+          if (Array.isArray(cat.keywords)) {
+            for (const kw of cat.keywords) {
+              const nKw = normalize(kw);
+              if (nKw.length >= 3 && (normCat.includes(nKw) || nKw.includes(normCat))) {
+                return { category: cat.name, subcategory: '', confidence: 'keyword' };
+              }
+            }
+          }
+        }
+      }
+
+      // 2. Coincidencia analizando el Nombre del Producto
+      if (normProd) {
+        for (const cat of availableCats) {
+          if (Array.isArray(cat.subcategories)) {
+            for (const sub of cat.subcategories) {
+              const nSub = normalize(sub);
+              if (nSub.length >= 4 && normProd.includes(nSub)) {
+                return { category: cat.name, subcategory: sub, confidence: 'product' };
+              }
+            }
+          }
+        }
+        let bestMatch = null;
+        let bestLen = 0;
+        for (const cat of availableCats) {
+          if (Array.isArray(cat.keywords)) {
+            for (const kw of cat.keywords) {
+              const nKw = normalize(kw);
+              if (nKw.length >= 3) {
+                const words = normProd.split(' ');
+                if (words.includes(nKw) || normProd.includes(` ${nKw} `) || normProd.startsWith(`${nKw} `) || normProd.endsWith(` ${nKw}`)) {
+                  if (nKw.length > bestLen) {
+                    bestLen = nKw.length;
+                    bestMatch = cat;
+                  }
+                }
+              }
+            }
+          }
+        }
+        if (bestMatch) {
+          return { category: bestMatch.name, subcategory: '', confidence: 'product' };
+        }
+      }
+
+      const fallbackCat = availableCats.find(c => c.id === 'otros') || availableCats[0];
+      return {
+        category: rawCategoryStr || (fallbackCat ? fallbackCat.name : 'General'),
+        subcategory: '',
+        confidence: 'fallback'
+      };
+    };
+
+    const parsePriceValue = val => {
+      if (typeof val === 'number') return isNaN(val) ? 0 : Math.max(0, val);
+      if (!val) return 0;
+      let s = String(val).trim();
+      s = s.replace(/[^0-9.,]/g, '');
+      if (!s) return 0;
+      const lastDot = s.lastIndexOf('.');
+      const lastComma = s.lastIndexOf(',');
+      if (lastDot > -1 && lastComma > -1) {
+        if (lastDot > lastComma) {
+          s = s.replace(/,/g, '');
+        } else {
+          s = s.replace(/\./g, '').replace(',', '.');
+        }
+      } else if (lastComma > -1) {
+        const parts = s.split(',');
+        if (parts.length === 2 && parts[1].length <= 2) {
+          s = parts[0] + '.' + parts[1];
+        } else {
+          s = s.replace(/,/g, '');
+        }
+      }
+      const num = parseFloat(s);
+      return isNaN(num) || num < 0 ? 0 : Math.round(num * 100) / 100;
+    };
+
+    const openImportModal = () => {
+      parsedImportProducts = [];
+      currentImportState = { filesData: [], activeFileIdx: 0 };
+      $('#importFileInput').value = '';
+      $('#importPreviewSection').classList.add('hidden');
+      $('#importDropzone').classList.remove('hidden');
+      $('#importProgressContainer').classList.add('hidden');
+      $('#importModalMessage').classList.remove('show');
+      $('#importModal').hidden = false;
+    };
+
+    const closeImportModal = () => {
+      $('#importModal').hidden = true;
+      parsedImportProducts = [];
+      currentImportState = { filesData: [], activeFileIdx: 0 };
+    };
+
+    const parseExcelToMatrix = async file => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          try {
+            if (typeof XLSX === 'undefined') {
+              throw new Error('La librería SheetJS no está lista. Verifica tu conexión a internet.');
+            }
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            if (!workbook.SheetNames || !workbook.SheetNames.length) {
+              throw new Error('El archivo no contiene hojas de datos.');
+            }
+
+            // Seleccionar automáticamente la hoja con mayor cantidad de datos útiles
+            let bestSheetName = workbook.SheetNames[0];
+            let bestSheetMatrix = [];
+            let maxValidRows = 0;
+
+            for (const name of workbook.SheetNames) {
+              const sheet = workbook.Sheets[name];
+              if (!sheet) continue;
+              const rawMatrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+              const validCount = rawMatrix.filter(r => Array.isArray(r) && r.some(c => String(c || '').trim() !== '')).length;
+              if (validCount > maxValidRows) {
+                maxValidRows = validCount;
+                bestSheetName = name;
+                bestSheetMatrix = rawMatrix;
+              }
+            }
+
+            if (!bestSheetMatrix.length) {
+              const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+              bestSheetMatrix = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
+            }
+
+            if (!bestSheetMatrix.length) {
+              throw new Error('El archivo seleccionado está vacío.');
+            }
+
+            resolve({ fileName: file.name, sheetName: bestSheetName, matrix: bestSheetMatrix });
+          } catch (err) {
+            reject(err);
+          }
+        };
+        reader.onerror = () => reject(new Error('No se pudo leer el archivo seleccionado.'));
+        reader.readAsArrayBuffer(file);
+      });
+    };
+
+    // Puntuación y detección inteligente de la fila de encabezados en cualquier fila
+    const findHeaderRowIndex = matrix => {
+      const scanLimit = Math.min(matrix.length, 35);
+      let bestRowIndex = -1;
+      let highestScore = 0;
+
+      const headerKeywords = [
+        { regex: /^(nombre|nombredelproducto|nombreproducto|producto|productname|product|title|titulo|itemname|articulo|articulos|descripcion|description|detalle|detalles|concepto|modelo|denominacion|material)$/, score: 5 },
+        { regex: /^(precio|pvp|pvd|costo|costos|valor|monto|preciounitario|preciousd|preciofinal|distribuidor|price|unitprice|saleprice|retailprice|importe|valortotal|punit|neto|subtotal)$/, score: 4 },
+        { regex: /^(codigo|cod|sku|partnumber|numerodeparte|nroparte|pn|ref|referencia|clave|cve|id|barcode|ean|upc)$/, score: 4 },
+        { regex: /^(categoria|category|subcategoria|linea|lineanegocio|familia|grupo|clasificacion|rubro|seccion|departamento|department|tipo|marca|brand)$/, score: 3 },
+        { regex: /^(imagen|image|foto|picture|thumbnail|url|linkfoto|fotografia)$/, score: 3 },
+        { regex: /^(stock|cantidad|cant|unidad|medida|iva|impuesto|descuento)$/, score: 2 }
+      ];
+
+      for (let r = 0; r < scanLimit; r++) {
+        const row = matrix[r];
+        if (!row || !Array.isArray(row)) continue;
+        let rowScore = 0;
+
+        for (const cell of row) {
+          const text = normalizeHeader(cell);
+          if (!text) continue;
+          for (const kw of headerKeywords) {
+            if (kw.regex.test(text)) {
+              rowScore += kw.score;
+              break;
+            }
+          }
+        }
+
+        if (rowScore > highestScore && rowScore >= 3) {
+          highestScore = rowScore;
+          bestRowIndex = r;
+        }
+      }
+
+      // Si ninguna fila tuvo coincidencia alta pero la fila 0 tiene texto descriptivo, usar fila 0
+      if (bestRowIndex === -1) {
+        const firstRow = matrix[0] || [];
+        const hasText = firstRow.some(c => typeof c === 'string' && c.trim().length > 0);
+        if (hasText) bestRowIndex = 0;
+      }
+
+      return bestRowIndex;
+    };
+
+    // Detección universal de columnas mediante sinónimos y heurísticas
+    const detectColumnsMapping = (headers, sampleRows = []) => {
+      const mapping = {
+        name: null,
+        sku: null,
+        category: null,
+        price: null,
+        imageUrl: null,
+        description: null
+      };
+
+      const normHeaders = headers.map(h => normalizeHeader(h));
+
+      const findMatch = (regexList, excludedIndexes = []) => {
+        for (const regex of regexList) {
+          for (let i = 0; i < normHeaders.length; i++) {
+            if (excludedIndexes.includes(i)) continue;
+            if (regex.test(normHeaders[i])) return i;
+          }
+        }
+        return null;
+      };
+
+      // 1. Detección de Nombre Fuerte
+      const strongNameRegexes = [
+        /^nombredelproducto$/, /^nombreproducto$/, /^nombre$/, /^producto$/, /^productname$/, /^product$/, /^itemname$/, /^title$/, /^titulo$/
+      ];
+      mapping.name = findMatch(strongNameRegexes);
+
+      // 2. Detección de SKU / Código
+      const skuRegexes = [
+        /^skucodigo$/, /^sku$/, /^codigo$/, /^cod$/, /^code$/, /^partnumber$/, /^numerodeparte$/, /^nroparte$/, /^pn$/, /^pnro$/, /^referencia$/, /^ref$/, /^clave$/, /^cve$/, /^id$/, /^barcode$/, /^ean$/, /^upc$/
+      ];
+      mapping.sku = findMatch(skuRegexes, [mapping.name].filter(v => v !== null));
+
+      // 3. Detección de Precio
+      const priceRegexes = [
+        /^precio$/, /^pvp$/, /^pvd$/, /^costo$/, /^valor$/, /^preciounitario$/, /^preciousd$/, /^preciofinal$/, /^distribuidor$/, /^price$/, /^unitprice$/, /^saleprice$/, /^retailprice$/, /^importe$/, /^valortotal$/, /^punit$/, /^neto$/, /^subtotal$/, /^cost$/, /^total$/
+      ];
+      mapping.price = findMatch(priceRegexes, [mapping.name, mapping.sku].filter(v => v !== null));
+
+      // 4. Detección de Categoría
+      const catRegexes = [
+        /^categoria$/, /^category$/, /^subcategoria$/, /^linea$/, /^lineadenegocio$/, /^familia$/, /^grupo$/, /^clasificacion$/, /^rubro$/, /^seccion$/, /^departamento$/, /^department$/, /^tipo$/, /^marca$/, /^brand$/
+      ];
+      mapping.category = findMatch(catRegexes, [mapping.name, mapping.sku, mapping.price].filter(v => v !== null));
+
+      // 5. Detección de Imagen
+      const imgRegexes = [
+        /^urldelaimagen$/, /^urlimagen$/, /^imagen$/, /^image$/, /^foto$/, /^urlfoto$/, /^fotourl$/, /^picture$/, /^thumbnail$/, /^linkfoto$/, /^link$/, /^photo$/, /^fotografia$/
+      ];
+      mapping.imageUrl = findMatch(imgRegexes, [mapping.name, mapping.sku, mapping.price, mapping.category].filter(v => v !== null));
+
+      // 6. Detección de Descripción / Nombre Secundario
+      const descRegexes = [
+        /^descripciondelproducto$/, /^descripciondelarticulo$/, /^descripcionarticulo$/, /^itemdescription$/, /^partdescription$/, /^articulo$/, /^descripcion$/, /^description$/, /^detalle$/, /^especificaciones$/, /^concepto$/, /^modelo$/, /^denominacion$/, /^material$/
+      ];
+
+      const assigned = [mapping.name, mapping.sku, mapping.price, mapping.category, mapping.imageUrl].filter(v => v !== null);
+
+      if (mapping.name === null) {
+        // REGLA CLAVE: Si el archivo no tiene columna explícita "Nombre", la columna "DESCRIPCIÓN", "ARTÍCULO" o "DETALLE" actúa como el nombre del producto
+        const nameFromDesc = findMatch(descRegexes, assigned);
+        if (nameFromDesc !== null) {
+          mapping.name = nameFromDesc;
+          assigned.push(nameFromDesc);
+        }
+      } else {
+        // Si ya hay un nombre fuerte identificado, buscar columna para la descripción
+        mapping.description = findMatch(descRegexes, assigned);
+      }
+
+      // 7. Heurísticas de contenido para columnas faltantes (útil en archivos con encabezados atípicos)
+      if (sampleRows && sampleRows.length > 0) {
+        const usedCols = Object.values(mapping).filter(v => v !== null);
+
+        for (let colIdx = 0; colIdx < headers.length; colIdx++) {
+          if (usedCols.includes(colIdx)) continue;
+
+          let urlHits = 0;
+          let priceHits = 0;
+          let skuHits = 0;
+          let textHits = 0;
+          let totalChecked = 0;
+
+          for (const row of sampleRows) {
+            const val = row[colIdx];
+            if (val === undefined || val === null || val === '') continue;
+            totalChecked++;
+            const s = String(val).trim();
+
+            if (/^https?:\/\//i.test(s) || /\.(jpg|jpeg|png|webp|gif)(\?.*)?$/i.test(s)) {
+              urlHits++;
+            }
+            if (parsePriceValue(val) > 0 && (/[\$€]|USD/i.test(s) || /^[0-9]+([.,][0-9]{1,2})?$/.test(s))) {
+              priceHits++;
+            }
+            if (s.length >= 3 && s.length <= 25 && /^[A-Z0-9_-]+$/i.test(s) && !s.includes(' ')) {
+              skuHits++;
+            }
+            if (s.length >= 6 && s.length <= 120 && /[a-zA-ZáéíóúÁÉÍÓÚñÑ]/.test(s)) {
+              textHits++;
+            }
+          }
+
+          if (totalChecked >= 2) {
+            if (mapping.imageUrl === null && urlHits / totalChecked >= 0.4) {
+              mapping.imageUrl = colIdx;
+              usedCols.push(colIdx);
+            } else if (mapping.price === null && priceHits / totalChecked >= 0.5) {
+              mapping.price = colIdx;
+              usedCols.push(colIdx);
+            } else if (mapping.sku === null && skuHits / totalChecked >= 0.5) {
+              mapping.sku = colIdx;
+              usedCols.push(colIdx);
+            } else if (mapping.name === null && textHits / totalChecked >= 0.5) {
+              mapping.name = colIdx;
+              usedCols.push(colIdx);
+            }
+          }
+        }
+      }
+
+      // Si aún no hay nombre asignado, tomar la primera columna de texto disponible
+      if (mapping.name === null && headers.length > 0) {
+        for (let i = 0; i < headers.length; i++) {
+          if (i !== mapping.sku && i !== mapping.price && i !== mapping.imageUrl) {
+            mapping.name = i;
+            break;
+          }
+        }
+        if (mapping.name === null) mapping.name = 0;
+      }
+
+      return mapping;
+    };
+
+    const extractProductsFromMatrix = (matrix, headerRowIndex, mapping, fileName) => {
+      const startRow = headerRowIndex >= 0 ? headerRowIndex + 1 : 0;
+      const products = [];
+
+      for (let r = startRow; r < matrix.length; r++) {
+        const row = matrix[r];
+        if (!row || !Array.isArray(row)) continue;
+
+        const nameVal = mapping.name !== null && mapping.name !== undefined && mapping.name >= 0 ? row[mapping.name] : '';
+        const name = String(nameVal || '').trim();
+        if (!name) continue;
+
+        const rawSku = mapping.sku !== null && mapping.sku !== undefined && mapping.sku >= 0 ? String(row[mapping.sku] || '').trim() : '';
+        const sku = (rawSku.toUpperCase() === 'N/D' || rawSku.toUpperCase() === 'N/A' || rawSku.toUpperCase() === 'NULL') ? '' : rawSku;
+
+        const categoryVal = mapping.category !== null && mapping.category !== undefined && mapping.category >= 0 ? String(row[mapping.category] || '').trim() : '';
+        const affinity = matchCategoryAffinity(categoryVal, name, adminConfiguredCategories);
+        const category = affinity.category || 'General';
+        const subcategory = affinity.subcategory || '';
+
+        const priceVal = mapping.price !== null && mapping.price !== undefined && mapping.price >= 0 ? row[mapping.price] : 0;
+        const rawPrice = parsePriceValue(priceVal);
+
+        const marginInput = document.getElementById('importPriceMargin');
+        const marginPct = (marginInput && !isNaN(parseFloat(marginInput.value))) ? parseFloat(marginInput.value) : 30;
+
+        // Fórmula: precio del producto = Y -> Y + (Y)30% = precio total
+        const price = rawPrice > 0 ? Math.round((rawPrice + (rawPrice * (marginPct / 100))) * 100) / 100 : 0;
+
+        const descriptionVal = mapping.description !== null && mapping.description !== undefined && mapping.description >= 0 ? String(row[mapping.description] || '').trim() : '';
+        const description = descriptionVal;
+
+        const imageVal = mapping.imageUrl !== null && mapping.imageUrl !== undefined && mapping.imageUrl >= 0 ? String(row[mapping.imageUrl] || '').trim() : '';
+        const imageUrl = imageVal;
+
+        products.push({
+          id: sku ? `sku:${sku.toUpperCase()}` : crypto.randomUUID(),
+          sku,
+          name,
+          category,
+          subcategory,
+          price,
+          originalPrice: rawPrice,
+          marginPct,
+          description,
+          imageUrl,
+          visible: true,
+          sourceFile: fileName || 'excel'
+        });
+      }
+
+      return products;
+    };
+
+    const renderColumnDropdowns = () => {
+      const activeFile = currentImportState.filesData[currentImportState.activeFileIdx];
+      if (!activeFile) return;
+
+      const headers = activeFile.headers;
+      const mapping = activeFile.mapping;
+
+      const fields = [
+        { selectId: 'colSelectName', key: 'name', required: true },
+        { selectId: 'colSelectPrice', key: 'price', required: false },
+        { selectId: 'colSelectCategory', key: 'category', required: false },
+        { selectId: 'colSelectSku', key: 'sku', required: false },
+        { selectId: 'colSelectImage', key: 'imageUrl', required: false },
+        { selectId: 'colSelectDescription', key: 'description', required: false }
+      ];
+
+      fields.forEach(f => {
+        const el = document.getElementById(f.selectId);
+        if (!el) return;
+
+        let html = '';
+        if (!f.required) {
+          html += `<option value="-1">(Omitir / Ninguna)</option>`;
+        }
+
+        headers.forEach((h, idx) => {
+          const isSelected = mapping[f.key] === idx;
+          const cleanLabel = h ? `Col ${idx + 1}: ${escapeHtml(h)}` : `Columna ${idx + 1}`;
+          html += `<option value="${idx}" ${isSelected ? 'selected' : ''}>${cleanLabel}</option>`;
+        });
+
+        el.innerHTML = html;
+        if (mapping[f.key] !== null && mapping[f.key] !== undefined) {
+          el.value = String(mapping[f.key]);
+        } else if (!f.required) {
+          el.value = '-1';
+        }
+      });
+
+      // Actualizar selector de Fila de Encabezados
+      const headerSelect = document.getElementById('selectHeaderRow');
+      if (headerSelect) {
+        let rowOptions = '';
+        const maxHeaderOptions = Math.min(activeFile.matrix.length, 15);
+        for (let r = 0; r < maxHeaderOptions; r++) {
+          const rowData = activeFile.matrix[r] || [];
+          const snippet = rowData.map(c => String(c || '').trim()).filter(Boolean).slice(0, 4).join(' | ');
+          const label = `Fila ${r + 1}: ${snippet.slice(0, 35)}${snippet.length > 35 ? '...' : ''}`;
+          rowOptions += `<option value="${r}" ${activeFile.headerRowIndex === r ? 'selected' : ''}>${escapeHtml(label)}</option>`;
+        }
+        rowOptions += `<option value="-1" ${activeFile.headerRowIndex === -1 ? 'selected' : ''}>Sin encabezados (Usar Col 1, 2, 3...)</option>`;
+        headerSelect.innerHTML = rowOptions;
+      }
+    };
+
+    const refreshImportPreview = () => {
+      const uniqueMap = new Map();
+      let totalRowsRead = 0;
+      let duplicatesCount = 0;
+
+      for (let fIdx = 0; fIdx < currentImportState.filesData.length; fIdx++) {
+        const fData = currentImportState.filesData[fIdx];
+        const products = extractProductsFromMatrix(fData.matrix, fData.headerRowIndex, fData.mapping, fData.fileName);
+        totalRowsRead += Math.max(0, fData.matrix.length - (fData.headerRowIndex >= 0 ? fData.headerRowIndex + 1 : 0));
+
+        for (const candidate of products) {
+          if (uniqueMap.has(candidate.name)) {
+            duplicatesCount++;
+            const existing = uniqueMap.get(candidate.name);
+            if (!existing.imageUrl && candidate.imageUrl) existing.imageUrl = candidate.imageUrl;
+            if ((!existing.price || existing.price <= 0) && candidate.price > 0) {
+              existing.price = candidate.price;
+              existing.originalPrice = candidate.originalPrice;
+              existing.marginPct = candidate.marginPct;
+            }
+            if (!existing.description && candidate.description) existing.description = candidate.description;
+            if (!existing.sku && candidate.sku) existing.sku = candidate.sku;
+          } else {
+            uniqueMap.set(candidate.name, candidate);
+          }
+        }
+      }
+
+      parsedImportProducts = Array.from(uniqueMap.values());
+
+      let withPrice = 0;
+      let withImage = 0;
+      let pendingPrice = 0;
+
+      for (const p of parsedImportProducts) {
+        if (p.price > 0) withPrice++;
+        else pendingPrice++;
+        if (p.imageUrl) withImage++;
+      }
+
+      if ($('#statTotalFiles')) $('#statTotalFiles').textContent = currentImportState.filesData.length;
+      $('#statTotalRows').textContent = totalRowsRead;
+      $('#statValidProducts').textContent = parsedImportProducts.length;
+      $('#statDuplicates').textContent = duplicatesCount;
+      $('#statWithImage').textContent = withImage;
+      $('#statPendingPrice').textContent = pendingPrice;
+
+      // Renderizar chips informativos de mapeo activo
+      const activeFile = currentImportState.filesData[currentImportState.activeFileIdx];
+      if (activeFile) {
+        const marginInput = document.getElementById('importPriceMargin');
+        const activeMargin = (marginInput && !isNaN(parseFloat(marginInput.value))) ? parseFloat(marginInput.value) : 30;
+
+        const fieldsInfo = [
+          { key: 'name', label: 'Nombre del Producto', required: true },
+          { key: 'sku', label: 'SKU / Código', required: false, fallback: 'Auto-generar' },
+          { key: 'category', label: 'Categoría', required: false, fallback: 'General' },
+          { key: 'price', label: 'Precio', required: false, fallback: 'Solicitar cotización' },
+          { key: 'imageUrl', label: 'Imagen', required: false, fallback: 'Búsqueda web auto' },
+          { key: 'description', label: 'Descripción', required: false, fallback: 'Sin descripción' }
+        ];
+
+        $('#mappingChipsContainer').innerHTML = fieldsInfo.map(f => {
+          const colIdx = activeFile.mapping[f.key];
+          if (colIdx !== null && colIdx !== undefined && colIdx >= 0) {
+            const colName = activeFile.headers[colIdx] || `Columna ${colIdx + 1}`;
+            if (f.key === 'price') {
+              return `<span class="mapping-chip found">✓ <strong>${f.label}</strong>: "${escapeHtml(colName)}" (Fórmula: Y + ${activeMargin}%)</span>`;
+            }
+            return `<span class="mapping-chip found">✓ <strong>${f.label}</strong>: "${escapeHtml(colName)}" (Col ${colIdx + 1})</span>`;
+          }
+          return `<span class="mapping-chip missing">${f.required ? '✗' : '○'} <strong>${f.label}</strong>: (${f.fallback})</span>`;
+        }).join('');
+      }
+
+      // Renderizar vista previa de la tabla
+      const previewRows = parsedImportProducts.slice(0, 8);
+      $('#previewTableBody').innerHTML = previewRows.map(p => `
+        <tr>
+          <td>
+            ${p.imageUrl ? `<img src="${escapeHtml(p.imageUrl)}" alt="" class="thumb-preview" onerror="this.style.display='none'">` : '<span style="color:var(--muted);font-size:10px;">Sin foto</span>'}
+          </td>
+          <td><code style="font-size:11px;">${escapeHtml(p.sku || '-')}</code></td>
+          <td><strong>${escapeHtml(p.name)}</strong></td>
+          <td>
+            <span class="mapping-chip" style="font-size:10px;padding:2px 6px;">${escapeHtml(p.category)}</span>
+            ${p.subcategory ? `<div style="font-size:10px;color:var(--muted);margin-top:2px;">› ${escapeHtml(p.subcategory)}</div>` : ''}
+          </td>
+          <td>
+            ${p.price > 0 ? `
+              <div style="font-weight:700;color:var(--blue);font-size:13px;">$${p.price.toLocaleString('es-CL')}</div>
+              ${p.originalPrice && p.originalPrice !== p.price ? `<div style="color:var(--muted);font-size:10.5px;">Excel: $${p.originalPrice.toLocaleString('es-CL')} + ${p.marginPct || 30}%</div>` : ''}
+            ` : '<span style="color:var(--muted);font-style:italic;">Solicitar cotización</span>'}
+          </td>
+          <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);">${escapeHtml(p.description || '-')}</td>
+        </tr>
+      `).join('');
+
+      const startBtn = $('#startImportButton');
+      if (startBtn) {
+        startBtn.disabled = parsedImportProducts.length === 0;
+      }
+    };
+
+    const processImportFiles = async fileInputList => {
+      if (!fileInputList) return;
+      const files = Array.from(fileInputList.length !== undefined ? fileInputList : [fileInputList]).filter(Boolean);
+      if (!files.length) return;
+
+      try {
+        currentImportState = {
+          filesData: [],
+          activeFileIdx: 0
+        };
+
+        for (const file of files) {
+          const { fileName, sheetName, matrix } = await parseExcelToMatrix(file);
+          if (!matrix || !matrix.length) continue;
+
+          const headerRowIndex = findHeaderRowIndex(matrix);
+
+          let headers = [];
+          if (headerRowIndex >= 0) {
+            const rawHeaderRow = matrix[headerRowIndex] || [];
+            headers = rawHeaderRow.map((cell, idx) => {
+              const text = String(cell || '').trim();
+              return text || `Columna ${idx + 1}`;
+            });
+          } else {
+            const maxCols = Math.max(...matrix.slice(0, 15).map(r => r.length), 1);
+            headers = Array.from({ length: maxCols }, (_, idx) => `Columna ${idx + 1}`);
+          }
+
+          const sampleStart = headerRowIndex >= 0 ? headerRowIndex + 1 : 0;
+          const sampleRows = matrix.slice(sampleStart, sampleStart + 25);
+          const mapping = detectColumnsMapping(headers, sampleRows);
+
+          currentImportState.filesData.push({
+            fileName,
+            sheetName,
+            matrix,
+            headerRowIndex,
+            headers,
+            mapping
+          });
+        }
+
+        if (!currentImportState.filesData.length) {
+          throw new Error('No se pudo procesar ningún archivo o los archivos estaban vacíos.');
+        }
+
+        // Renderizar chips de archivos procesados
+        const chipsContainer = $('#importedFilesChips');
+        if (chipsContainer) {
+          chipsContainer.innerHTML = currentImportState.filesData.map(f =>
+            `<span class="mapping-chip found" style="font-size:11px;display:inline-flex;align-items:center;gap:4px;">
+              📄 <strong>${escapeHtml(f.fileName)}</strong> (Hoja: ${escapeHtml(f.sheetName)}, ${f.matrix.length} filas)
+            </span>`
+          ).join('');
+        }
+
+        // Renderizar selectores de columnas y vista previa
+        renderColumnDropdowns();
+        refreshImportPreview();
+
+        $('#importDropzone').classList.add('hidden');
+        $('#importPreviewSection').classList.remove('hidden');
+        $('#importProgressContainer').classList.add('hidden');
+        $('#importModalMessage').classList.remove('show');
+
+      } catch (err) {
+        $('#importDropzone').classList.remove('hidden');
+        $('#importPreviewSection').classList.add('hidden');
+        showMessage($('#productMessage'), err.message, true);
+        alert('Aviso al procesar archivo(s): ' + err.message);
+      }
+    };
+
+    const processImportFile = file => processImportFiles([file]);
+
+    const startBulkImport = async () => {
+      if (!parsedImportProducts.length) return;
+      const startButton = $('#startImportButton');
+      const cancelButton = $('#cancelImportButton');
+      startButton.disabled = true;
+      cancelButton.disabled = true;
+
+      $('#importProgressContainer').classList.remove('hidden');
+      const progressBar = $('#importProgressBar');
+      const progressLabel = $('#importProgressLabel');
+      const progressPercent = $('#importProgressPercent');
+
+      const batchSize = 100;
+      const total = parsedImportProducts.length;
+      let totalImported = 0;
+
+      const autoFetch = $('#autoFetchMissingImages')?.checked;
+
+      try {
+        if (autoFetch) {
+          const withoutImage = parsedImportProducts.filter(p => !p.imageUrl);
+          if (withoutImage.length > 0) {
+            for (let i = 0; i < withoutImage.length; i++) {
+              const p = withoutImage[i];
+              progressLabel.textContent = `Búsqueda profunda de imagen (${i + 1}/${withoutImage.length}): ${p.name.slice(0, 32)}...`;
+              const pct = Math.round(((i + 1) / withoutImage.length) * 40);
+              progressBar.style.width = `${pct}%`;
+              progressPercent.textContent = `${pct}%`;
+              try {
+                const res = await api(`search-product-image?q=${encodeURIComponent(p.name)}&category=${encodeURIComponent(p.category || '')}&limit=1`);
+                if (res.images && res.images.length > 0 && res.images[0].url) {
+                  p.imageUrl = res.images[0].url;
+                }
+              } catch (err) {
+                console.warn('No se pudo autocompletar foto para:', p.name);
+              }
+            }
+          }
+        }
+
+        for (let i = 0; i < total; i += batchSize) {
+          const batch = parsedImportProducts.slice(i, i + batchSize);
+          const currentBatchEnd = Math.min(i + batch.length, total);
+
+          progressLabel.textContent = `Guardando productos ${i + 1} a ${currentBatchEnd} de ${total}...`;
+          const pct = Math.min(100, Math.round(35 + (currentBatchEnd / total) * 65));
+          progressBar.style.width = `${pct}%`;
+          progressPercent.textContent = `${pct}%`;
+
+          const cleanBatch = batch.map(p => ({
+            id: p.id || undefined,
+            name: String(p.name || '').trim(),
+            description: String(p.description || '').trim(),
+            price: Number(p.price) || 0,
+            category: String(p.category || 'General').trim(),
+            subcategory: String(p.subcategory || '').trim(),
+            imageUrl: String(p.imageUrl || p.image_url || '').trim(),
+            externalUrl: String(p.externalUrl || p.external_url || '').trim(),
+            sku: String(p.sku || '').trim(),
+            visible: p.visible !== false ? 1 : 0
+          }));
+
+          let batchOk = false;
+          try {
+            const rawJson = JSON.stringify({ action: 'import-products', admin_email: adminEmail, products: cleanBatch });
+            const b64 = toUtf8Base64(rawJson);
+            const fd = new FormData();
+            fd.append('action', 'import-products');
+            fd.append('admin_email', adminEmail);
+            if (b64) fd.append('payload', b64);
+            fd.append('products', rawJson);
+
+            const res = await api('import-products', {
+              method: 'POST',
+              body: fd
+            });
+            if (res && (res.ok || res.count !== undefined)) {
+              totalImported += (res.count || batch.length);
+              batchOk = true;
+            }
+          } catch (batchErr) {
+            console.warn('Lote masivo interceptado por firewall, usando guardado unitario:', batchErr.message);
+          }
+
+          if (!batchOk) {
+            for (const prod of cleanBatch) {
+              try {
+                const singleFd = new FormData();
+                singleFd.append('action', 'admin-products');
+                singleFd.append('admin_email', adminEmail);
+                if (prod.id) singleFd.append('id', prod.id);
+                singleFd.append('name', prod.name);
+                singleFd.append('sku', prod.sku);
+                singleFd.append('price', String(prod.price));
+                singleFd.append('category', prod.category);
+                singleFd.append('subcategory', prod.subcategory);
+                singleFd.append('imageUrl', prod.imageUrl);
+                singleFd.append('externalUrl', prod.externalUrl);
+                singleFd.append('description', prod.description);
+                singleFd.append('visible', prod.visible ? '1' : '0');
+                await api('admin-products', { method: 'POST', body: singleFd });
+                totalImported++;
+              } catch (singleErr) {}
+              await new Promise(r => setTimeout(r, 60));
+            }
+          }
+        }
+
+        showMessage($('#importModalMessage'), `¡Importación completada! Se guardaron ${totalImported} productos.`);
+        showMessage($('#productMessage'), `¡Se han cargado ${totalImported} productos desde tu archivo Excel!`);
+        await loadProducts();
+
+        setTimeout(() => {
+          closeImportModal();
+          startButton.disabled = false;
+          cancelButton.disabled = false;
+        }, 1500);
+
+      } catch (err) {
+        startButton.disabled = false;
+        cancelButton.disabled = false;
+        showMessage($('#importModalMessage'), 'Error durante la importación: ' + err.message, true);
+      }
+    };
+
+    // ==========================================
+    // BUSCADOR VISUAL DE IMÁGENES EN INTERNET Y AMAZON
+    // ==========================================
+    let activeProductFormForImageSearch = null;
+    let currentSearchStore = 'all'; // 'all' | 'amazon' | 'web'
+
+    const openWebImageSearchModal = (initialQuery, form = null) => {
+      activeProductFormForImageSearch = form;
+      const input = $('#imageSearchInput');
+      input.value = initialQuery || '';
+      $('#imageSearchResultsGrid').innerHTML = '';
+      $('#imageSearchStatus').style.display = 'none';
+
+      // Reset store buttons to 'all'
+      currentSearchStore = 'all';
+      document.querySelectorAll('.store-filter-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.store === 'all');
+      });
+
+      $('#imageSearchModal').hidden = false;
+      if (initialQuery) executeImageSearch(initialQuery, currentSearchStore);
+    };
+
+    const closeWebImageSearchModal = () => {
+      $('#imageSearchModal').hidden = true;
+      activeProductFormForImageSearch = null;
+      activeProductForQuickAssign = null;
+      const label = $('#imageSearchProductLabel');
+      if (label) label.textContent = 'Encuentra fotos nítidas para tu catálogo de productos';
+    };
+
+    const executeImageSearch = async (query, store = currentSearchStore) => {
+      const status = $('#imageSearchStatus');
+      const statusText = $('#imageSearchStatusText');
+      const grid = $('#imageSearchResultsGrid');
+
+      if (statusText) {
+        statusText.textContent = store === 'amazon'
+          ? 'Buscando productos y fotografías en Amazon...'
+          : (store === 'web' ? 'Buscando fotografías en Google y la web...' : 'Buscando fotos en Amazon e internet...');
+      }
+
+      status.style.display = 'flex';
+      grid.innerHTML = '';
+
+      try {
+        const res = await api(`search-product-image?q=${encodeURIComponent(query)}&store=${encodeURIComponent(store)}&limit=16`);
+        status.style.display = 'none';
+        if (!res.images || !res.images.length) {
+          const storeLabel = store === 'amazon' ? 'en Amazon' : 'en internet';
+          grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;color:var(--muted);padding:24px;">No encontramos fotos ${storeLabel} para "${escapeHtml(query)}". Prueba buscando con el modelo o SKU exacto.</p>`;
+          return;
+        }
+
+        grid.innerHTML = res.images.map(img => {
+          const isAmz = img.store === 'Amazon' || (img.url && (img.url.includes('media-amazon.com') || img.url.includes('images-amazon.com')));
+          return `
+            <div class="image-search-card" data-img-url="${escapeHtml(img.url)}" title="Clic para asignar esta foto">
+              <span class="store-badge ${isAmz ? 'amazon' : 'web'}">${isAmz ? '🛒 Amazon' : '🌐 Web'}</span>
+              <img src="${escapeHtml(img.thumbnail || img.url)}" alt="${escapeHtml(img.title)}" loading="lazy" onerror="this.parentElement.remove()">
+              <span>${escapeHtml(img.title || 'Foto')}</span>
+            </div>
+          `;
+        }).join('');
+
+        grid.querySelectorAll('.image-search-card').forEach(card => {
+          card.addEventListener('click', async () => {
+            const url = card.dataset.imgUrl;
+            if (!url) return;
+
+            // Caso A: Asignación rápida directa desde una tarjeta del catálogo
+            if (activeProductForQuickAssign) {
+              const target = activeProductForQuickAssign;
+              target.imageUrl = url;
+              try {
+                await api('admin-products', { method: 'POST', body: JSON.stringify(target) });
+                showMessage($('#productMessage'), `¡Foto asignada y guardada para "${target.name}"!`);
+                closeWebImageSearchModal();
+                await loadProducts();
+              } catch (err) {
+                alert('Error al guardar la imagen: ' + err.message);
+              }
+              return;
+            }
+
+            // Caso B: Asignación desde el formulario modal de edición
+            if (activeProductFormForImageSearch) {
+              const urlInput = activeProductFormForImageSearch.querySelector('[name="imageUrl"]');
+              const preview = activeProductFormForImageSearch.querySelector('[data-image-preview]');
+              const previewBox = activeProductFormForImageSearch.querySelector('.image-preview');
+              const editButton = activeProductFormForImageSearch.querySelector('[data-edit-image]');
+              if (urlInput) urlInput.value = url;
+              if (preview) {
+                preview.src = url;
+                preview.hidden = false;
+              }
+              if (previewBox) previewBox.classList.remove('is-empty');
+              if (editButton) editButton.disabled = false;
+              showMessage($('#productMessage'), 'Foto asignada desde internet. Haz clic en "Guardar Cambios" para confirmar.');
+              closeWebImageSearchModal();
+            }
+          });
+        });
+      } catch (err) {
+        status.style.display = 'none';
+        grid.innerHTML = `<p style="grid-column:1/-1;text-align:center;color:var(--danger);padding:20px;">Error al buscar imágenes: ${escapeHtml(err.message)}</p>`;
+      }
+    };
+
+    document.querySelectorAll('.store-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.store-filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentSearchStore = btn.dataset.store || 'all';
+        const q = $('#imageSearchInput').value.trim();
+        if (q) executeImageSearch(q, currentSearchStore);
+      });
+    });
 
     // El logout ya lo provee el navbar compartido (assets/js/admin-nav.js, .admin-nav-logout).
 
