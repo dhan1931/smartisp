@@ -14,13 +14,13 @@
 // ------------------------------------------------------------------
 function getMailSettings(PDO $pdo, ?array $override = null): array {
     $defaults = [
-        'admin_email'    => 'gestion@smart-isp.es',
+        'admin_email'    => '',
         'smtp_provider'  => 'hostinger',
-        'smtp_host'      => 'smtp.hostinger.com',
+        'smtp_host'      => '',
         'smtp_port'      => 465,
         'smtp_user'      => '',
         'smtp_pass'      => '',
-        'smtp_from'      => 'SmartISP <notificaciones@smart-isp.com.ec>',
+        'smtp_from'      => '',
         'smtp_secure'    => 'true',
         'resend_api_key' => '',
         'email_from'     => ''
@@ -359,7 +359,10 @@ function sendSmartEmail(
     $user = trim($cfg['smtp_user'] ?? '');
     $pass = trim($cfg['smtp_pass'] ?? '');
     $port = (int)($cfg['smtp_port'] ?? 465);
-    $from = trim($cfg['smtp_from'] ?? 'SmartISP <notificaciones@smart-isp.com.ec>');
+    $from = trim($cfg['smtp_from'] ?? '');
+    if ($from === '' && $user !== '') {
+        $from = 'SmartISP <' . $user . '>';
+    }
     $isSecure = ($cfg['smtp_secure'] === 'true' || $cfg['smtp_secure'] === true || $port === 465);
 
     if ($host !== '' && $user !== '') {
@@ -794,7 +797,7 @@ function sendOrderEmails(PDO $pdo, array $orderData): array {
 
     // 2. Envío al Administrador
     $cfg = getMailSettings($pdo);
-    $adminEmail = trim($cfg['admin_email'] ?? 'admin@smart-isp.com.ec');
+    $adminEmail = trim($cfg['admin_email'] ?? '');
     if ($adminEmail !== '' && filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
         try {
             $adminHtml = buildAdminAlertHtml($orderData);

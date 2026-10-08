@@ -65,13 +65,30 @@ aplicadas), y los conteos de verificación coinciden exactamente.
 
 ## 3. Variables de entorno en el servidor
 
-No se agregó ninguna variable nueva obligatoria esta sesión (mail_settings ahora vive en su propia
-tabla, no en variables de entorno adicionales). Confirmar que ya existen en Hostinger:
+Hostinger debe tener estos valores en **Environment variables**. No subirlos a GitHub, no ponerlos
+en `.env.example` y no pegarlos en commits:
 
-- [ ] `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`
-- [ ] `ADMIN_EMAIL` y la configuración SMTP correspondiente (ver `.env.example`) — o, si ya se
-      configuró desde el panel de Configuración, confirmar que `mail_settings` tiene la fila real
-      tras la migración 006 (no debería hacer falta nada adicional aquí).
+| Clave | Uso | Requerida |
+| --- | --- | --- |
+| `MYSQL_HOST` | Host MySQL/MariaDB de Hostinger | Si |
+| `MYSQL_PORT` | Puerto MySQL, normalmente `3306` | Si |
+| `MYSQL_DATABASE` | Nombre de la base de datos | Si |
+| `MYSQL_USER` | Usuario de la base de datos | Si |
+| `MYSQL_PASSWORD` | Password de la base de datos | Si |
+| `ADMIN_EMAIL` | Correo que recibe avisos y pruebas | Si |
+| `SMTP_PROVIDER` | `hostinger`, `gmail`, `custom` o `resend` | Si |
+| `SMTP_HOST` | Servidor SMTP | Si para SMTP |
+| `SMTP_PORT` | Puerto SMTP, normalmente `465` o `587` | Si para SMTP |
+| `SMTP_SECURE` | `true` para SSL/465, `false` para STARTTLS/587 | Si para SMTP |
+| `SMTP_USER` | Usuario/cuenta SMTP | Si para SMTP |
+| `SMTP_PASS` | Password o app password SMTP | Si para SMTP |
+| `SMTP_FROM` | Remitente, por ejemplo `SmartISP <ventas@dominio>` | Recomendado |
+| `EMAIL_FROM` | Remitente usado por Resend si aplica | Solo Resend |
+| `RESEND_API_KEY` | API key de Resend | Solo Resend |
+
+El código lee primero las variables de entorno de Hostinger y solo después cae a `mail_settings`.
+Eso permite que credenciales sensibles como `MYSQL_PASSWORD` y `SMTP_PASS` no vivan en la base ni
+en el repositorio.
 
 ## 4. Subir el código
 

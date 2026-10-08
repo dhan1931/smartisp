@@ -124,7 +124,7 @@
 		button { cursor: pointer; }
 		.topbar { background: var(--navy); color: #d9efff; font-size: 12px; letter-spacing: .02em; padding: 9px 5vw; display: flex; justify-content: space-between; }
 		.topbar span { display: flex; align-items: center; gap: 7px; }
-		.nav { background: var(--white); border-bottom: 1px solid var(--line); padding: 16px 5vw; display: grid; grid-template-columns: minmax(120px, 220px) minmax(0, 680px) minmax(150px, 1fr); align-items: center; gap: 20px; position: sticky; top: 0; z-index: 5; }
+		.nav { background: var(--white); border-bottom: 1px solid var(--line); padding: 16px 5vw; display: grid; grid-template-columns: minmax(120px, 220px) minmax(0, 680px) minmax(150px, 1fr); align-items: center; gap: 20px; position: sticky; top: 0; z-index: 1000; }
 		.logo { font-family: 'Space Grotesk', sans-serif; font-size: 23px; font-weight: 700; color: var(--navy); white-space: nowrap; letter-spacing: -.06em; display: inline-flex; align-items: center; text-decoration: none; }
 		html:not(.public-brand-ready) .logo { opacity: 0; }
 		.public-brand-ready .logo { opacity: 1; transition: opacity .12s ease; }
@@ -137,9 +137,12 @@
 		.search button { background: var(--blue); border: 0; color: var(--white); width: 48px; display: grid; place-items: center; }
 		.nav-actions { margin-left: auto; display: flex; gap: 18px; align-items: center; justify-self: end; }
 		.nav-action { border: 0; background: transparent; color: var(--navy); display: flex; align-items: center; gap: 7px; font-weight: 600; padding: 4px; }
-		.public-nav { background: var(--navy); color: #fff; display: flex; justify-content: center; gap: clamp(22px, 5vw, 80px); padding: 11px 5vw; font-weight: 800; font-size: 15px; box-shadow: inset 0 1px rgba(255,255,255,.08); }
+		.public-menu-btn { display: none; align-items: center; justify-content: center; width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--navy); }
+		.public-menu-btn:hover { border-color: #9acfe9; color: var(--blue); }
+		.public-nav { position: sticky; top: var(--sticky-nav-height, 70px); z-index: 999; background: var(--navy); color: #fff; display: flex; justify-content: center; gap: clamp(22px, 5vw, 80px); padding: 11px 5vw; font-weight: 800; font-size: 15px; box-shadow: inset 0 1px rgba(255,255,255,.08); }
 		.public-nav a { color: #fff; text-decoration: none; white-space: nowrap; opacity: .96; }
 		.public-nav a:hover { color: #ffd166; }
+		.public-nav-cats { display: none; }
 		.admin-nav-link { display: none !important; color: #087ea4; border: 1px solid #a9d8d0; background: #eaf7f5; padding: 8px 12px; border-radius: 7px; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; text-decoration: none; transition: all .2s ease; }
 		.admin-nav-link.is-visible { display: inline-flex !important; }
 		.admin-nav-link:hover { background: #d7f0e8; border-color: #087ea4; transform: translateY(-1px); }
@@ -156,31 +159,6 @@
 		.hero p { color: #45667e; line-height: 1.6; margin: 0 0 26px; max-width: 400px; }
 		.primary { background: var(--blue); color: white; border: 0; padding: 13px 19px; border-radius: 5px; font-weight: 700; display: inline-flex; align-items: center; gap: 9px; }
 		.primary:hover { background: #0d64aa; }
-		.commercial-home { padding: 28px 5vw 0; display: grid; gap: 18px; }
-		.solution-strip { display: grid; grid-template-columns: 1.25fr repeat(3, minmax(180px, 1fr)); gap: 14px; }
-		.solution-lead, .solution-card, .trust-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 24px rgba(16,44,61,.05); }
-		.solution-lead { padding: 22px; border-left: 5px solid var(--blue); }
-		.solution-lead h2 { color: var(--navy); font-size: 28px; margin-bottom: 7px; }
-		.solution-lead p { margin: 0; color: var(--muted); line-height: 1.55; font-size: 14px; }
-		.solution-card { padding: 18px; display: flex; flex-direction: column; gap: 10px; min-height: 150px; transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
-		.solution-card:hover { transform: translateY(-3px); border-color: #9acfe9; box-shadow: 0 14px 28px rgba(16,44,61,.09); }
-		.solution-icon { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: #e9f6fc; color: var(--blue); }
-		.solution-card strong { color: var(--navy); font-size: 15px; }
-		.solution-card span { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
-		.merch-band { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-		.merch-card { min-height: 138px; padding: 17px; border-radius: 12px; color: #fff; display: flex; flex-direction: column; justify-content: space-between; background: #102a43; position: relative; overflow: hidden; }
-		.merch-card:nth-child(2) { background: #0f5f93; }
-		.merch-card:nth-child(3) { background: #17324d; }
-		.merch-card:nth-child(4) { background: #0d6f8f; }
-		.merch-card::after { content: ''; position: absolute; width: 120px; height: 120px; right: -48px; top: -40px; border-radius: 50%; background: rgba(255,255,255,.12); }
-		.merch-card small { position: relative; z-index: 1; opacity: .82; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; font-size: 10.5px; }
-		.merch-card strong { position: relative; z-index: 1; font-size: 18px; line-height: 1.15; }
-		.merch-card span { position: relative; z-index: 1; font-size: 12px; opacity: .9; }
-		.trust-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-		.trust-card { padding: 16px; display: flex; gap: 12px; align-items: flex-start; }
-		.trust-card i { color: var(--blue); flex-shrink: 0; margin-top: 2px; }
-		.trust-card strong { display: block; color: var(--navy); font-size: 13.5px; margin-bottom: 3px; }
-		.trust-card span { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
 		.content { padding: 38px 5vw; }
 		.section-heading { display: flex; align-items: end; justify-content: space-between; margin-bottom: 20px; }
 		.section-heading h2 { font-size: 29px; color: var(--navy); }
@@ -191,7 +169,7 @@
 		.sidebar-card { background: #ffffff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 12px; box-shadow: 0 4px 16px rgba(16,44,61,.04); }
 		.sidebar-header { display: flex; align-items: center; justify-content: space-between; padding: 2px 4px 10px; border-bottom: 1px solid #edf4f6; margin-bottom: 8px; }
 		.sidebar-title { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; font-size: 12px; color: var(--navy); text-transform: uppercase; letter-spacing: .06em; }
-		.sidebar-title i { color: var(--blue); }
+		.sidebar-title i, .sidebar-title svg { width: 16px; height: 16px; color: var(--blue); flex: 0 0 16px; }
 		.sidebar-clear-btn { border: none; background: transparent; color: var(--blue); font-size: 11.5px; font-weight: 600; cursor: pointer; padding: 3px 7px; border-radius: 4px; transition: background .15s ease; }
 		.sidebar-clear-btn:hover { background: #eef6fa; }
 
@@ -274,15 +252,15 @@
 		body.dark-mode .sidebar-subcat-btn.active { background: rgba(17,119,201,.2); border-color: rgba(17,119,201,.4); color: #5dade2; }
 		body.dark-mode .sidebar-subcat-count { background: rgba(255,255,255,.08); color: var(--muted); }
 
-		.catalog-intro { display:grid; grid-template-columns:minmax(0, 1fr) repeat(3, minmax(150px, 210px)); gap:14px; align-items:stretch; margin-bottom:20px; }
+		.catalog-intro { display:grid; grid-template-columns:minmax(0, 1fr) repeat(3, auto); gap:10px; align-items:center; margin-bottom:20px; }
 		.catalog-intro-main { background:#fff; border:1px solid var(--line); border-left:5px solid var(--blue); border-radius:12px; padding:18px 20px; }
 		.catalog-intro-main h2 { font-size:25px; color:var(--navy); margin-bottom:5px; }
 		.catalog-intro-main p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
-		.catalog-feature-link { background:#fff; border:1px solid var(--line); border-radius:12px; padding:15px; display:flex; flex-direction:column; gap:8px; box-shadow:0 4px 14px rgba(16,44,61,.04); transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+		.catalog-feature-link { background:#fff; border:1px solid var(--line); border-radius:999px; padding:10px 13px; display:flex; align-items:center; gap:8px; white-space:nowrap; transition:transform .2s ease, border-color .2s ease, background .2s ease; }
 		.catalog-feature-link i { color:var(--blue); }
 		.catalog-feature-link strong { color:var(--navy); font-size:13px; }
-		.catalog-feature-link span { color:var(--muted); font-size:12px; line-height:1.35; }
-		.catalog-feature-link:hover { border-color:#9acfe9; transform:translateY(-2px); box-shadow:0 10px 24px rgba(16,44,61,.08); }
+		.catalog-feature-link span { display:none; }
+		.catalog-feature-link:hover { border-color:#9acfe9; background:#f7fcff; transform:translateY(-1px); }
 
 		/* Toolbar y productos */
 		.store-main { min-width: 0; }
@@ -422,7 +400,7 @@
 		.hero p { color: #4e6974; font-size: 15px; }
 		.primary { background: #087ea4; border-radius: 7px; box-shadow: 0 8px 18px rgba(8,126,164,.2); }
 		.primary:hover { background: #06677f; transform: translateY(-1px); }
-		.content { padding-top: 48px; }
+		.content { padding-top: 24px; }
 		.section-heading { margin-bottom: 22px; }
 		.section-heading h2 { color: #102c3d; font-size: 31px; }
 		.product { border-radius: 9px; background: #fff; box-shadow: 0 5px 16px rgba(16,44,61,.04); }
@@ -774,6 +752,12 @@
 			box-shadow: 0 -4px 20px rgba(16, 44, 61, 0.08);
 			justify-content: space-around;
 			align-items: center;
+			transition: transform .22s ease, opacity .22s ease;
+		}
+		body.cart-open .mobile-bottom-nav {
+			transform: translateY(110%);
+			opacity: 0;
+			pointer-events: none;
 		}
 		body.dark-mode .mobile-bottom-nav {
 			background: rgba(18, 40, 59, 0.96);
@@ -856,12 +840,91 @@
 			.topbar {
 				display: none !important;
 			}
+			.public-menu-btn {
+				display: inline-flex !important;
+			}
 			.public-nav {
-				justify-content: flex-start !important;
-				overflow-x: auto !important;
-				gap: 24px !important;
-				padding: 10px 16px !important;
-				scrollbar-width: none !important;
+				display: none !important;
+				flex-direction: column !important;
+				align-items: stretch !important;
+				gap: 0 !important;
+				padding: 6px 16px !important;
+				box-shadow: 0 10px 20px rgba(16,44,61,.14) !important;
+			}
+			.public-nav.is-open {
+				display: flex !important;
+			}
+			.public-nav a {
+				padding: 12px 4px !important;
+				border-bottom: 1px solid rgba(255,255,255,.12) !important;
+			}
+			.public-nav a:last-child {
+				border-bottom: 0 !important;
+			}
+			.public-nav-cats {
+				display: grid !important;
+				gap: 8px !important;
+				padding: 10px 0 4px !important;
+				border-top: 1px solid rgba(255,255,255,.14) !important;
+			}
+			.public-nav-cats-head {
+				display: flex !important;
+				align-items: center !important;
+				justify-content: space-between !important;
+				gap: 12px !important;
+				padding: 0 4px !important;
+			}
+			.public-nav-cats-title {
+				color: #9fc7d9 !important;
+				font-size: 11px !important;
+				font-weight: 900 !important;
+				letter-spacing: .12em !important;
+				text-transform: uppercase !important;
+				padding: 0 !important;
+			}
+			.public-nav-cats-head a {
+				color: #ffd166 !important;
+				border-bottom: 0 !important;
+				font-size: 12px !important;
+				font-weight: 800 !important;
+				padding: 0 !important;
+			}
+			.public-nav-cat-search {
+				display: flex !important;
+				align-items: center !important;
+				gap: 8px !important;
+				min-height: 38px !important;
+				border: 1px solid rgba(255,255,255,.16) !important;
+				border-radius: 9px !important;
+				background: rgba(255,255,255,.08) !important;
+				padding: 0 11px !important;
+				color: #9fc7d9 !important;
+			}
+			.public-nav-cat-search input {
+				width: 100% !important;
+				min-width: 0 !important;
+				border: 0 !important;
+				outline: 0 !important;
+				background: transparent !important;
+				color: #fff !important;
+				font-size: 16px !important;
+			}
+			.public-nav-cat-search input::placeholder {
+				color: #bdd8e5 !important;
+			}
+			.public-nav-cat-list {
+				display: grid !important;
+				gap: 2px !important;
+			}
+			.public-nav-cats a {
+				display: flex !important;
+				justify-content: space-between !important;
+				gap: 14px !important;
+				padding-left: 18px !important;
+			}
+			.public-nav-cats b {
+				color: #ffd166 !important;
+				font-size: 12px !important;
 			}
 			.public-nav::-webkit-scrollbar {
 				display: none !important;
@@ -957,17 +1020,6 @@
 			.catalog-intro {
 				grid-template-columns: 1fr !important;
 				margin-bottom: 14px !important;
-			}
-			.commercial-home {
-				padding: 16px 4vw 0 !important;
-				gap: 12px !important;
-			}
-			.solution-strip, .merch-band, .trust-row {
-				grid-template-columns: 1fr !important;
-				gap: 10px !important;
-			}
-			.solution-lead, .solution-card, .trust-card {
-				border-radius: 10px !important;
 			}
 			.hero::after {
 				background: linear-gradient(90deg, rgba(228, 245, 243, 0.98) 0%, rgba(228, 245, 243, 0.90) 58%, rgba(228, 245, 243, 0.45) 100%) !important;
@@ -1323,13 +1375,24 @@
 
 			/* Drawer del Carrito en celulares */
 			.drawer {
-				z-index: 200 !important;
+				z-index: 10000 !important;
 			}
 			.drawer-panel {
 				width: 100% !important;
 				max-width: 100% !important;
-				padding: 20px 18px !important;
+				height: 100dvh !important;
+				max-height: 100dvh !important;
+				border-radius: 0 !important;
+				padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)) !important;
 				box-sizing: border-box !important;
+			}
+			.drawer-head {
+				padding-bottom: 12px !important;
+			}
+			.drawer-footer {
+				position: sticky;
+				bottom: 0;
+				padding-bottom: env(safe-area-inset-bottom, 0px);
 			}
 			.cart-item {
 				padding: 10px 0 !important;
@@ -1402,6 +1465,39 @@
 				font-size: 18px !important;
 			}
 		}
+		@media (max-width: 800px) and (max-height: 620px) {
+			body {
+				padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
+			}
+			.mobile-bottom-nav {
+				height: calc(50px + env(safe-area-inset-bottom, 0px)) !important;
+			}
+			.mobile-nav-item {
+				gap: 1px !important;
+				font-size: 10px !important;
+			}
+			.mobile-nav-item i,
+			.mobile-nav-item svg {
+				width: 18px !important;
+				height: 18px !important;
+			}
+			.drawer-panel {
+				padding-top: 10px !important;
+			}
+			.drawer-head h2 {
+				font-size: 18px !important;
+			}
+			.cart-items {
+				padding: 8px 0 !important;
+			}
+			.drawer-footer {
+				padding-top: 10px !important;
+			}
+			.checkout {
+				min-height: 40px !important;
+				height: 40px !important;
+			}
+		}
 	</style>
 </head>
 <body>
@@ -1409,67 +1505,33 @@
 	<header class="nav">
 		<a class="logo" href="/" title="SmartISP Tienda Online"><img src="/assets/favicons/favicon-192x192.png" alt="SmartISP" style="height:38px;width:auto;object-fit:contain;"></a>
 		<form class="search" id="searchForm"><input id="searchInput" type="search" placeholder="¿Qué estás buscando hoy?" aria-label="Buscar productos"><button aria-label="Buscar"><i data-lucide="search" width="18"></i></button></form>
-		<div class="nav-actions"><button class="nav-action" id="openAccount"><i data-lucide="user" width="16"></i><span id="accountLabel">Mi cuenta</span></button><a class="admin-nav-link" id="adminNavLink" href="admin.html" style="display: none;"><i data-lucide="layout-dashboard" width="16"></i><span>Panel admin</span></a><button class="nav-action cart-button" id="openCart"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="cart-count" id="cartCount">0</b></button></div>
+		<div class="nav-actions"><button class="nav-action" id="openAccount"><i data-lucide="user" width="16"></i><span id="accountLabel">Mi cuenta</span></button><a class="admin-nav-link" id="adminNavLink" href="admin.html" style="display: none;"><i data-lucide="layout-dashboard" width="16"></i><span>Panel admin</span></a><button class="nav-action cart-button" id="openCart"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="cart-count" id="cartCount">0</b></button><button class="public-menu-btn" id="publicMenuBtn" type="button" aria-label="Abrir secciones" aria-expanded="false" aria-controls="publicNav"><i data-lucide="menu" width="20"></i></button></div>
 	</header>
-	<nav class="public-nav" aria-label="Secciones principales">
+	<nav class="public-nav" id="publicNav" aria-label="Secciones principales">
 		<a href="/categorias-destacadas">Categorías Destacadas</a>
 		<a href="/productos-destacados">Productos Destacados</a>
 		<a href="/servicios">Servicios</a>
 		<a href="/nosotros">Nosotros</a>
 		<a href="#catalogo">Catálogo</a>
+		<div class="public-nav-cats" aria-label="Categorías rápidas">
+			<div class="public-nav-cats-head">
+				<div class="public-nav-cats-title">Categorías</div>
+				<a href="/tienda.html#catalogo">Ver todas</a>
+			</div>
+			<label class="public-nav-cat-search">
+				<i data-lucide="search" width="14"></i>
+				<input type="search" id="publicNavCatSearch" placeholder="Buscar categoría..." autocomplete="off">
+			</label>
+			<div class="public-nav-cat-list" id="publicNavCatList">
+				<a href="/tienda.html#catalogo" data-nav-cat="todo catalogo">Todo el catálogo <b id="navCountAll">2773</b></a>
+				<a href="/tienda.html?macro=computacion#catalogo" data-nav-cat="computacion equipos">Computación y Equipos <b id="navCountComputacion">236</b></a>
+				<a href="/tienda.html?macro=componentes#catalogo" data-nav-cat="componentes almacenamiento">Componentes y Almacenamiento <b id="navCountComponentes">356</b></a>
+				<a href="/tienda.html?macro=redes#catalogo" data-nav-cat="redes conectividad">Redes y Conectividad <b id="navCountRedes">336</b></a>
+				<a href="/tienda.html?macro=monitores#catalogo" data-nav-cat="monitores pantallas">Monitores y Pantallas <b id="navCountMonitores"></b></a>
+			</div>
+		</div>
 	</nav>
 	<main>
-		<section class="hero"><div class="hero-content"><div class="eyebrow" id="heroEyebrow">Tecnología, Gaming y Conectividad</div><h1 id="heroTitle">Equipos y Soluciones Tecnológicas de Alta Gama</h1><p id="heroText">Laptops, componentes, consolas, networking y periféricos con garantía oficial y entrega rápida.</p><a class="primary" id="heroButton" href="#catalogo"><span id="heroButtonText">Explorar catálogo</span> <i data-lucide="arrow-right" width="17"></i></a></div></section>
-		<section class="commercial-home" aria-label="Comprar por necesidad">
-			<div class="solution-strip">
-				<div class="solution-lead">
-					<h2>Compra por proyecto, no por lista infinita</h2>
-					<p>Entra por la necesidad real: montar una red, renovar cómputo, proteger energía, mejorar seguridad o completar accesorios para operación diaria.</p>
-				</div>
-				<a class="solution-card" href="/categoria/redes-y-comunicaciones/">
-					<span class="solution-icon"><i data-lucide="router" width="20"></i></span>
-					<strong>Redes y conectividad</strong>
-					<span>Routers, switches, WiFi, cableado, fibra y enlaces para crecer con orden.</span>
-				</a>
-				<a class="solution-card" href="/categoria/computadores-y-tablets/">
-					<span class="solution-icon"><i data-lucide="laptop" width="20"></i></span>
-					<strong>Cómputo y productividad</strong>
-					<span>Laptops, PCs, monitores, periféricos y equipos para trabajo diario.</span>
-				</a>
-				<a class="solution-card" href="/servicios">
-					<span class="solution-icon"><i data-lucide="headphones" width="20"></i></span>
-					<strong>Asesoría antes de comprar</strong>
-					<span>Te ayudamos a comparar, cotizar y elegir según uso, presupuesto y compatibilidad.</span>
-				</a>
-			</div>
-			<div class="merch-band" aria-label="Familias destacadas">
-				<a class="merch-card" href="/categoria/proteccion-de-energia/">
-					<small>Continuidad</small>
-					<strong>Energía, UPS y protección</strong>
-					<span>Evita caídas y protege tu operación.</span>
-				</a>
-				<a class="merch-card" href="/categoria/seguridad-y-vigilancia/">
-					<small>Control</small>
-					<strong>Seguridad y monitoreo</strong>
-					<span>Cámaras, grabadores y acceso.</span>
-				</a>
-				<a class="merch-card" href="/categoria/impresoras-y-multifuncionales/">
-					<small>Oficina</small>
-					<strong>Impresión y punto de venta</strong>
-					<span>Equipos para venta, soporte y documentos.</span>
-				</a>
-				<a class="merch-card" href="/productos-destacados">
-					<small>Selección</small>
-					<strong>Productos destacados</strong>
-					<span>Novedades y equipos con alta demanda.</span>
-				</a>
-			</div>
-			<div class="trust-row" aria-label="Ventajas SmartISP">
-				<div class="trust-card"><i data-lucide="badge-check" width="20"></i><div><strong>Catálogo amplio</strong><span>Más que seguridad: redes, cómputo, energía, impresión, software y accesorios.</span></div></div>
-				<div class="trust-card"><i data-lucide="message-circle" width="20"></i><div><strong>Cotización por WhatsApp</strong><span>Contacto directo para resolver dudas antes de comprar.</span></div></div>
-				<div class="trust-card"><i data-lucide="truck" width="20"></i><div><strong>Despacho y soporte</strong><span>Atención comercial para empresas, hogares técnicos e ISP en Ecuador.</span></div></div>
-			</div>
-		</section>
 		<section class="content" id="catalogo">
 			<div class="catalog-intro">
 				<div class="catalog-intro-main">
@@ -1478,17 +1540,17 @@
 				</div>
 				<a class="catalog-feature-link" href="/categorias-destacadas">
 					<i data-lucide="layout-grid" width="20"></i>
-					<strong>Categorías destacadas</strong>
+					<strong>Categorías</strong>
 					<span>Explora familias ordenadas del catálogo.</span>
 				</a>
 				<a class="catalog-feature-link" href="/productos-destacados">
 					<i data-lucide="sparkles" width="20"></i>
-					<strong>Productos destacados</strong>
+					<strong>Productos</strong>
 					<span>Revisa novedades y artículos de alta demanda.</span>
 				</a>
 				<a class="catalog-feature-link" href="/servicios">
 					<i data-lucide="headphones" width="20"></i>
-					<strong>Asesoría y servicios</strong>
+					<strong>Asesoría</strong>
 					<span>Te ayudamos a elegir e implementar.</span>
 				</a>
 			</div>
@@ -1496,7 +1558,7 @@
 				<aside class="store-sidebar" aria-label="Filtrar por categorías">
 					<div class="sidebar-card">
 						<div class="sidebar-header">
-							<div class="sidebar-title"><i data-lucide="layout-grid" width="15"></i><span>Categorías</span></div>
+							<div class="sidebar-title"><i data-lucide="layout-grid"></i><span>Categorías</span></div>
 							<button type="button" class="sidebar-clear-btn" id="clearCategoryFilter" title="Mostrar todas las categorías">Ver todas</button>
 						</div>
 						<div class="sidebar-search-box">
@@ -1552,7 +1614,7 @@
 		</section>
 		<section class="benefits"><div class="benefit"><i data-lucide="shield-check" width="25"></i><div><strong>Compra segura</strong><span>Protegemos cada transacción</span></div></div><div class="benefit"><i data-lucide="headphones" width="25"></i><div><strong>Asesoría especializada</strong><span>Personas reales, respuestas claras</span></div></div><div class="benefit"><i data-lucide="package-check" width="25"></i><div><strong>Despacho a todo Ecuador</strong><span>Recibe donde estés</span></div></div></section>
 	</main>
-	<footer><div><div class="logo"><img src="/assets/favicons/favicon-192x192.png" alt="SmartISP" style="height:42px;width:auto;object-fit:contain;"></div><div>Infraestructura que mantiene tu red en movimiento.</div></div><div class="footer-links"><a href="#catalogo">Catálogo de Productos</a><a href="https://wa.me/593983576667" target="_blank" rel="noopener">Contacto y Soporte</a><a href="/sitemap.xml" title="Mapa del Sitio XML">Sitemap XML</a><a href="/sitemap-categories.xml" title="Directorio de categorías para Google">Categorías XML</a><a href="/sitemap-products.xml" title="Directorio de Productos para Google">Productos XML</a></div><div>© 2026 SmartISP</div></footer>
+	<footer><div><div class="logo"><img src="/assets/favicons/favicon-192x192.png" alt="SmartISP" style="height:42px;width:auto;object-fit:contain;"></div><div>Infraestructura que mantiene tu red en movimiento.</div></div><div class="footer-links"><a href="#catalogo">Catálogo de Productos</a><a href="https://wa.me/593983576667" target="_blank" rel="noopener">Contacto y Soporte</a></div><div>© 2026 SmartISP</div></footer>
 
 	<!-- Barra de Navegación Inferior Móvil (Estilo App Nativa) -->
 	<nav class="mobile-bottom-nav" aria-label="Navegación rápida móvil">
@@ -2102,11 +2164,26 @@
 			return { totalProducts: products.length, groups };
 		};
 
+		const updatePublicNavCategoryCounts = (totalProducts, groups) => {
+			const countByMacro = new Map(groups.map(group => [String(group.id).toLowerCase(), group.totalCount]));
+			const setCount = (selector, value) => {
+				const node = document.querySelector(selector);
+				if (node) node.textContent = value ? String(value) : '';
+			};
+
+			setCount('#navCountAll', totalProducts);
+			setCount('#navCountComputacion', countByMacro.get('computacion') || 0);
+			setCount('#navCountComponentes', countByMacro.get('componentes') || 0);
+			setCount('#navCountRedes', countByMacro.get('redes') || 0);
+			setCount('#navCountMonitores', countByMacro.get('monitores') || 0);
+		};
+
 		const renderSidebarCategories = () => {
 			const container = document.querySelector('#sidebarCategories');
 			if (!container) return;
 
 			const { totalProducts, groups } = buildCategoryTree();
+			updatePublicNavCategoryCounts(totalProducts, groups);
 			const isAllActive = !selectedFilter || selectedFilter === 'all';
 
 			let html = `
@@ -2790,7 +2867,49 @@
 			searchDebounceTimer = setTimeout(() => { refreshView(true); }, 250);
 		});
 		document.querySelector('#sortSelect').addEventListener('change', () => { refreshView(true); });
-		document.querySelector('#openCart').addEventListener('click', () => document.querySelector('#drawer').classList.add('open')); document.querySelector('#closeCart').addEventListener('click', () => document.querySelector('#drawer').classList.remove('open')); document.querySelector('#drawer').addEventListener('click', event => { if (event.target.id === 'drawer') event.target.classList.remove('open'); });
+		const cartDrawer = document.querySelector('#drawer');
+		const setCartOpen = open => {
+			if (!cartDrawer) return;
+			cartDrawer.classList.toggle('open', open);
+			document.body.classList.toggle('cart-open', open);
+		};
+		document.querySelector('#openCart').addEventListener('click', () => setCartOpen(true));
+		document.querySelector('#closeCart').addEventListener('click', () => setCartOpen(false));
+		cartDrawer?.addEventListener('click', event => { if (event.target.id === 'drawer') setCartOpen(false); });
+		const publicMenuBtn = document.querySelector('#publicMenuBtn');
+		const publicNav = document.querySelector('#publicNav');
+		const updateStickyNavOffset = () => {
+			const header = document.querySelector('.nav');
+			document.documentElement.style.setProperty('--sticky-nav-height', `${header?.offsetHeight || 70}px`);
+		};
+		updateStickyNavOffset();
+		window.addEventListener('resize', updateStickyNavOffset);
+		if (publicMenuBtn && publicNav) {
+			publicMenuBtn.addEventListener('click', () => {
+				const isOpen = publicNav.classList.toggle('is-open');
+				publicMenuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+				publicMenuBtn.innerHTML = isOpen ? '<i data-lucide="x" width="20"></i>' : '<i data-lucide="menu" width="20"></i>';
+				lucide?.createIcons();
+				updateStickyNavOffset();
+			});
+			publicNav.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
+				publicNav.classList.remove('is-open');
+				publicMenuBtn.setAttribute('aria-expanded', 'false');
+				publicMenuBtn.innerHTML = '<i data-lucide="menu" width="20"></i>';
+				lucide?.createIcons();
+			}));
+		}
+		const publicNavCatSearch = document.querySelector('#publicNavCatSearch');
+		const publicNavCatList = document.querySelector('#publicNavCatList');
+		if (publicNavCatSearch && publicNavCatList) {
+			publicNavCatSearch.addEventListener('input', () => {
+				const term = normalizeCategoryText(publicNavCatSearch.value);
+				publicNavCatList.querySelectorAll('[data-nav-cat]').forEach(link => {
+					const haystack = normalizeCategoryText(`${link.dataset.navCat || ''} ${link.textContent || ''}`);
+					link.style.display = !term || haystack.includes(term) ? 'flex' : 'none';
+				});
+			});
+		}
 		document.querySelectorAll('[data-close-modal]').forEach(button => button.addEventListener('click', () => {
 			const modalId = button.dataset.closeModal;
 			if (modalId === 'productModal') {
@@ -2920,13 +3039,9 @@
 				}
 				const content = Object.fromEntries((remote.content || []).map(item => [item.key, item.value]));
 				applySiteLogo(content);
-				if (content.hero_title) document.querySelector('.hero h1').textContent = content.hero_title;
-				if (content.hero_text) document.querySelector('.hero p').textContent = content.hero_text;
-				if (content.hero_image) document.querySelector('.hero').style.backgroundImage = `url("${content.hero_image}")`;
 				if (content.primary_color) document.documentElement.style.setProperty('--blue', content.primary_color);
 				if (content.footer_text) document.querySelector('footer > div:first-child > div:last-child').textContent = content.footer_text;
 				if (content.catalog_visible === 'false') document.querySelector('#catalogo').hidden = true;
-				if (content.hero_visible === 'false') document.querySelector('.hero').hidden = true;
 				if (content.benefits_visible === 'false') document.querySelector('.benefits').hidden = true;
 
 				// Aplicar diseño avanzado del hero directamente desde el mismo payload sin segunda petición
@@ -2934,6 +3049,10 @@
 				if (hero) {
 					const setText = (selector, key) => { if (content[key]) { const el = document.querySelector(selector); if (el) el.textContent = content[key]; } };
 					const hexToRgba = (hex, opacity) => { const value = String(hex || '').replace('#', ''); if (!/^[\da-f]{6}$/i.test(value)) return `rgba(228,245,243,${opacity})`; return `rgba(${parseInt(value.slice(0, 2), 16)},${parseInt(value.slice(2, 4), 16)},${parseInt(value.slice(4, 6), 16)},${opacity})`; };
+					if (content.hero_title) document.querySelector('.hero h1').textContent = content.hero_title;
+					if (content.hero_text) document.querySelector('.hero p').textContent = content.hero_text;
+					if (content.hero_image) hero.style.backgroundImage = `url("${content.hero_image}")`;
+					if (content.hero_visible === 'false') hero.hidden = true;
 					setText('#heroEyebrow', 'hero_eyebrow');
 					setText('#heroTitle', 'hero_title');
 					setText('#heroText', 'hero_text');
@@ -3000,6 +3119,7 @@
 			const macroParam = urlParams.get('macro');
 			const searchParam = urlParams.get('q') || urlParams.get('buscar') || urlParams.get('s');
 			const cartParam = urlParams.get('openCart') || urlParams.get('carrito');
+			const accountParam = urlParams.get('openAccount') || urlParams.get('cuenta');
 
 			if (catParam) {
 				const macro = getMacroCategory(catParam);
@@ -3023,7 +3143,12 @@
 
 			if (cartParam) {
 				setTimeout(() => {
-					document.querySelector('#drawer')?.classList.add('open');
+					setCartOpen(true);
+				}, 300);
+			}
+			if (accountParam) {
+				setTimeout(() => {
+					document.querySelector('#openAccount')?.click();
 				}, 300);
 			}
 		} catch (e) {
