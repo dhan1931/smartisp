@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SmartISP | Administracion</title>
-  <link rel="icon" href="/favicon.ico" sizes="any">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
-  <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
-  <link rel="icon" type="image/png" sizes="144x144" href="/favicon-144x144.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-  <link rel="manifest" href="/site.webmanifest">
+  <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicons/favicon.svg">
+  <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicons/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="48x48" href="/assets/favicons/favicon-48x48.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="/assets/favicons/favicon-96x96.png">
+  <link rel="icon" type="image/png" sizes="144x144" href="/assets/favicons/favicon-144x144.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/favicons/favicon-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/assets/favicons/favicon-512x512.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
+  <link rel="manifest" href="/assets/site.webmanifest">
   <meta name="theme-color" content="#102c3d">
   <style>
     :root { --ink: #163342; --muted: #6b7f88; --line: #d8e5e7; --pale: #eef5f6; --blue: #087ea4; --blue-dark: #075d7d; --danger: #a53b3b; --success: #11815d; }
@@ -24,224 +24,74 @@
     .top h1 { margin: 0; font-size: 27px; letter-spacing: .2px; } .top span { color: #b7d4dc; font-size: 13px; }
     .shell { width: min(1180px, 90vw); margin: 32px auto; } .login, .panel { background: rgba(255,255,255,.94); border: 1px solid var(--line); border-radius: 14px; padding: 28px; box-shadow: 0 12px 30px rgba(16,44,61,.08); }
     .login { width: min(430px, 100%); margin: 80px auto; } h2 { margin-top: 0; } h3 { margin: 0 0 17px; } label { display: block; margin: 14px 0; color: var(--muted); font-size: 13px; font-weight: 700; }
-    input, textarea, select { width: 100%; margin-top: 7px; padding: 11px 12px; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; background: #fbfefe; transition: border-color .2s, box-shadow .2s; } input:focus, textarea:focus, select:focus { outline: 0; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(8,126,164,.12); } input[type="file"] { padding: 8px; } textarea { min-height: 90px; resize: vertical; }
+    input, textarea, select { width: 100%; margin-top: 7px; padding: 11px 12px; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; background: #fbfefe; transition: border-color .2s, box-shadow .2s; } input:focus, textarea:focus, select:focus { outline: 0; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(8,126,164,.12); }
     .button { padding: 11px 16px; color: white; border: 0; border-radius: 8px; background: var(--blue); font-weight: 700; transition: transform .2s, background .2s, box-shadow .2s; } .button:hover { background: var(--blue-dark); transform: translateY(-1px); box-shadow: 0 5px 12px rgba(8,126,164,.2); } .button.secondary { color: var(--ink); background: #e7f2f3; } .button.secondary:hover { background: #d3e9eb; } .button.danger { background: var(--danger); }
     .message { display: none; align-items: center; gap: 8px; margin: 14px 0; padding: 11px; border-radius: 8px; background: #e5faf1; color: var(--success); font-size: 13px; } .message.show { display: flex; animation: save-confirm .55s ease both; } .message.show::before { content: '\2713'; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: currentColor; color: white; font-weight: 700; } .message.error { color: var(--danger); background: #fff0f0; } .message.error.show::before { content: '!'; }
     .form-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; } .section-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; } .section-heading h3 { margin-bottom: 0; }
-    .crop-modal { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: rgba(9,30,42,.72); } .crop-modal[hidden] { display: none; }
-    #importModal { z-index: 100; }
-    #productEditModal { z-index: 120; }
-    #imageSearchModal { z-index: 220; }
-    #cropModal { z-index: 300; } .crop-dialog { width: min(780px, 100%); max-height: 94vh; overflow: auto; padding: 24px; border-radius: 14px; background: white; box-shadow: 0 24px 60px rgba(0,0,0,.28); } .crop-dialog h2 { margin-bottom: 6px; } .crop-help { margin: 0 0 16px; color: var(--muted); font-size: 13px; } .crop-stage { position: relative; display: grid; place-items: center; min-height: 280px; overflow: hidden; border-radius: 10px; background: #102c3d; } .crop-stage canvas { display: block; max-width: 100%; max-height: 58vh; } .crop-box { position: absolute; border: 2px solid white; box-shadow: 0 0 0 9999px rgba(0,0,0,.48); cursor: move; touch-action: none; } .crop-box::before { content: ''; position: absolute; inset: 33.33% 0; border-top: 1px solid rgba(255,255,255,.55); border-bottom: 1px solid rgba(255,255,255,.55); } .crop-box::after { content: ''; position: absolute; inset: 0 33.33%; border-left: 1px solid rgba(255,255,255,.55); border-right: 1px solid rgba(255,255,255,.55); } .crop-handle { position: absolute; z-index: 1; width: 12px; height: 12px; border: 2px solid var(--blue); border-radius: 50%; background: white; } .crop-handle[data-resize="nw"] { left: -7px; top: -7px; cursor: nwse-resize; } .crop-handle[data-resize="ne"] { right: -7px; top: -7px; cursor: nesw-resize; } .crop-handle[data-resize="sw"] { left: -7px; bottom: -7px; cursor: nesw-resize; } .crop-handle[data-resize="se"] { right: -7px; bottom: -7px; cursor: nwse-resize; } .crop-handle[data-resize="n"] { left: calc(50% - 6px); top: -7px; cursor: ns-resize; } .crop-handle[data-resize="s"] { left: calc(50% - 6px); bottom: -7px; cursor: ns-resize; } .crop-handle[data-resize="w"] { left: -7px; top: calc(50% - 6px); cursor: ew-resize; } .crop-handle[data-resize="e"] { right: -7px; top: calc(50% - 6px); cursor: ew-resize; } .crop-options { display: flex; align-items: end; gap: 14px; margin-top: 16px; } .crop-options label { flex: 1; margin: 0; } .crop-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
     .hidden { display: none !important; } .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; } .wide { grid-column: 1 / -1; }
     .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 24px; } .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .design-preview { margin: 20px 0; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: #d7eeeb; box-shadow: 0 10px 24px rgba(16,44,61,.1); } .design-preview-hero { min-height: 250px; padding: 34px clamp(20px, 6vw, 58px); color: var(--preview-text, #102c3d); background-color: var(--preview-bg, #cdeee9); background-image: linear-gradient(90deg, var(--preview-overlay, rgba(228,245,243,.96)) 0%, var(--preview-overlay, rgba(228,245,243,.82)) 42%, rgba(228,245,243,0) 84%), var(--preview-image); background-position: center; background-size: cover; display: flex; align-items: center; } .design-preview-copy { max-width: var(--preview-width, 510px); } .design-preview-eyebrow { margin-bottom: 10px; color: var(--preview-accent, #087ea4); font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; } .design-preview h4 { margin: 0 0 10px; font-size: clamp(26px, 4vw, 43px); line-height: .98; } .design-preview p { max-width: 390px; margin: 0 0 18px; color: color-mix(in srgb, var(--preview-text, #102c3d) 72%, transparent); line-height: 1.5; } .design-preview-button { display: inline-flex; padding: 10px 14px; color: white; border-radius: 6px; background: var(--preview-accent, #087ea4); font-size: 12px; font-weight: 700; } .design-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; } .design-controls .full { grid-column: 1 / -1; } .color-field { display: flex; align-items: center; gap: 10px; } .color-field input[type="color"] { width: 48px; height: 38px; padding: 3px; margin: 7px 0 0; } .range-value { color: var(--blue); font-weight: 700; }
-    /* Logo Customizer Styling */
-    .logo-customizer-card { background: #fbfdfe; border: 1px solid #d4e5ea; border-radius: 12px; padding: 18px 20px; margin-bottom: 22px; box-shadow: 0 4px 14px rgba(16,44,61,.04); }
-    .logo-card-header { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid #e7f0f2; }
-    .logo-type-tabs { display: inline-flex; background: #eef5f7; padding: 3px; border-radius: 8px; gap: 2px; }
-    .logo-tab { border: none; background: transparent; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer; transition: all .15s ease; }
-    .logo-tab.active { background: white; color: var(--blue); box-shadow: 0 2px 6px rgba(16,44,61,.08); }
-    .logo-upload-zone { border: 2px dashed #9acfe9; border-radius: 10px; background: #f4faff; padding: 22px 18px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; }
-    .logo-upload-zone:hover, .logo-upload-zone.drag-over { border-color: var(--blue); background: #eaf5fc; }
-    .logo-upload-icon-circle { width: 48px; height: 48px; border-radius: 50%; background: #e0f2fe; display: grid; place-items: center; margin: 0 auto; }
-    .logo-preview-canvas-box { border: 1px solid #dce8ec; border-radius: 8px; overflow: hidden; padding: 12px 18px; display: flex; align-items: center; justify-content: center; min-height: 75px; }
-    .logo-checker-bg { width: 100%; display: flex; align-items: center; justify-content: center; padding: 14px; border-radius: 6px; background-color: #f8fafc; background-image: linear-gradient(45deg, #e2e8f0 25%, transparent 25%), linear-gradient(-45deg, #e2e8f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e2e8f0 75%), linear-gradient(-45deg, transparent 75%, #e2e8f0 75%); background-size: 16px 16px; background-position: 0 0, 0 8px, 8px -8px, -8px 0px; }
-    .logo-checker-bg.dark-preview { background-color: #0b1e2a; background-image: linear-gradient(45deg, #132a3a 25%, transparent 25%), linear-gradient(-45deg, #132a3a 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #132a3a 75%), linear-gradient(-45deg, transparent 75%, #132a3a 75%); border: 1px solid #1a384d; }
-    .logo-size-slider-row { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
-    .logo-size-slider-row input[type="range"] { flex: 1; height: 6px; accent-color: var(--blue); cursor: pointer; margin: 0; padding: 0; }
-    .logo-size-slider-row input[type="number"] { width: 72px; padding: 7px 8px; text-align: center; font-weight: 700; margin: 0; }
-    .logo-quick-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; background: #f0f7fa; border: 1px solid #cce5ef; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; }
-    .logo-badge-format { font-size: 11px; font-weight: 800; background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 6px; letter-spacing: 0.05em; }
-    /* Product Grid & Compact Cards */
-    #productsList { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; margin-top: 14px; }
-    .product-card { background: white; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; cursor: pointer; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; box-shadow: 0 3px 10px rgba(16,44,61,.04); position: relative; }
-    .product-card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(16,44,61,.12); border-color: var(--blue); }
-    .product-card-thumb { width: 100%; aspect-ratio: 1; display: grid; place-items: center; background: #fafdfd; padding: 12px; position: relative; border-bottom: 1px solid #edf4f5; overflow: hidden; }
-    .product-card-thumb img { width: 100%; height: 100%; object-fit: contain; image-rendering: -webkit-optimize-contrast; transition: transform .3s ease; }
-    .product-card:hover .product-card-thumb img { transform: scale(1.06); }
-    .product-card-no-img { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--muted); font-size: 11px; }
-    .product-card-no-img span { font-size: 30px; }
-    .product-card-badge { position: absolute; top: 8px; left: 8px; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; z-index: 2; pointer-events: none; }
-    .badge-hidden { background: #fee2e2; color: #991b1b; }
-    .product-card-body { padding: 12px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
-    .product-card-meta { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
-    .product-card-cat { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .product-card-sku { font-size: 10px; background: #eef5f6; color: var(--ink); padding: 2px 6px; border-radius: 4px; font-family: monospace; white-space: nowrap; }
-    .product-card-title { margin: 2px 0 0; font-size: 13px; font-weight: 700; line-height: 1.35; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 35px; }
-    .product-card-price { font-size: 15px; font-weight: 800; color: var(--blue); margin-top: auto; padding-top: 4px; }
-    .product-card-price .price-quote { font-size: 11px; color: var(--muted); font-style: italic; font-weight: normal; }
-    .product-card-actions { display: flex; gap: 6px; padding: 10px 12px; background: #fbfdfe; border-top: 1px solid #edf4f5; }
-    .product-card-actions button { padding: 7px 10px; font-size: 12px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
-    .product-card-actions .btn-edit { flex: 1; background: #eaf6f9; color: var(--blue); border: 1px solid #cce8ee; }
-    .product-card-actions .btn-edit:hover { background: #d7eef3; }
-    .product-card-actions .btn-delete { background: #fff1f1; color: var(--danger); border: 1px solid #f9d0d0; }
-    .product-card-actions .btn-delete:hover { background: #fee2e2; }
-    .product-edit-dialog { width: min(840px, 95vw); max-height: 94vh; }
-    .image-editor { display: grid; grid-template-columns: minmax(140px, 200px) 1fr; gap: 16px; align-items: center; padding: 14px; border: 1px dashed #b9d9d8; border-radius: 10px; background: #f7fcfc; }
-    .image-preview { display: grid; place-items: center; min-height: 130px; overflow: hidden; border-radius: 8px; background: #e4f1f1; }
-    .image-preview img { display: block; width: 100%; height: 150px; object-fit: contain; }
-    .image-preview.is-empty::after { content: 'Sin imagen'; color: var(--muted); font-size: 12px; }
-    .image-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .image-tools small { display: block; width: 100%; color: var(--muted); }
-    .image-tools input[type="file"] { display: none; }
+    .dashboard-hero { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin-bottom:18px; }
+    .dashboard-hero h2 { margin:0; color:#0f172a; font-size:28px; letter-spacing:-.02em; }
+    .dashboard-hero p { margin:5px 0 0; color:#64748b; }
+    .dashboard-date { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:9px 12px; color:#0f172a; font-weight:700; font-size:13px; box-shadow:0 2px 8px rgba(15,23,42,.03); }
+    .dashboard-grid { display:grid; grid-template-columns:minmax(0, 1.8fr) minmax(300px, .9fr); gap:14px; margin-bottom:14px; }
+    .dashboard-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 2px 10px rgba(15,23,42,.04); }
+    .kpi-row { display:grid; grid-template-columns:repeat(auto-fit, minmax(165px, 1fr)); gap:14px; margin-bottom:14px; }
+    .kpi-card { min-height:112px; padding:16px; color:inherit; text-decoration:none; }
+    .kpi-card:hover { border-color:#bfdbfe; }
+    .kpi-head { display:flex; align-items:center; gap:10px; color:#0f172a; font-size:13px; font-weight:800; margin-bottom:12px; }
+    .kpi-icon { width:32px; height:32px; border-radius:9px; display:grid; place-items:center; background:#e0f2fe; color:#0369a1; }
+    .kpi-value { color:#020617; font-size:27px; font-weight:800; letter-spacing:-.03em; }
+    .kpi-foot { margin-top:5px; color:#64748b; font-size:12px; }
+    .kpi-card.is-green .kpi-icon { background:#dcfce7; color:#15803d; }
+    .kpi-card.is-red .kpi-icon { background:#fee2e2; color:#dc2626; }
+    .kpi-card.is-violet .kpi-icon { background:#ede9fe; color:#6d28d9; }
+    .chart-panel { padding:18px; min-height:250px; }
+    .panel-title-row { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }
+    .panel-title-row h3 { margin:0; color:#0f172a; font-size:17px; }
+    .panel-title-row a { color:#0369a1; text-decoration:none; font-size:12.5px; font-weight:800; }
+    .mini-chart { height:165px; display:flex; align-items:end; gap:8px; padding:14px 8px 0; border-bottom:1px solid #e2e8f0; background:linear-gradient(#eef2f7 1px, transparent 1px) 0 16px / 100% 38px; }
+    .mini-bar { flex:1; min-width:12px; border-radius:8px 8px 0 0; background:linear-gradient(180deg, #60a5fa, #0ea5e9); opacity:.9; }
+    .mini-chart-labels { display:flex; justify-content:space-between; color:#64748b; font-size:11px; padding:8px 6px 0; }
+    .attention-panel { padding:18px; }
+    .attention-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px; }
+    .attention-head h3 { margin:0 0 4px; font-size:16px; color:#0f172a; }
+    .attention-head p { margin:0; color:#64748b; font-size:12.5px; }
+    .attention-list { display:grid; gap:10px; }
+    .attention-item { display:flex; align-items:flex-start; gap:10px; padding:12px; border:1px solid #e2e8f0; border-radius:10px; color:inherit; text-decoration:none; background:#f8fafc; }
+    .attention-item:hover { border-color:#bae6fd; background:#f0f9ff; }
+    .attention-icon { width:30px; height:30px; border-radius:8px; display:grid; place-items:center; flex-shrink:0; background:#e0f2fe; color:#0369a1; }
+    .attention-item strong { display:block; color:#0f172a; font-size:13.5px; margin-bottom:2px; }
+    .attention-item span { display:block; color:#64748b; font-size:12px; line-height:1.35; }
+    .attention-item.is-warning .attention-icon { background:#fef3c7; color:#b45309; }
+    .attention-item.is-danger .attention-icon { background:#fee2e2; color:#b91c1c; }
+    .dashboard-lower { display:grid; grid-template-columns:minmax(0, 1fr) minmax(280px, .65fr); gap:14px; }
+    .recent-panel, .health-panel { padding:18px; }
+    .recent-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+    .recent-table th { text-align:left; color:#64748b; font-size:11.5px; padding:9px 8px; border-bottom:1px solid #e2e8f0; }
+    .recent-table td { padding:10px 8px; border-bottom:1px solid #eef2f7; color:#0f172a; }
+    .status-pill { display:inline-flex; align-items:center; padding:3px 8px; border-radius:999px; background:#e0f2fe; color:#0369a1; font-weight:800; font-size:11px; }
+    .health-meter { height:12px; background:#e2e8f0; border-radius:999px; overflow:hidden; margin:12px 0; }
+    .health-meter span { display:block; height:100%; width:0%; background:linear-gradient(90deg, #22c55e, #0ea5e9); border-radius:999px; transition:width .3s; }
+    .health-summary { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-top:14px; }
+    .health-summary strong { display:block; color:#0f172a; font-size:21px; }
+    .health-summary span { color:#64748b; font-size:11.5px; }
     @keyframes save-confirm { 0% { opacity: 0; transform: translateY(-8px) scale(.98); } 55% { transform: translateY(0) scale(1.02); } 100% { opacity: 1; transform: translateY(0) scale(1); } } @keyframes rise-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .panel { animation: rise-in .45s ease both; } @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } #productsList { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); } .top, .toolbar, .section-heading { align-items: flex-start; flex-direction: column; } } @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
-    .import-dialog { width: min(880px, 95vw); max-height: 92vh; }
-    .import-dropzone { border: 2px dashed #087ea4; border-radius: 12px; padding: 34px 20px; text-align: center; background: #f0f9fb; cursor: pointer; transition: background .2s, border-color .2s; margin-top: 14px; }
-    .import-dropzone:hover, .import-dropzone.dragover { background: #e0f4f7; border-color: #075d7d; }
-    .import-dropzone .dropzone-icon { font-size: 38px; margin-bottom: 8px; }
-    .import-dropzone strong { display: block; font-size: 15px; color: var(--ink); margin-bottom: 4px; }
-    .import-dropzone span { display: block; font-size: 12px; color: var(--muted); }
-    .import-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 16px 0; }
-    .stat-card { background: #f8fafb; border: 1px solid var(--line); border-radius: 8px; padding: 12px; text-align: center; }
-    .stat-card .stat-num { display: block; font-size: 22px; font-weight: 700; color: var(--blue); }
-    .stat-card .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-    .mapping-chip { display: inline-flex; align-items: center; gap: 5px; background: white; border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; font-size: 11px; }
-    .mapping-chip.found { border-color: #a3e0cb; background: #f0faf6; color: var(--success); font-weight: 600; }
-    .mapping-chip.missing { border-color: #f7c5c5; background: #fff5f5; color: var(--danger); }
-    .preview-table { width: 100%; border-collapse: collapse; font-size: 12px; background: white; }
-    .preview-table th, .preview-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
-    .preview-table tr:hover { background: #f9fcfd; }
-    .thumb-preview { width: 34px; height: 34px; object-fit: contain; border-radius: 4px; background: #eef5f6; display: block; }
-    .image-search-card { position: relative; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: white; cursor: pointer; transition: transform .2s, border-color .2s, box-shadow .2s; display: flex; flex-direction: column; text-align: left; }
-    .image-search-card:hover { border-color: var(--blue); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(8,126,164,.15); }
-    .image-search-card img { width: 100%; height: 115px; object-fit: contain; background: #fafdfd; padding: 6px; }
-    .image-search-card span { font-size: 11px; padding: 6px 8px; color: var(--muted); text-overflow: ellipsis; white-space: nowrap; overflow: hidden; border-top: 1px solid var(--line); }
-    .store-badge { position: absolute; top: 6px; left: 6px; font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 4px; z-index: 2; letter-spacing: .02em; pointer-events: none; }
-    .store-badge.amazon { background: #131921; color: #ff9900; border: 1px solid rgba(255,153,0,.45); }
-    .store-badge.web { background: #087ea4; color: #ffffff; }
-    .store-filter-btn.active { background: var(--blue) !important; color: #ffffff !important; border-color: var(--blue) !important; }
-    .store-filter-btn[data-store="amazon"].active { background: #ea580c !important; color: #ffffff !important; border-color: #ea580c !important; }
-    .product-filter-tabs { display: inline-flex; background: #eef3f5; padding: 4px; border-radius: 24px; gap: 4px; }
-    .filter-tab { border: none; background: transparent; padding: 6px 13px; border-radius: 20px; font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all .2s ease; }
-    .filter-tab:hover { color: var(--ink); background: rgba(255,255,255,.6); }
-    .filter-tab.active { background: #ffffff; color: var(--blue); box-shadow: 0 2px 6px rgba(0,0,0,.08); }
-    .filter-tab.tab-alert { color: #c2410c; }
-    .filter-tab.tab-alert.active { background: #ea580c; color: #ffffff; }
-    .tab-count { font-size: 11px; padding: 2px 7px; border-radius: 12px; background: #e2e8f0; color: #475569; font-weight: 700; }
-    .filter-tab.active .tab-count { background: #e0f2fe; color: var(--blue); }
-    .filter-tab.tab-alert.active .tab-count { background: rgba(255,255,255,.25); color: #ffffff; }
-    .filter-tab.tab-alert:not(.active) .tab-count { background: #ffedd5; color: #c2410c; }
-    .btn-quick-photo { background: #087ea4 !important; color: #ffffff !important; padding: 5px 9px !important; font-size: 11px !important; font-weight: 700 !important; border-radius: 6px !important; border: 0 !important; }
-    .btn-quick-photo:hover { background: #075d7d !important; }
-    .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(8,126,164,.2); border-top-color: var(--blue); border-radius: 50%; animation: spin .8s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .panel { animation: rise-in .45s ease both; } @media (max-width: 980px) { .dashboard-grid, .dashboard-lower { grid-template-columns:1fr; } } @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } .top, .toolbar, .section-heading, .dashboard-hero { align-items: flex-start; flex-direction: column; } .health-summary { grid-template-columns:1fr; } } @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 
-    /* Estilos para las tarjetas de Macro-Categorías en Admin */
-    .macro-cat-card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-      transition: all .2s ease;
-      position: relative;
-    }
-    .macro-cat-card:hover {
-      border-color: #38bdf8;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(2,132,199,0.1);
-    }
-    .macro-cat-icon {
-      width: 42px;
-      height: 42px;
-      border-radius: 10px;
-      background: #f0f9ff;
-      border: 1px solid #bae6fd;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      flex-shrink: 0;
-    }
-    .macro-cat-title {
-      font-size: 14.5px;
-      font-weight: 700;
-      color: #0f172a;
-      line-height: 1.3;
-      margin: 0;
-      word-break: break-word;
-    }
-    .macro-cat-count-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      background: #f0fdf4;
-      color: #166534;
-      border: 1px solid #bbf7d0;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 20px;
-      white-space: nowrap;
-    }
-    .macro-subcat-chip {
-      font-size: 11px;
-      background: #f1f5f9;
-      color: #475569;
-      padding: 2px 8px;
-      border-radius: 6px;
-      border: 1px solid #e2e8f0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 140px;
-    }
-    .macro-subcat-chip.more {
-      background: #e2e8f0;
-      color: #1e293b;
-      font-weight: 700;
-    }
-    .macro-cat-btn-view {
-      flex: 1;
-      background: #0284c7;
-      color: #ffffff;
-      padding: 7px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 700;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      transition: background .15s;
-    }
-    .macro-cat-btn-view:hover {
-      background: #0369a1;
-    }
-    .macro-cat-btn-edit {
-      background: #f8fafc;
-      color: #475569;
-      border: 1px solid #cbd5e1;
-      padding: 7px 10px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      transition: all .15s;
-    }
-    .macro-cat-btn-edit:hover {
-      background: #e2e8f0;
-      color: #0f172a;
-    }
+    svg.lucide { width: 1em; height: 1em; vertical-align: -0.125em; stroke-width: 2; flex-shrink: 0; }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAI062MaV8sfjQKYVGjOBaZBOA87z+IhZE9DA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
-  <header class="top"><div><h1>SmartISP Administracion</h1><span>Gestiona tu tienda sin editar el codigo</span></div><div style="display:flex;gap:8px;"><a class="button secondary" href="/" target="_blank">Ver tienda online</a></div></header>
+  <link rel="stylesheet" href="/assets/css/admin-nav.css">
+  <div id="smartisp-admin-nav" class="is-loading" data-active="inicio"></div>
+  <script src="/assets/js/admin-nav.js" defer></script>
+  <header class="top"><div><h1>SmartISP Administracion</h1><span>Gestiona tu tienda sin editar el codigo</span></div><div style="display:flex;gap:8px;"><a class="button secondary" href="/" target="_blank" rel="noopener">Ver tienda online</a></div></header>
   <main class="shell">
     <section id="accessDeniedPanel" class="login hidden">
       <div style="text-align: center; padding: 10px 0;">
-        <div style="font-size: 42px; line-height: 1; margin-bottom: 12px;">🚫</div>
+        <div style="margin-bottom: 12px;"><i data-lucide="ban" style="width:42px;height:42px;color:#c2410c;"></i></div>
         <h2 style="color: #c2410c; margin-bottom: 6px;">Acceso Restringido</h2>
         <p style="color: var(--muted); font-size: 13.5px; line-height: 1.5; margin-bottom: 18px;">
           Has iniciado sesión como <strong id="deniedUserEmail" style="color: var(--ink);"></strong>.<br>
@@ -265,1165 +115,93 @@
       </form>
     </section>
     <section id="adminPanel" class="hidden">
-      <div class="toolbar">
-        <div><h2>Panel de control</h2><span id="adminIdentity"></span></div>
-        <div style="display:flex; gap:10px; align-items:center;">
-          <a href="editor-catalogo.html" class="button" style="background:#075d7d; color:#fff; text-decoration:none; display:inline-flex; align-items:center; gap:8px; font-weight:700; box-shadow:0 3px 10px rgba(7,93,125,0.25);">
-            <span>📦 Editor de Catálogo y Categorías</span>
-            <span style="font-size:11px; background:rgba(255,255,255,0.22); padding:2px 7px; border-radius:10px;">Abrir ↗</span>
-          </a>
-          <button id="logoutButton" class="button danger">Cerrar sesion</button>
+      <div class="dashboard-hero">
+        <div>
+          <h2 id="dashboardGreeting">Buenos días</h2>
+          <p><span id="adminIdentity"></span> · Resumen operativo de tu tienda</p>
         </div>
+        <div class="dashboard-date"><i data-lucide="calendar-days"></i> <span id="dashboardDate">Hoy</span></div>
       </div>
-      <div class="grid">
-        <section class="panel"><div class="section-heading"><h3>Apariencia y contenido</h3><button id="resetContentButton" class="button secondary" type="button">Restaurar predeterminado</button></div><form id="contentForm">
-          <div class="logo-customizer-card">
-            <div class="logo-card-header">
-              <div>
-                <h4 style="margin:0 0 3px; font-size:14px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:6px;">
-                  <span>🎨</span> Diseño del Logotipo de la Tienda
-                </h4>
-                <span style="font-size:11.5px; color:var(--muted);">Personaliza el logo para el navbar claro, el pie de página oscuro y la versión tipográfica. Puedes agrandarlo hasta 140px.</span>
-              </div>
-              <div class="logo-type-tabs">
-                <button type="button" class="logo-tab active" data-logo-mode="light" id="tabLogoLightBtn">☀️ Fondo Claro (Navbar)</button>
-                <button type="button" class="logo-tab" data-logo-mode="dark" id="tabLogoDarkBtn">🌙 Fondo Oscuro (Footer)</button>
-                <button type="button" class="logo-tab" data-logo-mode="text" id="tabLogoTextBtn">✍️ Solo Texto</button>
-              </div>
-              <input type="hidden" name="logo_type" id="logoTypeInput" value="image">
-              <input type="hidden" name="logo_image" id="logoImageHidden">
-              <input type="hidden" name="logo_height" id="logoHeightHidden" value="38">
-              <input type="hidden" name="logo_dark_image" id="logoDarkImageHidden">
-              <input type="hidden" name="logo_dark_height" id="logoDarkHeightHidden" value="42">
-              <input type="hidden" name="logo_dark_invert" id="logoDarkInvertHidden" value="false">
-            </div>
-
-            <!-- PANEL 1: LOGO PARA FONDO CLARO (NAVBAR) -->
-            <div id="logoLightPanel" class="logo-panel">
-              <div style="margin-bottom:12px; font-size:12px; font-weight:700; color:var(--blue); display:flex; align-items:center; gap:6px;">
-                <span>☀️ Logotipo para Barra Superior / Menú Claro</span>
-                <span style="font-weight:400; color:var(--muted); font-size:11px;">(Visible en el navbar principal de la tienda)</span>
-              </div>
-              <div class="logo-upload-zone" id="logoLightDropZone">
-                <div class="logo-upload-prompt" id="logoLightPrompt">
-                  <div class="logo-upload-icon-circle">
-                    <span style="font-size:24px;">🖼️</span>
-                  </div>
-                  <div style="font-weight:700; font-size:13px; color:var(--ink); margin-top:8px;">
-                    Sube tu logotipo para <span style="color:var(--blue); font-weight:800;">fondo claro</span>
-                  </div>
-                  <div style="font-size:11.5px; color:var(--muted); margin-top:3px;">
-                    Recomendado: PNG con fondo transparente (también admite WebP, SVG o JPG). Máx. 3 MB.
-                  </div>
-                  <button type="button" class="button secondary" id="chooseLogoBtn" style="margin-top:10px; padding:6px 14px; font-size:12px;">
-                    📁 Seleccionar archivo PNG
-                  </button>
-                </div>
-                <input type="file" id="logoFileInput" name="logo_image_file" accept=".png, image/png, image/jpeg, image/webp, image/svg+xml" style="display:none;">
-              </div>
-
-              <!-- Vista previa de imagen clara -->
-              <div id="logoLightPreviewWrap" style="display:none; margin-top:12px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                  <span style="font-size:12px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:6px;">
-                    <span style="color:#16a34a; font-weight:900;">✓</span> Logotipo para fondo claro cargado:
-                  </span>
-                  <div style="display:flex; gap:6px;">
-                    <button type="button" class="button secondary" id="changeLogoBtn" style="padding:4px 10px; font-size:11px;">🔄 Cambiar</button>
-                    <button type="button" class="button danger" id="deleteLogoBtn" style="padding:4px 10px; font-size:11px; background:#fff1f1; border:1px solid #fecaca; color:#b91c1c;">🗑️ Quitar imagen</button>
-                  </div>
-                </div>
-                <div class="logo-preview-canvas-box">
-                  <div class="logo-checker-bg" id="logoPreviewChecker">
-                    <img id="logoImgPreview" src="" alt="Logotipo fondo claro" style="height:38px; max-height:140px; max-width:100%; object-fit:contain; display:block; margin:auto;">
-                  </div>
-                </div>
-              </div>
-
-              <div class="logo-controls-grid" style="margin-top:14px; display:grid; grid-template-columns:1.2fr 1fr; gap:14px; align-items:end;">
-                <div>
-                  <label style="margin:0 0 4px; display:flex; justify-content:space-between;">
-                    <span>Altura del logo en la barra superior:</span>
-                    <span id="logoHeightVal" style="color:var(--blue); font-weight:800;">38px</span>
-                  </label>
-                  <div class="logo-size-slider-row">
-                    <input type="range" id="logoHeightRange" min="20" max="140" step="2" value="38">
-                    <input type="number" id="logoHeightNum" min="20" max="140" value="38">
-                    <span style="font-size:11.5px; color:var(--muted); font-weight:600;">px</span>
-                  </div>
-                </div>
-                <div>
-                  <label style="margin:0 0 4px;">Nombre comercial de la marca
-                    <input name="brand_name" id="brandNameInput" placeholder="SmartISP Telecomunicaciones" autocomplete="off">
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <!-- PANEL 2: LOGO PARA FONDO OSCURO (FOOTER) -->
-            <div id="logoDarkPanel" class="logo-panel" style="display:none;">
-              <div style="margin-bottom:12px; font-size:12px; font-weight:700; color:#0e7490; display:flex; align-items:center; gap:6px;">
-                <span>🌙 Logotipo para Pie de Página / Fondo Oscuro</span>
-                <span style="font-weight:400; color:var(--muted); font-size:11px;">(Visible en el footer oscuro de la tienda y páginas de compra)</span>
-              </div>
-
-              <!-- Quick Bar: Copiar del menú claro & auto invert -->
-              <div class="logo-quick-bar">
-                <button type="button" class="button secondary" id="btnCopyLightToDark" style="padding:6px 12px; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
-                  <span>📋</span> Usar el mismo logo del menú claro
-                </button>
-                <label style="margin:0; font-size:12px; font-weight:600; color:var(--ink); display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
-                  <input type="checkbox" id="logoDarkAutoInvert" style="width:16px; height:16px; margin:0; accent-color:var(--blue);">
-                  <span>⚪ Invertir colores automáticamente a blanco (para logos oscuros)</span>
-                </label>
-              </div>
-
-              <div class="logo-upload-zone" id="logoDarkDropZone">
-                <div class="logo-upload-prompt" id="logoDarkPrompt">
-                  <div class="logo-upload-icon-circle" style="background:#e2e8f0;">
-                    <span style="font-size:24px;">🌙</span>
-                  </div>
-                  <div style="font-weight:700; font-size:13px; color:var(--ink); margin-top:8px;">
-                    Sube tu logotipo para <span style="color:#0369a1; font-weight:800;">fondo oscuro</span>
-                  </div>
-                  <div style="font-size:11.5px; color:var(--muted); margin-top:3px;">
-                    Recomendado: PNG en blanco o colores claros con transparencia. Si no subes uno, se usará el del menú claro.
-                  </div>
-                  <button type="button" class="button secondary" id="chooseLogoDarkBtn" style="margin-top:10px; padding:6px 14px; font-size:12px;">
-                    📁 Seleccionar archivo PNG oscuro
-                  </button>
-                </div>
-                <input type="file" id="logoDarkFileInput" name="logo_dark_image_file" accept=".png, image/png, image/jpeg, image/webp, image/svg+xml" style="display:none;">
-              </div>
-
-              <!-- Vista previa de imagen oscura -->
-              <div id="logoDarkPreviewWrap" style="display:none; margin-top:12px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                  <span style="font-size:12px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:6px;">
-                    <span style="color:#16a34a; font-weight:900;">✓</span> Logotipo para fondo oscuro cargado:
-                  </span>
-                  <div style="display:flex; gap:6px;">
-                    <button type="button" class="button secondary" id="changeLogoDarkBtn" style="padding:4px 10px; font-size:11px;">🔄 Cambiar</button>
-                    <button type="button" class="button danger" id="deleteLogoDarkBtn" style="padding:4px 10px; font-size:11px; background:#fff1f1; border:1px solid #fecaca; color:#b91c1c;">🗑️ Quitar imagen</button>
-                  </div>
-                </div>
-                <div class="logo-preview-canvas-box" style="background:#071722;">
-                  <div class="logo-checker-bg dark-preview" id="logoDarkPreviewChecker">
-                    <img id="logoDarkImgPreview" src="" alt="Logotipo fondo oscuro" style="height:42px; max-height:140px; max-width:100%; object-fit:contain; display:block; margin:auto;">
-                  </div>
-                </div>
-              </div>
-
-              <div class="logo-controls-grid" style="margin-top:14px; display:grid; grid-template-columns:1.2fr 1fr; gap:14px; align-items:end;">
-                <div>
-                  <label style="margin:0 0 4px; display:flex; justify-content:space-between;">
-                    <span>Altura del logo en el pie de página (footer):</span>
-                    <span id="logoDarkHeightVal" style="color:var(--blue); font-weight:800;">42px</span>
-                  </label>
-                  <div class="logo-size-slider-row">
-                    <input type="range" id="logoDarkHeightRange" min="20" max="140" step="2" value="42">
-                    <input type="number" id="logoDarkHeightNum" min="20" max="140" value="42">
-                    <span style="font-size:11.5px; color:var(--muted); font-weight:600;">px</span>
-                  </div>
-                </div>
-                <div>
-                  <span style="font-size:11.5px; color:var(--muted); line-height:1.4; display:block;">
-                    💡 En el footer de la tienda el fondo es azul oscuro (<code>#102c3d</code>). Si activas invertir colores, el logo se convertirá en blanco puro automáticamente.
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <!-- PANEL 3: MODO TEXTO -->
-            <div id="logoTextPanel" class="logo-panel" style="display:none;">
-              <div class="logo-controls-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                <label style="margin:0;">Texto del logo
-                  <input name="logo_text" id="logoTextInput" placeholder="smartisp" autocomplete="off">
-                </label>
-                <label style="margin:0;">Nombre comercial de la marca
-                  <input name="brand_name_alt" id="brandNameAltInput" placeholder="SmartISP" autocomplete="off">
-                </label>
-              </div>
-              <div class="logo-text-preview-box" style="margin-top:12px; padding:12px 16px; background:white; border:1px solid var(--line); border-radius:8px; display:flex; align-items:center; gap:12px;">
-                <span style="font-size:12px; color:var(--muted); font-weight:600;">Vista previa en vivo:</span>
-                <div id="logoTextLivePreview" style="font-family:'Space Grotesk',sans-serif; font-size:24px; font-weight:700; color:#102c3d; letter-spacing:-0.06em;">
-                  smart<b style="color:#087ea4;">isp</b><span style="color:#f5a524;">.</span>
-                </div>
-              </div>
-            </div>
+      <div id="dashboardStatsRow" class="kpi-row">
+        <a class="dashboard-card kpi-card is-green" href="pedidos.html">
+          <div class="kpi-head"><span class="kpi-icon"><i data-lucide="shopping-bag"></i></span>Ingresos</div>
+          <div class="kpi-value" id="dashRevenue">—</div>
+          <div class="kpi-foot">Pedidos no cancelados</div>
+        </a>
+        <a class="dashboard-card kpi-card" href="pedidos.html">
+          <div class="kpi-head"><span class="kpi-icon"><i data-lucide="shopping-cart"></i></span>Pedidos hoy</div>
+          <div class="kpi-value" id="dashTodayCount">—</div>
+          <div class="kpi-foot"><span id="dashTotalCount">—</span> pedidos en total</div>
+        </a>
+        <a class="dashboard-card kpi-card is-red" href="pedidos.html?status=pending">
+          <div class="kpi-head"><span class="kpi-icon"><i data-lucide="credit-card"></i></span>Pendientes de pago</div>
+          <div class="kpi-value" id="dashPendingCount">—</div>
+          <div class="kpi-foot">Requieren seguimiento</div>
+        </a>
+        <a class="dashboard-card kpi-card is-violet" href="editor-catalogo.html">
+          <div class="kpi-head"><span class="kpi-icon"><i data-lucide="package"></i></span>Catálogo</div>
+          <div class="kpi-value" id="adminCatalogProdCount">—</div>
+          <div class="kpi-foot"><span id="adminCatalogCatCount">—</span> macro-categorías</div>
+        </a>
+      </div>
+      <div class="dashboard-grid">
+        <section class="dashboard-card chart-panel">
+          <div class="panel-title-row">
+            <h3>Actividad por estado</h3>
+            <a href="pedidos.html">Ver pedidos</a>
           </div>
-          <div class="design-preview"><div class="design-preview-hero"><div class="design-preview-copy"><div class="design-preview-eyebrow" data-preview="hero_eyebrow"></div><h4 data-preview="hero_title"></h4><p data-preview="hero_text"></p><span class="design-preview-button" data-preview="hero_button_text"></span></div></div></div><div class="design-controls"><label class="full">Mensaje superior<input name="hero_eyebrow" placeholder="Infraestructura para proveedores de internet"></label><label class="full">Titulo principal<input name="hero_title" placeholder="Conecta mas. Opera mejor."></label><label class="full">Descripcion principal<textarea name="hero_text"></textarea></label><label>Texto del boton<input name="hero_button_text" placeholder="Explorar soluciones"></label><label>Enlace del boton<input name="hero_button_link" placeholder="#catalogo"></label><label>Imagen del banner<input name="hero_image_file" type="file" accept="image/*"><input name="hero_image" type="hidden"></label><label>Posicion de imagen<select name="hero_image_position"><option value="center">Centro</option><option value="left">Izquierda</option><option value="right">Derecha</option></select></label><label>Altura del banner<select name="hero_height"><option value="335">Compacto</option><option value="370">Estándar</option><option value="440">Amplio</option><option value="520">Alto</option></select></label><label>Ancho del contenido<select name="hero_content_width"><option value="400">Estrecho</option><option value="510">Estándar</option><option value="620">Amplio</option><option value="760">Muy amplio</option></select></label><label class="color-field">Color de acento<input name="primary_color" type="color" value="#087ea4"></label><label class="color-field">Color del texto<input name="hero_text_color" type="color" value="#102c3d"></label><label class="full">Opacidad de la capa <span class="range-value" data-range-value="hero_overlay_opacity">96%</span><input name="hero_overlay_opacity" type="range" min="0" max="100" value="96"></label></div><label>Texto del pie de pagina<textarea name="footer_text"></textarea></label><div class="form-actions"><button class="button" type="submit">Guardar apariencia</button><button id="clearContentButton" class="button secondary" type="button">Limpiar campos</button></div><div id="contentMessage" class="message"></div></form></section>
-        <section class="panel"><div class="section-heading"><h3>Visibilidad de secciones</h3><button id="resetVisibilityButton" class="button secondary" type="button">Restaurar predeterminado</button></div><form id="visibilityForm"><label>Catalogo visible<select name="catalog_visible"><option value="true">Si</option><option value="false">No</option></select></label><label>Banner visible<select name="hero_visible"><option value="true">Si</option><option value="false">No</option></select></label><label>Beneficios visibles<select name="benefits_visible"><option value="true">Si</option><option value="false">No</option></select></label><button class="button" type="submit">Guardar visibilidad</button><div id="visibilityMessage" class="message"></div></form></section>
-        <section class="panel wide">
-          <div class="section-heading">
-            <div>
-              <h3 style="margin:0;">Notificaciones y Envío de Correos Reales (Gmail / SMTP)</h3>
-              <span style="color:var(--muted);font-size:12px;">Despacha comprobantes que llegan de verdad al correo del cliente y alertas con su número de celular al administrador.</span>
-            </div>
-            <div class="actions">
-              <button id="testEmailButton" class="button secondary" type="button" style="background:#f0fdf4;border:1px solid #86efac;color:#166534;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
-                <span>🧪 Probar Envío de Correo Real</span>
-              </button>
-            </div>
-          </div>
-          <form id="notificationsForm" style="margin-top:16px;">
-            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;margin-bottom:14px;">
-              <div>
-                <label style="font-weight:700;">1. Correo de Destino de Notificaciones (Para recibir compras y datos del cliente)
-                  <input name="admin_email" type="email" placeholder="gestion@smart-isp.es" value="gestion@smart-isp.es" required>
-                </label>
-                <small style="color:var(--muted);display:block;margin-top:4px;font-size:12px;line-height:1.45;">
-                  A este correo (<code>gestion@smart-isp.es</code>) llegará la alerta inmediata con el <strong>número de celular del cliente, botón directo de WhatsApp y llamada</strong> para coordinar la atención y el pago. (Solo recepción de información, no otorga acceso de administrador).
-                </small>
-              </div>
-
-              <div>
-                <label style="font-weight:700;">2. Proveedor para Enviar Correos Reales por Internet
-                  <select name="smtp_provider" id="smtpProviderSelect">
-                    <option value="hostinger">Hostinger Correo Corporativo (@smart-isp.es / @smart-isp.com.ec)</option>
-                    <option value="gmail" selected>Gmail (Recomendado - Gratuito con Contraseña de Aplicación)</option>
-                    <option value="resend">Resend API (Ultra-rápido ~250ms, la mejor calidad de entrega)</option>
-                    <option value="custom">Servidor SMTP Personalizado (Outlook, Yahoo, cPanel, etc.)</option>
-                  </select>
-                </label>
-                <small style="color:var(--muted);display:block;margin-top:4px;font-size:12px;line-height:1.45;">
-                  Garantiza que los correos salgan del servidor y lleguen enseguida a la bandeja de entrada real de cualquier usuario.
-                </small>
-              </div>
-            </div>
-
-            <!-- Panel de Configuración para Hostinger Correo Corporativo -->
-            <div id="hostingerConfigSection" class="hidden" style="background:#f0faf8;border:1px solid #a7e0d4;border-radius:10px;padding:16px;margin-bottom:16px;">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                <span style="font-size:20px;">🌐</span>
-                <strong style="color:#065f46;font-size:14px;">Correo Corporativo de Hostinger (smtp.hostinger.com)</strong>
-              </div>
-              <p style="font-size:12.5px;color:#047857;line-height:1.5;margin:0 0 12px;">
-                Usa tu cuenta de correo creada en el panel de Hostinger (ejemplo: <code>gestion@smart-isp.es</code> o <code>admin@smart-isp.com.ec</code>):
-                <br>• Servidor SMTP: <strong>smtp.hostinger.com</strong> | Puerto: <strong>465 (SSL)</strong>
-                <br>• ⚠️ <strong>Importante:</strong> Debes ingresar la <strong>contraseña real de ese correo en Hostinger</strong> (con la que entras al Webmail de Hostinger).
-              </p>
-              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:14px;">
-                <label>Tu Correo de Hostinger
-                  <input name="hostinger_user" id="hostingerUser" type="email" placeholder="gestion@smart-isp.es">
-                </label>
-                <label>Contraseña REAL del Correo en Hostinger
-                  <div style="position:relative;">
-                    <input name="hostinger_pass" id="hostingerPass" type="password" placeholder="••••••••" autocomplete="new-password">
-                    <button type="button" id="toggleHostingerPass" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;font-size:14px;color:var(--muted);" title="Ver u ocultar contraseña">👁️</button>
-                  </div>
-                </label>
-              </div>
-            </div>
-
-            <!-- Panel de Configuración para Gmail -->
-            <div id="gmailConfigSection" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:16px;margin-bottom:16px;">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                <span style="font-size:20px;">✉️</span>
-                <strong style="color:#0369a1;font-size:14px;">Configuración Rápida de Gmail</strong>
-              </div>
-              <p style="font-size:12.5px;color:#0c4a6e;line-height:1.5;margin:0 0 12px;">
-                Para despachar correos desde tu cuenta @gmail.com, Google requiere una <strong>Contraseña de Aplicación de 16 letras</strong> (no tu contraseña personal):
-                <br>1. Ve a tu cuenta de Google &gt; <a href="https://myaccount.google.com/security" target="_blank" style="color:#0284c7;font-weight:700;text-decoration:underline;">Seguridad</a> (activa verificación en 2 pasos si no está activa).
-                <br>2. Entra directo a <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:#0284c7;font-weight:700;text-decoration:underline;">Contraseñas de aplicaciones</a>.
-                <br>3. En 'Nombre de la app', escribe <em>SmartISP</em> y pulsa <strong>Crear</strong>.
-                <br>4. Copia el código de 16 letras generado y pégalo abajo:
-              </p>
-
-              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:14px;">
-                <label>Tu Cuenta de Gmail Emisora
-                  <input name="smtp_user" id="gmailUser" type="email" placeholder="tu_tienda@gmail.com">
-                </label>
-                <label>Contraseña de Aplicación de Google (16 caracteres)
-                  <div style="position:relative;">
-                    <input name="smtp_pass" id="gmailPass" type="password" placeholder="abcd efgh ijkl mnop" autocomplete="new-password">
-                    <button type="button" id="toggleGmailPass" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;font-size:14px;color:var(--muted);" title="Ver u ocultar contraseña">👁️</button>
-                  </div>
-                </label>
-              </div>
-            </div>
-
-            <!-- Panel de Configuración para SMTP Personalizado -->
-            <div id="customSmtpSection" class="hidden" style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:16px;margin-bottom:16px;">
-              <strong style="color:#1e293b;font-size:14px;display:block;margin-bottom:12px;">⚙️ Servidor SMTP Personalizado</strong>
-              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:12px;">
-                <label>Servidor Host SMTP
-                  <input name="smtp_host" placeholder="smtp.ejemplo.com">
-                </label>
-                <label>Puerto
-                  <input name="smtp_port" type="number" placeholder="465 o 587">
-                </label>
-                <label>Usuario SMTP
-                  <input name="smtp_custom_user" placeholder="usuario@ejemplo.com">
-                </label>
-                <label>Contraseña SMTP
-                  <input name="smtp_custom_pass" type="password" placeholder="••••••••">
-                </label>
-                <label>Nombre y Correo Remitente
-                  <input name="smtp_from" placeholder="SmartISP Ventas &lt;ventas@ejemplo.com&gt;">
-                </label>
-                <label style="display:flex;align-items:center;gap:8px;margin-top:28px;cursor:pointer;">
-                  <input name="smtp_secure" type="checkbox" value="true" style="width:auto;margin:0;">
-                  <span>Usar SSL/TLS Seguro (Puerto 465)</span>
-                </label>
-              </div>
-            </div>
-
-            <!-- Panel de Configuración para Resend -->
-            <div id="resendSection" class="hidden" style="background:#fdf2f8;border:1px solid #fbcfe8;border-radius:10px;padding:16px;margin-bottom:16px;">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                <span style="font-size:20px;">🚀</span>
-                <strong style="color:#9d174d;font-size:14px;">Integración con Resend API (Opción de máxima velocidad y entrega inmediata)</strong>
-              </div>
-              <p style="font-size:12.5px;color:#831843;line-height:1.5;margin:0 0 12px;">
-                Resend entrega los correos en <strong>menos de 300ms</strong> vía HTTPS directo sin depender de puertos SMTP bloqueados:
-                <br>1. Crea una cuenta gratuita en <a href="https://resend.com" target="_blank" style="color:#be185d;font-weight:700;text-decoration:underline;">resend.com</a> (gratis 3,000 correos al mes).
-                <br>2. Ve a <strong>API Keys &gt; Create API Key</strong>, copia el código que empieza con <code>re_</code> y pégalo abajo:
-              </p>
-              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:14px;">
-                <label>API Key de Resend
-                  <input name="resend_api_key" id="resendApiKey" placeholder="re_123456789...">
-                </label>
-                <label>Correo Remitente Autorizado
-                  <input name="email_from" id="emailFromInput" placeholder="SmartISP &lt;onboarding@resend.dev&gt;">
-                </label>
-              </div>
-            </div>
-
-            <div class="form-actions" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-              <button class="button" type="submit" style="background:var(--blue);">💾 Guardar Configuración de Correo</button>
-              <span style="font-size:12px;color:var(--muted);">Se aplicará de inmediato a las compras en tienda y a las pruebas.</span>
-            </div>
-            <div id="notificationsMessage" class="message"></div>
-          </form>
+          <div id="ordersStatusChart" class="mini-chart"></div>
+          <div class="mini-chart-labels"><span>Cotizaciones</span><span>Pagos</span><span>Preparación</span><span>Enviados</span><span>Entregados</span></div>
         </section>
-        <section class="panel wide" style="background: linear-gradient(135deg, #093349 0%, #104c6d 100%); color: #fff; border: 1px solid #1a5c80; padding: 26px 28px; border-radius: 12px; margin-top: 8px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px;">
-            <div style="max-width: 680px;">
-              <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(56,189,248,0.2); border:1px solid rgba(56,189,248,0.4); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; color:#7dd3fc; margin-bottom:10px;">
-                <span>📦 CATÁLOGO Y TAXONOMÍA</span> • Gestión Exclusiva
-              </div>
-              <h3 style="margin:0 0 8px; font-size:20px; color:#ffffff; font-weight:700; font-family:'Space Grotesk',sans-serif;">
-                Gestión de Catálogo, Productos y Categorías
-              </h3>
-              <p style="margin:0 0 16px; font-size:13.5px; color:#d8f1f5; line-height:1.5;">
-                La visualización de productos, edición de características (nombre, SKU, precios, fotos, enlaces, descripción), macro-categorías, subcategorías y la importación masiva inteligente desde Excel se administran exclusivamente desde el <strong>Editor de Catálogo</strong>.
-              </p>
-              <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap;">
-                <div style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); padding:8px 16px; border-radius:8px; display:inline-flex; align-items:center; gap:10px;">
-                  <span style="font-size:20px;">📦</span>
-                  <div>
-                    <span style="font-size:11px; color:#bae6fd; display:block; text-transform:uppercase; font-weight:600;">Productos en Catálogo</span>
-                    <strong id="adminCatalogProdCount" style="font-size:17px; color:#ffffff;">0</strong>
-                  </div>
-                </div>
-                <div style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); padding:8px 16px; border-radius:8px; display:inline-flex; align-items:center; gap:10px;">
-                  <span style="font-size:20px;">📂</span>
-                  <div>
-                    <span style="font-size:11px; color:#bae6fd; display:block; text-transform:uppercase; font-weight:600;">Macro-Categorías</span>
-                    <strong id="adminCatalogCatCount" style="font-size:17px; color:#ffffff;">0</strong>
-                  </div>
-                </div>
-              </div>
-            </div>
+        <section class="dashboard-card attention-panel" aria-labelledby="attentionTitle">
+          <div class="attention-head">
             <div>
-              <a href="editor-catalogo.html" class="button" style="background:#0284c7; color:#fff; border:none; padding:14px 24px; font-size:14px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:10px; border-radius:8px; box-shadow:0 6px 20px rgba(2,132,199,.4);">
-                <span>📂 Ir al Editor de Catálogo y Categorías</span>
-                <span style="font-size:16px;">↗</span>
-              </a>
+              <h3 id="attentionTitle"><i data-lucide="bell-ring"></i> Necesita tu atención</h3>
+              <p>Atajos accionables con los datos disponibles hoy.</p>
+            </div>
+          </div>
+          <div id="attentionList" class="attention-list">
+            <div class="attention-item">
+              <div class="attention-icon"><i data-lucide="loader-circle"></i></div>
+              <div><strong>Cargando alertas</strong><span>Revisando pedidos y catálogo.</span></div>
             </div>
           </div>
         </section>
-
-        <!-- SECCIÓN DE MACRO-CATEGORÍAS SINCRONIZADAS -->
-        <section class="panel wide" id="adminMacroCategoriesSection" style="margin-top: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px 26px; box-shadow: 0 4px 16px rgba(0,0,0,0.03);">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px; margin-bottom:18px;">
-            <div>
-              <div style="display:inline-flex; align-items:center; gap:6px; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; margin-bottom:6px;">
-                <span>📂 TAXONOMÍA Y MACRO-CATEGORÍAS</span> • Catálogo Inteligente
-              </div>
-              <h3 style="margin:0 0 6px; font-size:20px; color:#0f172a; font-weight:700; font-family:'Space Grotesk',sans-serif;">
-                Macro-Categorías Activas en la Tienda
-              </h3>
-              <p style="margin:0; font-size:13px; color:#64748b; line-height:1.5; max-width:680px;">
-                Estas macro-categorías fueron creadas y asignadas automáticamente a los productos al procesar el catálogo. Puedes explorarlas, ver sus subcategorías y hacer clic en cualquiera para gestionar sus productos.
-              </p>
-            </div>
-            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-              <div style="position:relative; min-width:260px;">
-                <input type="text" id="adminMacroSearchInput" placeholder="Buscar categoría o subcategoría..." style="width:100%; padding:9px 12px 9px 34px; border:1px solid #cbd5e1; border-radius:8px; font-size:13px; outline:none; transition:border-color .2s; background:#f8fafc;" onfocus="this.style.borderColor='#0284c7'; this.style.background='#fff';" onblur="this.style.borderColor='#cbd5e1'; this.style.background='#f8fafc';">
-                <span style="position:absolute; left:11px; top:50%; transform:translateY(-50%); font-size:13px; color:#94a3b8; pointer-events:none;">🔍</span>
-              </div>
-              <button id="refreshMacroCatsBtn" type="button" class="button secondary" style="padding:9px 14px; font-size:13px; display:inline-flex; align-items:center; gap:6px; border-radius:8px;">
-                <span>🔄</span> Recargar
-              </button>
-              <a href="editor-catalogo.html?tab=tab-categories" class="button" style="background:#0284c7; color:#fff; text-decoration:none; padding:9px 16px; font-size:13px; font-weight:700; display:inline-flex; align-items:center; gap:6px; border-radius:8px; box-shadow:0 3px 10px rgba(2,132,199,0.3);">
-                <span>⚙️ Administrar en Editor</span>
-                <span style="font-size:14px;">↗</span>
-              </a>
-            </div>
+      </div>
+      <div class="dashboard-lower">
+        <section class="dashboard-card recent-panel">
+          <div class="panel-title-row">
+            <h3>Pedidos recientes</h3>
+            <a href="pedidos.html">Ver todos</a>
           </div>
-
-          <!-- Barra de estadísticas rápidas -->
-          <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap; padding:12px 18px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:18px;">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-size:12px; color:#64748b; font-weight:600;">Macro-Categorías:</span>
-              <strong id="adminMacroCountBadge" style="background:#0284c7; color:#fff; font-size:12px; padding:2px 8px; border-radius:12px;">0</strong>
-            </div>
-            <span style="color:#cbd5e1;">|</span>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-size:12px; color:#64748b; font-weight:600;">Total Productos:</span>
-              <strong id="adminMacroProdCountBadge" style="background:#0d9488; color:#fff; font-size:12px; padding:2px 8px; border-radius:12px;">0</strong>
-            </div>
-            <span style="color:#cbd5e1;">|</span>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="font-size:12px; color:#64748b; font-weight:600;">Subcategorías detectadas:</span>
-              <strong id="adminMacroSubCountBadge" style="background:#6366f1; color:#fff; font-size:12px; padding:2px 8px; border-radius:12px;">0</strong>
-            </div>
-            <div id="adminMacroFilterNotice" style="margin-left:auto; font-size:12px; color:#0284c7; font-weight:600; display:none;"></div>
+          <table class="recent-table">
+            <thead><tr><th>#</th><th>Cliente</th><th>Estado</th><th>Total</th></tr></thead>
+            <tbody id="recentOrdersBody"><tr><td colspan="4">Cargando pedidos recientes...</td></tr></tbody>
+          </table>
+        </section>
+        <section class="dashboard-card health-panel">
+          <div class="panel-title-row">
+            <h3>Salud del catálogo</h3>
+            <a href="editor-catalogo.html">Revisar catálogo</a>
           </div>
-
-          <!-- Grid de tarjetas de macro-categorías -->
-          <div id="adminMacroCategoriesGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px;">
-            <div style="grid-column: 1 / -1; text-align:center; padding:30px; color:#64748b;">
-              <div style="font-size:28px; margin-bottom:8px;">⏳</div>
-              <p style="margin:0; font-size:13.5px;">Cargando macro-categorías del catálogo...</p>
-            </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+            <span style="color:#64748b; font-size:12.5px;">Completitud básica</span>
+            <strong id="catalogHealthPct" style="font-size:24px; color:#16a34a;">—</strong>
+          </div>
+          <div class="health-meter"><span id="catalogHealthBar"></span></div>
+          <div class="health-summary">
+            <div><strong id="healthProducts">—</strong><span>Productos</span></div>
+            <div><strong id="healthWithImage">—</strong><span>Con imagen</span></div>
+            <div><strong id="healthWithoutImage">—</strong><span>Sin imagen</span></div>
           </div>
         </section>
       </div>
     </section>
   </main>
-  <div id="importModal" class="crop-modal" hidden>
-    <section class="crop-dialog import-dialog" role="dialog" aria-modal="true" aria-labelledby="importTitle">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <h2 id="importTitle" style="margin:0;font-size:20px;">Importar Catálogo desde Excel / CSV</h2>
-        <button id="closeImportModalButton" type="button" class="button secondary" style="padding:4px 11px;font-size:15px;line-height:1;">✕</button>
-      </div>
-      <p class="crop-help" style="margin-bottom:12px;">
-        Sube uno o varios archivos <strong>.xlsx</strong>, <strong>.xls</strong> o <strong>.csv</strong> al mismo tiempo. Se importarán las columnas:
-        <span style="color:var(--blue);font-weight:600;">Categoría, SKU / Código, Nombre del Producto, Precio, URL de la Imagen y Descripción</span>.
-        Si subes múltiples archivos con productos repetidos, se fusionarán automáticamente conservando las fotos y datos únicos.
-      </p>
-
-      <div id="importDropzone" class="import-dropzone">
-        <input type="file" id="importFileInput" accept=".xlsx, .xls, .csv" multiple style="display:none;">
-        <div class="dropzone-icon">📊</div>
-        <strong>Haz clic para buscar o arrastra tus archivos Excel / CSV aquí</strong>
-        <span>Puedes seleccionar o soltar múltiples archivos simultáneamente</span>
-      </div>
-
-      <div id="importPreviewSection" class="hidden">
-        <div id="importedFilesSection" style="margin-bottom:12px;">
-          <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px;">Archivos procesados:</div>
-          <div id="importedFilesChips" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-        </div>
-
-        <div class="import-stats">
-          <div class="stat-card">
-            <span class="stat-num" id="statTotalFiles">0</span>
-            <span class="stat-label">Archivos</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-num" id="statTotalRows">0</span>
-            <span class="stat-label">Filas leídas</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-num" id="statValidProducts">0</span>
-            <span class="stat-label">Productos únicos</span>
-          </div>
-          <div class="stat-card" style="background:#fff7ed;border-color:#fed7aa;">
-            <span class="stat-num" id="statDuplicates" style="color:#c2410c;">0</span>
-            <span class="stat-label" style="color:#9a3412;">Duplicados omitidos</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-num" id="statWithImage">0</span>
-            <span class="stat-label">Con imagen</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-num" id="statPendingPrice">0</span>
-            <span class="stat-label">Solicitar cotización</span>
-          </div>
-        </div>
-
-        <div style="background:#f0f8fa;border:1px solid var(--line);border-radius:10px;padding:14px;margin:14px 0;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-            <div>
-              <strong style="font-size:13.5px;color:var(--ink);">⚙️ Asignación de Columnas y Encabezados</strong>
-              <small style="display:block;color:var(--muted);font-size:11.5px;">Detectadas automáticamente. Puedes cambiar la fila o columnas si tu archivo tiene otro formato u orden:</small>
-            </div>
-            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-              <div style="display:flex;align-items:center;gap:6px;background:#e8f4f8;padding:4px 10px;border-radius:6px;border:1px solid #cde5eb;">
-                <label for="importPriceMargin" style="margin:0;font-size:12px;font-weight:700;color:#087ea4;white-space:nowrap;">📈 Margen de Ganancia:</label>
-                <input type="number" id="importPriceMargin" value="30" min="0" max="500" step="1" style="width:50px;padding:3px 4px;margin:0;font-size:12px;font-weight:700;text-align:center;background:white;border:1px solid #90caf9;border-radius:4px;color:#087ea4;">
-                <span style="font-size:12px;font-weight:700;color:#087ea4;">%</span>
-                <span style="font-size:11px;color:var(--muted);margin-left:2px;" title="Fórmula: Y + (Y)30% = Precio Total">(Y + 30%)</span>
-              </div>
-              <div style="display:flex;align-items:center;gap:6px;">
-                <label for="selectHeaderRow" style="margin:0;font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;">Fila de Encabezados:</label>
-                <select id="selectHeaderRow" style="padding:5px 8px;font-size:12px;width:auto;margin:0;background:white;border:1px solid var(--line);border-radius:6px;font-weight:600;"></select>
-              </div>
-            </div>
-          </div>
-
-          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));gap:10px;margin-bottom:10px;">
-            <div>
-              <label for="colSelectName" style="margin:0 0 4px;font-size:11.5px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:4px;">
-                <span>* Nombre del Producto:</span>
-                <span style="color:#087ea4;font-size:10px;">(Requerido)</span>
-              </label>
-              <select id="colSelectName" style="padding:6px 8px;font-size:12px;margin:0;background:white;border:1.5px solid #087ea4;border-radius:6px;font-weight:600;"></select>
-            </div>
-            <div>
-              <label for="colSelectPrice" style="margin:0 0 4px;font-size:11.5px;font-weight:700;color:var(--ink);">Precio Base (Y + 30%):</label>
-              <select id="colSelectPrice" style="padding:6px 8px;font-size:12px;margin:0;background:white;border:1px solid var(--line);border-radius:6px;"></select>
-            </div>
-            <div>
-              <label for="colSelectCategory" style="margin:0 0 4px;font-size:11.5px;font-weight:700;color:var(--ink);">Categoría / Familia:</label>
-              <select id="colSelectCategory" style="padding:6px 8px;font-size:12px;margin:0;background:white;border:1px solid var(--line);border-radius:6px;"></select>
-            </div>
-            <div>
-              <label for="colSelectSku" style="margin:0 0 4px;font-size:11.5px;font-weight:700;color:var(--ink);">SKU / Código / Ref:</label>
-              <select id="colSelectSku" style="padding:6px 8px;font-size:12px;margin:0;background:white;border:1px solid var(--line);border-radius:6px;"></select>
-            </div>
-            <div>
-              <label for="colSelectImage" style="margin:0 0 4px;font-size:11.5px;font-weight:700;color:var(--ink);">URL Foto / Imagen:</label>
-              <select id="colSelectImage" style="padding:6px 8px;font-size:12px;margin:0;background:white;border:1px solid var(--line);border-radius:6px;"></select>
-            </div>
-            <div>
-              <label for="colSelectDescription" style="margin:0 0 4px;font-size:11.5px;font-weight:700;color:var(--ink);">Descripción Detallada:</label>
-              <select id="colSelectDescription" style="padding:6px 8px;font-size:12px;margin:0;background:white;border:1px solid var(--line);border-radius:6px;"></select>
-            </div>
-          </div>
-
-          <div id="mappingChipsContainer" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
-        </div>
-
-        <h4 style="margin:14px 0 8px;font-size:14px;">Vista previa de los primeros productos:</h4>
-        <div style="overflow-x:auto;max-height:220px;border:1px solid var(--line);border-radius:8px;">
-          <table class="preview-table">
-            <thead>
-              <tr style="background:#eef5f7;color:var(--ink);">
-                <th style="width:40px;">Foto</th>
-                <th>SKU</th>
-                <th>Nombre del Producto</th>
-                <th>Categoría</th>
-                <th>Precio Total (Y + 30%)</th>
-                <th>Descripción</th>
-              </tr>
-            </thead>
-            <tbody id="previewTableBody"></tbody>
-          </table>
-        </div>
-
-        <div style="margin:12px 0 6px;padding:10px 14px;background:#eef8f8;border-radius:8px;border:1px solid #c9e8e3;">
-          <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--ink);cursor:pointer;margin:0;">
-            <input type="checkbox" id="autoFetchMissingImages" checked style="width:18px;height:18px;margin:0;accent-color:var(--blue);">
-            <span>🌐 Buscar fotos en internet automáticamente para productos sin imagen</span>
-          </label>
-          <small style="display:block;color:var(--muted);margin-top:4px;margin-left:26px;">
-            Si alguna fila de tu archivo no tiene foto, buscaremos una imagen nítida en internet según el nombre del producto.
-          </small>
-        </div>
-
-        <div id="importProgressContainer" class="hidden" style="margin-top:16px;">
-          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;font-weight:600;">
-            <span id="importProgressLabel" style="color:var(--ink);">Subiendo productos...</span>
-            <span id="importProgressPercent" style="color:var(--blue);">0%</span>
-          </div>
-          <div style="background:#dcebf0;border-radius:6px;height:10px;overflow:hidden;">
-            <div id="importProgressBar" style="width:0%;height:100%;background:var(--success);transition:width .25s ease;"></div>
-          </div>
-        </div>
-
-        <div id="importModalMessage" class="message"></div>
-
-        <div class="crop-actions" style="margin-top:16px;display:flex;justify-content:space-between;align-items:center;">
-          <button id="cancelImportButton" class="button secondary" type="button">Elegir otros archivos</button>
-          <button id="startImportButton" class="button" type="button" style="background:var(--success);display:flex;align-items:center;gap:6px;">
-            <span>🚀 Confirmar y Cargar a la Tienda</span>
-          </button>
-        </div>
-      </div>
-    </section>
-  </div>
-  <div id="imageSearchModal" class="crop-modal" hidden>
-    <section class="crop-dialog" style="max-width:780px;width:95vw;" role="dialog" aria-modal="true" aria-labelledby="imageSearchTitle">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <div>
-          <h2 id="imageSearchTitle" style="margin:0;font-size:19px;">Buscar Imagen en Internet y Amazon</h2>
-          <span id="imageSearchProductLabel" style="font-size:12px;color:var(--muted);">Encuentra fotos nítidas para tu catálogo de productos</span>
-        </div>
-        <button id="closeImageSearchModalButton" type="button" class="button secondary" style="padding:4px 11px;font-size:15px;line-height:1;">✕</button>
-      </div>
-      <p class="crop-help" style="margin-bottom:12px;">
-        Busca en <strong>Amazon</strong> y tiendas web. Haz clic en la foto que desees para asignarla de inmediato.
-      </p>
-
-      <form id="imageSearchForm" style="display:flex;gap:8px;margin-bottom:12px;">
-        <input id="imageSearchInput" type="text" placeholder="Escribe el nombre o modelo del producto..." style="margin-top:0;" required>
-        <button class="button" type="submit" style="white-space:nowrap;background:var(--blue);">🔍 Buscar</button>
-      </form>
-
-      <div id="imageSearchStoreFilter" style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-        <button type="button" class="button secondary store-filter-btn active" data-store="all" style="padding:5px 12px;font-size:12px;border-radius:20px;">
-          🌐 Todos los resultados
-        </button>
-        <button type="button" class="button secondary store-filter-btn" data-store="amazon" style="padding:5px 12px;font-size:12px;border-radius:20px;border-color:#fed7aa;background:#fff7ed;color:#c2410c;font-weight:700;">
-          🛒 Solo Amazon
-        </button>
-        <button type="button" class="button secondary store-filter-btn" data-store="web" style="padding:5px 12px;font-size:12px;border-radius:20px;">
-          🔍 Google & Web
-        </button>
-      </div>
-
-      <div id="imageSearchStatus" style="display:none;align-items:center;justify-content:center;gap:8px;padding:24px;color:var(--muted);font-size:13px;">
-        <div class="spinner"></div>
-        <span id="imageSearchStatusText">Buscando imágenes en Amazon e internet...</span>
-      </div>
-
-      <div id="imageSearchResultsGrid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(155px, 1fr));gap:12px;max-height:400px;overflow-y:auto;padding:4px;">
-      </div>
-
-      <div class="crop-actions" style="margin-top:18px;">
-        <button id="cancelImageSearchButton" class="button secondary" type="button">Cancelar</button>
-      </div>
-    </section>
-  </div>
-  <div id="productEditModal" class="crop-modal" hidden>
-    <section class="crop-dialog product-edit-dialog" role="dialog" aria-modal="true" aria-labelledby="productModalTitle">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:1px solid var(--line);padding-bottom:12px;">
-        <div>
-          <h2 id="productModalTitle" style="margin:0;font-size:20px;">Editar Producto</h2>
-          <span style="color:var(--muted);font-size:12px;">Modifica los detalles, precio, visibilidad o imagen del producto</span>
-        </div>
-        <button id="closeProductModalButton" type="button" class="button secondary" style="padding:4px 11px;font-size:15px;line-height:1;">✕</button>
-      </div>
-
-      <form id="productModalForm">
-        <input type="hidden" name="id" value="">
-        
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
-          <label style="grid-column:1/-1;margin:0;">
-            Nombre del Producto *
-            <input name="name" required placeholder="Ej. Switch Cisco Catalyst 2960 24 Puertos">
-          </label>
-
-          <label style="margin:0;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <span>Precio ($) *</span>
-              <label style="font-size:12px; font-weight:600; color:var(--blue); display:inline-flex; align-items:center; gap:5px; cursor:pointer; margin:0;" title="Marcar este producto para solicitar cotización">
-                <input type="checkbox" id="adminChkQuotePrice" style="cursor:pointer; accent-color:var(--blue); width:15px; height:15px;">
-                Solicitar cotización
-              </label>
-            </div>
-            <input name="price" id="adminProdPriceInput" type="number" min="0" step="0.01" value="0" required placeholder="0 (Solicitar cotización)">
-            <div id="adminQuotePriceBadge" style="display:none; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; border-radius:6px; padding:6px 10px; margin-top:4px; font-size:12px; font-weight:700; align-items:center; gap:5px; cursor:pointer;" onclick="document.getElementById('adminChkQuotePrice').click()" title="Clic para volver a ingresar un precio">
-              📄 Sin precio fijo · Solicitar cotización ($0)
-            </div>
-          </label>
-
-          <label style="margin:0;">
-            Categoría
-            <input name="category" placeholder="Ej. Switches, Fibra óptica, Routers...">
-          </label>
-
-          <label style="margin:0;">
-            SKU / Código
-            <input name="sku" placeholder="Ej. CISCO-2960-24P">
-          </label>
-
-          <label style="margin:0;">
-            Visible en la tienda
-            <select name="visible">
-              <option value="true">Sí (Visible en catálogo)</option>
-              <option value="false">No (Oculto)</option>
-            </select>
-          </label>
-
-          <label class="description" style="grid-column:1/-1;margin:0;">
-            Descripción detallada
-            <textarea name="description" placeholder="Especificaciones técnicas, puertos, rendimiento..." style="min-height:75px;"></textarea>
-          </label>
-
-          <label class="description" style="grid-column:1/-1;margin:0;">
-            Enlace externo (opcional)
-            <input name="externalUrl" type="url" placeholder="https://fabricante.com/producto">
-          </label>
-        </div>
-
-        <div style="margin-top:16px;">
-          <span style="display:block;margin-bottom:8px;color:var(--muted);font-size:13px;font-weight:700;">Imagen del producto</span>
-          <div class="image-editor">
-            <div class="image-preview is-empty">
-              <img data-image-preview src="" alt="Vista previa del producto" hidden>
-            </div>
-            <div class="image-tools">
-              <small>Sube una foto desde tu equipo, recórtala o búscala directamente en internet con un clic.</small>
-              <input name="imageFile" type="file" accept="image/*">
-              <input name="imageUrl" type="hidden" value="">
-              <button class="button secondary" data-change-image type="button">📁 Subir archivo</button>
-              <button class="button secondary" data-search-web-image type="button" style="background:#eaf6f9;color:var(--blue);font-weight:700;">🌐 Buscar en internet</button>
-              <button class="button secondary" data-edit-image type="button" disabled>✂️ Editar recorte</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="crop-actions" style="margin-top:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-          <button id="modalDeleteProductButton" class="button danger" type="button">🗑️ Eliminar Producto</button>
-          <div style="display:flex;gap:8px;margin-left:auto;">
-            <button id="cancelProductModalButton" class="button secondary" type="button">Cancelar</button>
-            <button id="saveProductModalButton" class="button" type="submit">💾 Guardar Cambios</button>
-          </div>
-        </div>
-      </form>
-    </section>
-  </div>
-  <div id="cropModal" class="crop-modal" hidden>
-    <section class="crop-dialog" role="dialog" aria-modal="true" aria-labelledby="cropTitle">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <h2 id="cropTitle" style="margin:0;">Ajustar y Recortar Imagen</h2>
-        <button type="button" class="button secondary" onclick="$('#cancelCropButton').click()" style="padding:4px 11px;font-size:15px;line-height:1;">✕</button>
-      </div>
-      <p class="crop-help">La imagen aparece completa. Arrastra el recuadro blanco o sus esquinas y laterales para elegir el encuadre deseado.</p>
-      <div id="cropStage" class="crop-stage">
-        <canvas id="cropCanvas"></canvas>
-        <div id="cropBox" class="crop-box">
-          <i class="crop-handle" data-resize="nw"></i>
-          <i class="crop-handle" data-resize="n"></i>
-          <i class="crop-handle" data-resize="ne"></i>
-          <i class="crop-handle" data-resize="w"></i>
-          <i class="crop-handle" data-resize="e"></i>
-          <i class="crop-handle" data-resize="sw"></i>
-          <i class="crop-handle" data-resize="s"></i>
-          <i class="crop-handle" data-resize="se"></i>
-        </div>
-      </div>
-      <div class="crop-options">
-        <label>Formato
-          <select id="cropAspect">
-            <option value="free">Recorte libre</option>
-            <option value="original">Formato original</option>
-            <option value="product" selected>Producto · cuadrado (1:1)</option>
-            <option value="hero">Banner · panorámico</option>
-          </select>
-        </label>
-      </div>
-      <div class="crop-actions">
-        <button id="cancelCropButton" class="button secondary" type="button">Cancelar</button>
-        <button id="applyCropButton" class="button" type="button">✂️ Aplicar recorte</button>
-      </div>
-    </section>
-  </div>
   <script>
     const $ = selector => document.querySelector(selector);
-    const DEFAULT_CONTENT = {
-      brand_name: 'SmartISP',
-      logo_type: 'image',
-      logo_image: '',
-      logo_height: '38',
-      logo_dark_image: '',
-      logo_dark_height: '42',
-      logo_dark_invert: 'false',
-      logo_text: 'smartisp',
-      hero_eyebrow: 'Infraestructura para proveedores de internet',
-      hero_title: 'Conecta más. Opera mejor.',
-      hero_text: 'Equipamiento confiable para redes, servidores y equipos de trabajo que mantienen tu servicio siempre en línea.',
-      hero_image: '',
-      hero_button_text: 'Explorar soluciones',
-      hero_button_link: '#catalogo',
-      hero_image_position: 'center',
-      hero_height: '370',
-      hero_content_width: '510',
-      hero_text_color: '#102c3d',
-      hero_overlay_opacity: '96',
-      primary_color: '#087ea4',
-      footer_text: '',
-      admin_email: '',
-      smtp_provider: 'gmail',
-      smtp_host: 'smtp.gmail.com',
-      smtp_port: '465',
-      smtp_user: '',
-      smtp_pass: '',
-      smtp_secure: 'true',
-      smtp_from: '',
-      resend_api_key: '',
-      email_from: ''
-    };
-    const MAX_IMAGE_SIZE = 3 * 1024 * 1024;
-    const cropState = { image: null, fileInput: null, outputInput: null, canvas: null, box: null, canvasWidth: 0, canvasHeight: 0, offsetX: 0, offsetY: 0, dragging: false, startX: 0, startY: 0, startBoxX: 0, startBoxY: 0 };
-    const DEFAULT_VISIBILITY = { catalog_visible: 'true', hero_visible: 'true', benefits_visible: 'true' };
     const showMessage = (element, text, error = false) => { element.textContent = text; element.classList.remove('show'); element.classList.toggle('error', error); requestAnimationFrame(() => element.classList.add('show')); };
-    const fileToDataUrl = file => new Promise((resolve, reject) => { if (!file) return resolve(''); if (!file.type.startsWith('image/')) return reject(new Error('Selecciona un archivo de imagen valido.')); if (file.size > MAX_IMAGE_SIZE) return reject(new Error('La imagen no puede superar 3 MB.')); const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error('No se pudo leer la imagen.')); reader.readAsDataURL(file); });
-    const cropRatio = () => { const value = $('#cropAspect').value; if (value === 'product') return 1; if (value === 'hero') return 16 / 6; return cropState.image.width / cropState.image.height; };
-    const updateCropBox = () => { const stage = $('#cropStage'); const value = $('#cropAspect').value; const ratio = cropRatio(); let width = cropState.canvasWidth * .86; let height = value === 'free' ? cropState.canvasHeight * .86 : width / ratio; if (height > cropState.canvasHeight * .86) { height = cropState.canvasHeight * .86; if (value !== 'free') width = height * ratio; } cropState.box = { x: (cropState.canvasWidth - width) / 2, y: (cropState.canvasHeight - height) / 2, w: width, h: height }; cropState.offsetX = (stage.clientWidth - cropState.canvasWidth) / 2; cropState.offsetY = (stage.clientHeight - cropState.canvasHeight) / 2; $('#cropBox').style.cssText = `left:${cropState.offsetX + cropState.box.x}px;top:${cropState.offsetY + cropState.box.y}px;width:${width}px;height:${height}px`; };
-    const openCropEditor = (file, fileInput, outputInput) => { if (!file.type.startsWith('image/')) throw new Error('Selecciona un archivo de imagen valido.'); if (file.size > MAX_IMAGE_SIZE) throw new Error('La imagen no puede superar 3 MB.'); const image = new Image(); image.onload = () => { cropState.image = image; cropState.fileInput = fileInput; cropState.outputInput = outputInput; cropState.canvas = $('#cropCanvas'); const scale = Math.min(720 / image.width, 500 / image.height, 1); cropState.canvasWidth = Math.round(image.width * scale); cropState.canvasHeight = Math.round(image.height * scale); cropState.canvas.width = cropState.canvasWidth; cropState.canvas.height = cropState.canvasHeight; cropState.canvas.style.width = `${cropState.canvasWidth}px`; cropState.canvas.style.height = `${cropState.canvasHeight}px`; cropState.canvas.getContext('2d').drawImage(image, 0, 0, cropState.canvasWidth, cropState.canvasHeight); $('#cropModal').hidden = false; requestAnimationFrame(updateCropBox); }; image.src = URL.createObjectURL(file); };
-    const openCropFromSource = async (source, fileInput, outputInput) => {
-      if (!source) throw new Error('No hay imagen para recortar.');
-      let blob;
-      if (source.startsWith('data:')) {
-        const parts = source.split(',');
-        const mimeMatch = parts[0].match(/:(.*?);/);
-        const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-        const bstr = atob(parts[1]);
-        let n = bstr.length;
-        const u8arr = new Uint8Array(n);
-        while (n--) u8arr[n] = bstr.charCodeAt(n);
-        blob = new Blob([u8arr], { type: mime });
-      } else {
-        const proxyUrl = `/api/auth/proxy-image?url=${encodeURIComponent(source)}`;
-        let response;
-        try {
-          response = await fetch(proxyUrl);
-        } catch (e) {
-          response = null;
-        }
-        if (!response || !response.ok) {
-          response = await fetch(source);
-        }
-        if (!response.ok) throw new Error('No se pudo descargar la imagen para recortar.');
-        blob = await response.blob();
-      }
-      openCropEditor(new File([blob], 'imagen-producto.jpg', { type: blob.type || 'image/jpeg' }), fileInput, outputInput);
-    };
-    const closeCropEditor = clearFile => { if (clearFile && cropState.fileInput) cropState.fileInput.value = ''; $('#cropModal').hidden = true; cropState.image = null; cropState.fileInput = null; cropState.outputInput = null; };
-    const applyCrop = async () => {
-      const { image, box, canvasWidth, canvasHeight, outputInput, fileInput } = cropState;
-      if (!image || !box) return;
-      const sourceScale = image.width / canvasWidth;
-      const output = document.createElement('canvas');
-      const sourceWidth = Math.round(box.w * sourceScale);
-      const sourceHeight = Math.round(box.h * sourceScale);
-      const outputScale = Math.min(1, 1600 / Math.max(sourceWidth, sourceHeight));
-      output.width = Math.max(1, Math.round(sourceWidth * outputScale));
-      output.height = Math.max(1, Math.round(sourceHeight * outputScale));
-      output.getContext('2d').drawImage(image, Math.round(box.x * sourceScale), Math.round(box.y * sourceScale), sourceWidth, sourceHeight, 0, 0, output.width, output.height);
-      const croppedDataUrl = output.toDataURL('image/jpeg', .88);
-      outputInput.value = croppedDataUrl;
-      const form = outputInput.closest('form');
-      if (fileInput) fileInput.value = '';
-      if (form) {
-        const fi = form.querySelector('input[name="imageFile"]');
-        if (fi) fi.value = '';
-        form.dispatchEvent(new Event('image-applied'));
-      }
-      closeCropEditor(true);
-    };
-    const formValues = form => Object.fromEntries(new FormData(form));
-    const fillForm = (form, values) => form.querySelectorAll('[name]').forEach(input => { if (input.type !== 'file') input.value = values[input.name] ?? ''; });
-    const valuesWithImage = async form => {
-      const values = formValues(form);
-      const fileInput = form.querySelector('input[name="hero_image_file"]');
-      if (fileInput?.files[0]) values.hero_image = await fileToDataUrl(fileInput.files[0]);
-      delete values.hero_image_file;
-
-      const logoFileInput = form.querySelector('input[name="logo_image_file"]');
-      if (logoFileInput?.files[0]) {
-        values.logo_image = await fileToDataUrl(logoFileInput.files[0]);
-      } else {
-        values.logo_image = $('#logoImageHidden')?.value || '';
-      }
-      delete values.logo_image_file;
-
-      const logoDarkFileInput = form.querySelector('input[name="logo_dark_image_file"]');
-      if (logoDarkFileInput?.files[0]) {
-        values.logo_dark_image = await fileToDataUrl(logoDarkFileInput.files[0]);
-      } else {
-        values.logo_dark_image = $('#logoDarkImageHidden')?.value || '';
-      }
-      delete values.logo_dark_image_file;
-
-      values.logo_type = $('#logoTypeInput')?.value || 'image';
-      values.logo_height = $('#logoHeightHidden')?.value || '38';
-      values.logo_dark_height = $('#logoDarkHeightHidden')?.value || '42';
-      values.logo_dark_invert = $('#logoDarkInvertHidden')?.value === 'true' ? 'true' : 'false';
-
-      if (values.logo_type === 'text' && values.brand_name_alt) {
-        values.brand_name = values.brand_name_alt;
-      }
-      delete values.brand_name_alt;
-
-      return values;
-    };
-    
-    // --- Logo Customizer Handlers (Luz, Oscuro y Texto con Sliders 20-140px) ---
-    const setLogoMode = mode => {
-      const typeInput = $('#logoTypeInput');
-      const isText = mode === 'text';
-      if (typeInput) typeInput.value = isText ? 'text' : 'image';
-
-      document.querySelectorAll('.logo-tab').forEach(t => {
-        t.classList.toggle('active', t.dataset.logoMode === mode);
-      });
-
-      const lightPanel = $('#logoLightPanel');
-      const darkPanel = $('#logoDarkPanel');
-      const textPanel = $('#logoTextPanel');
-
-      if (lightPanel) lightPanel.style.display = mode === 'light' ? 'block' : 'none';
-      if (darkPanel) darkPanel.style.display = mode === 'dark' ? 'block' : 'none';
-      if (textPanel) textPanel.style.display = mode === 'text' ? 'block' : 'none';
-    };
-
-    const syncLightHeight = val => {
-      const v = String(val || 38);
-      const hidden = $('#logoHeightHidden');
-      const range = $('#logoHeightRange');
-      const num = $('#logoHeightNum');
-      const label = $('#logoHeightVal');
-      const img = $('#logoImgPreview');
-
-      if (hidden) hidden.value = v;
-      if (range) range.value = v;
-      if (num) num.value = v;
-      if (label) label.textContent = `${v}px`;
-      if (img) img.style.height = `${v}px`;
-    };
-
-    const syncDarkHeight = val => {
-      const v = String(val || 42);
-      const hidden = $('#logoDarkHeightHidden');
-      const range = $('#logoDarkHeightRange');
-      const num = $('#logoDarkHeightNum');
-      const label = $('#logoDarkHeightVal');
-      const img = $('#logoDarkImgPreview');
-
-      if (hidden) hidden.value = v;
-      if (range) range.value = v;
-      if (num) num.value = v;
-      if (label) label.textContent = `${v}px`;
-      if (img) img.style.height = `${v}px`;
-    };
-
-    const setDarkInvert = inverted => {
-      const isInverted = inverted === true || inverted === 'true';
-      const hidden = $('#logoDarkInvertHidden');
-      const chk = $('#logoDarkAutoInvert');
-      const img = $('#logoDarkImgPreview');
-
-      if (hidden) hidden.value = isInverted ? 'true' : 'false';
-      if (chk) chk.checked = isInverted;
-      if (img) img.style.filter = isInverted ? 'brightness(0) invert(1)' : 'none';
-    };
-
-    const updateLogoLightUI = dataUrl => {
-      const hidden = $('#logoImageHidden');
-      const preview = $('#logoImgPreview');
-      const previewBox = $('#logoLightPreviewWrap');
-      const promptBox = $('#logoLightPrompt');
-      const height = $('#logoHeightHidden')?.value || '38';
-
-      if (dataUrl) {
-        if (hidden) hidden.value = dataUrl;
-        if (preview) {
-          preview.src = dataUrl;
-          preview.style.height = `${height}px`;
-        }
-        if (previewBox) previewBox.style.display = 'block';
-        if (promptBox) promptBox.style.display = 'none';
-      } else {
-        if (hidden) hidden.value = '';
-        if (preview) preview.src = '';
-        if (previewBox) previewBox.style.display = 'none';
-        if (promptBox) promptBox.style.display = 'block';
-        const fileInput = $('#logoFileInput');
-        if (fileInput) fileInput.value = '';
-      }
-    };
-
-    const updateLogoDarkUI = dataUrl => {
-      const hidden = $('#logoDarkImageHidden');
-      const preview = $('#logoDarkImgPreview');
-      const previewBox = $('#logoDarkPreviewWrap');
-      const promptBox = $('#logoDarkPrompt');
-      const height = $('#logoDarkHeightHidden')?.value || '42';
-      const isInverted = $('#logoDarkInvertHidden')?.value === 'true';
-
-      if (dataUrl) {
-        if (hidden) hidden.value = dataUrl;
-        if (preview) {
-          preview.src = dataUrl;
-          preview.style.height = `${height}px`;
-          preview.style.filter = isInverted ? 'brightness(0) invert(1)' : 'none';
-        }
-        if (previewBox) previewBox.style.display = 'block';
-        if (promptBox) promptBox.style.display = 'none';
-      } else {
-        if (hidden) hidden.value = '';
-        if (preview) preview.src = '';
-        if (previewBox) previewBox.style.display = 'none';
-        if (promptBox) promptBox.style.display = 'block';
-        const fileInput = $('#logoDarkFileInput');
-        if (fileInput) fileInput.value = '';
-      }
-    };
-
-    const updateLogoTextPreview = () => {
-      const text = ($('#logoTextInput')?.value || 'smartisp').trim();
-      const previewEl = $('#logoTextLivePreview');
-      if (!previewEl) return;
-      if (!text) {
-        previewEl.innerHTML = `smart<b style="color:#087ea4;">isp</b><span style="color:#f5a524;">.</span>`;
-        return;
-      }
-      const mid = Math.ceil(text.length / 2);
-      const part1 = escapeHtml(text.slice(0, mid));
-      const part2 = escapeHtml(text.slice(mid));
-      previewEl.innerHTML = `${part1}<b style="color:#087ea4;">${part2}</b><span style="color:#f5a524;">.</span>`;
-    };
-
-    const syncLogoSettings = values => {
-      const mode = values.logo_type === 'text' ? 'text' : 'light';
-      setLogoMode(mode);
-
-      syncLightHeight(values.logo_height || '38');
-      syncDarkHeight(values.logo_dark_height || '42');
-      setDarkInvert(values.logo_dark_invert === 'true' || values.logo_dark_invert === true);
-
-      if ($('#brandNameInput')) $('#brandNameInput').value = values.brand_name || '';
-      if ($('#brandNameAltInput')) $('#brandNameAltInput').value = values.brand_name || '';
-      if ($('#logoTextInput')) $('#logoTextInput').value = values.logo_text || '';
-
-      updateLogoLightUI(values.logo_image || '');
-      updateLogoDarkUI(values.logo_dark_image || '');
-      updateLogoTextPreview();
-    };
-
-    let logoEventsInitialized = false;
-    const initLogoCustomizerEvents = () => {
-      if (logoEventsInitialized) return;
-      logoEventsInitialized = true;
-
-      document.querySelectorAll('.logo-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-          setLogoMode(tab.dataset.logoMode);
-        });
-      });
-
-      // Handlers de logo claro
-      $('#chooseLogoBtn')?.addEventListener('click', () => $('#logoFileInput')?.click());
-      $('#changeLogoBtn')?.addEventListener('click', () => $('#logoFileInput')?.click());
-      $('#deleteLogoBtn')?.addEventListener('click', () => updateLogoLightUI(''));
-
-      $('#logoHeightRange')?.addEventListener('input', e => syncLightHeight(e.target.value));
-      $('#logoHeightNum')?.addEventListener('input', e => syncLightHeight(e.target.value));
-
-      $('#logoFileInput')?.addEventListener('change', async event => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-        try {
-          if (!file.type.startsWith('image/')) throw new Error('Selecciona un archivo de imagen válido (PNG recomendado).');
-          if (file.size > MAX_IMAGE_SIZE) throw new Error('El logotipo no puede superar 3 MB.');
-          const dataUrl = await fileToDataUrl(file);
-          updateLogoLightUI(dataUrl);
-        } catch (err) {
-          event.target.value = '';
-          showMessage($('#contentMessage'), err.message, true);
-        }
-      });
-
-      const dropZoneLight = $('#logoLightDropZone');
-      if (dropZoneLight) {
-        ['dragenter', 'dragover'].forEach(eventName => {
-          dropZoneLight.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); dropZoneLight.classList.add('drag-over'); });
-        });
-        ['dragleave', 'drop'].forEach(eventName => {
-          dropZoneLight.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); dropZoneLight.classList.remove('drag-over'); });
-        });
-        dropZoneLight.addEventListener('drop', async e => {
-          const file = e.dataTransfer?.files?.[0];
-          if (!file) return;
-          try {
-            if (!file.type.startsWith('image/')) throw new Error('Selecciona un archivo de imagen válido (PNG recomendado).');
-            if (file.size > MAX_IMAGE_SIZE) throw new Error('El logotipo no puede superar 3 MB.');
-            const dataUrl = await fileToDataUrl(file);
-            updateLogoLightUI(dataUrl);
-          } catch (err) {
-            showMessage($('#contentMessage'), err.message, true);
-          }
-        });
-      }
-
-      // Handlers de logo oscuro
-      $('#chooseLogoDarkBtn')?.addEventListener('click', () => $('#logoDarkFileInput')?.click());
-      $('#changeLogoDarkBtn')?.addEventListener('click', () => $('#logoDarkFileInput')?.click());
-      $('#deleteLogoDarkBtn')?.addEventListener('click', () => updateLogoDarkUI(''));
-
-      $('#logoDarkHeightRange')?.addEventListener('input', e => syncDarkHeight(e.target.value));
-      $('#logoDarkHeightNum')?.addEventListener('input', e => syncDarkHeight(e.target.value));
-
-      $('#logoDarkAutoInvert')?.addEventListener('change', e => setDarkInvert(e.target.checked));
-
-      $('#btnCopyLightToDark')?.addEventListener('click', () => {
-        const lightData = $('#logoImageHidden')?.value || '';
-        if (!lightData) {
-          showMessage($('#contentMessage'), 'Primero sube o selecciona un logotipo para fondo claro.', true);
-          return;
-        }
-        updateLogoDarkUI(lightData);
-        showMessage($('#contentMessage'), '✓ Logotipo de menú claro copiado al fondo oscuro.');
-      });
-
-      $('#logoDarkFileInput')?.addEventListener('change', async event => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-        try {
-          if (!file.type.startsWith('image/')) throw new Error('Selecciona un archivo de imagen válido (PNG recomendado).');
-          if (file.size > MAX_IMAGE_SIZE) throw new Error('El logotipo no puede superar 3 MB.');
-          const dataUrl = await fileToDataUrl(file);
-          updateLogoDarkUI(dataUrl);
-        } catch (err) {
-          event.target.value = '';
-          showMessage($('#contentMessage'), err.message, true);
-        }
-      });
-
-      const dropZoneDark = $('#logoDarkDropZone');
-      if (dropZoneDark) {
-        ['dragenter', 'dragover'].forEach(eventName => {
-          dropZoneDark.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); dropZoneDark.classList.add('drag-over'); });
-        });
-        ['dragleave', 'drop'].forEach(eventName => {
-          dropZoneDark.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); dropZoneDark.classList.remove('drag-over'); });
-        });
-        dropZoneDark.addEventListener('drop', async e => {
-          const file = e.dataTransfer?.files?.[0];
-          if (!file) return;
-          try {
-            if (!file.type.startsWith('image/')) throw new Error('Selecciona un archivo de imagen válido (PNG recomendado).');
-            if (file.size > MAX_IMAGE_SIZE) throw new Error('El logotipo no puede superar 3 MB.');
-            const dataUrl = await fileToDataUrl(file);
-            updateLogoDarkUI(dataUrl);
-          } catch (err) {
-            showMessage($('#contentMessage'), err.message, true);
-          }
-        });
-      }
-
-      // Handlers de texto y nombre comercial
-      $('#logoTextInput')?.addEventListener('input', updateLogoTextPreview);
-
-      $('#brandNameInput')?.addEventListener('input', e => {
-        const alt = $('#brandNameAltInput');
-        if (alt) alt.value = e.target.value;
-      });
-      $('#brandNameAltInput')?.addEventListener('input', e => {
-        const main = $('#brandNameInput');
-        if (main) main.value = e.target.value;
-      });
-    };
-    const productValues = async form => {
-      const values = formValues(form);
-      const fileInput = form.querySelector('input[name="imageFile"]');
-      const urlInput = form.querySelector('input[name="imageUrl"]');
-      if (urlInput?.value) {
-        values.imageUrl = urlInput.value;
-      } else if (fileInput?.files[0]) {
-        values.imageUrl = await fileToDataUrl(fileInput.files[0]);
-      }
-      delete values.imageFile;
-      return values;
-    };
+    const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
     const toUtf8Base64 = str => {
       try {
         const bytes = new TextEncoder().encode(str);
@@ -1553,9 +331,9 @@
       if (!response) throw new Error('No se pudo conectar con el servidor.');
       const text = await response.text();
       let result = {};
-      try { 
-        result = text ? JSON.parse(text) : {}; 
-      } catch { 
+      try {
+        result = text ? JSON.parse(text) : {};
+      } catch {
         let clean = (text || '')
           .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
           .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
@@ -1563,7 +341,7 @@
           .replace(/\s+/g, ' ')
           .trim();
         if (clean.length > 150) clean = clean.substring(0, 150) + '...';
-        result = { error: clean || `Respuesta inválida (${response.status})` }; 
+        result = { error: clean || `Respuesta inválida (${response.status})` };
       }
       if (result && result.token) {
         localStorage.setItem('smartisp.adminToken', result.token);
@@ -1571,666 +349,156 @@
       if (!response.ok) throw new Error(result.error || 'No se pudo completar la operación.');
       return result;
     };
-    const updateDesignPreview = () => { const form = $('#contentForm'); const values = formValues(form); const preview = $('.design-preview-hero'); preview.style.setProperty('--preview-image', values.hero_image ? `url("${values.hero_image}")` : 'none'); preview.style.setProperty('--preview-accent', values.primary_color || '#087ea4'); preview.style.setProperty('--preview-text', values.hero_text_color || '#102c3d'); preview.style.setProperty('--preview-width', `${values.hero_content_width || 510}px`); preview.style.setProperty('--preview-overlay', `rgba(228,245,243,${Number(values.hero_overlay_opacity || 0) / 100})`); preview.style.minHeight = `${values.hero_height || 370}px`; preview.style.backgroundPosition = values.hero_image_position || 'center'; form.querySelectorAll('[data-preview]').forEach(element => { element.textContent = values[element.dataset.preview] || ''; }); form.querySelectorAll('[data-range-value]').forEach(element => { element.textContent = `${values[element.dataset.rangeValue] || 0}%`; }); };
-    
-    const updateProviderPanels = provider => {
-      const p = provider || 'gmail';
-      const h = $('#hostingerConfigSection');
-      const g = $('#gmailConfigSection');
-      const c = $('#customSmtpSection');
-      const r = $('#resendSection');
-      if (h) h.classList.toggle('hidden', p !== 'hostinger');
-      if (g) g.classList.toggle('hidden', p !== 'gmail');
-      if (c) c.classList.toggle('hidden', p !== 'custom');
-      if (r) r.classList.toggle('hidden', p !== 'resend');
-    };
-
-    const loadContent = async () => {
-      const result = await api('admin-content');
-      const values = { ...DEFAULT_CONTENT, ...Object.fromEntries(result.content.map(item => [item.key, item.value])) };
-      document.querySelectorAll('#contentForm [name]').forEach(input => { if (input.type !== 'file' && values[input.name] !== undefined) input.value = values[input.name]; });
-      document.querySelectorAll('#visibilityForm [name]').forEach(input => { if (values[input.name] !== undefined) input.value = values[input.name]; });
-      
-      const notifForm = $('#notificationsForm');
-      if (notifForm) {
-        if (values.admin_email !== undefined) notifForm.querySelector('[name="admin_email"]').value = values.admin_email;
-        const prov = values.smtp_provider || 'gmail';
-        const sel = notifForm.querySelector('#smtpProviderSelect');
-        if (sel) sel.value = prov;
-        updateProviderPanels(prov);
-
-        const hUser = notifForm.querySelector('#hostingerUser');
-        const hPass = notifForm.querySelector('#hostingerPass');
-        if (hUser) hUser.value = (prov === 'hostinger' ? (values.smtp_user || '') : '');
-        if (hPass) hPass.value = (prov === 'hostinger' ? (values.smtp_pass || '') : '');
-
-        const gUser = notifForm.querySelector('#gmailUser');
-        const gPass = notifForm.querySelector('#gmailPass');
-        if (gUser) gUser.value = (prov === 'gmail' ? (values.smtp_user || '') : '');
-        if (gPass) gPass.value = (prov === 'gmail' ? (values.smtp_pass || '') : '');
-
-        const sHost = notifForm.querySelector('[name="smtp_host"]');
-        const sPort = notifForm.querySelector('[name="smtp_port"]');
-        const sUser = notifForm.querySelector('[name="smtp_custom_user"]');
-        const sPass = notifForm.querySelector('[name="smtp_custom_pass"]');
-        const sFrom = notifForm.querySelector('[name="smtp_from"]');
-        const sSec = notifForm.querySelector('[name="smtp_secure"]');
-        if (sHost) sHost.value = values.smtp_host || '';
-        if (sPort) sPort.value = values.smtp_port || '465';
-        if (sUser) sUser.value = values.smtp_user || '';
-        if (sPass) sPass.value = values.smtp_pass || '';
-        if (sFrom) sFrom.value = values.smtp_from || '';
-        if (sSec) sSec.checked = values.smtp_secure === 'true';
-
-        const rKey = notifForm.querySelector('[name="resend_api_key"]');
-        const eFrom = notifForm.querySelector('[name="email_from"]');
-        if (rKey) rKey.value = values.resend_api_key || '';
-        if (eFrom) eFrom.value = values.email_from || '';
-      }
-      syncLogoSettings(values);
-      updateDesignPreview();
-    };
-    const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
-
-    let allProducts = [];
-    let currentImageFilter = 'all'; // 'all' | 'with-image' | 'without-image'
-    let activeProductForQuickAssign = null;
-
-    const updateFilterTabsUI = () => {
-      const total = allProducts.length;
-      const withImg = allProducts.filter(p => Boolean(p.imageUrl)).length;
-      const withoutImg = total - withImg;
-
-      if ($('#countAllProducts')) $('#countAllProducts').textContent = total;
-      if ($('#countWithImage')) $('#countWithImage').textContent = withImg;
-      if ($('#countWithoutImage')) $('#countWithoutImage').textContent = withoutImg;
-
-      document.querySelectorAll('.filter-tab').forEach(tab => {
-        tab.classList.toggle('active', tab.dataset.filter === currentImageFilter);
-      });
-
-      const banner = $('#missingImagesBanner');
-      if (banner) {
-        banner.classList.toggle('hidden', currentImageFilter !== 'without-image' || withoutImg === 0);
-      }
-    };
-
-    const getFilteredProducts = () => {
-      const searchVal = $('#productSearchInput')?.value.toLowerCase().trim() || '';
-      return allProducts.filter(p => {
-        const hasImg = Boolean(p.imageUrl);
-        if (currentImageFilter === 'with-image' && !hasImg) return false;
-        if (currentImageFilter === 'without-image' && hasImg) return false;
-
-        if (!searchVal) return true;
-        const name = (p.name || '').toLowerCase();
-        const sku = (p.sku || '').toLowerCase();
-        const cat = (p.category || '').toLowerCase();
-        const desc = (p.description || '').toLowerCase();
-        return name.includes(searchVal) || sku.includes(searchVal) || cat.includes(searchVal) || desc.includes(searchVal);
-      });
-    };
-
-    const refreshProductList = () => {
-      updateFilterTabsUI();
-      const items = getFilteredProducts();
-      renderProductGrid(items);
-    };
-
-    const renderProductCard = product => {
-      const isHidden = product.visible === false;
-      const priceNum = Number(product.price) || 0;
-      const priceDisplay = priceNum > 0 ? `$${priceNum.toLocaleString('es-CL')}` : '<span class="price-quote">Solicitar cotización</span>';
-      const hasImg = Boolean(product.imageUrl);
-      const imgTag = hasImg
-        ? `<img src="${escapeHtml(product.imageUrl)}" alt="${escapeHtml(product.name || '')}" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\\'product-card-no-img\\\'><span style=\\\'font-size:24px;\\\'>📦</span><small>Foto no disponible</small></div>';">`
-        : `<div class="product-card-no-img"><span style="font-size:28px;">📦</span><small style="color:#c2410c;font-weight:700;">⚠️ Sin foto</small></div>`;
-
-      return `
-        <div class="product-card ${hasImg ? '' : 'product-card-missing'}" data-product-id="${escapeHtml(product.id || '')}" title="Haz clic para editar las características de este producto">
-          <div class="product-card-thumb">
-            ${isHidden ? '<span class="product-card-badge badge-hidden">Oculto</span>' : ''}
-            ${!hasImg ? '<span class="product-card-badge" style="background:#ea580c;color:#fff;">Sin foto</span>' : ''}
-            ${imgTag}
-          </div>
-          <div class="product-card-body">
-            <div class="product-card-meta">
-              <span class="product-card-cat" title="${escapeHtml(product.category || 'General')}">${escapeHtml(product.category || 'General')}</span>
-              ${product.sku ? `<code class="product-card-sku">${escapeHtml(product.sku)}</code>` : ''}
-            </div>
-            <h4 class="product-card-title" title="${escapeHtml(product.name || '')}">${escapeHtml(product.name || 'Sin nombre')}</h4>
-            <div class="product-card-price">${priceDisplay}</div>
-          </div>
-          <div class="product-card-actions">
-            ${!hasImg ? `<button type="button" class="button btn-quick-photo" title="Buscar y asignar foto desde Amazon o internet">🛒 Asignar foto</button>` : ''}
-            <button type="button" class="button secondary btn-edit" title="Editar este producto">✏️ Editar</button>
-            <button type="button" class="button danger btn-delete" title="Eliminar este producto">🗑️</button>
-          </div>
-        </div>
-      `;
-    };
-
-    const renderProductGrid = (items = allProducts) => {
-      const container = $('#productsList');
-      if (!container) return;
-      const countBadge = $('#productsCountBadge');
-      
-      if (countBadge) {
-        if (items.length === allProducts.length) {
-          countBadge.textContent = `${allProducts.length} producto${allProducts.length === 1 ? '' : 's'}`;
-        } else {
-          countBadge.textContent = `Mostrando ${items.length} de ${allProducts.length} productos`;
-        }
-      }
-
-      if (!items || !items.length) {
-        let emptyMsg = 'No hay productos guardados aún. Haz clic en <strong>+ Nuevo producto</strong> o importa desde Excel.';
-        if (currentImageFilter === 'without-image') {
-          emptyMsg = '🎉 ¡Felicitaciones! No hay productos sin imagen. Todo tu catálogo cuenta con fotografía.';
-        } else if (currentImageFilter === 'with-image') {
-          emptyMsg = 'Aún no hay productos con imagen en tu catálogo.';
-        } else if (allProducts.length) {
-          emptyMsg = 'No se encontraron productos que coincidan con la búsqueda.';
-        }
-        container.innerHTML = `<p style="grid-column:1/-1;text-align:center;padding:40px 10px;color:var(--muted);font-size:13.5px;">${emptyMsg}</p>`;
-        return;
-      }
-
-      container.innerHTML = items.map(renderProductCard).join('');
-
-      container.querySelectorAll('.product-card').forEach(card => {
-        const productId = card.dataset.productId;
-        const product = allProducts.find(p => String(p.id) === String(productId));
-
-        card.addEventListener('click', () => {
-          if (product) openProductEditModal(product);
-        });
-
-        const quickPhotoBtn = card.querySelector('.btn-quick-photo');
-        if (quickPhotoBtn) {
-          quickPhotoBtn.addEventListener('click', event => {
-            event.stopPropagation();
-            if (product) openQuickImageAssignModal(product);
-          });
-        }
-
-        const editBtn = card.querySelector('.btn-edit');
-        if (editBtn) {
-          editBtn.addEventListener('click', event => {
-            event.stopPropagation();
-            if (product) openProductEditModal(product);
-          });
-        }
-
-        const deleteBtn = card.querySelector('.btn-delete');
-        if (deleteBtn) {
-          deleteBtn.addEventListener('click', async event => {
-            event.stopPropagation();
-            if (!confirm(`¿Seguro que deseas eliminar "${product?.name || 'este producto'}"?`)) return;
-            try {
-              await api(`admin-products?id=${encodeURIComponent(productId)}`, { method: 'DELETE' });
-              showMessage($('#productMessage'), 'Producto eliminado.');
-              await loadProducts();
-            } catch (error) {
-              showMessage($('#productMessage'), error.message, true);
-            }
-          });
-        }
-      });
-    };
-
-    const openQuickImageAssignModal = product => {
-      activeProductForQuickAssign = product;
-      activeProductFormForImageSearch = null;
-      const label = $('#imageSearchProductLabel');
-      if (label) label.textContent = `Asignando foto para: ${product.name} ${product.sku ? '(' + product.sku + ')' : ''}`;
-      openWebImageSearchModal(product.name + (product.sku ? ' ' + product.sku : ''));
-    };
-
-    const openProductEditModal = (product = {}) => {
-      const form = $('#productModalForm');
-      form.reset();
-      form.dataset.productId = product.id || '';
-      form.querySelector('[name="id"]').value = product.id || '';
-      form.querySelector('[name="name"]').value = product.name || '';
-      
-      const priceNum = Number(product.price !== undefined ? product.price : 0);
-      const adminChk = $('#adminChkQuotePrice');
-      const adminBadge = $('#adminQuotePriceBadge');
-      const priceInput = form.querySelector('[name="price"]');
-      if (priceNum <= 0) {
-        if (adminChk) adminChk.checked = true;
-        if (adminBadge) adminBadge.style.display = 'flex';
-        if (priceInput) {
-          priceInput.value = 0;
-          priceInput.style.display = 'none';
-          priceInput.required = false;
-        }
-      } else {
-        if (adminChk) adminChk.checked = false;
-        if (adminBadge) adminBadge.style.display = 'none';
-        if (priceInput) {
-          priceInput.value = product.price;
-          priceInput.style.display = 'block';
-          priceInput.required = true;
-        }
-      }
-      form.querySelector('[name="category"]').value = product.category || '';
-      form.querySelector('[name="sku"]').value = product.sku || '';
-      form.querySelector('[name="visible"]').value = product.visible !== false ? 'true' : 'false';
-      form.querySelector('[name="description"]').value = product.description || '';
-      form.querySelector('[name="externalUrl"]').value = product.externalUrl || '';
-
-      const urlInput = form.querySelector('[name="imageUrl"]');
-      urlInput.value = product.imageUrl || '';
-
-      const preview = form.querySelector('[data-image-preview]');
-      const previewBox = form.querySelector('.image-preview');
-      const editImageBtn = form.querySelector('[data-edit-image]');
-
-      if (product.imageUrl) {
-        preview.src = product.imageUrl;
-        preview.hidden = false;
-        previewBox.classList.remove('is-empty');
-        editImageBtn.disabled = false;
-      } else {
-        preview.src = '';
-        preview.hidden = true;
-        previewBox.classList.add('is-empty');
-        editImageBtn.disabled = true;
-      }
-
-      const deleteBtn = $('#modalDeleteProductButton');
-      if (product.id) {
-        $('#productModalTitle').textContent = 'Editar Producto';
-        deleteBtn.style.display = 'inline-block';
-      } else {
-        $('#productModalTitle').textContent = 'Nuevo Producto';
-        deleteBtn.style.display = 'none';
-      }
-
-      $('#productEditModal').hidden = false;
-    };
-
-    const closeProductEditModal = () => {
-      $('#productEditModal').hidden = true;
-    };
-
-    let productModalInitialized = false;
-    const initProductModal = () => {
-      if (productModalInitialized) return;
-      productModalInitialized = true;
-      const form = $('#productModalForm');
-      if (!form) return;
-      const fileInput = form.querySelector('[name="imageFile"]');
-      const changeButton = form.querySelector('[data-change-image]');
-      const searchWebButton = form.querySelector('[data-search-web-image]');
-      const editButton = form.querySelector('[data-edit-image]');
-      const preview = form.querySelector('[data-image-preview]');
-      const previewBox = form.querySelector('.image-preview');
-      const urlInput = form.querySelector('[name="imageUrl"]');
-
-      changeButton?.addEventListener('click', () => fileInput?.click());
-
-      fileInput?.addEventListener('change', () => {
-        if (fileInput.files && fileInput.files[0]) {
-          openCropEditor(fileInput.files[0], fileInput, urlInput);
-        }
-      });
-
-      searchWebButton?.addEventListener('click', () => {
-        const productName = form.querySelector('[name="name"]')?.value?.trim() || '';
-        openWebImageSearchModal(productName, form);
-      });
-
-      editButton?.addEventListener('click', async () => {
-        if (!urlInput?.value) return;
-        const originalText = editButton.textContent;
-        editButton.disabled = true;
-        editButton.textContent = '⏳ Cargando...';
-        try {
-          await openCropFromSource(urlInput.value, fileInput, urlInput);
-        } catch (error) {
-          alert('No se pudo abrir la imagen para recortar: ' + error.message);
-        } finally {
-          editButton.disabled = false;
-          editButton.textContent = originalText;
-        }
-      });
-
-      const adminChk = $('#adminChkQuotePrice');
-      const adminBadge = $('#adminQuotePriceBadge');
-      const priceInput = form.querySelector('[name="price"]');
-      if (adminChk && priceInput) {
-        adminChk.addEventListener('change', () => {
-          if (adminChk.checked) {
-            priceInput.value = 0;
-            priceInput.style.display = 'none';
-            priceInput.required = false;
-            if (adminBadge) adminBadge.style.display = 'flex';
-          } else {
-            if (adminBadge) adminBadge.style.display = 'none';
-            priceInput.style.display = 'block';
-            priceInput.value = '';
-            priceInput.required = true;
-            priceInput.focus();
-          }
-        });
-        priceInput.addEventListener('input', () => {
-          if (Number(priceInput.value) > 0 && adminChk.checked) {
-            adminChk.checked = false;
-            if (adminBadge) adminBadge.style.display = 'none';
-          }
-        });
-      }
-
-      form.addEventListener('image-applied', () => {
-        if (preview && urlInput) {
-          preview.src = urlInput.value;
-          preview.hidden = false;
-        }
-        if (previewBox) previewBox.classList.remove('is-empty');
-        if (editButton) editButton.disabled = false;
-      });
-
-      form.addEventListener('submit', async event => {
-        event.preventDefault();
-        const saveBtn = $('#saveProductModalButton');
-        if (saveBtn) saveBtn.disabled = true;
-        try {
-          const values = await productValues(form);
-          values.id = form.dataset.productId || crypto.randomUUID();
-          const isQuote = $('#adminChkQuotePrice')?.checked;
-          const parsedPrice = Number(values.price);
-          values.price = isQuote || isNaN(parsedPrice) || parsedPrice <= 0 ? 0 : parsedPrice;
-          values.visible = values.visible === 'true';
-
-          // Si la imagen está en formato Data URL, subirla primero como archivo físico al servidor
-          if (values.imageUrl && values.imageUrl.startsWith('data:image/')) {
-            try {
-              const b64Parts = values.imageUrl.split(',');
-              const mime = b64Parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
-              const byteString = atob(b64Parts[1]);
-              const ab = new ArrayBuffer(byteString.length);
-              const ia = new Uint8Array(ab);
-              for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
-              const blob = new Blob([ab], { type: mime });
-              const fd = new FormData();
-              fd.append('image', blob, 'producto.jpg');
-              const token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
-              const upHeaders = {};
-              if (token) {
-                upHeaders['Authorization'] = `Bearer ${token}`;
-                upHeaders['X-Admin-Token'] = token;
-              }
-              upHeaders['X-Admin-Email'] = 'acercado28@gmail.com';
-              let upUrl = `/api/router.php?action=upload-image`;
-              const upRes = await fetch(upUrl, {
-                method: 'POST',
-                credentials: 'include',
-                headers: upHeaders,
-                body: fd
-              });
-              if (upRes.ok) {
-                const upData = await upRes.json();
-                if (upData.url) values.imageUrl = upData.url;
-              }
-            } catch (upErr) {
-              console.warn('Error subiendo imagen en admin.html:', upErr);
-            }
-          }
-
-          const pfd = new FormData();
-          for (const [k, v] of Object.entries(values)) {
-            if (v !== undefined && v !== null) pfd.append(k, String(v));
-          }
-          await api('admin-products', { method: 'POST', body: pfd });
-          showMessage($('#productMessage'), 'Producto guardado correctamente.');
-          closeProductEditModal();
-          await loadProducts();
-        } catch (error) {
-          alert('Error al guardar producto: ' + error.message);
-        } finally {
-          saveBtn.disabled = false;
-        }
-      });
-
-      $('#modalDeleteProductButton')?.addEventListener('click', async () => {
-        const id = form.dataset.productId;
-        if (!id) return closeProductEditModal();
-        if (!confirm('¿Seguro que deseas eliminar este producto?')) return;
-        try {
-          await api(`admin-products?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
-          showMessage($('#productMessage'), 'Producto eliminado.');
-          closeProductEditModal();
-          await loadProducts();
-        } catch (error) {
-          alert('Error al eliminar producto: ' + error.message);
-        }
-      });
-
-      $('#closeProductModalButton')?.addEventListener('click', closeProductEditModal);
-      $('#cancelProductModalButton')?.addEventListener('click', closeProductEditModal);
-
-      $('#productSearchInput')?.addEventListener('input', () => {
-        refreshProductList();
-      });
-
-      document.querySelectorAll('.filter-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-          currentImageFilter = tab.dataset.filter;
-          refreshProductList();
-        });
-      });
-
-      $('#batchAutoFetchButton')?.addEventListener('click', batchAutoFetchPhotos);
-    };
-
-    const batchAutoFetchPhotos = async () => {
-      const missing = allProducts.filter(p => !p.imageUrl);
-      if (!missing.length) {
-        alert('¡Excelente! Todos los productos de tu catálogo ya tienen imagen asignada.');
-        return;
-      }
-      if (!confirm(`¿Deseas buscar automáticamente fotos en Amazon e internet para los ${missing.length} productos sin imagen?\n\nEl motor buscará en Amazon y la web y asignará la mejor foto encontrada a cada producto.`)) {
-        return;
-      }
-
-      const btn = $('#batchAutoFetchButton');
-      const originalHtml = btn.innerHTML;
-      btn.disabled = true;
-
-      let foundCount = 0;
-      for (let i = 0; i < missing.length; i++) {
-        const p = missing[i];
-        btn.innerHTML = `<span>⏳ Buscando en Amazon (${i + 1}/${missing.length}): ${escapeHtml(p.name.slice(0, 22))}...</span>`;
-        try {
-          const res = await api(`search-product-image?q=${encodeURIComponent(p.name + (p.sku ? ' ' + p.sku : ''))}&category=${encodeURIComponent(p.category || '')}&store=amazon&limit=1`);
-          if (res.images && res.images.length && res.images[0].url) {
-            p.imageUrl = res.images[0].url;
-            await api('admin-products', { method: 'POST', body: JSON.stringify(p) });
-            foundCount++;
-            refreshProductList();
-          }
-        } catch (e) {
-          console.warn('Error en búsqueda automática para', p.name, e);
-        }
-      }
-
-      btn.disabled = false;
-      btn.innerHTML = originalHtml;
-      showMessage($('#productMessage'), `¡Completado! Se asignaron imágenes a ${foundCount} productos desde Amazon y la web.`);
-      await loadProducts();
-    };
-
-    let adminConfiguredCategories = [];
-
-    // --- GESTIÓN Y VISUALIZACIÓN DE MACRO-CATEGORÍAS EN PANEL ADMIN ---
-    const getCategoryIcon = name => {
-      const n = (name || '').toLowerCase();
-      if (n.includes('impres') || n.includes('multifuncional') || n.includes('plotter') || n.includes('toner') || n.includes('tinta')) return '🖨️';
-      if (n.includes('portatil') || n.includes('portátil') || n.includes('laptop') || n.includes('notebook')) return '💻';
-      if (n.includes('computador') || n.includes('desktop') || n.includes('pc') || n.includes('all in one') || n.includes('servidor')) return '🖥️';
-      if (n.includes('componente') || n.includes('procesador') || n.includes('ram') || n.includes('disco') || n.includes('placa') || n.includes('fuente') || n.includes('tarjeta')) return '🧩';
-      if (n.includes('seguridad') || n.includes('vigilancia') || n.includes('camara') || n.includes('cámara') || n.includes('cctv') || n.includes('dvr') || n.includes('nvr') || n.includes('alarma')) return '🛡️';
-      if (n.includes('red') || n.includes('comunicac') || n.includes('router') || n.includes('switch') || n.includes('access point') || n.includes('fibra') || n.includes('wifi') || n.includes('antena')) return '🌐';
-      if (n.includes('audio') || n.includes('sonido') || n.includes('parlante') || n.includes('microfono') || n.includes('auricular') || n.includes('headset')) return '🔊';
-      if (n.includes('video') || n.includes('monitor') || n.includes('pantalla') || n.includes('proyector') || n.includes('tv')) return '🖥️';
-      if (n.includes('accesorio') || n.includes('periferico') || n.includes('periférico') || n.includes('teclado') || n.includes('mouse') || n.includes('soporte')) return '⌨️';
-      if (n.includes('energia') || n.includes('energía') || n.includes('ups') || n.includes('bateria') || n.includes('batería') || n.includes('regulador') || n.includes('inversor')) return '⚡';
-      if (n.includes('software') || n.includes('licencia') || n.includes('antivirus') || n.includes('sistema')) return '💾';
-      if (n.includes('celular') || n.includes('smartphone') || n.includes('tablet') || n.includes('movil') || n.includes('móvil')) return '📱';
-      if (n.includes('cable') || n.includes('conectiv') || n.includes('adaptador') || n.includes('hdmi') || n.includes('usb')) return '🔌';
-      if (n.includes('gaming') || n.includes('gamer') || n.includes('juego')) return '🎮';
-      if (n.includes('herramienta') || n.includes('ferreteria') || n.includes('instrumento') || n.includes('probador')) return '🔧';
-      if (n.includes('oficina') || n.includes('papel') || n.includes('mueble') || n.includes('silla') || n.includes('suministro')) return '📁';
-      if (n.includes('almacenamiento') || n.includes('pendrive') || n.includes('flash') || n.includes('memoria') || n.includes('externo')) return '💽';
-      if (n.includes('pos') || n.includes('punto de venta') || n.includes('lector') || n.includes('codigo de barra') || n.includes('gaveta')) return '🏷️';
-      if (n.includes('fotografia') || n.includes('fotografía') || n.includes('lente') || n.includes('tripode')) return '📷';
-      if (n.includes('telefonia') || n.includes('telefonía') || n.includes('telefono') || n.includes('conmutador')) return '📞';
-      return '📂';
-    };
-
-    const renderMacroCategories = (categories, filterText = '') => {
-      const grid = document.getElementById('adminMacroCategoriesGrid');
-      const badgeCount = document.getElementById('adminMacroCountBadge');
-      const badgeProd = document.getElementById('adminMacroProdCountBadge');
-      const badgeSub = document.getElementById('adminMacroSubCountBadge');
-      const filterNotice = document.getElementById('adminMacroFilterNotice');
-      if (!grid) return;
-
-      const q = (filterText || '').toLowerCase().trim();
-
-      // Contar totales globales
-      let totalProducts = 0;
-      let totalSubcats = 0;
-      (categories || []).forEach(c => {
-        totalProducts += Number(c.productCount || 0);
-        if (Array.isArray(c.subcategories)) {
-          totalSubcats += c.subcategories.length;
-        }
-      });
-
-      if (badgeCount) badgeCount.textContent = (categories || []).length;
-      if (badgeProd) badgeProd.textContent = totalProducts.toLocaleString();
-      if (badgeSub) badgeSub.textContent = totalSubcats.toLocaleString();
-
-      const filtered = (categories || []).filter(c => {
-        if (!q) return true;
-        const nameMatch = (c.name || '').toLowerCase().includes(q);
-        const subMatch = Array.isArray(c.subcategories) && c.subcategories.some(s => String(s).toLowerCase().includes(q));
-        return nameMatch || subMatch;
-      });
-
-      if (filterNotice) {
-        if (q) {
-          filterNotice.textContent = `Mostrando ${filtered.length} de ${(categories || []).length} categorías`;
-          filterNotice.style.display = 'block';
-        } else {
-          filterNotice.style.display = 'none';
-        }
-      }
-
-      if (filtered.length === 0) {
-        grid.innerHTML = `
-          <div style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px;">
-            <div style="font-size: 32px; margin-bottom: 8px;">🔍</div>
-            <strong style="display:block; font-size:15px; color:#1e293b; margin-bottom:4px;">No se encontraron macro-categorías</strong>
-            <p style="margin:0; font-size:13px; color:#64748b;">
-              ${q ? `Ninguna categoría coincide con el término "<strong>${q}</strong>".` : 'No hay macro-categorías registradas en este momento.'}
-            </p>
-          </div>
-        `;
-        return;
-      }
-
-      grid.innerHTML = filtered.map(cat => {
-        const icon = getCategoryIcon(cat.name);
-        const prodCount = Number(cat.productCount || 0);
-        const subcats = Array.isArray(cat.subcategories) ? cat.subcategories : [];
-        const visibleSubcats = subcats.slice(0, 3);
-        const remainingCount = subcats.length - visibleSubcats.length;
-
-        const subcatsHtml = subcats.length > 0
-          ? `
-            <div style="display:flex; flex-wrap:wrap; gap:5px; min-height:44px; align-content:flex-start;">
-              ${visibleSubcats.map(s => `<span class="macro-subcat-chip" title="${s}">${s}</span>`).join('')}
-              ${remainingCount > 0 ? `<span class="macro-subcat-chip more">+${remainingCount} más</span>` : ''}
-            </div>
-          `
-          : `
-            <div style="min-height:44px; display:flex; align-items:center;">
-              <span style="font-size:11.5px; color:#94a3b8; font-style:italic;">Sin subcategorías específicas</span>
-            </div>
-          `;
-
-        const encodedCat = encodeURIComponent(cat.name || '');
-
-        return `
-          <div class="macro-cat-card">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
-              <div style="display:flex; align-items:center; gap:10px;">
-                <div class="macro-cat-icon">${icon}</div>
-                <div>
-                  <h4 class="macro-cat-title" title="${cat.name}">${cat.name}</h4>
-                  <span style="font-size:11px; color:#64748b;">${subcats.length} ${subcats.length === 1 ? 'subcategoría' : 'subcategorías'}</span>
-                </div>
-              </div>
-              <span class="macro-cat-count-badge" title="${prodCount} productos asociados en el catálogo">
-                <span>📦</span> ${prodCount}
-              </span>
-            </div>
-
-            ${subcatsHtml}
-
-            <div style="display:flex; gap:8px; margin-top:auto; padding-top:10px; border-top:1px solid #f1f5f9;">
-              <a href="editor-catalogo.html?macro=${encodedCat}" class="macro-cat-btn-view" title="Ver los productos de ${cat.name} en el editor">
-                <span>Ver productos</span>
-                <span style="font-size:14px; line-height:1;">↗</span>
-              </a>
-              <a href="editor-catalogo.html?tab=tab-categories" class="macro-cat-btn-edit" title="Editar taxonomía y subcategorías">
-                <span>⚙️</span>
-              </a>
-            </div>
-          </div>
-        `;
-      }).join('');
-    };
 
     const loadCategories = async () => {
       try {
         const res = await api('categories');
-        adminConfiguredCategories = res.categories || [];
         const catCountEl = document.getElementById('adminCatalogCatCount');
-        if (catCountEl) catCountEl.textContent = adminConfiguredCategories.length;
-        renderMacroCategories(adminConfiguredCategories);
+        if (catCountEl) catCountEl.textContent = (res.categories || []).length;
       } catch (e) {
         console.warn('Error cargando categorías en admin:', e);
       }
     };
 
-    const loadProducts = async () => {
-      try {
-        initProductModal();
-        const result = await api('admin-products');
-        allProducts = result.products || [];
-        const prodCountEl = document.getElementById('adminCatalogProdCount');
-        if (prodCountEl) prodCountEl.textContent = allProducts.length;
-        refreshProductList();
-      } catch (e) {
-        console.warn('Error al cargar productos en panel general:', e);
+    const dashboardState = { orders: null, products: null };
+    const statusLabels = {
+      quote_requested: 'Cotización',
+      pending: 'Pendiente',
+      paid: 'Pagado',
+      preparing: 'En preparación',
+      shipped: 'Enviado',
+      delivered: 'Entregado',
+      cancelled: 'Cancelado',
+      received: 'Recibido'
+    };
+
+    const formatMoney = value => '$' + Number(value || 0).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const renderStatusChart = stats => {
+      const chart = document.getElementById('ordersStatusChart');
+      if (!chart) return;
+      const byStatus = Object.fromEntries((stats.by_status || []).map(s => [s.status, s.total]));
+      const values = ['quote_requested', 'pending', 'preparing', 'shipped', 'delivered'].map(key => byStatus[key] || 0);
+      const max = Math.max(1, ...values);
+      chart.innerHTML = values.map(value => {
+        const height = Math.max(10, Math.round((value / max) * 100));
+        return `<span class="mini-bar" title="${value} pedidos" style="height:${height}%"></span>`;
+      }).join('');
+    };
+
+    const renderCatalogHealth = stats => {
+      const total = Number(stats.total || 0);
+      const withImage = Number(stats.with_photo || 0);
+      const withoutImage = Number(stats.without_photo || 0);
+      const pct = total > 0 ? Math.round((withImage / total) * 100) : 0;
+      document.getElementById('catalogHealthPct').textContent = pct + '%';
+      document.getElementById('catalogHealthBar').style.width = pct + '%';
+      document.getElementById('healthProducts').textContent = total.toLocaleString('es-EC');
+      document.getElementById('healthWithImage').textContent = withImage.toLocaleString('es-EC');
+      document.getElementById('healthWithoutImage').textContent = withoutImage.toLocaleString('es-EC');
+    };
+
+    const renderAttention = () => {
+      const list = document.getElementById('attentionList');
+      if (!list) return;
+      const alerts = [];
+      const orderStats = dashboardState.orders;
+      const productStats = dashboardState.products;
+      if (orderStats) {
+        const byStatus = Object.fromEntries((orderStats.by_status || []).map(s => [s.status, s.total]));
+        const quotes = byStatus.quote_requested || 0;
+        const pending = byStatus.pending || 0;
+        if (quotes > 0) alerts.push({ cls: 'is-warning', icon: 'file-question', href: 'pedidos.html?status=quote_requested', title: `${quotes} cotización${quotes === 1 ? '' : 'es'} por responder`, text: 'Revisar solicitudes sin precio final.' });
+        if (pending > 0) alerts.push({ cls: 'is-warning', icon: 'credit-card', href: 'pedidos.html?status=pending', title: `${pending} pedido${pending === 1 ? '' : 's'} pendiente${pending === 1 ? '' : 's'} de pago`, text: 'Confirmar pago o contactar al cliente.' });
       }
+      if (productStats && productStats.without_photo > 0) {
+        alerts.push({ cls: 'is-danger', icon: 'image-off', href: 'editor-catalogo.html?photo=without_photo', title: `${productStats.without_photo} producto${productStats.without_photo === 1 ? '' : 's'} sin imagen`, text: 'Completar fotos mejora confianza y conversión.' });
+      }
+      if (!alerts.length && orderStats && productStats) {
+        alerts.push({ cls: '', icon: 'check-circle-2', href: 'editor-catalogo.html', title: 'Sin alertas críticas por ahora', text: 'Pedidos y catálogo no muestran pendientes básicos.' });
+      }
+      list.innerHTML = alerts.map(a => `
+        <a class="attention-item ${a.cls}" href="${a.href}">
+          <div class="attention-icon"><i data-lucide="${a.icon}"></i></div>
+          <div><strong>${escapeHtml(a.title)}</strong><span>${escapeHtml(a.text)}</span></div>
+        </a>
+      `).join('');
+      if (window.lucide) window.lucide.createIcons();
+    };
+
+    const loadProductCount = async () => {
+      try {
+        const stats = await api('admin-products-stats');
+        dashboardState.products = stats;
+        const prodCountEl = document.getElementById('adminCatalogProdCount');
+        if (prodCountEl) prodCountEl.textContent = stats.total ?? 0;
+        renderCatalogHealth(stats);
+        renderAttention();
+      } catch (e) {
+        console.warn('Error al cargar el total de productos:', e);
+      }
+    };
+
+    const loadRecentOrders = async () => {
+      const body = document.getElementById('recentOrdersBody');
+      if (!body) return;
+      try {
+        const result = await api('admin-orders?limit=5');
+        const orders = result.orders || [];
+        if (!orders.length) {
+          body.innerHTML = '<tr><td colspan="4">Todavía no hay pedidos registrados.</td></tr>';
+          return;
+        }
+        body.innerHTML = orders.map(order => {
+          const shipping = order.shipping || {};
+          const client = order.customer_name || shipping.name || order.customer_email || shipping.email || 'Cliente';
+          const status = statusLabels[order.status] || order.status || 'Sin estado';
+          return `<tr>
+            <td><strong>${escapeHtml(order.id || '-')}</strong></td>
+            <td>${escapeHtml(client)}</td>
+            <td><span class="status-pill">${escapeHtml(status)}</span></td>
+            <td>${formatMoney(order.total)}</td>
+          </tr>`;
+        }).join('');
+      } catch (e) {
+        body.innerHTML = '<tr><td colspan="4">No se pudieron cargar los pedidos recientes.</td></tr>';
+      }
+    };
+
+    const loadOrderStats = async () => {
+      try {
+        const stats = await api('admin-orders-stats');
+        dashboardState.orders = stats;
+        const byStatus = Object.fromEntries((stats.by_status || []).map(s => [s.status, s.total]));
+        document.getElementById('dashPendingCount').textContent = byStatus.pending || 0;
+        document.getElementById('dashTodayCount').textContent = stats.today_count || 0;
+        document.getElementById('dashTotalCount').textContent = stats.total || 0;
+        document.getElementById('dashRevenue').textContent = formatMoney(stats.revenue);
+        renderStatusChart(stats);
+        renderAttention();
+      } catch (e) {
+        console.warn('Error al cargar estadisticas de pedidos:', e);
+      }
+    };
+
+    const hydrateDashboardHeader = user => {
+      const now = new Date();
+      const hour = now.getHours();
+      const greeting = hour < 12 ? 'Buenos días' : (hour < 19 ? 'Buenas tardes' : 'Buenas noches');
+      const name = String(user?.name || user?.email || 'admin').split(' ')[0];
+      document.getElementById('dashboardGreeting').textContent = `${greeting}, ${name}`;
+      document.getElementById('dashboardDate').textContent = now.toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' });
     };
 
     const openPanel = async user => {
       $('#loginPanel').classList.add('hidden');
       $('#adminPanel').classList.remove('hidden');
-      $('#adminIdentity').textContent = `${user.name} ${user.surname || ''} - ${user.email}`;
-      initProductModal();
-      initLogoCustomizerEvents();
-      await loadContent();
+      hydrateDashboardHeader(user);
+      $('#adminIdentity').textContent = `${user.name || 'Administrador'}${user.email ? ' · ' + user.email : ''}`;
+      await loadOrderStats();
+      await loadRecentOrders();
       await loadCategories();
-      await loadProducts();
+      await loadProductCount();
     };
 
     const adminEmails = [
@@ -3360,130 +1628,7 @@
       });
     });
 
-    $('#closeImageSearchModalButton')?.addEventListener('click', closeWebImageSearchModal);
-    $('#cancelImageSearchButton')?.addEventListener('click', closeWebImageSearchModal);
-    $('#imageSearchForm')?.addEventListener('submit', event => {
-      event.preventDefault();
-      const q = $('#imageSearchInput')?.value.trim();
-      if (q) executeImageSearch(q, currentSearchStore);
-    });
-
-    $('#newProductButton')?.addEventListener('click', () => openProductEditModal({}));
-    $('#adminDeleteAllProductsButton')?.addEventListener('click', async () => {
-      if (!allProducts.length) {
-        alert('No hay productos en el catálogo para eliminar.');
-        return;
-      }
-      if (!confirm(`⚠️ ¿ELIMINAR TODOS LOS PRODUCTOS?\n\nEstás a punto de borrar definitivamente los ${allProducts.length} productos del catálogo.\nEsta acción vaciará el catálogo y no se puede deshacer.\n\n¿Deseas continuar?`)) {
-        return;
-      }
-      try {
-        await api('admin-products-clear', { method: 'POST' });
-        allProducts = [];
-        refreshProductList();
-        showMessage($('#productMessage'), 'Todos los productos han sido eliminados correctamente.');
-      } catch (err) {
-        alert('Error al eliminar productos: ' + err.message);
-      }
-    });
-
-    $('#openImportModalButton')?.addEventListener('click', openImportModal);
-    $('#closeImportModalButton')?.addEventListener('click', closeImportModal);
-    $('#cancelImportButton')?.addEventListener('click', closeImportModal);
-    $('#importDropzone')?.addEventListener('click', () => $('#importFileInput')?.click());
-    $('#importFileInput')?.addEventListener('change', event => {
-      if (event.target.files && event.target.files.length) processImportFiles(event.target.files);
-    });
-
-    const dropzone = $('#importDropzone');
-    if (dropzone) {
-      ['dragenter', 'dragover'].forEach(name => {
-        dropzone.addEventListener(name, event => {
-          event.preventDefault();
-          dropzone.classList.add('dragover');
-        });
-      });
-      ['dragleave', 'drop'].forEach(name => {
-        dropzone.addEventListener(name, event => {
-          event.preventDefault();
-          dropzone.classList.remove('dragover');
-        });
-      });
-      dropzone.addEventListener('drop', event => {
-        const files = event.dataTransfer?.files;
-        if (files && files.length) processImportFiles(files);
-      });
-    }
-
-    $('#startImportButton')?.addEventListener('click', startBulkImport);
-
-    // Eventos interactivos del configurador de columnas y encabezados
-    const headerRowSelectEl = document.getElementById('selectHeaderRow');
-    if (headerRowSelectEl) {
-      headerRowSelectEl.addEventListener('change', event => {
-        const activeFile = currentImportState.filesData[currentImportState.activeFileIdx];
-        if (!activeFile) return;
-        const newHeaderIdx = parseInt(event.target.value);
-        activeFile.headerRowIndex = newHeaderIdx;
-
-        if (newHeaderIdx >= 0) {
-          const rawHeaderRow = activeFile.matrix[newHeaderIdx] || [];
-          activeFile.headers = rawHeaderRow.map((cell, idx) => {
-            const text = String(cell || '').trim();
-            return text || `Columna ${idx + 1}`;
-          });
-        } else {
-          const maxCols = Math.max(...activeFile.matrix.slice(0, 15).map(r => r.length), 1);
-          activeFile.headers = Array.from({ length: maxCols }, (_, idx) => `Columna ${idx + 1}`);
-        }
-
-        const sampleStart = newHeaderIdx >= 0 ? newHeaderIdx + 1 : 0;
-        const sampleRows = activeFile.matrix.slice(sampleStart, sampleStart + 25);
-        activeFile.mapping = detectColumnsMapping(activeFile.headers, sampleRows);
-
-        renderColumnDropdowns();
-        refreshImportPreview();
-      });
-    }
-
-    const colConfigMap = {
-      colSelectName: 'name',
-      colSelectPrice: 'price',
-      colSelectCategory: 'category',
-      colSelectSku: 'sku',
-      colSelectImage: 'imageUrl',
-      colSelectDescription: 'description'
-    };
-
-    Object.keys(colConfigMap).forEach(selectId => {
-      const el = document.getElementById(selectId);
-      if (!el) return;
-      el.addEventListener('change', () => {
-        const activeFile = currentImportState.filesData[currentImportState.activeFileIdx];
-        if (!activeFile) return;
-        const propKey = colConfigMap[selectId];
-        const val = parseInt(el.value);
-        activeFile.mapping[propKey] = val >= 0 ? val : null;
-        refreshImportPreview();
-      });
-    });
-
-    const marginInputEl = document.getElementById('importPriceMargin');
-    if (marginInputEl) {
-      marginInputEl.addEventListener('input', () => {
-        refreshImportPreview();
-      });
-    }
-
-    $('#logoutButton').addEventListener('click', async () => {
-      try { await api('logout', { method: 'POST' }); } catch (e) {}
-      localStorage.removeItem('smartisp.accountUser');
-      localStorage.removeItem('smartisp.accountRemembered');
-      localStorage.removeItem('smartisp.adminToken');
-      sessionStorage.removeItem('smartisp.accountUser');
-      sessionStorage.removeItem('smartisp.adminToken');
-      location.reload();
-    });
+    // El logout ya lo provee el navbar compartido (assets/js/admin-nav.js, .admin-nav-logout).
 
     $('#switchAccountBtn')?.addEventListener('click', async () => {
       try { await api('logout', { method: 'POST' }); } catch (e) {}
@@ -3532,6 +1677,7 @@
       }
     };
 
+    if (window.lucide) window.lucide.createIcons();
     checkAuthAndInit();
   </script>
 </body>

@@ -1,0 +1,370 @@
+/* Sidebar compartido del área de administración (admin.html, pedidos.html, categorias.html,
+   configuracion.html, editor-catalogo.html, editor-landing.html). DEV-20261006-010: antes era un
+   navbar horizontal de una fila arriba de cada página; se convierte a sidebar fijo agrupado por
+   secciones, a partir de un mockup de referencia. Mismos tokens de color que las páginas que lo
+   incluyen. */
+:root {
+  --nav-ink: #163342;
+  --nav-muted: #6b7f88;
+  --nav-line: #d8e5e7;
+  --nav-blue: #087ea4;
+  --nav-blue-dark: #075d7d;
+  --nav-danger: #a53b3b;
+  --nav-width: 240px;
+  --nav-width-collapsed: 72px;
+  --nav-z-sidebar: 200000;
+  --nav-z-editor: 2000;
+}
+
+body.admin-sidebar-collapsed {
+  --nav-width: var(--nav-width-collapsed);
+}
+
+#smartisp-admin-nav {
+  font: 14px Arial, sans-serif;
+  color: var(--nav-ink);
+  background: linear-gradient(180deg, #102c3d 0%, #0c2434 100%);
+  box-shadow: 2px 0 20px rgba(16, 44, 61, .15);
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--nav-width);
+  display: flex;
+  flex-direction: column;
+  z-index: var(--nav-z-sidebar);
+  overflow-y: auto;
+  transition: width .2s ease;
+}
+
+/* Cada pagina que incluye el sidebar le cede este espacio a la izquierda de su propio contenido,
+   sin que esa pagina tenga que definir nada: un solo lugar (este archivo) decide el ancho. */
+body.has-admin-sidebar {
+  overflow-x: hidden;
+}
+
+body.has-admin-sidebar > .top,
+body.has-admin-sidebar > .topbar,
+body.has-admin-sidebar > .navbar,
+body.has-admin-sidebar > main {
+  margin-left: var(--nav-width);
+  width: calc(100vw - var(--nav-width));
+  max-width: calc(100vw - var(--nav-width));
+  box-sizing: border-box;
+}
+
+body.has-admin-sidebar > main.shell {
+  width: min(1180px, calc(100vw - var(--nav-width) - 48px));
+  max-width: calc(100vw - var(--nav-width) - 48px);
+  margin-left: calc(var(--nav-width) + 24px);
+  margin-right: 24px;
+}
+
+body.has-admin-sidebar > .editor-top-bar {
+  left: var(--nav-width);
+  right: auto;
+  width: calc(100vw - var(--nav-width));
+  z-index: var(--nav-z-editor);
+}
+
+body.has-admin-sidebar > main *,
+body.has-admin-sidebar > .top *,
+body.has-admin-sidebar > .topbar *,
+body.has-admin-sidebar > .navbar * {
+  min-width: 0;
+}
+
+#smartisp-admin-nav svg.lucide {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+#smartisp-admin-nav .admin-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  position: relative;
+}
+
+#smartisp-admin-nav .admin-nav-brand svg.lucide {
+  width: 22px;
+  height: 22px;
+  color: #7dd3fc;
+}
+
+#smartisp-admin-nav .admin-nav-brand strong {
+  display: block;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+#smartisp-admin-nav .admin-nav-brand span {
+  display: block;
+  color: #8fb4c4;
+  font-size: 11px;
+}
+
+#smartisp-admin-nav .admin-nav-toggle {
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .06);
+  color: #d8f1f7;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  margin-left: auto;
+  flex-shrink: 0;
+  transition: background .15s, color .15s;
+}
+
+#smartisp-admin-nav .admin-nav-toggle:hover {
+  background: rgba(255, 255, 255, .12);
+  color: #fff;
+}
+
+#smartisp-admin-nav .admin-nav-links {
+  flex: 1;
+  padding: 14px 12px;
+  overflow-y: auto;
+}
+
+#smartisp-admin-nav .admin-nav-group {
+  margin-bottom: 14px;
+}
+
+#smartisp-admin-nav .admin-nav-group-label {
+  padding: 0 10px 6px;
+  color: #5e8294;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+#smartisp-admin-nav .admin-nav-links a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  color: #cfe7ec;
+  text-decoration: none;
+  font-weight: 600;
+  transition: background .15s, color .15s;
+}
+
+#smartisp-admin-nav .admin-nav-links a:hover {
+  background: rgba(255, 255, 255, .08);
+  color: #fff;
+}
+
+#smartisp-admin-nav .admin-nav-links a.is-active {
+  background: var(--nav-blue);
+  color: #fff;
+}
+
+#smartisp-admin-nav .admin-nav-links a.is-disabled {
+  opacity: .45;
+  pointer-events: none;
+}
+
+#smartisp-admin-nav .admin-nav-user {
+  border-top: 1px solid rgba(255, 255, 255, .08);
+  padding: 14px 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#smartisp-admin-nav .admin-nav-user-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#smartisp-admin-nav .admin-nav-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--nav-blue);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+#smartisp-admin-nav .admin-nav-user-info {
+  min-width: 0;
+  color: #cfe7ec;
+  font-size: 12.5px;
+}
+
+#smartisp-admin-nav .admin-nav-user-info strong {
+  display: block;
+  color: #fff;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Clase propia (no "button secondary") a proposito: ese nombre de clase tambien existe en el CSS
+   de cada pagina que incluye este sidebar, y su regla de fondo (#e7f2f3, casi blanco) se colaba
+   aqui -- texto blanco sobre fondo casi blanco, ilegible. Con una clase exclusiva del sidebar esto
+   no puede volver a pasar aunque una pagina cambie su propio .button.secondary. */
+#smartisp-admin-nav .admin-nav-storelink,
+#smartisp-admin-nav .admin-nav-logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, .3);
+  border-radius: 7px;
+  background: transparent;
+  color: #fff;
+  font-weight: 700;
+  font-size: 12px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+#smartisp-admin-nav .admin-nav-storelink:hover {
+  background: rgba(255, 255, 255, .1);
+}
+
+#smartisp-admin-nav .admin-nav-logout:hover {
+  background: rgba(165, 59, 59, .85);
+  border-color: transparent;
+}
+
+#smartisp-admin-nav.is-loading .admin-nav-user,
+#smartisp-admin-nav.is-loading .admin-nav-logout {
+  visibility: hidden;
+}
+
+body.admin-sidebar-collapsed #smartisp-admin-nav {
+  overflow-x: hidden;
+}
+
+body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-brand {
+  justify-content: center;
+  padding: 18px 10px 12px;
+}
+
+body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-brand > div,
+body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-group-label,
+body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-links a .label,
+body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-user-info,
+body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-storelink span,
+body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-logout span {
+  display: none;
+}
+
+body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-toggle {
+  position: absolute;
+  right: 8px;
+  top: 52px;
+  margin-left: 0;
+}
+
+body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-links {
+  padding: 48px 10px 12px;
+}
+
+body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-group {
+  margin-bottom: 8px;
+}
+
+body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-links a,
+body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-storelink,
+body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-logout {
+  justify-content: center;
+  padding: 10px;
+}
+
+body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-user {
+  padding: 12px 10px 16px;
+  align-items: center;
+}
+
+body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-user-row {
+  justify-content: center;
+}
+
+/* Pantallas chicas: un sidebar fijo de ancho completo se comeria toda la pantalla. Se convierte
+   en una barra horizontal arriba (como el navbar anterior a DEV-20261006-010), en vez de
+   esconderla del todo -- sin esto, alguien en el celular se queda sin forma de navegar. */
+@media (max-width: 900px) {
+  :root { --nav-width: 0px; }
+  #smartisp-admin-nav {
+    position: static;
+    width: auto;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    overflow: visible;
+  }
+  body.has-admin-sidebar > .top,
+  body.has-admin-sidebar > .topbar,
+  body.has-admin-sidebar > .navbar,
+  body.has-admin-sidebar > main {
+    margin-left: 0;
+    width: 100vw;
+    max-width: 100vw;
+  }
+  body.has-admin-sidebar > main.shell {
+    width: min(1180px, 90vw);
+    max-width: 90vw;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  body.has-admin-sidebar > .editor-top-bar {
+    left: 0;
+    right: 0;
+    width: 100vw;
+  }
+
+  #smartisp-admin-nav .admin-nav-brand {
+    border-bottom: 0;
+    padding: 12px 14px;
+  }
+  #smartisp-admin-nav .admin-nav-toggle { display: none; }
+  #smartisp-admin-nav .admin-nav-brand span { display: none; }
+  #smartisp-admin-nav .admin-nav-links {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 8px;
+    gap: 4px;
+  }
+  #smartisp-admin-nav .admin-nav-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 0;
+  }
+  #smartisp-admin-nav .admin-nav-group-label { display: none; }
+  #smartisp-admin-nav .admin-nav-links a { white-space: nowrap; }
+  #smartisp-admin-nav .admin-nav-links a .label { display: none; }
+  #smartisp-admin-nav .admin-nav-user {
+    border-top: 0;
+    flex-direction: row;
+    align-items: center;
+    padding: 8px 12px;
+  }
+  #smartisp-admin-nav .admin-nav-user-info { display: none; }
+  #smartisp-admin-nav .admin-nav-storelink span,
+  #smartisp-admin-nav .admin-nav-logout span { display: none; }
+}

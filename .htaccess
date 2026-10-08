@@ -8,11 +8,17 @@ DirectoryIndex tienda.html index.html index.htm index.php
     RewriteRule ^\.env - [F,L]
     RewriteRule ^api/config\.php - [F,L]
 
-    # Redirigir index.html directamente a la raíz de la tienda
+    # La raiz publica es la tienda; la presentacion queda archivada como index-presentacion.html.
     RewriteRule ^index\.html$ / [R=301,L]
 
     # Rutas amigables SEO para productos individuales y sitemaps
     RewriteRule ^sitemap-products\.xml$ sitemap-products.php [QSA,L]
+    RewriteRule ^sitemap-categories\.xml$ sitemap-categories.php [QSA,L]
+    RewriteRule ^productos-destacados/?$ productos-destacados.php [QSA,L]
+    RewriteRule ^categorias-destacadas/?$ categorias-destacadas.php [QSA,L]
+    RewriteRule ^servicios/?$ servicios.html [QSA,L]
+    RewriteRule ^nosotros/?$ nosotros.html [QSA,L]
+    RewriteRule ^categoria/([^/]+)/?$ categoria.php?slug=$1 [QSA,L]
     RewriteRule ^productos/([^/]+)/?$ producto.php?slug=$1 [QSA,L]
     RewriteRule ^producto/([^/]+)/?$ producto.php?slug=$1 [QSA,L]
     RewriteRule ^productos/?$ tienda.html [QSA,L]

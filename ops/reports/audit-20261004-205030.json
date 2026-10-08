@@ -1,0 +1,280 @@
+{
+  "generated_at": "2026-10-04T20:50:30-05:00",
+  "mode": "static",
+  "root": "C:\\Users\\USER\\Desktop\\programs\\smartisp",
+  "detected_stack": {
+    "backend": "nodejs",
+    "frontend": "javascript",
+    "database": "postgresql",
+    "infra": [],
+    "observability": [],
+    "project_type": "fullstack",
+    "evidence": {
+      "backend": [
+        "package.json: backend framework"
+      ],
+      "frontend": [
+        "package.json"
+      ],
+      "database": [
+        "runtime/config references PostgreSQL"
+      ],
+      "infra": [],
+      "observability": []
+    }
+  },
+  "project_health_score": 60.8,
+  "stack_fit_score": 87.8,
+  "evidence_confidence": 44.2,
+  "categories": [
+    {
+      "id": "security",
+      "score": 20,
+      "confidence": 55,
+      "applicable": true,
+      "evidence": [
+        "vite.config.js",
+        "api/router.php",
+        "CORS wildcard"
+      ],
+      "findings": []
+    },
+    {
+      "id": "architecture",
+      "score": 76,
+      "confidence": 45,
+      "applicable": true,
+      "evidence": [
+        "source_files=16",
+        "large_files=3"
+      ],
+      "findings": []
+    },
+    {
+      "id": "code_quality",
+      "score": 88,
+      "confidence": 50,
+      "applicable": true,
+      "evidence": [
+        "todo_fixme_hack=4"
+      ],
+      "findings": []
+    },
+    {
+      "id": "maintainability",
+      "score": 74,
+      "confidence": 55,
+      "applicable": true,
+      "evidence": [
+        "README=True",
+        "docs=False"
+      ],
+      "findings": []
+    },
+    {
+      "id": "duplication",
+      "score": 90.7,
+      "confidence": 40,
+      "applicable": true,
+      "evidence": [
+        "approx_duplicate_ratio=0.037"
+      ],
+      "findings": []
+    },
+    {
+      "id": "dead_code",
+      "score": null,
+      "confidence": 15,
+      "applicable": true,
+      "evidence": [
+        "No language-specific dead-code analyzer executed"
+      ],
+      "findings": []
+    },
+    {
+      "id": "testing",
+      "score": 30,
+      "confidence": 55,
+      "applicable": true,
+      "evidence": [
+        "test_files=0",
+        "source_files=16"
+      ],
+      "findings": []
+    },
+    {
+      "id": "performance",
+      "score": 73,
+      "confidence": 30,
+      "applicable": true,
+      "evidence": [
+        "cache/redis references",
+        "SELECT * patterns"
+      ],
+      "findings": []
+    },
+    {
+      "id": "server_load",
+      "score": null,
+      "confidence": 0,
+      "applicable": true,
+      "evidence": [
+        "Runtime/load metrics not provided"
+      ],
+      "findings": []
+    },
+    {
+      "id": "seo",
+      "score": 92,
+      "confidence": 45,
+      "applicable": true,
+      "evidence": [
+        "sitemap",
+        "robots.txt",
+        "metadata/title",
+        "canonical/structured data"
+      ],
+      "findings": []
+    },
+    {
+      "id": "accessibility",
+      "score": 75,
+      "confidence": 25,
+      "applicable": true,
+      "evidence": [
+        "static semantic scan"
+      ],
+      "findings": []
+    },
+    {
+      "id": "database",
+      "score": 73,
+      "confidence": 45,
+      "applicable": true,
+      "evidence": [
+        "detected=postgresql",
+        "index definitions"
+      ],
+      "findings": []
+    },
+    {
+      "id": "devops",
+      "score": 45,
+      "confidence": 60,
+      "applicable": true,
+      "evidence": [],
+      "findings": []
+    },
+    {
+      "id": "observability",
+      "score": 35,
+      "confidence": 50,
+      "applicable": true,
+      "evidence": [],
+      "findings": []
+    },
+    {
+      "id": "resilience",
+      "score": 73,
+      "confidence": 30,
+      "applicable": true,
+      "evidence": [
+        "timeout",
+        "retry"
+      ],
+      "findings": []
+    },
+    {
+      "id": "dependencies",
+      "score": 85,
+      "confidence": 45,
+      "applicable": true,
+      "evidence": [
+        "package-lock.json"
+      ],
+      "findings": []
+    },
+    {
+      "id": "documentation",
+      "score": 75,
+      "confidence": 80,
+      "applicable": true,
+      "evidence": [
+        "README=True",
+        "docs=False"
+      ],
+      "findings": []
+    }
+  ],
+  "findings": [
+    {
+      "severity": "high",
+      "category": "security",
+      "message": "Posible secreto expuesto en vite.config.js",
+      "evidence": "vite.config.js"
+    },
+    {
+      "severity": "high",
+      "category": "security",
+      "message": "Posible secreto expuesto en api/router.php",
+      "evidence": "api/router.php"
+    },
+    {
+      "severity": "medium",
+      "category": "security",
+      "message": "CORS wildcard detectado; validar si es intencional.",
+      "evidence": "repository search"
+    },
+    {
+      "severity": "medium",
+      "category": "architecture",
+      "message": "3 archivos fuente superan 700 líneas; revisar hotspots antes de dividir por reflejo.",
+      "evidence": "server.js, api/mailer.php, api/router.php"
+    },
+    {
+      "severity": "high",
+      "category": "testing",
+      "message": "No se detectaron archivos de prueba.",
+      "evidence": "repository tree"
+    }
+  ],
+  "stack_fit": {
+    "score": 87.8,
+    "recommendation": "keep",
+    "dimensions": {
+      "personal_alignment": 95.0,
+      "team_familiarity": 80.0,
+      "project_fit": 90.0,
+      "operating_cost": 85.0,
+      "delivery_speed": 85.0,
+      "ecosystem_and_support": 85.0,
+      "migration_cost": 80.0,
+      "future_flexibility": 85.0
+    },
+    "components": [
+      {
+        "component": "backend",
+        "actual": "nodejs",
+        "score": 100,
+        "reason": "Coincide con el estándar primario"
+      },
+      {
+        "component": "frontend",
+        "actual": "javascript",
+        "score": 100,
+        "reason": "Coincide con el estándar primario"
+      },
+      {
+        "component": "database",
+        "actual": "postgresql",
+        "score": 85,
+        "reason": "Está dentro de las alternativas aceptadas"
+      }
+    ],
+    "warnings": []
+  },
+  "unknowns": [
+    "dead_code",
+    "server_load"
+  ]
+}

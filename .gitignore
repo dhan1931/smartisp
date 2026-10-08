@@ -7,3 +7,29 @@ dist/
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Tokens locales (nunca versionar)
+tokem.env
+*.token
+
+scripts/dev-db*.env
+
+# Volcados de base de datos (contienen datos reales; nunca versionar)
+*.sql
+*.sql.gz
+*.dump
+!migrations/*.sql
+!docs/MIGRACION-MANUAL-PRODUCCION.sql
+
+# Cache de imagenes del proxy (regenerable, no versionar)
+uploads/cache/
+
+# Uploads reales de productos subidos por el admin (contenido de usuario, no versionar)
+uploads/products/*
+!uploads/products/.gitkeep
+CLAUDE.md
+.npm-cache/
+.playwright-cli/
+output/
+api/public/
+api/uploads/

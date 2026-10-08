@@ -1,0 +1,981 @@
+{
+  "schema": "devflow.audit",
+  "schema_version": 1,
+  "devflow_version": "0.5.1",
+  "generated_at": "2026-10-05T14:24:28-05:00",
+  "mode": "static",
+  "root": "C:\\Users\\USER\\Desktop\\programs\\smartisp",
+  "detected_stack": {
+    "backend": "nodejs",
+    "frontend": "javascript",
+    "database": "postgresql",
+    "infra": [],
+    "observability": [],
+    "project_type": "fullstack",
+    "evidence": {
+      "backend": [
+        "package.json: backend framework"
+      ],
+      "frontend": [
+        "package.json"
+      ],
+      "database": [
+        "runtime/config references postgresql (34 matches; counts={'postgresql': 34, 'mariadb': 22, 'sqlite': 0})"
+      ],
+      "infra": [],
+      "observability": []
+    }
+  },
+  "project_health_score": 49.0,
+  "stack_fit_score": 87.8,
+  "evidence_confidence": 44.2,
+  "categories": [
+    {
+      "id": "security",
+      "score": 0,
+      "confidence": 55,
+      "applicable": true,
+      "evidence": [
+        "vite.config.js",
+        "api/router.php",
+        "CORS wildcard",
+        "server.js:1696",
+        "server.js:85",
+        "api/config.php:8",
+        "api/mailer.php:270",
+        "api/router.php:65",
+        "api/router.php:1650",
+        "api/router.php:92",
+        "api/router.php:1449",
+        "api/router.php:436",
+        "api/router.php:1678",
+        "api/router.php:109",
+        "scripts/import-intcomex-products.js:95",
+        "src/lib/mysqlClient.js:12",
+        "editor-catalogo.html:2112",
+        "editor-landing.html:3124",
+        "index.html:2210",
+        "tienda.html:2023",
+        ".htaccess"
+      ],
+      "findings": []
+    },
+    {
+      "id": "architecture",
+      "score": 76,
+      "confidence": 45,
+      "applicable": true,
+      "evidence": [
+        "source_files=16",
+        "large_files=3"
+      ],
+      "findings": []
+    },
+    {
+      "id": "code_quality",
+      "score": 88,
+      "confidence": 50,
+      "applicable": true,
+      "evidence": [
+        "todo_fixme_hack=4"
+      ],
+      "findings": []
+    },
+    {
+      "id": "maintainability",
+      "score": 84,
+      "confidence": 55,
+      "applicable": true,
+      "evidence": [
+        "README=True",
+        "docs=True"
+      ],
+      "findings": []
+    },
+    {
+      "id": "duplication",
+      "score": 90.7,
+      "confidence": 40,
+      "applicable": true,
+      "evidence": [
+        "approx_duplicate_ratio=0.037"
+      ],
+      "findings": []
+    },
+    {
+      "id": "dead_code",
+      "score": null,
+      "confidence": 15,
+      "applicable": true,
+      "evidence": [
+        "No language-specific dead-code analyzer executed"
+      ],
+      "findings": []
+    },
+    {
+      "id": "testing",
+      "score": 30,
+      "confidence": 55,
+      "applicable": true,
+      "evidence": [
+        "test_files=0",
+        "source_files=16"
+      ],
+      "findings": []
+    },
+    {
+      "id": "performance",
+      "score": 73,
+      "confidence": 30,
+      "applicable": true,
+      "evidence": [
+        "cache/redis references",
+        "SELECT * patterns"
+      ],
+      "findings": []
+    },
+    {
+      "id": "server_load",
+      "score": null,
+      "confidence": 0,
+      "applicable": true,
+      "evidence": [
+        "Runtime/load metrics not provided"
+      ],
+      "findings": []
+    },
+    {
+      "id": "seo",
+      "score": 92,
+      "confidence": 45,
+      "applicable": true,
+      "evidence": [
+        "sitemap",
+        "robots.txt",
+        "metadata/title",
+        "canonical/structured data"
+      ],
+      "findings": []
+    },
+    {
+      "id": "accessibility",
+      "score": 75,
+      "confidence": 25,
+      "applicable": true,
+      "evidence": [
+        "static semantic scan"
+      ],
+      "findings": []
+    },
+    {
+      "id": "database",
+      "score": 73,
+      "confidence": 45,
+      "applicable": true,
+      "evidence": [
+        "detected=postgresql",
+        "index definitions"
+      ],
+      "findings": []
+    },
+    {
+      "id": "devops",
+      "score": 45,
+      "confidence": 60,
+      "applicable": true,
+      "evidence": [],
+      "findings": []
+    },
+    {
+      "id": "observability",
+      "score": 35,
+      "confidence": 50,
+      "applicable": true,
+      "evidence": [],
+      "findings": []
+    },
+    {
+      "id": "resilience",
+      "score": 73,
+      "confidence": 30,
+      "applicable": true,
+      "evidence": [
+        "timeout",
+        "retry"
+      ],
+      "findings": []
+    },
+    {
+      "id": "dependencies",
+      "score": 85,
+      "confidence": 45,
+      "applicable": true,
+      "evidence": [
+        "package-lock.json"
+      ],
+      "findings": []
+    },
+    {
+      "id": "documentation",
+      "score": 95,
+      "confidence": 80,
+      "applicable": true,
+      "evidence": [
+        "README=True",
+        "docs=True"
+      ],
+      "findings": []
+    }
+  ],
+  "findings": [
+    {
+      "id": "FND-SECURITY_GENERIC_SECRET-45C6C7C5",
+      "fingerprint": "45c6c7c5867f5f278feed98859fd55768bfb80cc5bda2c15b5b965afed1a40f2",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.generic_secret",
+      "severity": "high",
+      "confidence": 70,
+      "status": "open",
+      "title": "Posible secreto expuesto en vite.config.js",
+      "description": "Posible secreto expuesto en vite.config.js",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "vite.config.js"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "vite.config.js"
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:13:59-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-SECURITY_GENERIC_SECRET-C2E6C5D7",
+      "fingerprint": "c2e6c5d7293a58364a5941335de949552a77388a03592e2e1135166dff172aa9",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.generic_secret",
+      "severity": "high",
+      "confidence": 70,
+      "status": "open",
+      "title": "Posible secreto expuesto en api/router.php",
+      "description": "Posible secreto expuesto en api/router.php",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "api/router.php"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "api/router.php"
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:13:59-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-SECURITY_CORS_WILDCARD-16DB4241",
+      "fingerprint": "16db4241774dce69e8084781308694cacfa1b98822c3bf23b333be7c0c7f0449",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.cors_wildcard",
+      "severity": "medium",
+      "confidence": 70,
+      "status": "open",
+      "title": "CORS wildcard detectado; validar si es intencional.",
+      "description": "CORS wildcard detectado; validar si es intencional.",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "repository search"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": null,
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:13:59-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-SECURITY_HARDCODED_CREDE-1206AC3F",
+      "fingerprint": "1206ac3f12463cc95fb957c5cd4459ae6a263f0d5ac3cd66581bd5a130eab68a",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.hardcoded_credential_check",
+      "severity": "critical",
+      "confidence": 80,
+      "status": "open",
+      "title": "La contraseña recibida se compara contra un literal: contraseña universal o puerta trasera. Eliminar el bypass.",
+      "description": "La contraseña recibida se compara contra un literal: contraseña universal o puerta trasera. Eliminar el bypass.",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "server.js:1696"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "server.js",
+        "line": 1696
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:24:28-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-SECURITY_TLS_VERIFICATIO-EFB4DBC0",
+      "fingerprint": "efb4dbc0266722a1e887c412746c0d368e8f07a7369679b475e13f2fbc841360",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.tls_verification_disabled",
+      "severity": "high",
+      "confidence": 85,
+      "status": "open",
+      "title": "La verificación del certificado TLS está desactivada; permite ataques de intermediario en llamadas salientes.",
+      "description": "La verificación del certificado TLS está desactivada; permite ataques de intermediario en llamadas salientes.",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "server.js:85"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "server.js",
+        "line": 85
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:24:28-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-SECURITY_SECRET_IN_ENV_F-9597C6C8",
+      "fingerprint": "9597c6c8e313541f030531ec4a55c29a694056dc9d61cdb0e9f43ad8700c5a6a",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.secret_in_env_fallback",
+      "severity": "high",
+      "confidence": 80,
+      "status": "open",
+      "title": "Un secreto tiene un valor literal como fallback de variable de entorno; queda versionado en el repo y su historial. Quitar el literal y rotar el secreto.",
+      "description": "Un secreto tiene un valor literal como fallback de variable de entorno; queda versionado en el repo y su historial. Quitar el literal y rotar el secreto.",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "api/config.php:8"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "api/config.php",
+        "line": 8
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:24:28-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-SECURITY_TLS_VERIFICATIO-F1D92940",
+      "fingerprint": "f1d92940787bd5db44a72d91e778e73420ab1cfeec844026845b55f4e0ce780c",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.tls_verification_disabled",
+      "severity": "high",
+      "confidence": 85,
+      "status": "open",
+      "title": "La verificación del certificado TLS está desactivada; permite ataques de intermediario en llamadas salientes.",
+      "description": "La verificación del certificado TLS está desactivada; permite ataques de intermediario en llamadas salientes.",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "api/mailer.php:270"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "api/mailer.php",
+        "line": 270
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:24:28-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-SECURITY_HARDCODED_SIGNI-7F8D7819",
+      "fingerprint": "7f8d781906b3bc14fe143b06e5b12e223026ba32985a66d301beabe1ff1ca062",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.hardcoded_signing_key",
+      "severity": "critical",
+      "confidence": 85,
+      "status": "open",
+      "title": "Clave de firma (HMAC/JWT/sesión) escrita en el código: permite forjar tokens a quien lea el repo. Mover a variable de entorno y rotar.",
+      "description": "Clave de firma (HMAC/JWT/sesión) escrita en el código: permite forjar tokens a quien lea el repo. Mover a variable de entorno y rotar.",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "api/router.php:65"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "api/router.php",
+        "line": 65
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:24:28-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-SECURITY_HARDCODED_CREDE-9A1F322F",
+      "fingerprint": "9a1f322fae7ac9304b446e12670aa2a38389e449c0c584b40fa0863a72b0d2d6",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.hardcoded_credential_check",
+      "severity": "critical",
+      "confidence": 80,
+      "status": "open",
+      "title": "La contraseña recibida se compara contra un literal: contraseña universal o puerta trasera. Eliminar el bypass.",
+      "description": "La contraseña recibida se compara contra un literal: contraseña universal o puerta trasera. Eliminar el bypass.",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "api/router.php:1650"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "api/router.php",
+        "line": 1650
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:24:28-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-SECURITY_AUTH_FROM_CLIEN-3142AC7C",
+      "fingerprint": "3142ac7cbb9cb943f7cfedf4ec3e034249c88203e2a18f08ea0f3927c49e776a",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.auth_from_client_header",
+      "severity": "critical",
+      "confidence": 60,
+      "status": "open",
+      "title": "La identidad o el rol se toma de una cabecera controlada por el cliente (p. ej. X-Admin-Email). [Inferencia] Confirmar si otorga sesión sin credenciales.",
+      "description": "La identidad o el rol se toma de una cabecera controlada por el cliente (p. ej. X-Admin-Email). [Inferencia] Confirmar si otorga sesión sin credenciales.",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "api/router.php:92"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "api/router.php",
+        "line": 92
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:24:28-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-SECURITY_SSRF_USER_URL-6481ADA0",
+      "fingerprint": "6481ada0739c08b6e07643bbde65beba746d47763ac2a943c03db92945ba8c5d",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.ssrf_user_url",
+      "severity": "medium",
+      "confidence": 55,
+      "status": "open",
+      "title": "El servidor hace una petición saliente a una URL controlada por el usuario sin lista de dominios permitidos (posible SSRF).",
+      "description": "El servidor hace una petición saliente a una URL controlada por el usuario sin lista de dominios permitidos (posible SSRF).",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "api/router.php:1449"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "api/router.php",
+        "line": 1449
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:24:28-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-SECURITY_SETTINGS_TABLE_-FECC4DAD",
+      "fingerprint": "fecc4dadee4432eaae5d3e87bcd296e3bcae90f1bec3fe83b96a56bab8a1957f",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.settings_table_exposure",
+      "severity": "high",
+      "confidence": 50,
+      "status": "open",
+      "title": "Se lee la tabla de settings completa sin tratar claves sensibles (smtp/api key/secret) cerca de la consulta; si la respuesta es pública expone credenciales. [Inferencia]",
+      "description": "Se lee la tabla de settings completa sin tratar claves sensibles (smtp/api key/secret) cerca de la consulta; si la respuesta es pública expone credenciales. [Inferencia]",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "api/router.php:436"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "api/router.php",
+        "line": 436
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:24:28-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-SECURITY_WEAK_PASSWORD_H-80B4759C",
+      "fingerprint": "80b4759c445e90862ad2d0366ed997c589786ad71abed1c42a478b71f6707a26",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.weak_password_hash",
+      "severity": "high",
+      "confidence": 75,
+      "status": "open",
+      "title": "Contraseñas procesadas con MD5/SHA1 sin sal ni coste; usar bcrypt, argon2 o password_hash.",
+      "description": "Contraseñas procesadas con MD5/SHA1 sin sal ni coste; usar bcrypt, argon2 o password_hash.",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "api/router.php:1678"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "api/router.php",
+        "line": 1678
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:24:28-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-SECURITY_TOKEN_IN_QUERY_-2B84E541",
+      "fingerprint": "2b84e5412c38b241e25b44715ff716e11a8ccaed4597b973a375888c757663a3",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.token_in_query_string",
+      "severity": "medium",
+      "confidence": 75,
+      "status": "open",
+      "title": "Credencial aceptada por query string: queda en logs, historial y referers. Aceptarla solo por cabecera.",
+      "description": "Credencial aceptada por query string: queda en logs, historial y referers. Aceptarla solo por cabecera.",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "api/router.php:109"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "api/router.php",
+        "line": 109
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:24:28-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-SECURITY_TLS_VERIFICATIO-C8610573",
+      "fingerprint": "c86105731e38076036cfbcf5457e0aad203722b387574a1b7429d8a012249847",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.tls_verification_disabled",
+      "severity": "high",
+      "confidence": 85,
+      "status": "open",
+      "title": "La verificación del certificado TLS está desactivada; permite ataques de intermediario en llamadas salientes.",
+      "description": "La verificación del certificado TLS está desactivada; permite ataques de intermediario en llamadas salientes.",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "scripts/import-intcomex-products.js:95"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "scripts/import-intcomex-products.js",
+        "line": 95
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:24:28-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-SECURITY_SECRET_IN_ENV_F-2D1895A2",
+      "fingerprint": "2d1895a270fa88a0f065d7fe974f246ddd88c9fdbb434f29799b2e32dfa845bf",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.secret_in_env_fallback",
+      "severity": "high",
+      "confidence": 80,
+      "status": "open",
+      "title": "Un secreto tiene un valor literal como fallback de variable de entorno; queda versionado en el repo y su historial. Quitar el literal y rotar el secreto.",
+      "description": "Un secreto tiene un valor literal como fallback de variable de entorno; queda versionado en el repo y su historial. Quitar el literal y rotar el secreto.",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "src/lib/mysqlClient.js:12"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "src/lib/mysqlClient.js",
+        "line": 12
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:24:28-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-SECURITY_XSS_SINKS-301E1BB3",
+      "fingerprint": "301e1bb3faf467133634e7a3cad7a0484f677504f8434f128690ae4fad79b100",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.xss_sinks",
+      "severity": "low",
+      "confidence": 45,
+      "status": "open",
+      "title": "6 asignaciones a innerHTML/document.write con datos interpolados; existe un helper de escape, revisar que se use en todos los campos de usuario.",
+      "description": "6 asignaciones a innerHTML/document.write con datos interpolados; existe un helper de escape, revisar que se use en todos los campos de usuario.",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "editor-catalogo.html:2112"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "editor-catalogo.html",
+        "line": 2112
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:24:28-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-SECURITY_XSS_SINKS-22A4BB0D",
+      "fingerprint": "22a4bb0d46334ff8e0c74adcd5cfb8d686be2e449837d9cf73b46337978e53b5",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.xss_sinks",
+      "severity": "low",
+      "confidence": 45,
+      "status": "open",
+      "title": "12 asignaciones a innerHTML/document.write con datos interpolados; existe un helper de escape, revisar que se use en todos los campos de usuario.",
+      "description": "12 asignaciones a innerHTML/document.write con datos interpolados; existe un helper de escape, revisar que se use en todos los campos de usuario.",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "editor-landing.html:3124"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "editor-landing.html",
+        "line": 3124
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:24:28-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-SECURITY_XSS_SINKS-DBBA09D3",
+      "fingerprint": "dbba09d334ca5f626a34fe2e93b35c2f0fe7858fa2edee552d9c6a360d276f3a",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.xss_sinks",
+      "severity": "low",
+      "confidence": 45,
+      "status": "open",
+      "title": "6 asignaciones a innerHTML/document.write con datos interpolados; existe un helper de escape, revisar que se use en todos los campos de usuario.",
+      "description": "6 asignaciones a innerHTML/document.write con datos interpolados; existe un helper de escape, revisar que se use en todos los campos de usuario.",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "index.html:2210"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "index.html",
+        "line": 2210
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:24:28-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-SECURITY_XSS_SINKS-262FC7FB",
+      "fingerprint": "262fc7fbb9388c1ce3f073c2f23275490aa44ef7fb774e57dc97098ac517092a",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.xss_sinks",
+      "severity": "low",
+      "confidence": 45,
+      "status": "open",
+      "title": "7 asignaciones a innerHTML/document.write con datos interpolados; existe un helper de escape, revisar que se use en todos los campos de usuario.",
+      "description": "7 asignaciones a innerHTML/document.write con datos interpolados; existe un helper de escape, revisar que se use en todos los campos de usuario.",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "tienda.html:2023"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "tienda.html",
+        "line": 2023
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:24:28-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-SECURITY_WEB_ROOT_EXPOSU-D3515921",
+      "fingerprint": "d3515921ccf2ae1e63df6000f6e4336382cae68f9f6da31a24cdbabcfa692f09",
+      "project_id": "smartisp-ecomerce",
+      "category": "security",
+      "rule_id": "security.web_root_exposure",
+      "severity": "medium",
+      "confidence": 50,
+      "status": "open",
+      "title": ".htaccess no bloquea archivos internos (server.js, package.json, .devflow.yml, ops, docs, vite.config.js); si el sitio se sirve desde la raíz serían descargables. [Inferencia] Confirmar en el servidor.",
+      "description": ".htaccess no bloquea archivos internos (server.js, package.json, .devflow.yml, ops, docs, vite.config.js); si el sitio se sirve desde la raíz serían descargables. [Inferencia] Confirmar en el servidor.",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": ".htaccess"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": ".htaccess"
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:24:28-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-ARCHITECTURE_LARGE_FILES-8F11687A",
+      "fingerprint": "8f11687af53738cbbe3fd616d531d2d4e825ebcdac9137de4728430dc6882718",
+      "project_id": "smartisp-ecomerce",
+      "category": "architecture",
+      "rule_id": "architecture.large_files",
+      "severity": "medium",
+      "confidence": 70,
+      "status": "open",
+      "title": "3 archivos fuente superan 700 líneas; revisar hotspots antes de dividir por reflejo.",
+      "description": "3 archivos fuente superan 700 líneas; revisar hotspots antes de dividir por reflejo.",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "server.js, api/mailer.php, api/router.php"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": {
+        "file": "server.js, api/mailer.php, api/router.php"
+      },
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:13:59-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    },
+    {
+      "id": "FND-TESTING_NO_TESTS-5DE335A5",
+      "fingerprint": "5de335a51bbdf5c2e819cf8be83e94de740dcfacfb6505afddfaafeb0e5dcd69",
+      "project_id": "smartisp-ecomerce",
+      "category": "testing",
+      "rule_id": "testing.no_tests",
+      "severity": "high",
+      "confidence": 70,
+      "status": "open",
+      "title": "No se detectaron archivos de prueba.",
+      "description": "No se detectaron archivos de prueba.",
+      "evidence": [
+        {
+          "type": "static",
+          "source": "devflow",
+          "value": "repository tree"
+        }
+      ],
+      "repository_id": "smartisp-ecomerce",
+      "location": null,
+      "recommendation": null,
+      "first_seen_at": "2026-10-05T14:13:59-05:00",
+      "last_seen_at": "2026-10-05T14:24:28-05:00",
+      "resolved_at": null,
+      "source": "devflow.static-core",
+      "regressed": false,
+      "waiver": null
+    }
+  ],
+  "stack_fit": {
+    "score": 87.8,
+    "recommendation": "keep",
+    "dimensions": {
+      "personal_alignment": 95.0,
+      "team_familiarity": 80.0,
+      "project_fit": 90.0,
+      "operating_cost": 85.0,
+      "delivery_speed": 85.0,
+      "ecosystem_and_support": 85.0,
+      "migration_cost": 80.0,
+      "future_flexibility": 85.0
+    },
+    "components": [
+      {
+        "component": "backend",
+        "actual": "nodejs",
+        "score": 100,
+        "reason": "Coincide con el estándar primario"
+      },
+      {
+        "component": "frontend",
+        "actual": "javascript",
+        "score": 100,
+        "reason": "Coincide con el estándar primario"
+      },
+      {
+        "component": "database",
+        "actual": "postgresql",
+        "score": 85,
+        "reason": "Está dentro de las alternativas aceptadas"
+      }
+    ],
+    "warnings": []
+  },
+  "unknowns": [
+    "dead_code",
+    "server_load"
+  ],
+  "finding_reconciliation": {
+    "new": 18,
+    "persistent": 5,
+    "fixed": 0,
+    "regressed": 0
+  },
+  "finding_history_file": "ops/findings.json"
+}

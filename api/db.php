@@ -207,6 +207,13 @@ function ensureProductTableColumns(PDO $pdo, string $tableName): void {
                 $pdo->exec("ALTER TABLE `$tableName` ADD COLUMN `$col` $cleanDef");
             }
         }
+        // Índice para que el catálogo filtre/pagine en el servidor de BD en vez de en PHP (DEV-20261005-022).
+        try {
+            $pdo->exec("ALTER TABLE `$tableName` ADD INDEX IF NOT EXISTS idx_visible_created (visible, created_at)");
+        } catch (Throwable $e) {
+            error_log('ensureProductTableColumns (indice) warning: ' . $e->getMessage());
+        }
+
         $ensured[$tableName] = true;
     } catch (Throwable $e) {
         error_log('ensureProductTableColumns warning: ' . $e->getMessage());

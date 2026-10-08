@@ -5,15 +5,16 @@ import sharp from 'sharp';
 // Official high-resolution 1024x1024 master logo provided by user
 const sourceImage = 'C:/Users/Dhan/.gemini/antigravity/brain/9a42d29a-f497-4d7f-8299-55fbf5c57fe5/.user_uploaded/media_1790567687952.jpg';
 
+// Único origen de favicons/logos: assets/favicons y assets/img (DEV-20261005-035). Antes este
+// script escribía cada archivo dos veces (raíz y public/), que es como se originó la
+// duplicación que se limpió en ese commit; no volver a eso.
 const rootDir = path.resolve('.');
-const publicDir = path.resolve('public');
-const imagesDir = path.resolve('public/images');
+const faviconsDir = path.resolve('assets/favicons');
+const imagesDir = path.resolve('assets/img');
+const assetsDir = path.resolve('assets');
 
-if (!fs.existsSync(publicDir)) {
-  fs.mkdirSync(publicDir, { recursive: true });
-}
-if (!fs.existsSync(imagesDir)) {
-  fs.mkdirSync(imagesDir, { recursive: true });
+for (const dir of [faviconsDir, imagesDir]) {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
 async function generate() {
@@ -25,9 +26,8 @@ async function generate() {
 
   // 1. Save master copies in the repository
   const master1024 = await sharp(sourceImage).png({ quality: 100 }).toBuffer();
-  fs.writeFileSync(path.join(imagesDir, 'smartisp-logo-master.png'), master1024);
-  fs.writeFileSync(path.join(publicDir, 'logo.png'), master1024);
-  console.log('Saved master copies to public/images/smartisp-logo-master.png and public/logo.png');
+  fs.writeFileSync(path.join(imagesDir, 'logo.png'), master1024);
+  console.log('Saved master copy to assets/img/logo.png');
 
   // 2. Create the circular transparent mask
   // The cyan glowing outer ring has its edge at radius 464, centered at (508, 508).
@@ -43,8 +43,7 @@ async function generate() {
     .png({ compressionLevel: 9 })
     .toBuffer();
 
-  fs.writeFileSync(path.join(imagesDir, 'smartisp-logo-circle.png'), circularMaster);
-  fs.writeFileSync(path.join(publicDir, 'logo-circle.png'), circularMaster);
+  fs.writeFileSync(path.join(imagesDir, 'logo-circle.png'), circularMaster);
   console.log('Generated master circular transparent image');
 
   // 3. Generate individual favicon sizes
@@ -74,10 +73,8 @@ async function generate() {
     }
 
     const buf = await pipeline.png({ compressionLevel: 9 }).toBuffer();
-    
-    // Save to root and public
-    fs.writeFileSync(path.join(rootDir, item.name), buf);
-    fs.writeFileSync(path.join(publicDir, item.name), buf);
+
+    fs.writeFileSync(path.join(faviconsDir, item.name), buf);
     console.log(`Generated: ${item.name} (${item.size}x${item.size})`);
   }
 
@@ -117,8 +114,7 @@ async function generate() {
   }
 
   const icoBuffer = Buffer.concat([header, ...dirEntries, ...icoPngs]);
-  fs.writeFileSync(path.join(rootDir, 'favicon.ico'), icoBuffer);
-  fs.writeFileSync(path.join(publicDir, 'favicon.ico'), icoBuffer);
+  fs.writeFileSync(path.join(faviconsDir, 'favicon.ico'), icoBuffer);
   console.log('Generated: favicon.ico (multi-resolution 16x16, 32x32, 48x48)');
 
   // 5. Generate vector favicon.svg with embedded high-res circular logo
@@ -126,8 +122,7 @@ async function generate() {
   const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="100%" height="100%">
   <image href="data:image/png;base64,${base64CirclePng}" width="1024" height="1024"/>
 </svg>`;
-  fs.writeFileSync(path.join(rootDir, 'favicon.svg'), svgContent);
-  fs.writeFileSync(path.join(publicDir, 'favicon.svg'), svgContent);
+  fs.writeFileSync(path.join(faviconsDir, 'favicon.svg'), svgContent);
   console.log('Generated: favicon.svg (vector wrapper for high-res rendering)');
 
   // 6. Generate site.webmanifest and manifest.json
@@ -141,55 +136,51 @@ async function generate() {
     theme_color: '#102c3d',
     icons: [
       {
-        src: '/favicon-48x48.png',
+        src: '/assets/favicons/favicon-48x48.png',
         sizes: '48x48',
         type: 'image/png'
       },
       {
-        src: '/favicon-96x96.png',
+        src: '/assets/favicons/favicon-96x96.png',
         sizes: '96x96',
         type: 'image/png'
       },
       {
-        src: '/favicon-144x144.png',
+        src: '/assets/favicons/favicon-144x144.png',
         sizes: '144x144',
         type: 'image/png'
       },
       {
-        src: '/favicon-192x192.png',
+        src: '/assets/favicons/favicon-192x192.png',
         sizes: '192x192',
         type: 'image/png'
       },
       {
-        src: '/favicon-512x512.png',
+        src: '/assets/favicons/favicon-512x512.png',
         sizes: '512x512',
         type: 'image/png'
       }
     ]
   }, null, 2);
 
-  fs.writeFileSync(path.join(rootDir, 'site.webmanifest'), manifestContent);
-  fs.writeFileSync(path.join(publicDir, 'site.webmanifest'), manifestContent);
-  fs.writeFileSync(path.join(rootDir, 'manifest.json'), manifestContent);
-  fs.writeFileSync(path.join(publicDir, 'manifest.json'), manifestContent);
-  console.log('Generated: site.webmanifest and manifest.json');
+  fs.writeFileSync(path.join(assetsDir, 'site.webmanifest'), manifestContent);
+  fs.writeFileSync(path.join(assetsDir, 'manifest.json'), manifestContent);
+  console.log('Generated: assets/site.webmanifest and assets/manifest.json');
 
   // 7. Generate robots.txt ensuring Googlebot and Googlebot-Image have full access to favicons
   const robotsContent = `# Robots.txt for SmartISP
 User-agent: *
 Allow: /
-Allow: /favicon.ico
-Allow: /favicon.svg
-Allow: /favicon*.png
-Allow: /apple-touch-icon*.png
-Allow: /site.webmanifest
-Allow: /manifest.json
+Allow: /assets/favicons/
+Allow: /assets/site.webmanifest
+Allow: /assets/manifest.json
 
 Sitemap: https://smart-isp.com.ec/sitemap.xml
 `;
 
+  // robots.txt sigue duplicado entre la raíz y public/ (sin tocar hoy: fuera del alcance de
+  // este commit, que es solo favicons/imágenes); se escribe donde ya se escribía en la raíz.
   fs.writeFileSync(path.join(rootDir, 'robots.txt'), robotsContent);
-  fs.writeFileSync(path.join(publicDir, 'robots.txt'), robotsContent);
   console.log('Generated: robots.txt with Googlebot favicon access permissions');
 
   console.log('All favicons and metadata generated successfully from 1024x1024 source!');

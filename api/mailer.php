@@ -14,26 +14,32 @@
 // ------------------------------------------------------------------
 function getMailSettings(PDO $pdo, ?array $override = null): array {
     $defaults = [
-        'admin_email'    => 'gestion@smart-isp.es',
+        'admin_email'    => '',
         'smtp_provider'  => 'hostinger',
-        'smtp_host'      => 'smtp.hostinger.com',
+        'smtp_host'      => '',
         'smtp_port'      => 465,
         'smtp_user'      => '',
         'smtp_pass'      => '',
-        'smtp_from'      => 'SmartISP <notificaciones@smart-isp.com.ec>',
+        'smtp_from'      => '',
         'smtp_secure'    => 'true',
         'resend_api_key' => '',
         'email_from'     => ''
     ];
 
+    // DEV-20261005-023: la configuración de correo vive en su propia tabla (fila única,
+    // mail_settings), no mezclada en settings_rows con el contenido de la landing y el resto
+    // de parámetros. topbar_email no es de aquí (es un texto que se muestra en el sitio
+    // público); sigue en settings_rows, lo lee landing-content.
     try {
-        $stmt = $pdo->query("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows WHERE setting_key LIKE 'smtp_%' OR setting_key = 'admin_email' OR setting_key = 'email_from' OR setting_key LIKE 'resend_%' OR setting_key = 'topbar_email'");
-        $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
-        foreach ($rows as $r) {
-            $k = $r['key'] ?? '';
-            $v = trim((string)($r['value'] ?? ''));
-            if ($k && $v !== '') {
-                $defaults[$k] = $v;
+        $row = $pdo->query('SELECT * FROM mail_settings WHERE id = 1')->fetch(PDO::FETCH_ASSOC);
+        if ($row) {
+            foreach ($row as $k => $v) {
+                if ($k === 'id' || $k === 'updated_at') continue;
+                if ($k === 'smtp_secure') {
+                    $defaults[$k] = ((string)$v === '1') ? 'true' : 'false';
+                } elseif ($v !== null && $v !== '') {
+                    $defaults[$k] = (string)$v;
+                }
             }
         }
     } catch (Throwable $e) {
@@ -42,6 +48,28 @@ function getMailSettings(PDO $pdo, ?array $override = null): array {
 
     if (!empty($defaults['email_from']) && empty($defaults['smtp_from'])) {
         $defaults['smtp_from'] = $defaults['email_from'];
+    }
+
+    // Variables de entorno (.env, ignorado por git) ganan sobre lo guardado en settings_rows:
+    // mismo criterio que api/config.php para MySQL. Evita que la contraseña SMTP real tenga
+    // que vivir en la base de datos (ver SEC-016 en ops/SECURITY.md).
+    $envMap = [
+        'admin_email'    => 'ADMIN_EMAIL',
+        'smtp_provider'  => 'SMTP_PROVIDER',
+        'smtp_host'      => 'SMTP_HOST',
+        'smtp_port'      => 'SMTP_PORT',
+        'smtp_user'      => 'SMTP_USER',
+        'smtp_pass'      => 'SMTP_PASS',
+        'smtp_from'      => 'SMTP_FROM',
+        'smtp_secure'    => 'SMTP_SECURE',
+        'resend_api_key' => 'RESEND_API_KEY',
+        'email_from'     => 'EMAIL_FROM',
+    ];
+    foreach ($envMap as $settingKey => $envName) {
+        $envValue = getenv($envName);
+        if ($envValue !== false && $envValue !== '') {
+            $defaults[$settingKey] = $envValue;
+        }
     }
 
     if (is_array($override)) {
@@ -331,7 +359,10 @@ function sendSmartEmail(
     $user = trim($cfg['smtp_user'] ?? '');
     $pass = trim($cfg['smtp_pass'] ?? '');
     $port = (int)($cfg['smtp_port'] ?? 465);
-    $from = trim($cfg['smtp_from'] ?? 'SmartISP <notificaciones@smart-isp.com.ec>');
+    $from = trim($cfg['smtp_from'] ?? '');
+    if ($from === '' && $user !== '') {
+        $from = 'SmartISP <' . $user . '>';
+    }
     $isSecure = ($cfg['smtp_secure'] === 'true' || $cfg['smtp_secure'] === true || $port === 465);
 
     if ($host !== '' && $user !== '') {
@@ -766,7 +797,7 @@ function sendOrderEmails(PDO $pdo, array $orderData): array {
 
     // 2. Envío al Administrador
     $cfg = getMailSettings($pdo);
-    $adminEmail = trim($cfg['admin_email'] ?? 'admin@smart-isp.com.ec');
+    $adminEmail = trim($cfg['admin_email'] ?? '');
     if ($adminEmail !== '' && filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
         try {
             $adminHtml = buildAdminAlertHtml($orderData);
@@ -785,6 +816,70 @@ function sendOrderEmails(PDO $pdo, array $orderData): array {
     }
 
     return $results;
+}
+
+// ------------------------------------------------------------------
+// 6.1. NOTIFICACIÓN DE CAMBIO DE ESTADO DE PEDIDO (DEV-20261005-019, centro de pedidos)
+// ------------------------------------------------------------------
+
+const ORDER_STATUS_LABELS = [
+    'quote_requested' => 'Cotización solicitada',
+    'pending'          => 'Pendiente de pago',
+    'paid'             => 'Pago confirmado',
+    'preparing'        => 'Preparando tu pedido',
+    'shipped'          => 'Enviado / listo para retiro',
+    'delivered'        => 'Entregado',
+    'cancelled'        => 'Cancelado',
+    'received'         => 'Recibido',
+];
+
+function buildOrderStatusUpdateHtml(array $order, string $toStatus, string $note = ''): string {
+    $orderId = htmlspecialchars($order['id'] ?? '', ENT_QUOTES, 'UTF-8');
+    $customerName = htmlspecialchars($order['customer_name'] ?? ($order['customerName'] ?? 'Cliente'), ENT_QUOTES, 'UTF-8');
+    $statusLabel = htmlspecialchars(ORDER_STATUS_LABELS[$toStatus] ?? $toStatus, ENT_QUOTES, 'UTF-8');
+    $noteHtml = trim($note) !== ''
+        ? '<p style="margin:14px 0 0;color:#163342;font-size:13px;background:#f3f9f8;border:1px solid #cce8e2;border-radius:8px;padding:12px 14px;"><b>Nota del equipo:</b> ' . htmlspecialchars($note, ENT_QUOTES, 'UTF-8') . '</p>'
+        : '';
+
+    return "
+    <!DOCTYPE html>
+    <html lang=\"es\">
+    <head><meta charset=\"UTF-8\"></head>
+    <body style=\"margin:0;padding:20px 10px;background-color:#f0f4f6;font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;color:#163342;\">
+        <table align=\"center\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width:560px;margin:0 auto;background-color:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(16,44,61,0.08);border:1px solid #d8e5e7;\">
+            <tr><td style=\"background:linear-gradient(120deg,#102c3d,#075d7d);padding:22px 28px;\">
+                <span style=\"color:#b7d4dc;font-size:12px;letter-spacing:.06em;text-transform:uppercase;\">SmartISP · Pedido $orderId</span>
+                <h2 style=\"margin:6px 0 0;color:#ffffff;font-size:20px;\">Actualización de tu pedido</h2>
+            </td></tr>
+            <tr><td style=\"padding:26px 28px;\">
+                <p style=\"margin:0 0 14px;font-size:14px;\">Hola $customerName, el estado de tu pedido <b>#$orderId</b> cambió a:</p>
+                <div style=\"display:inline-block;background:#e0f2fe;color:#075d7d;font-weight:700;font-size:15px;padding:8px 16px;border-radius:20px;\">$statusLabel</div>
+                $noteHtml
+                <p style=\"margin:20px 0 0;color:#6b7f88;font-size:12px;\">Si tienes alguna pregunta, responde este correo o escríbenos por WhatsApp.</p>
+            </td></tr>
+        </table>
+    </body>
+    </html>";
+}
+
+function sendOrderStatusUpdateEmail(PDO $pdo, array $order, string $toStatus, string $note = ''): array {
+    $customerEmail = trim($order['customer_email'] ?? ($order['customerEmail'] ?? ''));
+    if ($customerEmail === '' || !filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) {
+        return ['ok' => false, 'error' => 'Correo de cliente no válido o ausente'];
+    }
+    $orderId = trim($order['id'] ?? '');
+    $statusLabel = ORDER_STATUS_LABELS[$toStatus] ?? $toStatus;
+    try {
+        return sendSmartEmail(
+            $pdo,
+            $customerEmail,
+            "📦 Pedido #$orderId: $statusLabel - SmartISP",
+            buildOrderStatusUpdateHtml($order, $toStatus, $note)
+        );
+    } catch (Throwable $e) {
+        error_log("Fallo al enviar correo de cambio de estado ($customerEmail): " . $e->getMessage());
+        return ['ok' => false, 'error' => $e->getMessage()];
+    }
 }
 
 // ------------------------------------------------------------------

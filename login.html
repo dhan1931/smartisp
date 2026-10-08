@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iniciar sesión · SmartISP</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="/assets/favicons/favicon.svg">
+<style>
+  :root { --ink: #163342; --muted: #6b7f88; --line: #d8e5e7; --pale: #eef5f6; --blue: #087ea4; --blue-dark: #075d7d; --danger: #a53b3b; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px;
+    color: var(--ink); font: 15px/1.5 Arial, sans-serif;
+    background: radial-gradient(circle at 90% 0, #d6f1ee 0, transparent 34%), var(--pale);
+  }
+  .card { width: min(420px, 100%); background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 32px; box-shadow: 0 12px 30px rgba(16, 44, 61, .1); }
+  .card h1 { margin: 0 0 4px; font-size: 22px; }
+  .card p.sub { margin: 0 0 24px; color: var(--muted); font-size: 13px; }
+  label { display: block; margin: 14px 0; color: var(--muted); font-size: 13px; font-weight: 700; }
+  input { width: 100%; margin-top: 7px; padding: 11px 12px; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; background: #fbfefe; }
+  input:focus { outline: 0; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(8, 126, 164, .12); }
+  .checkbox-row { display: flex; align-items: center; gap: 8px; margin: 14px 0 20px; font-size: 13px; color: var(--muted); }
+  .checkbox-row input { width: auto; margin: 0; }
+  button[type="submit"] { width: 100%; padding: 12px 16px; color: #fff; border: 0; border-radius: 8px; background: var(--blue); font-weight: 700; font-size: 14px; cursor: pointer; transition: background .15s; }
+  button[type="submit"]:hover { background: var(--blue-dark); }
+  button[type="submit"]:disabled { opacity: .6; cursor: default; }
+  .message { display: none; margin: 14px 0 0; padding: 11px; border-radius: 8px; font-size: 13px; }
+  .message.show { display: block; }
+  .message.error { color: var(--danger); background: #fff0f0; }
+  .links { margin-top: 20px; text-align: center; font-size: 13px; color: var(--muted); }
+  .links a { color: var(--blue); text-decoration: none; font-weight: 700; }
+  .links a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+  <main class="card">
+    <h1>Iniciar sesión</h1>
+    <p class="sub">Un solo acceso para clientes y administradores. El rol lo decide el servidor, no esta página.</p>
+
+    <form id="loginForm" autocomplete="on">
+      <label>Correo
+        <input type="email" name="email" autocomplete="username" required>
+      </label>
+      <label>Contraseña
+        <input type="password" name="password" autocomplete="current-password" required>
+      </label>
+      <div class="checkbox-row">
+        <input type="checkbox" id="remember" checked>
+        <label for="remember" style="margin:0;color:inherit;font-weight:400;">Mantener la sesión en este dispositivo</label>
+      </div>
+      <div id="loginMessage" class="message" role="status"></div>
+      <button type="submit" id="loginSubmit">Entrar</button>
+    </form>
+
+    <p class="links">
+      ¿No tienes cuenta? <a href="/tienda.html">Regístrate en la tienda</a><br>
+      <a href="/reset-password.html">¿Olvidaste tu contraseña?</a>
+    </p>
+  </main>
+
+  <script>
+    (function () {
+      'use strict';
+      var form = document.getElementById('loginForm');
+      var submitBtn = document.getElementById('loginSubmit');
+      var message = document.getElementById('loginMessage');
+
+      function showMessage(text, isError) {
+        message.textContent = text;
+        message.className = 'message show' + (isError ? ' error' : '');
+      }
+
+      function targetFor(role) {
+        var params = new URLSearchParams(window.location.search);
+        var redirect = params.get('redirect');
+        if (redirect && redirect.startsWith('/')) return redirect;
+        return role === 'admin' ? '/admin.html' : '/tienda.html';
+      }
+
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        submitBtn.disabled = true;
+        message.className = 'message';
+
+        var email = form.email.value.trim().toLowerCase();
+        var password = form.password.value;
+
+        fetch('/api/auth/login', {
+          method: 'POST',
+          credentials: 'include', // la sesión real queda en una cookie del backend
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, password: password })
+        })
+          .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+          .then(function (result) {
+            if (!result.ok) {
+              showMessage(result.data.error || 'No se pudo iniciar sesión.', true);
+              submitBtn.disabled = false;
+              return;
+            }
+            var user = result.data.user;
+            // Puente transicional mientras el resto del panel migra de localStorage a la cookie
+            // de sesión real (DEV-20261005-002). La fuente de verdad es el backend, no esto.
+            try {
+              var storage = document.getElementById('remember').checked ? localStorage : sessionStorage;
+              if (result.data.token) storage.setItem('smartisp.adminToken', result.data.token);
+              storage.setItem('smartisp.accountUser', JSON.stringify(user));
+            } catch (e) { /* almacenamiento bloqueado; no impide continuar */ }
+
+            window.location.href = targetFor(user.role);
+          })
+          .catch(function () {
+            showMessage('No se pudo conectar con el servidor.', true);
+            submitBtn.disabled = false;
+          });
+      });
+    })();
+  </script>
+</body>
+</html>

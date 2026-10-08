@@ -5,17 +5,17 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta name="description" content="SmartISP: Conoce nuestra empresa de infraestructura TI, redes de fibra óptica, servidores y telecomunicaciones. Contactos y tienda online oficial.">
 	<title>Editor Visual | Página de Presentación SmartISP</title>
-	<link rel="icon" href="/favicon.ico" sizes="any">
-	<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-	<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
-	<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
-	<link rel="icon" type="image/png" sizes="144x144" href="/favicon-144x144.png">
-	<link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png">
-	<link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png">
-	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-	<link rel="manifest" href="/site.webmanifest">
+	<link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
+	<link rel="icon" type="image/svg+xml" href="/assets/favicons/favicon.svg">
+	<link rel="icon" type="image/png" sizes="16x16" href="/assets/favicons/favicon-16x16.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicons/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="48x48" href="/assets/favicons/favicon-48x48.png">
+	<link rel="icon" type="image/png" sizes="96x96" href="/assets/favicons/favicon-96x96.png">
+	<link rel="icon" type="image/png" sizes="144x144" href="/assets/favicons/favicon-144x144.png">
+	<link rel="icon" type="image/png" sizes="192x192" href="/assets/favicons/favicon-192x192.png">
+	<link rel="icon" type="image/png" sizes="512x512" href="/assets/favicons/favicon-512x512.png">
+	<link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
+	<link rel="manifest" href="/assets/site.webmanifest">
 	<meta name="theme-color" content="#102c3d">
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1207,7 +1207,7 @@
 			align-items: center;
 			justify-content: space-between;
 			padding: 0 20px;
-			z-index: 99999;
+			z-index: 2000;
 			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 			font-family: 'DM Sans', sans-serif;
 		}
@@ -1927,6 +1927,9 @@
 	</style>
 </head>
 <body>
+	<link rel="stylesheet" href="/assets/css/admin-nav.css">
+	<div id="smartisp-admin-nav" class="is-loading" data-active="contenido"></div>
+	<script src="/assets/js/admin-nav.js" defer></script>
 
 	<!-- TOP BAR EDITOR VISUAL -->
 	<header id="editorTopBar" class="editor-top-bar">
@@ -1943,19 +1946,19 @@
 
 		<div class="editor-actions-group">
 			<button type="button" class="editor-action-btn secondary" id="openLogoModalBtn" title="Cambiar logotipo independiente de la presentación">
-				<span>🖼️ Logo de Presentación</span>
+				<i data-lucide="image" width="14"></i><span>Logo de Presentación</span>
 			</button>
 			<button type="button" class="editor-action-btn primary" id="saveLandingChangesBtn" title="Guardar todos los cambios en el servidor (Ctrl+S)">
-				<span>💾 Guardar Cambios</span>
+				<i data-lucide="save" width="14"></i><span>Guardar Cambios</span>
 			</button>
 			<a href="index.html" target="_blank" class="editor-action-btn outline" title="Ver cómo luce la página para los clientes">
-				<span>👁️ Ver en Vivo ↗</span>
+				<i data-lucide="external-link" width="14"></i><span>Ver en Vivo</span>
 			</a>
 			<button type="button" class="editor-action-btn danger" id="resetLandingDefaultsBtn" title="Restablecer textos, cuadros y logo a valores originales">
-				<span>↩️ Restaurar</span>
+				<i data-lucide="rotate-ccw" width="14"></i><span>Restaurar</span>
 			</button>
 			<a href="admin.html" class="editor-action-btn subtle" title="Regresar al panel de control">
-				<span>🚪 Volver al Admin</span>
+				<i data-lucide="arrow-left" width="14"></i><span>Volver al Admin</span>
 			</a>
 		</div>
 	</header>
@@ -1963,13 +1966,13 @@
 	<!-- FLOATING TEXT FORMATTING TOOLBAR -->
 	<div id="floatingFormatBar" class="floating-format-bar">
 		<button type="button" class="format-btn" id="formatSizeToggleBtn" title="Modificar tamaño de texto">
-			<span>🔤 Tamaño: <span id="currentSizeLabel">16px</span> ▼</span>
+			<i data-lucide="type" width="13"></i><span>Tamaño: <span id="currentSizeLabel">16px</span></span>
 		</button>
 		<button type="button" class="format-btn" id="stepDownSizeBtn" title="Reducir tamaño (A-)">A-</button>
 		<button type="button" class="format-btn" id="stepUpSizeBtn" title="Aumentar tamaño (A+)">A+</button>
 		<div class="format-divider"></div>
 		<button type="button" class="format-btn" id="formatColorToggleBtn" title="Cambiar color del texto">
-			<span>🎨 Color ▼</span>
+			<i data-lucide="palette" width="13"></i><span>Color</span>
 		</button>
 		<div class="format-divider"></div>
 		<button type="button" class="format-btn" id="boldToggleBtn" title="Negrita (B)"><b>B</b></button>
@@ -2020,7 +2023,7 @@
 	<!-- ICON PICKER POPOVER -->
 	<div class="icon-picker-popover" id="iconPickerPopover">
 		<div class="icon-picker-head">
-			<span>🎨 Cambiar Icono del Cuadro</span>
+			<span>Cambiar Icono del Cuadro</span>
 			<button type="button" class="icon-picker-close" id="closeIconPickerBtn" title="Cerrar">&times;</button>
 		</div>
 		<div class="icon-picker-grid" id="iconPickerGrid"></div>
@@ -2030,26 +2033,26 @@
 	<div class="editor-modal-overlay" id="landingLogoModal">
 		<div class="editor-modal-card" style="max-width:660px;">
 			<div class="editor-modal-head">
-				<h3><span>🎨</span> Logotipo de la Página de Presentación</h3>
+				<h3><i data-lucide="image" width="18"></i> Logotipo de la Página de Presentación</h3>
 				<button type="button" class="editor-modal-close-btn" id="closeLogoModalBtn">&times;</button>
 			</div>
 			<div class="editor-modal-body">
 				<div style="background:#e0f2fe; border:1px solid #bae6fd; border-radius:8px; padding:10px 14px; font-size:12px; color:#0369a1; margin-bottom:14px; display:flex; gap:8px; line-height:1.4;">
-					<span>ℹ️</span>
+					<span>Info</span>
 					<span><strong>Personalización independiente:</strong> Ahora puedes configurar un logo para el <b>fondo claro (menú superior)</b> y otro para el <b>fondo oscuro (pie de página / footer)</b> con tamaños ampliados hasta 140px.</span>
 				</div>
 
 				<div class="modal-tabs" style="margin-bottom:16px;">
-					<button type="button" class="modal-tab-btn active" id="tabLogoLightBtn">☀️ Logo Fondo Claro (Navbar)</button>
-					<button type="button" class="modal-tab-btn" id="tabLogoDarkBtn">🌙 Logo Fondo Oscuro (Footer)</button>
-					<button type="button" class="modal-tab-btn" id="tabLogoTextBtn">✍️ Modo Texto</button>
+					<button type="button" class="modal-tab-btn active" id="tabLogoLightBtn">Logo Fondo Claro (Navbar)</button>
+					<button type="button" class="modal-tab-btn" id="tabLogoDarkBtn">Logo Fondo Oscuro (Footer)</button>
+					<button type="button" class="modal-tab-btn" id="tabLogoTextBtn">Modo Texto</button>
 				</div>
 
 				<!-- Panel Modo Imagen Claro (Navbar) -->
 				<div id="modalLogoLightPanel">
 					<div class="logo-drop-box" id="modalLogoDropBox">
 						<div id="modalLogoPrompt">
-							<span style="font-size:28px;">🖼️</span>
+							<i data-lucide="image-plus" width="28"></i>
 							<div style="font-weight:700; font-size:13.5px; color:var(--ink); margin-top:8px;">
 								Arrastra tu logotipo para fondo claro aquí o haz clic para seleccionarlo
 							</div>
@@ -2057,7 +2060,7 @@
 								Se muestra en la barra superior blanca. Recomendado: <b>PNG con fondo transparente</b>.
 							</div>
 							<button type="button" class="editor-action-btn secondary" id="modalSelectFileBtn" style="margin-top:12px;">
-								📁 Seleccionar archivo PNG
+								<i data-lucide="upload" width="14"></i><span>Seleccionar archivo PNG</span>
 							</button>
 						</div>
 						<input type="file" id="modalLogoFileInput" accept=".png, image/png, image/webp, image/svg+xml, image/jpeg" style="display:none;">
@@ -2067,8 +2070,8 @@
 						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
 							<span style="font-size:12px; font-weight:700; color:#15803d;">✓ Logotipo Fondo Claro cargado:</span>
 							<div style="display:flex; gap:6px;">
-								<button type="button" class="editor-action-btn secondary" id="modalChangeImgBtn" style="padding:4px 10px; font-size:11px;">🔄 Cambiar</button>
-								<button type="button" class="editor-action-btn danger" id="modalDeleteImgBtn" style="padding:4px 10px; font-size:11px; background:#fff1f1; border-color:#fecaca; color:#b91c1c;">🗑️ Quitar imagen</button>
+								<button type="button" class="editor-action-btn secondary" id="modalChangeImgBtn" style="padding:4px 10px; font-size:11px;"><i data-lucide="refresh-cw" width="12"></i><span>Cambiar</span></button>
+								<button type="button" class="editor-action-btn danger" id="modalDeleteImgBtn" style="padding:4px 10px; font-size:11px; background:#fff1f1; border-color:#fecaca; color:#b91c1c;"><i data-lucide="trash-2" width="12"></i><span>Quitar imagen</span></button>
 							</div>
 						</div>
 						<div class="checkerboard-preview" style="padding:16px;">
@@ -2097,22 +2100,22 @@
 				<!-- Panel Modo Imagen Oscuro (Footer) -->
 				<div id="modalLogoDarkPanel" style="display:none;">
 					<div style="background:#f1f5f9; border:1px solid #cbd5e1; border-radius:8px; padding:10px 14px; font-size:12px; color:#334155; margin-bottom:12px; line-height:1.4;">
-						<span>🌙 <strong>Logotipo para el Pie de Página:</strong> El fondo al pie de la página es oscuro (<code>#0b1e2a</code>). Puedes subir aquí un logo con letras blancas o claras para una nitidez óptima.</span>
+						<span><strong>Logotipo para el Pie de Página:</strong> El fondo al pie de la página es oscuro (<code>#0b1e2a</code>). Puedes subir aquí un logo con letras blancas o claras para una nitidez óptima.</span>
 					</div>
 
 					<div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; align-items:center;">
 						<button type="button" class="editor-action-btn secondary" id="modalCopyLightToDarkBtn" style="font-size:11.5px; padding:6px 12px;">
-							📋 Usar el mismo logo del menú claro
+							<i data-lucide="copy" width="13"></i><span>Usar el mismo logo del menú claro</span>
 						</button>
 						<label style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:var(--ink); cursor:pointer; margin:0;">
 							<input type="checkbox" id="modalDarkAutoInvert" style="width:16px; height:16px; margin:0; accent-color:var(--blue);">
-							<span>⚪ Invertir colores automáticamente a blanco</span>
+							<span>Invertir colores automáticamente a blanco</span>
 						</label>
 					</div>
 
 					<div class="logo-drop-box" id="modalLogoDarkDropBox">
 						<div id="modalLogoDarkPrompt">
-							<span style="font-size:28px;">🌙</span>
+							<i data-lucide="image-plus" width="28"></i>
 							<div style="font-weight:700; font-size:13.5px; color:var(--ink); margin-top:8px;">
 								Arrastra tu logotipo para fondo oscuro o haz clic aquí
 							</div>
@@ -2120,7 +2123,7 @@
 								Ideal para logos en blanco, claro o negativo. Máx. 3 MB.
 							</div>
 							<button type="button" class="editor-action-btn secondary" id="modalSelectDarkFileBtn" style="margin-top:12px;">
-								📁 Seleccionar archivo para fondo oscuro
+								<i data-lucide="upload" width="14"></i><span>Seleccionar archivo para fondo oscuro</span>
 							</button>
 						</div>
 						<input type="file" id="modalLogoDarkFileInput" accept=".png, image/png, image/webp, image/svg+xml, image/jpeg" style="display:none;">
@@ -2130,8 +2133,8 @@
 						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
 							<span style="font-size:12px; font-weight:700; color:#0284c7;">✓ Logotipo Fondo Oscuro (Vista previa en fondo real):</span>
 							<div style="display:flex; gap:6px;">
-								<button type="button" class="editor-action-btn secondary" id="modalChangeDarkImgBtn" style="padding:4px 10px; font-size:11px;">🔄 Cambiar</button>
-								<button type="button" class="editor-action-btn danger" id="modalDeleteDarkImgBtn" style="padding:4px 10px; font-size:11px; background:#fff1f1; border-color:#fecaca; color:#b91c1c;">🗑️ Quitar imagen</button>
+								<button type="button" class="editor-action-btn secondary" id="modalChangeDarkImgBtn" style="padding:4px 10px; font-size:11px;"><i data-lucide="refresh-cw" width="12"></i><span>Cambiar</span></button>
+								<button type="button" class="editor-action-btn danger" id="modalDeleteDarkImgBtn" style="padding:4px 10px; font-size:11px; background:#fff1f1; border-color:#fecaca; color:#b91c1c;"><i data-lucide="trash-2" width="12"></i><span>Quitar imagen</span></button>
 							</div>
 						</div>
 						<div class="checkerboard-preview dark-preview" style="padding:16px;">
@@ -2180,7 +2183,7 @@
 
 	<!-- TOAST NOTIFICATION -->
 	<div class="editor-toast" id="editorToast">
-		<span id="toastIcon">✅</span>
+		<span id="toastIcon"></span>
 		<span id="toastMsg">Cambios guardados con éxito</span>
 	</div>
 
@@ -2290,27 +2293,27 @@
 		<!-- STATS COUNTER BAR -->
 		<section class="stats-section">
 			<div class="stats-grid">
-				<div class="stat-item selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
+				<div class="stat-item selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">Eliminar (Supr)</button></div>
 					<span class="stat-number" data-landing-key="stat1_num" contenteditable="true" spellcheck="false">+10 Años</span>
 					<span class="stat-label" data-landing-key="stat1_label" contenteditable="true" spellcheck="false">Trayectoria y Experiencia</span>
 					<span class="stat-desc" data-landing-key="stat1_desc" contenteditable="true" spellcheck="false">Liderando el mercado de telecomunicaciones y redes</span>
 				</div>
-				<div class="stat-item selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
+				<div class="stat-item selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">Eliminar (Supr)</button></div>
 					<span class="stat-number" data-landing-key="stat2_num" contenteditable="true" spellcheck="false">+500</span>
 					<span class="stat-label" data-landing-key="stat2_label" contenteditable="true" spellcheck="false">Proyectos de Red Exitosos</span>
 					<span class="stat-desc" data-landing-key="stat2_desc" contenteditable="true" spellcheck="false">Despliegues de fibra óptica y data centers</span>
 				</div>
-				<div class="stat-item selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
+				<div class="stat-item selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">Eliminar (Supr)</button></div>
 					<span class="stat-number" data-landing-key="stat3_num" contenteditable="true" spellcheck="false">100%</span>
 					<span class="stat-label" data-landing-key="stat3_label" contenteditable="true" spellcheck="false">Equipos Homologados</span>
 					<span class="stat-desc" data-landing-key="stat3_desc" contenteditable="true" spellcheck="false">Marcas líderes globales con garantía directa</span>
 				</div>
-				<div class="stat-item selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
+				<div class="stat-item selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">Eliminar (Supr)</button></div>
 					<span class="stat-number" data-landing-key="stat4_num" contenteditable="true" spellcheck="false">24 / 7</span>
 					<span class="stat-label" data-landing-key="stat4_label" contenteditable="true" spellcheck="false">Soporte Técnico Especializado</span>
 					<span class="stat-desc" data-landing-key="stat4_desc" contenteditable="true" spellcheck="false">Ingenieros listos para resolver incidencias</span>
 				</div>
-				<div class="add-card-slot"><button type="button" class="btn-add-grid-item" id="addStatItemBtn"><i data-lucide="plus-circle" width="18"></i> <span>➕ Agregar Nueva Estadística</span></button></div>
+				<div class="add-card-slot"><button type="button" class="btn-add-grid-item" id="addStatItemBtn"><i data-lucide="plus-circle" width="18"></i> <span>Agregar Nueva Estadística</span></button></div>
 			</div>
 		</section>
 
@@ -2344,27 +2347,27 @@
 					</div>
 
 					<div class="about-visual">
-						<div class="value-box selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
+						<div class="value-box selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">Eliminar (Supr)</button></div>
 							<i data-lucide="award" width="28"></i>
 							<h5 data-landing-key="value1_h5" contenteditable="true" spellcheck="false">Calidad Certificada</h5>
 							<p data-landing-key="value1_p" contenteditable="true" spellcheck="false">Trabajamos exclusivamente con fabricantes de prestigio global y estándares internacionales de telecomunicación.</p>
 						</div>
-						<div class="value-box selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
+						<div class="value-box selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">Eliminar (Supr)</button></div>
 							<i data-lucide="zap" width="28"></i>
 							<h5 data-landing-key="value2_h5" contenteditable="true" spellcheck="false">Respuesta Inmediata</h5>
 							<p data-landing-key="value2_p" contenteditable="true" spellcheck="false">Contamos con inventario en bodega listo para entrega rápida y minimización de tiempos de parada.</p>
 						</div>
-						<div class="value-box selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
+						<div class="value-box selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">Eliminar (Supr)</button></div>
 							<i data-lucide="users" width="28"></i>
 							<h5 data-landing-key="value3_h5" contenteditable="true" spellcheck="false">Ingeniería Humana</h5>
 							<p data-landing-key="value3_p" contenteditable="true" spellcheck="false">Asesoría personalizada brindada por ingenieros con experiencia en campo y despliegues reales.</p>
 						</div>
-						<div class="value-box selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
+						<div class="value-box selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">Eliminar (Supr)</button></div>
 							<i data-lucide="shield-alert" width="28"></i>
 							<h5 data-landing-key="value4_h5" contenteditable="true" spellcheck="false">Continuidad de Servicio</h5>
 							<p data-landing-key="value4_p" contenteditable="true" spellcheck="false">Equipamiento con tolerancia a fallas, redundancia y alta eficiencia energética para operaciones críticas.</p>
 						</div>
-						<div class="add-card-slot"><button type="button" class="btn-add-grid-item" id="addValueBoxBtn"><i data-lucide="plus-circle" width="18"></i> <span>➕ Agregar Nuevo Pilar / Cuadro</span></button></div>
+						<div class="add-card-slot"><button type="button" class="btn-add-grid-item" id="addValueBoxBtn"><i data-lucide="plus-circle" width="18"></i> <span>Agregar Nuevo Pilar / Cuadro</span></button></div>
 				</div>
 			</div>
 		</section>
@@ -2380,7 +2383,7 @@
 
 				<div class="solutions-grid">
 					<!-- Solution 1 -->
-					<div class="solution-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
+					<div class="solution-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">Eliminar (Supr)</button></div>
 						<div>
 							<div class="solution-icon-wrap"><i data-lucide="network" width="26"></i></div>
 							<h3 data-landing-key="sol1_h3" contenteditable="true" spellcheck="false">Fibra Óptica & FTTH</h3>
@@ -2398,7 +2401,7 @@
 					</div>
 
 					<!-- Solution 2 -->
-					<div class="solution-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
+					<div class="solution-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">Eliminar (Supr)</button></div>
 						<div>
 							<div class="solution-icon-wrap"><i data-lucide="server" width="26"></i></div>
 							<h3 data-landing-key="sol2_h3" contenteditable="true" spellcheck="false">Servidores & Data Center</h3>
@@ -2416,7 +2419,7 @@
 					</div>
 
 					<!-- Solution 3 -->
-					<div class="solution-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
+					<div class="solution-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">Eliminar (Supr)</button></div>
 						<div>
 							<div class="solution-icon-wrap"><i data-lucide="radio" width="26"></i></div>
 							<h3 data-landing-key="sol3_h3" contenteditable="true" spellcheck="false">Conectividad & Radioenlaces</h3>
@@ -2434,7 +2437,7 @@
 					</div>
 
 					<!-- Solution 4 -->
-					<div class="solution-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
+					<div class="solution-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">Eliminar (Supr)</button></div>
 						<div>
 							<div class="solution-icon-wrap"><i data-lucide="laptop" width="26"></i></div>
 							<h3 data-landing-key="sol4_h3" contenteditable="true" spellcheck="false">Equipamiento TI Corporativo</h3>
@@ -2450,7 +2453,7 @@
 							<i data-lucide="arrow-up-right" width="14"></i>
 						</a>
 					</div>
-					<div class="add-card-slot"><button type="button" class="btn-add-grid-item" id="addSolutionCardBtn"><i data-lucide="plus-circle" width="18"></i> <span>➕ Agregar Nueva Línea de Solución</span></button></div>
+					<div class="add-card-slot"><button type="button" class="btn-add-grid-item" id="addSolutionCardBtn"><i data-lucide="plus-circle" width="18"></i> <span>Agregar Nueva Línea de Solución</span></button></div>
 				</div>
 			</div>
 		</section>
@@ -2465,36 +2468,36 @@
 				</div>
 
 				<div class="advantages-grid">
-					<div class="advantage-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
+					<div class="advantage-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">Eliminar (Supr)</button></div>
 						<div class="advantage-icon"><i data-lucide="shield-check" width="28"></i></div>
 						<h4 data-landing-key="adv1_h4" contenteditable="true" spellcheck="false">Garantía Directa</h4>
 						<p data-landing-key="adv1_p" contenteditable="true" spellcheck="false">Todos nuestros productos cuentan con garantía respaldada por los fabricantes y reemplazo inmediato ante fallas.</p>
 					</div>
 
-					<div class="advantage-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
+					<div class="advantage-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">Eliminar (Supr)</button></div>
 						<div class="advantage-icon"><i data-lucide="truck" width="28"></i></div>
 						<h4 data-landing-key="adv2_h4" contenteditable="true" spellcheck="false">Despacho a Nivel Nacional</h4>
 						<p data-landing-key="adv2_p" contenteditable="true" spellcheck="false">Entregas seguras y rápidas a cualquier provincia del país con seguimiento en tiempo real de tu encomienda.</p>
 					</div>
 
-					<div class="advantage-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
+					<div class="advantage-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">Eliminar (Supr)</button></div>
 						<div class="advantage-icon"><i data-lucide="cpu" width="28"></i></div>
 						<h4 data-landing-key="adv3_h4" contenteditable="true" spellcheck="false">Expertos que te acompañan</h4>
 						<p data-landing-key="adv3_p" contenteditable="true" spellcheck="false">Analizamos tus necesidades y te ayudamos a elegir los equipos, servicios e infraestructura adecuados para optimizar tu inversión y acompañar tu crecimiento</p>
 					</div>
 
-					<div class="advantage-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
+					<div class="advantage-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">Eliminar (Supr)</button></div>
 						<div class="advantage-icon"><i data-lucide="credit-card" width="28"></i></div>
 						<h4 data-landing-key="adv4_h4" contenteditable="true" spellcheck="false">Compra en Línea Segura</h4>
 						<p data-landing-key="adv4_p" contenteditable="true" spellcheck="false">Nuestra tienda virtual te permite consultar stock, cotizar en el momento y pagar con métodos de pago protegidos.</p>
 					</div>
 
-					<div class="advantage-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>
+					<div class="advantage-card selectable-box" data-deletable-box="true"><div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">Eliminar (Supr)</button></div>
 						<div class="advantage-icon"><i data-lucide="shield-check" width="28"></i></div>
 						<h4 data-landing-key="adv5_h4" contenteditable="true" spellcheck="false">Nueva Ventaja Competitiva</h4>
 						<p data-landing-key="adv5_p" contenteditable="true" spellcheck="false">Describe aquí la razón por la que tus clientes deben elegir tu empresa.</p>
 					</div>
-					<div class="add-card-slot"><button type="button" class="btn-add-grid-item" id="addAdvantageCardBtn"><i data-lucide="plus-circle" width="18"></i> <span>➕ Agregar Nueva Ventaja / Cuadro</span></button></div>
+					<div class="add-card-slot"><button type="button" class="btn-add-grid-item" id="addAdvantageCardBtn"><i data-lucide="plus-circle" width="18"></i> <span>Agregar Nueva Ventaja / Cuadro</span></button></div>
 				</div>
 			</div>
 		</section>
@@ -2694,6 +2697,7 @@
 		document.addEventListener('click', e => {
 			const link = e.target.closest('a');
 			if (!link) return;
+			if (link.closest('#smartisp-admin-nav')) return;
 			if (link.closest('#editorTopBar') || link.closest('.editor-modal-overlay') || link.closest('.card-action-floating-bar')) return;
 			if (!e.ctrlKey && !e.metaKey) {
 				e.preventDefault();
@@ -2721,7 +2725,7 @@
 			const iconEl = document.querySelector('#toastIcon');
 			if (!toast || !msgEl) return;
 			msgEl.textContent = msg;
-			iconEl.textContent = isError ? '❌' : '✅';
+			if (iconEl) iconEl.textContent = isError ? 'Error' : 'Listo';
 			toast.classList.toggle('error', isError);
 			toast.classList.add('show');
 			setTimeout(() => { toast.classList.remove('show'); }, 3500);
@@ -2733,7 +2737,7 @@
 			const text = document.querySelector('#statusMessageText');
 			const saveBtn = document.querySelector('#saveLandingChangesBtn');
 			if (dot) dot.classList.toggle('dirty', dirty);
-			if (text) text.textContent = dirty ? '⚠️ Hay cambios sin guardar' : '✓ Todos los cambios guardados';
+			if (text) text.textContent = dirty ? 'Hay cambios sin guardar' : 'Todos los cambios guardados';
 			if (saveBtn) saveBtn.classList.toggle('has-changes', dirty);
 		};
 
@@ -2932,7 +2936,7 @@
 				if (selectedCardBox === box) selectedCardBox = null;
 				if (isAdv) updateAdvGridCols();
 				markDirty(true);
-				showToast('🗑️ Cuadro eliminado');
+				showToast('Cuadro eliminado');
 			}, 180);
 		};
 
@@ -2958,10 +2962,10 @@
 			setSelectedCardBox(clone);
 			if (isAdv) updateAdvGridCols();
 			markDirty(true);
-			showToast('📋 Cuadro duplicado');
+			showToast('Cuadro duplicado');
 		};
 
-		const floatingBarHtml = `<div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">📋 Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">🗑️ Eliminar (Supr)</button></div>`;
+		const floatingBarHtml = `<div class="card-action-floating-bar"><button type="button" class="card-action-btn duplicate-btn" title="Duplicar este cuadro">Duplicar</button><button type="button" class="card-action-btn delete-btn" title="Eliminar cuadro (o presiona Supr en el teclado)">Eliminar (Supr)</button></div>`;
 
 		const attachFloatingBarIfNeeded = box => {
 			if (!box) return;
@@ -3113,7 +3117,7 @@
 		});
 
 		// =========================================================================
-		// ADD NEW CARDS ("➕ AGREGAR CUADRO")
+		// ADD NEW CARDS ("AGREGAR CUADRO")
 		// =========================================================================
 
 		const handleAddSolutionCard = () => {
@@ -3146,7 +3150,7 @@
 			setSelectedCardBox(card);
 			card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 			markDirty(true);
-			showToast('➕ Nueva solución agregada. Haz clic en el texto para editar.');
+			showToast('Nueva solución agregada. Haz clic en el texto para editar.');
 		};
 
 		const handleAddAdvantageCard = () => {
@@ -3168,7 +3172,7 @@
 			updateAdvGridCols();
 			card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 			markDirty(true);
-			showToast('➕ Nueva ventaja agregada.');
+			showToast('Nueva ventaja agregada.');
 		};
 
 		const handleAddValueBox = () => {
@@ -3189,7 +3193,7 @@
 			setSelectedCardBox(card);
 			card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 			markDirty(true);
-			showToast('➕ Nuevo pilar agregado.');
+			showToast('Nuevo pilar agregado.');
 		};
 
 		const handleAddStatItem = () => {
@@ -3210,7 +3214,7 @@
 			setSelectedCardBox(card);
 			card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 			markDirty(true);
-			showToast('➕ Nueva estadística agregada.');
+			showToast('Nueva estadística agregada.');
 		};
 
 		// Event delegation for all add-grid-item buttons (robust against innerHTML recreation)
@@ -3260,20 +3264,20 @@
 						setTimeout(() => {
 							li.remove();
 							markDirty(true);
-							showToast('🗑️ Aspecto eliminado');
+							showToast('Aspecto eliminado');
 						}, 150);
 					});
 					li.appendChild(delBtn);
 				}
 			});
 
-			// 2. Insertar botón "➕ Agregar aspecto" después de ul si no existe
+			// 2. Insertar botón "Agregar aspecto" después de ul si no existe
 			let addBtn = card.querySelector('.btn-add-feature');
 			if (!addBtn) {
 				addBtn = document.createElement('button');
 				addBtn.type = 'button';
 				addBtn.className = 'btn-add-feature';
-				addBtn.innerHTML = `<i data-lucide="plus" width="13"></i> <span>➕ Agregar aspecto</span>`;
+				addBtn.innerHTML = `<i data-lucide="plus" width="13"></i> <span>Agregar aspecto</span>`;
 				ul.after(addBtn);
 			}
 
@@ -3293,7 +3297,7 @@
 						setTimeout(() => {
 							newLi.remove();
 							markDirty(true);
-							showToast('🗑️ Aspecto eliminado');
+							showToast('Aspecto eliminado');
 						}, 150);
 					});
 
@@ -3313,7 +3317,7 @@
 						sel.addRange(range);
 					}
 					markDirty(true);
-					showToast('➕ Nuevo aspecto agregado. Escribe el texto.');
+					showToast('Nuevo aspecto agregado. Escribe el texto.');
 				});
 			}
 		};
@@ -3736,10 +3740,10 @@
 					});
 				};
 
-				if (content.solutions_grid_html) restoreGrid('.solutions-grid', content.solutions_grid_html, 'addSolutionCardBtn', '➕ Agregar Nueva Línea de Solución');
-				if (content.advantages_grid_html) restoreGrid('.advantages-grid', content.advantages_grid_html, 'addAdvantageCardBtn', '➕ Agregar Nueva Ventaja / Cuadro');
-				if (content.about_visual_html) restoreGrid('.about-visual', content.about_visual_html, 'addValueBoxBtn', '➕ Agregar Nuevo Pilar / Cuadro');
-				if (content.stats_grid_html) restoreGrid('.stats-grid', content.stats_grid_html, 'addStatItemBtn', '➕ Agregar Nueva Estadística');
+				if (content.solutions_grid_html) restoreGrid('.solutions-grid', content.solutions_grid_html, 'addSolutionCardBtn', 'Agregar Nueva Línea de Solución');
+				if (content.advantages_grid_html) restoreGrid('.advantages-grid', content.advantages_grid_html, 'addAdvantageCardBtn', 'Agregar Nueva Ventaja / Cuadro');
+				if (content.about_visual_html) restoreGrid('.about-visual', content.about_visual_html, 'addValueBoxBtn', 'Agregar Nuevo Pilar / Cuadro');
+				if (content.stats_grid_html) restoreGrid('.stats-grid', content.stats_grid_html, 'addStatItemBtn', 'Agregar Nueva Estadística');
 
 				// Bind box events, features & editable
 				document.querySelectorAll('.selectable-box').forEach(bindBoxEvents);
@@ -3829,7 +3833,7 @@
 			const saveBtn = document.querySelector('#saveLandingChangesBtn');
 			const originalHtml = saveBtn.innerHTML;
 			saveBtn.disabled = true;
-			saveBtn.innerHTML = '<span>⏳ Guardando...</span>';
+			saveBtn.innerHTML = '<span>Guardando...</span>';
 
 			// Deselect any active card box
 			setSelectedCardBox(null);
@@ -3927,4 +3931,3 @@
 	</script>
 </body>
 </html>
-
