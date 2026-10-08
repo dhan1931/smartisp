@@ -448,7 +448,7 @@
 		@keyframes accountReveal { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 		@keyframes accountSpin { to { transform: rotate(360deg); } }
 		@media (max-width: 430px) { #loginView, #registerView, #profileView { padding: 34px 24px 26px; } }
-		.account-system { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 20px; background: rgba(16,44,61,.62); backdrop-filter: blur(10px); opacity: 0; visibility: hidden; transition: opacity .28s ease, visibility .28s ease; }
+		.account-system { position: fixed; inset: 0; z-index: 11000; display: grid; place-items: center; padding: 20px; background: rgba(16,44,61,.62); backdrop-filter: blur(10px); opacity: 0; visibility: hidden; transition: opacity .28s ease, visibility .28s ease; }
 		.account-system.is-open { opacity: 1; visibility: visible; }
 		.account-shell { width: min(860px, 100%); max-height: min(720px, 92vh); overflow: auto; border: 1px solid rgba(255,255,255,.7); border-radius: 18px; background: #f4fbfa; box-shadow: 0 30px 90px rgba(6,31,43,.35); transform: translateY(18px) scale(.97); transition: transform .4s cubic-bezier(.2,.8,.2,1); }
 		.account-system.is-open .account-shell { transform: translateY(0) scale(1); }
@@ -1447,7 +1447,7 @@
 			.account-system {
 				padding: 0 !important;
 				align-items: flex-end !important;
-				z-index: 200 !important;
+				z-index: 11000 !important;
 			}
 			.account-shell {
 				width: 100% !important;
