@@ -474,7 +474,7 @@ if ($action === 'upload-image' && $method === 'POST') {
 // 3. IMPORTACIÓN MASIVA Y LOTES (/api/auth/admin-products-bulk, /api/auth/import-products)
 // -------------------------------------------------------------
 
-if ($action === 'import-products' || $action === 'import-excel' || $action === 'admin-products-bulk') {
+if ($action === 'import-products' || $action === 'import-excel' || $action === 'admin-products-bulk' || $action === 'import-catalog' || $action === 'save-products-batch') {
     requireAdminAuth();
     $pTable = getProductsTableName($pdo);
     ensureProductTableColumns($pdo, $pTable);
@@ -857,4 +857,3 @@ if ($action === 'product-image' || $action === 'proxy-image') {
     // Si falló la descarga, servir el placeholder de SmartISP
     $servePlaceholder();
 }
-

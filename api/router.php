@@ -180,7 +180,7 @@ if (is_array($body) && !empty($body['payload']) && is_string($body['payload'])) 
     unset($body['payload']);
 }
 
-$action = $_GET['action'] ?? ($_GET['route'] ?? '');
+$action = $_GET['action'] ?? ($_GET['route'] ?? ($body['action'] ?? ($_POST['action'] ?? '')));
 $action = trim(str_replace('auth/', '', $action), '/');
 if (strpos($action, '?') !== false) {
     list($actionPart, $queryPart) = explode('?', $action, 2);

@@ -253,15 +253,28 @@
       }
       let url = `/api/router.php?action=${encodeURIComponent(baseAction)}${queryPart}`;
 
+      if (isForm && options.body instanceof FormData && adminEmail) {
+        if (!options.body.has('admin_email')) {
+          options.body.append('admin_email', adminEmail);
+        }
+      }
+
       let finalBody = options.body;
       if (!isForm && finalBody && typeof finalBody === 'string' && (options.method === 'POST' || options.method === 'PUT')) {
         try {
           const parsed = JSON.parse(finalBody);
+          if (adminEmail && !parsed.admin_email) {
+            parsed.admin_email = adminEmail;
+          }
           if (!parsed.payload && typeof toUtf8Base64 === 'function') {
-            const b64 = toUtf8Base64(finalBody);
+            const b64 = toUtf8Base64(JSON.stringify(parsed));
             if (b64) {
-              finalBody = JSON.stringify({ payload: b64 });
+              finalBody = JSON.stringify({ payload: b64, admin_email: adminEmail });
+            } else {
+              finalBody = JSON.stringify(parsed);
             }
+          } else {
+            finalBody = JSON.stringify(parsed);
           }
         } catch (e) {}
       }

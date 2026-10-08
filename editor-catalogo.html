@@ -1172,8 +1172,8 @@
         <!-- Additional Options & Import Action -->
         <div style="background:#eef8f8; border:1px solid #c9e8e3; border-radius:8px; padding:12px 16px; margin-bottom:16px;">
           <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; cursor:pointer; margin:0;">
-            <input type="checkbox" id="chkAutoFetchImages" checked style="width:17px; height:17px; accent-color:var(--blue);">
-            <span>🌐 Buscar fotografías nítidas automáticamente en internet/Amazon para artículos que vengan sin imagen</span>
+            <input type="checkbox" id="chkAutoFetchImages" style="width:17px; height:17px; accent-color:var(--blue);">
+            <span>🌐 Buscar fotografías nítidas automáticamente en internet para artículos sin imagen (opcional)</span>
           </label>
         </div>
 
@@ -1624,16 +1624,30 @@
       }
       const reqHeaders = { ...customHeaders, ...(options.headers || {}) };
 
+      // Adjuntar admin_email en FormData automáticamente para inmunidad contra filtrado de cabeceras en Hostinger
+      if (isForm && options.body instanceof FormData && adminUser && adminUser.email) {
+        if (!options.body.has('admin_email')) {
+          options.body.append('admin_email', adminUser.email);
+        }
+      }
+
       // Protección WAF: empaquetar automáticamente payloads JSON como Base64 para prevenir bloqueos falsos positivos de ModSecurity en Hostinger
       let finalBody = options.body;
       if (!isForm && finalBody && typeof finalBody === 'string' && (options.method === 'POST' || options.method === 'PUT')) {
         try {
           const parsed = JSON.parse(finalBody);
+          if (adminUser && adminUser.email && !parsed.admin_email) {
+            parsed.admin_email = adminUser.email;
+          }
           if (!parsed.payload && typeof toUtf8Base64 === 'function') {
-            const b64 = toUtf8Base64(finalBody);
+            const b64 = toUtf8Base64(JSON.stringify(parsed));
             if (b64) {
-              finalBody = JSON.stringify({ payload: b64 });
+              finalBody = JSON.stringify({ payload: b64, admin_email: adminUser.email });
+            } else {
+              finalBody = JSON.stringify(parsed);
             }
+          } else {
+            finalBody = JSON.stringify(parsed);
           }
         } catch (e) {}
       }
@@ -3527,10 +3541,10 @@
       const progressText = document.getElementById('importProgressText');
       progressWrap.style.display = 'block';
 
-      // 1. Auto-fetch de fotos si está activo para productos sin imagen (con pausas de 250ms)
+      // 1. Auto-fetch de fotos si el usuario lo activó explícitamente (máximo 6 y con pausas seguras)
       if (autoFetchPhotos) {
         progressText.textContent = 'Buscando fotografías en internet para productos sin imagen...';
-        const missingPhotos = allProducts.filter(p => !p.imageUrl).slice(0, 30);
+        const missingPhotos = allProducts.filter(p => !p.imageUrl).slice(0, 6);
         let fetchedCount = 0;
         for (const item of missingPhotos) {
           try {
@@ -3540,12 +3554,12 @@
               fetchedCount++;
             }
           } catch (e) {}
-          await new Promise(r => setTimeout(r, 250));
+          await new Promise(r => setTimeout(r, 600));
         }
       }
 
-      // 2. Subida por lotes seguros y optimizados (8 productos por lote con FormData multipart + Base64)
-      const BATCH_SIZE = 8;
+      // 2. Subida por lotes con doble contingencia (Lote rápido + Fallback unitario infalible)
+      const BATCH_SIZE = 10;
       let importedCount = 0;
 
       for (let i = 0; i < total; i += BATCH_SIZE) {
@@ -3556,7 +3570,7 @@
         progressBar.style.width = `${pct}%`;
         progressPct.textContent = `${pct}%`;
 
-        // Limpiar campos para enviar únicamente los datos necesarios a la base de datos
+        // Limpiar campos para enviar datos bien estructurados
         const cleanBatch = batch.map(p => ({
           id: p.id || undefined,
           name: String(p.name || '').trim(),
@@ -3570,43 +3584,68 @@
           visible: p.visible !== false ? 1 : 0
         }));
 
-        const rawJson = JSON.stringify({ products: cleanBatch });
-        const b64 = toUtf8Base64(rawJson);
+        let batchSuccess = false;
 
-        // Envío protegido mediante FormData (multipart/form-data) para evadir reglas WAF sobre payloads JSON directos
-        const fd = new FormData();
-        if (b64) {
-          fd.append('payload', b64);
-        }
-        fd.append('products', rawJson);
-
+        // Estrategia Nivel 1: Envío por lote (rápido y optimizado)
         try {
-          await api('admin-products-bulk', {
+          const rawJson = JSON.stringify({
+            action: 'import-products',
+            admin_email: adminUser.email,
+            products: cleanBatch
+          });
+          const b64 = toUtf8Base64(rawJson);
+          const fd = new FormData();
+          fd.append('action', 'import-products');
+          fd.append('admin_email', adminUser.email);
+          if (b64) fd.append('payload', b64);
+          fd.append('products', rawJson);
+
+          const res = await api('import-products', {
             method: 'POST',
             body: fd
           });
-          importedCount += batch.length;
-        } catch (err) {
-          // Reintento secundario con JSON protegido en Base64
-          try {
-            await api('admin-products-bulk', {
-              method: 'POST',
-              body: b64 ? JSON.stringify({ payload: b64 }) : rawJson
-            });
-            importedCount += batch.length;
-          } catch (retryErr) {
-            let errMsg = retryErr.message || err.message || '';
-            if (errMsg.includes('403') || errMsg.includes('denied')) {
-              errMsg = 'El firewall de Hostinger bloqueó la petición (403). Intenta nuevamente o desactiva la búsqueda automática de fotos.';
+
+          if (res && (res.ok || res.count !== undefined)) {
+            importedCount += (res.count || batch.length);
+            batchSuccess = true;
+          }
+        } catch (batchErr) {
+          console.warn('Lote masivo filtrado por WAF, activando guardado unitario resiliente:', batchErr.message);
+        }
+
+        // Estrategia Nivel 2 (Fallback infalible): Si el firewall bloqueó el lote agrupado, guardar individualmente cada producto
+        if (!batchSuccess) {
+          for (const prod of cleanBatch) {
+            try {
+              const singleFd = new FormData();
+              singleFd.append('action', 'admin-products');
+              singleFd.append('admin_email', adminUser.email);
+              if (prod.id) singleFd.append('id', prod.id);
+              singleFd.append('name', prod.name);
+              singleFd.append('sku', prod.sku);
+              singleFd.append('price', String(prod.price));
+              singleFd.append('category', prod.category);
+              singleFd.append('subcategory', prod.subcategory);
+              singleFd.append('imageUrl', prod.imageUrl);
+              singleFd.append('externalUrl', prod.externalUrl);
+              singleFd.append('description', prod.description);
+              singleFd.append('visible', prod.visible ? '1' : '0');
+
+              await api('admin-products', {
+                method: 'POST',
+                body: singleFd
+              });
+              importedCount++;
+            } catch (singleErr) {
+              console.warn('Error al guardar producto individual:', prod.name, singleErr.message);
             }
-            alert('Aviso en lote de importación: ' + errMsg);
-            break;
+            await new Promise(r => setTimeout(r, 60));
           }
         }
 
-        // Pausa preventiva entre lotes para evitar disparar límites de tasa o firewall
+        // Pausa preventiva entre lotes
         if (i + BATCH_SIZE < total) {
-          await new Promise(r => setTimeout(r, 200));
+          await new Promise(r => setTimeout(r, 150));
         }
       }
 
