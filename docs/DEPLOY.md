@@ -68,6 +68,17 @@ aplicadas), y los conteos de verificación coinciden exactamente.
 Hostinger debe tener estos valores en **Environment variables**. No subirlos a GitHub, no ponerlos
 en `.env.example` y no pegarlos en commits:
 
+Este deploy sincroniza `dist/` sobre `public_html`; por eso un `.env` guardado dentro de
+`public_html` puede desaparecer en cada publicación. Para usar archivo, guarda `.env` en la carpeta
+que contiene `public_html` (un nivel arriba). `api/config.php` busca automáticamente allí y también
+acepta `SMARTISP_ENV_FILE` como ruta absoluta. En desarrollo sigue leyendo el `.env` de la raíz del
+repo. No copies secretos a `dist/` ni los añadas al plugin de Vite.
+
+Las variables del panel de compilación deben estar disponibles para PHP en tiempo de ejecución
+para reemplazar al archivo; que el log diga que se cargaron durante el build no lo demuestra por sí
+solo. Puedes validar la conexión sin mostrar claves: la petición de catálogo debe devolver HTTP 200,
+productos y un `total` mayor que cero.
+
 | Clave | Uso | Requerida |
 | --- | --- | --- |
 | `MYSQL_HOST` | Host MySQL/MariaDB de Hostinger | Si |
