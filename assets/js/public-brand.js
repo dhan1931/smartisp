@@ -27,7 +27,7 @@
       const height = isFooter ? darkHeight : lightHeight;
       if (mode === 'image' && img) {
         const filter = isFooter && darkInvert ? 'filter:brightness(0) invert(1);' : '';
-        el.innerHTML = '<img src="' + img + '" alt="' + brand + '" style="height:' + height + 'px;max-height:140px;width:auto;object-fit:contain;vertical-align:middle;display:inline-block;' + filter + '">';
+        el.innerHTML = '<img src="' + img + '" alt="' + brand + '" width="300" height="100" style="height:' + height + 'px;max-height:140px;width:auto;object-fit:contain;vertical-align:middle;display:inline-block;' + filter + '">';
       } else {
         el.innerHTML = splitLogoText(text);
       }

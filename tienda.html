@@ -1597,7 +1597,7 @@
 	<header class="nav">
 		<a class="logo" href="/" title="SmartISP Tienda Online">SmartISP</a>
 		<form class="search" id="searchForm"><input id="searchInput" type="search" placeholder="¿Qué estás buscando hoy?" aria-label="Buscar productos"><button aria-label="Buscar"><i data-lucide="search" width="18"></i></button></form>
-		<div class="nav-actions"><button class="nav-action" id="openAccount"><i data-lucide="user" width="16"></i><span id="accountLabel">Mi cuenta</span></button><a class="admin-nav-link" id="adminNavLink" href="admin.html" style="display: none;"><i data-lucide="layout-dashboard" width="16"></i><span>Panel admin</span></a><button class="nav-action cart-button" id="openCart"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="cart-count" id="cartCount">0</b></button><button class="public-menu-btn" id="publicMenuBtn" type="button" aria-label="Abrir secciones" aria-expanded="false" aria-controls="publicNav"><i data-lucide="menu" width="20"></i></button></div>
+		<div class="nav-actions"><button class="nav-action" id="openAccount" aria-label="Abrir mi cuenta"><i data-lucide="user" width="16" aria-hidden="true"></i><span id="accountLabel">Mi cuenta</span></button><a class="admin-nav-link" id="adminNavLink" href="admin.html" style="display: none;"><i data-lucide="layout-dashboard" width="16"></i><span>Panel admin</span></a><button class="nav-action cart-button" id="openCart"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="cart-count" id="cartCount">0</b></button><button class="public-menu-btn" id="publicMenuBtn" type="button" aria-label="Abrir secciones" aria-expanded="false" aria-controls="publicNav"><i data-lucide="menu" width="20"></i></button></div>
 	</header>
 	<nav class="public-nav" id="publicNav" aria-label="Secciones principales">
 		<button class="public-menu-close" id="publicMenuClose" type="button"><span>Secciones</span><i data-lucide="x" width="20"></i></button>
@@ -1805,18 +1805,12 @@
 		let selectedFilter = 'all';
 		let expandedGroups = new Set();
 
-		// DEV-20261006-002: buscar o filtrar por subcategoria forzaba a descargar el catalogo
-		// completo (ensureFullCatalog) solo para filtrar en el navegador. El backend ya soporta
-		// q/category/subcategory/sort en SQL real -- se usa directo en estos dos casos (busqueda
-		// activa, o filtro de subcategoria), que son los mas frecuentes y los que mas se benefician.
-		// "Ver todo" y los filtros de macro-categoria (agrupacion sintetica del lado del cliente,
-		// sin equivalente 1:1 en una sola columna de la base) siguen con el catalogo completo en
-		// memoria, igual que antes.
+		// Todas las vistas del catálogo se consultan por páginas. Las categorías exactas usan
+		// category/subcategory y los macrogrupos envían la lista de categorías asociadas.
 		let serverView = { active: false, page: 1, totalPages: 1, total: 0, items: [] };
 		const isServerMode = () => {
 			const q = document.querySelector('#searchInput').value.trim();
-			const exactFilter = selectedFilter === 'all' || (selectedFilter && selectedFilter.type === 'sub');
-			return q !== '' || exactFilter;
+			return q !== '' || selectedFilter === 'all' || !!(selectedFilter && ['macro', 'category', 'sub'].includes(selectedFilter.type));
 		};
 		const fetchServerPage = async reset => {
 			if (reset) serverView.page = 1;
@@ -1825,7 +1819,14 @@
 			const params = new URLSearchParams({ page: serverView.page, limit: 36 });
 			if (query) params.set('q', query);
 			if (sort === 'low' || sort === 'high') params.set('sort', sort);
-			if (selectedFilter && selectedFilter.type === 'sub') params.set('subcategory', selectedFilter.category);
+			if (selectedFilter && selectedFilter.type === 'category') params.set('category', selectedFilter.category);
+			else if (selectedFilter && selectedFilter.type === 'sub') params.set('subcategory', selectedFilter.category);
+			else if (selectedFilter && selectedFilter.type === 'macro') {
+				const macroCategories = catalogCategoryRows
+					.filter(row => Number(row.productCount || 0) > 0 && getMacroCategory(row.name).id === selectedFilter.id)
+					.map(row => row.name);
+				params.set('category_list', JSON.stringify(macroCategories));
+			}
 			try {
 				const res = await fetch(`/api/auth/catalog?${params.toString()}&_t=${Date.now()}`, { cache: 'no-store' });
 				if (!res.ok) throw new Error('catalog view fetch failed');
@@ -2065,6 +2066,8 @@
 			}
 		];
 
+		let catalogCategoryRows = [];
+		let catalogTotalCount = 0;
 		const normalizeCategoryText = str => String(str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/_/g, ' ').trim();
 
 		const formatCategoryName = name => {
@@ -2158,6 +2161,9 @@
 				const macro = getMacroCategory(prodCat) || getMacroCategory(prodSub);
 				return macro && (macro.id === filter.id || normalizeCategoryText(macro.name) === normalizeCategoryText(filter.id));
 			}
+			if (filter.type === 'category') {
+				return normalizeCategoryText(prodCat) === normalizeCategoryText(filter.category);
+			}
 			if (filter.type === 'sub') {
 				const target = normalizeCategoryText(filter.category);
 				return normalizeCategoryText(prodCat) === target || normalizeCategoryText(prodSub) === target;
@@ -2189,10 +2195,12 @@
 				});
 			});
 
-			products.forEach(p => {
-				const cat = String(p.category || 'Otros').trim();
-				const sub = String(p.subcategory || '').trim();
-				const macro = getMacroCategory(cat) || getMacroCategory(sub);
+			const categoryRows = catalogCategoryRows.length
+				? catalogCategoryRows.filter(row => Number(row.productCount || 0) > 0).map(row => ({ name: row.name, count: Number(row.productCount) }))
+				: products.map(product => ({ name: product.category || 'Otros', count: 1 }));
+			categoryRows.forEach(row => {
+				const cat = String(row.name || 'Otros').trim();
+				const macro = getMacroCategory(cat);
 				const macroId = macro ? macro.id : 'otros';
 
 				if (!usedMacros.has(macroId)) {
@@ -2205,11 +2213,8 @@
 					});
 				}
 				const group = usedMacros.get(macroId);
-				group.totalCount++;
-
-				// La subcategoría a mostrar es la categoría específica de producto en el catálogo
-				const subName = cat || sub || 'General';
-				group.subcategoriesMap.set(subName, (group.subcategoriesMap.get(subName) || 0) + 1);
+				group.totalCount += row.count;
+				group.subcategoriesMap.set(cat, (group.subcategoriesMap.get(cat) || 0) + row.count);
 			});
 
 			const groups = [];
@@ -2250,7 +2255,7 @@
 				}
 			});
 
-			return { totalProducts: products.length, groups };
+			return { totalProducts: catalogTotalCount || products.length, groups };
 		};
 
 		const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -2322,7 +2327,7 @@
 
 			groups.forEach(group => {
 				const isMacroActive = !isAllActive && selectedFilter.type === 'macro' && String(selectedFilter.id).toLowerCase() === String(group.id).toLowerCase();
-				const hasActiveChild = !isAllActive && selectedFilter.type === 'sub' && String(selectedFilter.macroId).toLowerCase() === String(group.id).toLowerCase();
+				const hasActiveChild = !isAllActive && ['category', 'sub'].includes(selectedFilter.type) && String(selectedFilter.macroId).toLowerCase() === String(group.id).toLowerCase();
 				const isExpanded = expandedGroups.has(group.id) || isMacroActive || hasActiveChild;
 				const iconName = group.icon || getCategoryIcon(group.name, group.id);
 
@@ -2340,7 +2345,7 @@
 						</div>
 						<div class="sidebar-subcat-list" id="subcat-list-${group.id}">
 							${group.subcategories.map(sub => {
-								const isSubActive = !isAllActive && selectedFilter.type === 'sub' &&
+								const isSubActive = !isAllActive && ['category', 'sub'].includes(selectedFilter.type) &&
 									normalizeCategoryText(selectedFilter.category) === normalizeCategoryText(sub.rawName);
 								return `
 									<button type="button" class="sidebar-subcat-btn ${isSubActive ? 'active' : ''}" data-filter-action="sub" data-macro-id="${group.id}" data-category="${sub.rawName}" title="Filtrar por ${sub.displayName}">
@@ -2369,7 +2374,7 @@
 			document.querySelectorAll('.sidebar-group').forEach(group => {
 				const macroId = group.dataset.macroId;
 				const isMacroActive = !isAllActive && selectedFilter.type === 'macro' && String(selectedFilter.id).toLowerCase() === String(macroId).toLowerCase();
-				const hasActiveChild = !isAllActive && selectedFilter.type === 'sub' && String(selectedFilter.macroId).toLowerCase() === String(macroId).toLowerCase();
+				const hasActiveChild = !isAllActive && ['category', 'sub'].includes(selectedFilter.type) && String(selectedFilter.macroId).toLowerCase() === String(macroId).toLowerCase();
 
 				group.classList.toggle('is-active-group', isMacroActive);
 				group.classList.toggle('has-active-child', hasActiveChild);
@@ -2384,7 +2389,7 @@
 			});
 
 			document.querySelectorAll('.sidebar-subcat-btn').forEach(btn => {
-				const isSubActive = !isAllActive && selectedFilter.type === 'sub' &&
+				const isSubActive = !isAllActive && ['category', 'sub'].includes(selectedFilter.type) &&
 					normalizeCategoryText(btn.dataset.category || '') === normalizeCategoryText(selectedFilter.category || '');
 				btn.classList.toggle('active', isSubActive);
 			});
@@ -2431,7 +2436,7 @@
 					const macro = MACRO_CATEGORIES.find(m => m.id === selectedFilter.id);
 					activeFilterLabel = macro ? macro.name : selectedFilter.name || 'Categoría';
 					breadcrumbLabel = activeFilterLabel;
-				} else if (selectedFilter.type === 'sub') {
+				} else if (['category', 'sub'].includes(selectedFilter.type)) {
 					const macro = MACRO_CATEGORIES.find(m => m.id === selectedFilter.macroId) || getMacroCategory(selectedFilter.category);
 					const subName = formatCategoryName(selectedFilter.category);
 					activeFilterLabel = `${macro ? macro.name + ' › ' : ''}${subName}`;
@@ -2478,7 +2483,7 @@
 					: `<div><span class="reviews" style="margin-left:0;font-style:italic;">Sin reseñas aún</span></div>`;
 				const productIndex = productIndexMap.get(product);
 				const priority = productIndex < 4;
-				return `<article class="product" data-index="${productIndex}" tabindex="0" role="group" aria-label="Ver especificaciones de ${product.name}"><div class="product-image">${product.tag ? `<span class="tag">${product.tag}</span>` : ''}<button class="heart" aria-label="Agregar a favoritos"><i data-lucide="heart" width="16"></i></button><a href="${pUrl}" class="product-card-link" aria-label="${product.name}" tabindex="-1"><img src="${pImg}" alt="${product.name}" width="320" height="278" loading="${priority ? 'eager' : 'lazy'}" fetchpriority="${productIndex === 0 ? 'high' : 'auto'}" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></a></div><div class="product-info"><div class="product-brand">${product.brand}</div><a href="${pUrl}" class="product-title-link" title="${product.name}"><h3>${product.name}</h3></a>${reviewsHtml}<div class="price-row"><div class="price-block"><span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span>${Number(product.price || 0) > 0 ? '<span class="price-tax-label">Precios incluye iva</span>' : ''}</div><div class="card-btn-group"><a href="${pUrl}" class="btn-card-view" title="Ver producto en página completa" aria-label="Ver ficha completa de ${product.name}"><i data-lucide="external-link" width="15"></i></a><button class="add" data-index="${productIndex}" aria-label="Agregar ${product.name} al carrito"><i data-lucide="plus" width="18"></i></button></div></div></div></article>`;
+				return `<article class="product" data-index="${productIndex}" tabindex="0" role="group" aria-label="Ver especificaciones de ${product.name}"><div class="product-image">${product.tag ? `<span class="tag">${product.tag}</span>` : ''}<button class="heart" aria-label="Agregar a favoritos"><i data-lucide="heart" width="16"></i></button><a href="${pUrl}" class="product-card-link" aria-label="${product.name}" tabindex="-1"><img src="${pImg}" alt="${product.name}" width="320" height="278" loading="${priority ? 'eager' : 'lazy'}" fetchpriority="${productIndex < 2 ? 'high' : 'auto'}" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></a></div><div class="product-info"><div class="product-brand">${product.brand}</div><a href="${pUrl}" class="product-title-link" title="${product.name}"><h3>${product.name}</h3></a>${reviewsHtml}<div class="price-row"><div class="price-block"><span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span>${Number(product.price || 0) > 0 ? '<span class="price-tax-label">Precios incluye iva</span>' : ''}</div><div class="card-btn-group"><a href="${pUrl}" class="btn-card-view" title="Ver producto en página completa" aria-label="Ver ficha completa de ${product.name}"><i data-lucide="external-link" width="15"></i></a><button class="add" data-index="${productIndex}" aria-label="Agregar ${product.name} al carrito"><i data-lucide="plus" width="18"></i></button></div></div></div></article>`;
 			}).join('');
 
 			const loadMoreHtml = hasMore ? `
@@ -2712,7 +2717,24 @@
 					</div>
 				</div>
 			`;
-			document.querySelector('#productModal').classList.add('open');
+			const productModal = document.querySelector('#productModal');
+			productModal.dataset.productId = String(product.id || '');
+			const descriptionEl = productModal.querySelector('.detail-description');
+			if (descriptionEl) descriptionEl.textContent = product.description || 'Cargando descripción…';
+			productModal.classList.add('open');
+			if (!product.description && product.id) {
+				const detailParams = new URLSearchParams({ q: product.id, details: '1', limit: '1' });
+				fetch('/api/auth/catalog?' + detailParams.toString(), { cache: 'no-store' })
+					.then(response => response.ok ? response.json() : Promise.reject(new Error('detail request failed')))
+					.then(data => {
+						if (productModal.dataset.productId !== String(product.id)) return;
+						const description = data.products && data.products[0] && data.products[0].description;
+						descriptionEl.textContent = description || 'Este producto no tiene descripción adicional.';
+					})
+					.catch(() => {
+						if (productModal.dataset.productId === String(product.id)) descriptionEl.textContent = 'No se pudo cargar la descripción.';
+					});
+			}
 			window.lucide && window.lucide.createIcons();
 
 			if (updateHistory) {
@@ -2874,12 +2896,12 @@
 				selectedFilter = 'all';
 			} else if (typeof filter === 'string') {
 				const macro = getMacroCategory(filter);
-				selectedFilter = { type: 'sub', macroId: macro.id, category: filter };
+				selectedFilter = { type: 'category', macroId: macro.id, category: filter };
 				expandedGroups.add(macro.id);
 			} else if (filter && typeof filter === 'object') {
 				selectedFilter = filter;
 				if (filter.type === 'macro') expandedGroups.add(filter.id);
-				if (filter.type === 'sub') expandedGroups.add(filter.macroId);
+				if (['category', 'sub'].includes(filter.type)) expandedGroups.add(filter.macroId);
 			}
 			updateSidebarActiveStates();
 			refreshView(true);
@@ -2925,7 +2947,7 @@
 				event.preventDefault();
 				const macroId = subBtn.dataset.macroId;
 				const category = subBtn.dataset.category;
-				setCategoryFilter({ type: 'sub', macroId, category });
+				setCategoryFilter({ type: 'category', macroId, category });
 				const catEl = document.querySelector('#catalogo');
 				if (catEl && window.scrollY > catEl.offsetTop + 120) {
 					catEl.scrollIntoView({ behavior: 'smooth' });
@@ -3159,19 +3181,8 @@
 					return;
 				}
 				const remote = await response.json();
-				if (Array.isArray(remote.categories) && remote.categories.length) {
-					// DEV-20261006-003: antes bastaba con que UNA sola categoria tuviera subcategorias
-					// para confiar en las 57 categorias crudas de la base como si fueran una jerarquia
-					// armada (la mayoria son planas, sin subcategoria real: en los datos reales, solo
-					// ~7 de 57 calificaban). El resultado era un sidebar con 57 entradas sueltas en vez
-					// de los grupos prolijos de MACRO_CATEGORIES ya definidos como respaldo. Ahora se
-					// exige que una porcion real (30%+) tenga subcategorias antes de confiar en ellas.
-					const withRealSubs = remote.categories.filter(c => Array.isArray(c.subcategories) && c.subcategories.length > 0 && c.subcategories.some(s => s !== c.name));
-					const hasCustomHierarchy = remote.categories.length > 0 && (withRealSubs.length / remote.categories.length) >= 0.3;
-					if (hasCustomHierarchy) {
-						MACRO_CATEGORIES = remote.categories;
-					}
-				}
+				catalogCategoryRows = Array.isArray(remote.categories) ? remote.categories : [];
+				catalogTotalCount = Number(remote.total) || 0;
 				if (remote.products && remote.products.length) {
 					products = remote.products.map(product => ({
 						...product,
@@ -3289,7 +3300,7 @@
 
 			if (catParam) {
 				const macro = getMacroCategory(catParam);
-				selectedFilter = { type: 'sub', macroId: macro.id, category: catParam };
+				selectedFilter = { type: 'category', macroId: macro.id, category: catParam };
 				expandedGroups.add(macro.id);
 			} else if (macroParam) {
 				selectedFilter = { type: 'macro', id: macroParam };

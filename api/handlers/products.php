@@ -17,6 +17,7 @@ if ($action === 'catalog' && $method === 'GET') {
         $search = trim((string)($_GET['q'] ?? ''));
         $category = trim((string)($_GET['category'] ?? ''));
         $subcategory = trim((string)($_GET['subcategory'] ?? ''));
+        $categoryListRaw = (string)($_GET['category_list'] ?? '');
 
         $where = 'visible = 1';
         $params = [];
@@ -42,13 +43,32 @@ if ($action === 'catalog' && $method === 'GET') {
             $where .= ' AND subcategory = :subcategory';
             $params[':subcategory'] = $subcategory;
         }
+        if ($categoryListRaw !== '') {
+            $categoryList = json_decode($categoryListRaw, true);
+            $categoryList = is_array($categoryList)
+                ? array_values(array_unique(array_filter(array_map(static fn($value) => trim((string)$value), $categoryList), static fn($value) => $value !== '')))
+                : [];
+            if (!$categoryList) {
+                $where .= ' AND 1 = 0';
+            } else {
+                $placeholders = [];
+                foreach ($categoryList as $index => $categoryName) {
+                    $placeholder = ':category_list_' . $index;
+                    $placeholders[] = $placeholder;
+                    $params[$placeholder] = $categoryName;
+                }
+                $where .= ' AND category IN (' . implode(', ', $placeholders) . ')';
+            }
+        }
 
         $totalStmt = $pdo->prepare("SELECT COUNT(*) FROM `$pTable` WHERE $where");
         $totalStmt->execute($params);
         $total = (int)$totalStmt->fetchColumn();
 
-        // Solo las columnas que normalizeProductRow usa; sin created_at/updated_at ni SELECT *.
-        $cols = 'id, name, description, price, category, subcategory, image_url, external_url, sku, visible';
+        // Las descripciones completas solo hacen falta al abrir una ficha, no en cada página.
+        $includeDetails = (string)($_GET['details'] ?? '') === '1';
+        $cols = 'id, name, price, category, subcategory, image_url, external_url, sku, visible';
+        if ($includeDetails) $cols .= ', description';
         // id como desempate: en los datos reales created_at está vacío en todas las filas, así que sin un
         // criterio estable la paginación podía devolver un producto repetido o saltarse otro entre páginas.
         // ASC (no DESC): hay productos de prueba con id que empieza por "test_"/"prod_test_" e imagen rota;
@@ -73,16 +93,10 @@ if ($action === 'catalog' && $method === 'GET') {
         $stmt->execute();
         $products = array_map('normalizeProductRow', $stmt->fetchAll());
 
-        $stmtContent = $pdo->query("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows");
+        $stmtContent = $pdo->query("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows
+            WHERE setting_key IN ('hero_title', 'hero_text', 'primary_color', 'footer_text', 'catalog_visible', 'hero_visible', 'benefits_visible')");
         $allContent = $stmtContent ? $stmtContent->fetchAll() : [];
         $content = [];
-        $hasLogoImage = false;
-        foreach ($allContent as $item) {
-            if (($item['key'] ?? '') === 'logo_image' && !empty($item['value'])) {
-                $hasLogoImage = true;
-                break;
-            }
-        }
         $excludePrefixes = [
             'solutions_grid_html', 'advantages_grid_html', 'about_visual_html', 'stats_grid_html',
             'landing_logo_dark_image', 'about_', 'contact_', 'mission_', 'vision_', 'value', 'sol', 'adv', 'stat'
@@ -94,14 +108,21 @@ if ($action === 'catalog' && $method === 'GET') {
         foreach ($allContent as $item) {
             $k = (string)($item['key'] ?? '');
             $normalizedKey = strtolower($k);
+            // La marca se carga por site-content. logo_image puede ser un PNG base64 de ~1 MB;
+            // incluirlo aquí retrasaba la primera página de productos y duplicaba la descarga.
+            if (in_array($normalizedKey, [
+                'logo_image', 'landing_logo_image', 'logo_dark_image', 'landing_logo_dark_image',
+                'logo_text', 'landing_logo_text', 'brand_name', 'logo_type', 'landing_logo_type',
+                'logo_height', 'landing_logo_height', 'logo_dark_height', 'landing_logo_dark_height',
+                'logo_dark_invert', 'landing_logo_dark_invert'
+            ], true)) {
+                continue;
+            }
             if (in_array($normalizedKey, $sensitiveKeys, true)
                 || str_contains($normalizedKey, 'pass')
                 || str_contains($normalizedKey, 'secret')
                 || str_contains($normalizedKey, 'api_key')) {
                 continue;
-            }
-            if ($k === 'landing_logo_image' && $hasLogoImage) {
-                continue; // Evitar duplicar 1MB en la tienda
             }
             $shouldExclude = false;
             foreach ($excludePrefixes as $prefix) {
@@ -115,7 +136,7 @@ if ($action === 'catalog' && $method === 'GET') {
             }
         }
 
-        $categories = getDynamicCategoriesList($pdo);
+        $categories = $page === 1 ? getDynamicCategoriesList($pdo, true) : [];
 
         // Catálogo público: caché corta en el navegador/CDN en vez del no-store global (DEV-20261005-022).
         header('Cache-Control: public, max-age=30');
@@ -840,6 +861,7 @@ if ($action === 'product-image' || $action === 'proxy-image') {
     $id = trim($_GET['id'] ?? ($_GET['sku'] ?? ''));
     $token = trim($_GET['token'] ?? ($_GET['img'] ?? ($_GET['t'] ?? '')));
     $rawUrl = trim($_GET['url'] ?? '');
+    $maxImageWidth = max(320, min(800, (int)($_GET['w'] ?? 640)));
 
     // 1. Resolver por Token Base64Url (directo y de alto rendimiento)
     if (!empty($token)) {
@@ -895,10 +917,12 @@ if ($action === 'product-image' || $action === 'proxy-image') {
         }
     }
 
-    $cacheHash = md5($targetUrl);
+    $acceptsWebp = strpos(strtolower((string)($_SERVER['HTTP_ACCEPT'] ?? '')), 'image/webp') !== false
+        && function_exists('imagecreatefromstring') && function_exists('imagewebp');
+    $cacheHash = md5($targetUrl . '|w=' . $maxImageWidth . '|webp=' . ($acceptsWebp ? '1' : '0'));
     $pathExt = pathinfo(parse_url($targetUrl, PHP_URL_PATH), PATHINFO_EXTENSION);
     $ext = in_array(strtolower($pathExt), ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg']) ? strtolower($pathExt) : 'jpg';
-    $cacheFile = $cacheDir . '/' . $cacheHash . '.' . $ext;
+    $cacheFile = $cacheDir . '/' . $cacheHash . '.' . ($acceptsWebp ? 'webp' : $ext);
 
     // Verificar si ya existe en caché (máximo 30 días)
     if (file_exists($cacheFile) && filesize($cacheFile) > 0 && (time() - filemtime($cacheFile) < 86400 * 30)) {
@@ -967,6 +991,37 @@ if ($action === 'product-image' || $action === 'proxy-image') {
         if (!$contentType || strpos($contentType, 'image/') === false) {
             $contentType = 'image/' . ($ext === 'jpg' ? 'jpeg' : $ext);
         }
+
+        if ($acceptsWebp && strlen($imgData) < 20 * 1024 * 1024) {
+            $imageInfo = @getimagesizefromstring($imgData);
+            $mime = strtolower((string)($imageInfo['mime'] ?? ''));
+            $width = (int)($imageInfo[0] ?? 0);
+            $height = (int)($imageInfo[1] ?? 0);
+            if ($width > 0 && $height > 0 && $width * $height <= 20000000
+                && in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)) {
+                $source = @imagecreatefromstring($imgData);
+                if ($source !== false) {
+                    $outWidth = min($width, $maxImageWidth);
+                    $outHeight = max(1, (int)round($height * ($outWidth / $width)));
+                    $output = imagecreatetruecolor($outWidth, $outHeight);
+                    if ($output !== false) {
+                        imagealphablending($output, false);
+                        imagesavealpha($output, true);
+                        imagecopyresampled($output, $source, 0, 0, 0, 0, $outWidth, $outHeight, $width, $height);
+                        ob_start();
+                        $encoded = imagewebp($output, null, 78);
+                        $optimizedData = ob_get_clean();
+                        imagedestroy($output);
+                        if ($encoded && is_string($optimizedData) && strlen($optimizedData) < strlen($imgData)) {
+                            $imgData = $optimizedData;
+                            $contentType = 'image/webp';
+                        }
+                    }
+                    imagedestroy($source);
+                }
+            }
+        }
+
         @file_put_contents($cacheFile, $imgData);
         header('Content-Type: ' . $contentType);
         header('Cache-Control: public, max-age=2592000, immutable');

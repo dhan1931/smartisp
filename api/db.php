@@ -273,7 +273,7 @@ function buildProductProxyImageUrl(string $id, string $rawUrl): string {
     }
     $basename = explode('?', $basename)[0];
     $token = rtrim(strtr(base64_encode($rawUrl), '+/', '-_'), '=');
-    return '/api/auth/product-image?id=' . rawurlencode($id) . '&t=' . $token . '&f=' . rawurlencode($basename);
+    return '/api/auth/product-image?id=' . rawurlencode($id) . '&t=' . $token . '&f=' . rawurlencode($basename) . '&w=640';
 }
 
 // Normaliza los nombres de columnas de productos de forma flexible

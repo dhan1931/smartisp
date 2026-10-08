@@ -220,10 +220,11 @@ if (!$pdo) {
 }
 
 // -------------------------------------------------------------
-function getDynamicCategoriesList(PDO $pdo): array {
+function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
     $pTable = getProductsTableName($pdo);
     // 1. Obtener todas las macrocategorías, subcategorías y conteo real de productos
-    $prodCatsStmt = $pdo->query("SELECT category, subcategory, COUNT(*) as p_count FROM `$pTable` WHERE category IS NOT NULL AND TRIM(category) != '' GROUP BY category, subcategory");
+    $visibilityFilter = $visibleOnly ? 'visible = 1 AND ' : '';
+    $prodCatsStmt = $pdo->query("SELECT category, subcategory, COUNT(*) as p_count FROM `$pTable` WHERE $visibilityFilter category IS NOT NULL AND TRIM(category) != '' GROUP BY category, subcategory");
     $prodCatRows = $prodCatsStmt ? $prodCatsStmt->fetchAll() : [];
 
     $catMap = [];

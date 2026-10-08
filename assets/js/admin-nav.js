@@ -74,6 +74,8 @@
           var img = document.createElement('img');
           img.src = image;
           img.alt = brand;
+          img.width = 300;
+          img.height = 100;
           img.style.height = height + 'px';
           logo.appendChild(img);
           return;

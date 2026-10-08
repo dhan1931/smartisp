@@ -13,6 +13,7 @@ const MAIL_SETTINGS_KEYS = [
     'admin_email', 'smtp_provider', 'smtp_host', 'smtp_port', 'smtp_user',
     'smtp_pass', 'smtp_secure', 'smtp_from', 'resend_api_key', 'email_from',
 ];
+const PUBLIC_BRAND_IMAGE_KEYS = ['logo_image', 'logo_dark_image', 'landing_logo_image', 'landing_logo_dark_image'];
 
 if ($action === 'admin-content') {
     requireAdminAuth();
@@ -122,9 +123,91 @@ if ($action === 'admin-content') {
 // CONTENIDO PÚBLICO DE PORTADA Y TIENDA (/api/auth/landing-content, /api/auth/site-content)
 // -------------------------------------------------------------
 
+if ($action === 'brand-image' && $method === 'GET') {
+    $key = trim((string)($_GET['key'] ?? ''));
+    if (!in_array($key, PUBLIC_BRAND_IMAGE_KEYS, true)) {
+        http_response_code(404);
+        exit;
+    }
+
+    $stmt = $pdo->prepare('SELECT setting_value FROM settings_rows WHERE setting_key = :key LIMIT 1');
+    $stmt->execute([':key' => $key]);
+    $dataUrl = (string)($stmt->fetchColumn() ?: '');
+    if (!preg_match('#^data:image/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$#', $dataUrl, $match)) {
+        http_response_code(404);
+        exit;
+    }
+    $imageData = base64_decode($match[2], true);
+    if ($imageData === false || strlen($imageData) > 8 * 1024 * 1024) {
+        http_response_code(404);
+        exit;
+    }
+
+    $acceptsWebp = strpos(strtolower((string)($_SERVER['HTTP_ACCEPT'] ?? '')), 'image/webp') !== false
+        && function_exists('imagecreatefromstring') && function_exists('imagewebp')
+        && function_exists('imagecreatetruecolor') && function_exists('imagecopyresampled');
+    $etag = hash('sha256', $imageData . '|webp=' . ($acceptsWebp ? '1' : '0'));
+    header('ETag: "' . $etag . '"');
+    header('Cache-Control: public, max-age=31536000, immutable');
+    header('Vary: Accept');
+    if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && trim($_SERVER['HTTP_IF_NONE_MATCH'], '"') === $etag) {
+        http_response_code(304);
+        exit;
+    }
+
+    $mime = 'image/' . $match[1];
+    if ($mime === 'image/jpeg') $mime = 'image/jpeg';
+    $imageInfo = @getimagesizefromstring($imageData);
+    if ($acceptsWebp && $imageInfo && (int)$imageInfo[0] > 0 && (int)$imageInfo[1] > 0
+        && (int)$imageInfo[0] * (int)$imageInfo[1] <= 20000000
+        && in_array($imageInfo['mime'] ?? '', ['image/png', 'image/jpeg', 'image/webp'], true)) {
+        $source = @imagecreatefromstring($imageData);
+        if ($source !== false) {
+            $width = (int)$imageInfo[0];
+            $height = (int)$imageInfo[1];
+            $outWidth = min(700, $width);
+            $outHeight = max(1, (int)round($height * $outWidth / $width));
+            $output = imagecreatetruecolor($outWidth, $outHeight);
+            if ($output !== false) {
+                imagealphablending($output, false);
+                imagesavealpha($output, true);
+                imagecopyresampled($output, $source, 0, 0, 0, 0, $outWidth, $outHeight, $width, $height);
+                ob_start();
+                $encoded = imagewebp($output, null, 84);
+                $optimized = ob_get_clean();
+                if ($encoded && is_string($optimized) && strlen($optimized) < strlen($imageData)) {
+                    $imageData = $optimized;
+                    $mime = 'image/webp';
+                }
+                imagedestroy($output);
+            }
+            imagedestroy($source);
+        }
+    }
+
+    header('Content-Type: ' . $mime);
+    header('Content-Length: ' . strlen($imageData));
+    echo $imageData;
+    exit;
+}
+
 if ($action === 'landing-content' || $action === 'site-content') {
     if ($method === 'GET') {
-        $stmt = $pdo->query("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows");
+        if ($action === 'site-content') {
+            // Este endpoint solo lo usan los logos públicos del sitio y del panel.
+            // Evita leer y serializar el resto de ajustes (incluidos HTML e imágenes pesadas).
+            $brandKeys = [
+                'brand_name', 'logo_text', 'logo_type', 'logo_image', 'logo_height',
+                'logo_dark_image', 'logo_dark_height', 'logo_dark_invert',
+                'landing_logo_text', 'landing_logo_type', 'landing_logo_image', 'landing_logo_height',
+                'landing_logo_dark_image', 'landing_logo_dark_height', 'landing_logo_dark_invert',
+            ];
+            $placeholders = implode(',', array_fill(0, count($brandKeys), '?'));
+            $stmt = $pdo->prepare("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows WHERE setting_key IN ($placeholders)");
+            $stmt->execute($brandKeys);
+        } else {
+            $stmt = $pdo->query("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows");
+        }
         $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
         // SANITIZACIÓN ESTRICTA DE SEGURIDAD (QA-024 / QA-025):
@@ -135,6 +218,7 @@ if ($action === 'landing-content' || $action === 'site-content') {
         ];
         $safeRows = [];
         $hasLandingLogo = false;
+        $hasLandingDarkLogo = false;
         foreach ($rows as $r) {
             $k = $r['key'] ?? '';
             if (in_array($k, $sensitiveKeys, true) || stripos($k, 'pass') !== false || stripos($k, 'secret') !== false) {
@@ -143,11 +227,31 @@ if ($action === 'landing-content' || $action === 'site-content') {
             if ($k === 'landing_logo_image' && !empty($r['value'])) {
                 $hasLandingLogo = true;
             }
+            if ($k === 'landing_logo_dark_image' && !empty($r['value'])) {
+                $hasLandingDarkLogo = true;
+            }
             $safeRows[] = $r;
         }
 
-        if ($action === 'landing-content' && $hasLandingLogo) {
-            $safeRows = array_values(array_filter($safeRows, fn($r) => ($r['key'] ?? '') !== 'logo_image'));
+        if ($hasLandingLogo || $hasLandingDarkLogo) {
+            $safeRows = array_values(array_filter($safeRows, static function ($r) use ($action, $hasLandingLogo, $hasLandingDarkLogo) {
+                $key = $r['key'] ?? '';
+                if ($hasLandingLogo && $key === 'logo_image') return false;
+                if ($hasLandingDarkLogo && $key === 'logo_dark_image') return false;
+                return true;
+            }));
+        }
+
+        if ($action === 'site-content') {
+            foreach ($safeRows as &$row) {
+                $key = (string)($row['key'] ?? '');
+                $value = (string)($row['value'] ?? '');
+                if (in_array($key, PUBLIC_BRAND_IMAGE_KEYS, true) && str_starts_with($value, 'data:image/')) {
+                    $version = substr(hash('sha256', $value), 0, 16);
+                    $row['value'] = '/api/auth/brand-image?key=' . rawurlencode($key) . '&v=' . $version;
+                }
+            }
+            unset($row);
         }
 
         echo json_encode(['content' => $safeRows]);
