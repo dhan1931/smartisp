@@ -7,8 +7,10 @@ if (!function_exists('smartispCargarEnv')) {
         if ($cargado) return;
         $cargado = true;
         $configuredPath = getenv('SMARTISP_ENV_FILE');
+        $documentRoot = rtrim((string)($_SERVER['DOCUMENT_ROOT'] ?? ''), '/\\');
         $paths = array_filter([
             $configuredPath !== false ? trim($configuredPath) : '',
+            $documentRoot !== '' ? dirname($documentRoot) . DIRECTORY_SEPARATOR . '.env' : '',
             dirname(__DIR__) . '/.env',
             dirname(dirname(__DIR__)) . '/.env',
         ]);
