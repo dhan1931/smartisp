@@ -142,7 +142,21 @@
 		.public-nav { position: sticky; top: var(--sticky-nav-height, 70px); z-index: 999; background: var(--navy); color: #fff; display: flex; justify-content: center; gap: clamp(22px, 5vw, 80px); padding: 11px 5vw; font-weight: 800; font-size: 15px; box-shadow: inset 0 1px rgba(255,255,255,.08); }
 		.public-nav a { color: #fff; text-decoration: none; white-space: nowrap; opacity: .96; }
 		.public-nav a:hover { color: #ffd166; }
-		.public-nav-cats { display: none; }
+		.public-nav-cats { position: relative; display: inline-flex; align-items: center; }
+		.public-cat-trigger { display: inline-flex; align-items: center; gap: 8px; border: 0; background: transparent; color: #fff; font: inherit; font-weight: 900; padding: 0; cursor: pointer; }
+		.public-cat-trigger:hover { color: #ffd166; }
+		.public-cat-panel { position: absolute; top: calc(100% + 11px); left: 50%; transform: translateX(-50%) translateY(8px); width: min(380px, calc(100vw - 24px)); max-height: min(68vh, 620px); overflow: auto; background: #f6f8fa; color: #1d2f3d; border: 1px solid rgba(16,44,61,.12); box-shadow: 0 22px 55px rgba(16,44,61,.22); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .16s ease, transform .16s ease, visibility .16s ease; z-index: 1100; }
+		.public-nav-cats.is-open .public-cat-panel, .public-nav-cats:focus-within .public-cat-panel, .public-nav-cats:hover .public-cat-panel { opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+		.public-nav-cats-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px 10px; border-bottom: 1px solid #dfe8ee; }
+		.public-nav-cats-title { color: #102c3d; font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+		.public-nav-cats-head a { color: var(--blue); font-size: 12px; font-weight: 800; }
+		.public-nav-cat-search { display: flex; align-items: center; gap: 8px; margin: 12px 14px; min-height: 40px; border: 1px solid #d8e5ec; border-radius: 6px; background: #fff; padding: 0 11px; color: #6e879b; }
+		.public-nav-cat-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: #102c3d; font-size: 14px; }
+		.public-nav-cat-list { display: grid; padding: 0 10px 12px; }
+		.public-nav-cat-list a { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 46px; padding: 0 10px; border-bottom: 1px solid #e4edf2; color: #1d2f3d; font-size: 14px; font-weight: 700; opacity: 1; white-space: normal; }
+		.public-nav-cat-list a:hover { color: var(--blue); background: #fff; }
+		.public-nav-cat-list small { color: #6e879b; font-size: 11px; font-weight: 800; }
+		.public-nav-cat-list svg { color: #263845; flex: 0 0 auto; }
 		.admin-nav-link { display: none !important; color: #087ea4; border: 1px solid #a9d8d0; background: #eaf7f5; padding: 8px 12px; border-radius: 7px; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; text-decoration: none; transition: all .2s ease; }
 		.admin-nav-link.is-visible { display: inline-flex !important; }
 		.admin-nav-link:hover { background: #d7f0e8; border-color: #087ea4; transform: translateY(-1px); }
@@ -863,9 +877,30 @@
 			}
 			.public-nav-cats {
 				display: grid !important;
+				position: static !important;
 				gap: 8px !important;
 				padding: 10px 0 4px !important;
 				border-top: 1px solid rgba(255,255,255,.14) !important;
+			}
+			.public-cat-trigger {
+				justify-content: space-between !important;
+				width: 100% !important;
+				min-height: 44px !important;
+				color: #fff !important;
+			}
+			.public-cat-panel {
+				position: static !important;
+				display: grid !important;
+				width: 100% !important;
+				max-height: none !important;
+				transform: none !important;
+				opacity: 1 !important;
+				visibility: visible !important;
+				pointer-events: auto !important;
+				box-shadow: none !important;
+				border: 1px solid rgba(255,255,255,.14) !important;
+				background: rgba(255,255,255,.06) !important;
+				color: #fff !important;
 			}
 			.public-nav-cats-head {
 				display: flex !important;
@@ -915,12 +950,14 @@
 			.public-nav-cat-list {
 				display: grid !important;
 				gap: 2px !important;
+				padding: 0 8px 8px !important;
 			}
 			.public-nav-cats a {
 				display: flex !important;
 				justify-content: space-between !important;
 				gap: 14px !important;
 				padding-left: 18px !important;
+				color: #fff !important;
 			}
 			.public-nav-cats b {
 				color: #ffd166 !important;
@@ -1513,7 +1550,12 @@
 		<a href="/servicios">Servicios</a>
 		<a href="/nosotros">Nosotros</a>
 		<a href="#catalogo">Catálogo</a>
-		<div class="public-nav-cats" aria-label="Categorías rápidas">
+		<div class="public-nav-cats" id="publicCategoryMenu" aria-label="Categorías rápidas">
+			<button class="public-cat-trigger" id="publicCategoryTrigger" type="button" aria-expanded="false" aria-controls="publicCategoryPanel">
+				<span>Categorías</span>
+				<i data-lucide="chevron-down" width="16"></i>
+			</button>
+			<div class="public-cat-panel" id="publicCategoryPanel">
 			<div class="public-nav-cats-head">
 				<div class="public-nav-cats-title">Categorías</div>
 				<a href="/tienda.html#catalogo">Ver todas</a>
@@ -1523,11 +1565,12 @@
 				<input type="search" id="publicNavCatSearch" placeholder="Buscar categoría..." autocomplete="off">
 			</label>
 			<div class="public-nav-cat-list" id="publicNavCatList">
-				<a href="/tienda.html#catalogo" data-nav-cat="todo catalogo">Todo el catálogo <b id="navCountAll">2773</b></a>
-				<a href="/tienda.html?macro=computacion#catalogo" data-nav-cat="computacion equipos">Computación y Equipos <b id="navCountComputacion">236</b></a>
-				<a href="/tienda.html?macro=componentes#catalogo" data-nav-cat="componentes almacenamiento">Componentes y Almacenamiento <b id="navCountComponentes">356</b></a>
-				<a href="/tienda.html?macro=redes#catalogo" data-nav-cat="redes conectividad">Redes y Conectividad <b id="navCountRedes">336</b></a>
-				<a href="/tienda.html?macro=monitores#catalogo" data-nav-cat="monitores pantallas">Monitores y Pantallas <b id="navCountMonitores"></b></a>
+				<a href="/tienda.html#catalogo" data-nav-cat="todo catalogo"><span>Todo el catálogo</span><small id="navCountAll">2773</small><i data-lucide="chevron-right" width="18"></i></a>
+				<a href="/tienda.html?macro=computacion#catalogo" data-nav-cat="computacion equipos"><span>Computación y Equipos</span><small id="navCountComputacion">236</small><i data-lucide="chevron-right" width="18"></i></a>
+				<a href="/tienda.html?macro=componentes#catalogo" data-nav-cat="componentes almacenamiento"><span>Componentes y Almacenamiento</span><small id="navCountComponentes">356</small><i data-lucide="chevron-right" width="18"></i></a>
+				<a href="/tienda.html?macro=redes#catalogo" data-nav-cat="redes conectividad"><span>Redes y Conectividad</span><small id="navCountRedes">336</small><i data-lucide="chevron-right" width="18"></i></a>
+				<a href="/tienda.html?macro=monitores#catalogo" data-nav-cat="monitores pantallas"><span>Monitores y Pantallas</span><small id="navCountMonitores"></small><i data-lucide="chevron-right" width="18"></i></a>
+			</div>
 			</div>
 		</div>
 	</nav>
@@ -2164,11 +2207,47 @@
 			return { totalProducts: products.length, groups };
 		};
 
+		const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+			'&': '&amp;',
+			'<': '&lt;',
+			'>': '&gt;',
+			'"': '&quot;',
+			"'": '&#39;'
+		}[char]));
+
+		const renderPublicCategoryMenu = (totalProducts, groups) => {
+			const list = document.querySelector('#publicNavCatList');
+			if (!list) return;
+
+			const rows = [
+				{
+					href: '/tienda.html#catalogo',
+					label: 'Todo el catálogo',
+					count: totalProducts,
+					search: 'todo catalogo'
+				},
+				...groups.slice(0, 8).map(group => ({
+					href: `/tienda.html?macro=${encodeURIComponent(group.id)}#catalogo`,
+					label: group.name,
+					count: group.totalCount,
+					search: `${group.name} ${group.id} ${(group.subcategories || []).slice(0, 8).map(sub => sub.displayName).join(' ')}`
+				}))
+			];
+
+			list.innerHTML = rows.map(row => `
+				<a href="${row.href}" data-nav-cat="${escapeHtml(normalizeCategoryText(row.search))}">
+					<span>${escapeHtml(row.label)}</span>
+					<small>${row.count ? `${row.count} productos` : ''}</small>
+					<i data-lucide="chevron-right" width="18"></i>
+				</a>
+			`).join('');
+		};
+
 		const updatePublicNavCategoryCounts = (totalProducts, groups) => {
 			const countByMacro = new Map(groups.map(group => [String(group.id).toLowerCase(), group.totalCount]));
 			const setCount = (selector, value) => {
 				const node = document.querySelector(selector);
-				if (node) node.textContent = value ? String(value) : '';
+				if (node) node.textContent = value ? `${value} productos` : '';
 			};
 
 			setCount('#navCountAll', totalProducts);
@@ -2176,6 +2255,7 @@
 			setCount('#navCountComponentes', countByMacro.get('componentes') || 0);
 			setCount('#navCountRedes', countByMacro.get('redes') || 0);
 			setCount('#navCountMonitores', countByMacro.get('monitores') || 0);
+			renderPublicCategoryMenu(totalProducts, groups);
 		};
 
 		const renderSidebarCategories = () => {
@@ -2897,6 +2977,26 @@
 				publicMenuBtn.setAttribute('aria-expanded', 'false');
 				publicMenuBtn.innerHTML = '<i data-lucide="menu" width="20"></i>';
 				lucide?.createIcons();
+			}));
+		}
+		const publicCategoryMenu = document.querySelector('#publicCategoryMenu');
+		const publicCategoryTrigger = document.querySelector('#publicCategoryTrigger');
+		if (publicCategoryMenu && publicCategoryTrigger) {
+			publicCategoryTrigger.addEventListener('click', event => {
+				event.preventDefault();
+				const isOpen = publicCategoryMenu.classList.toggle('is-open');
+				publicCategoryTrigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+				lucide?.createIcons();
+			});
+			document.addEventListener('click', event => {
+				if (!publicCategoryMenu.contains(event.target)) {
+					publicCategoryMenu.classList.remove('is-open');
+					publicCategoryTrigger.setAttribute('aria-expanded', 'false');
+				}
+			});
+			publicCategoryMenu.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
+				publicCategoryMenu.classList.remove('is-open');
+				publicCategoryTrigger.setAttribute('aria-expanded', 'false');
 			}));
 		}
 		const publicNavCatSearch = document.querySelector('#publicNavCatSearch');
