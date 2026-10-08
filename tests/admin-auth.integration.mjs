@@ -117,6 +117,8 @@ try {
   const stats = await request('admin-orders-stats');
   assert.equal(stats.data.revenue, 55, 'Ingresos solo suman pagos marcados como confirmados; excluyen pendientes, cancelados, reembolsados y filas legacy sin confirmación');
   assert.ok(stats.data.daily.length >= 2, 'Las métricas deben ofrecer evolución cuando hay pedidos en varios días');
+  assert.ok(stats.data.by_status.some((row) => row.status === 'pending' && row.total >= 1), 'El dashboard debe recibir conteos reales agrupados por estado actual');
+  assert.ok(stats.data.by_status.some((row) => row.status === 'paid' && row.total >= 1), 'El dashboard debe incluir cada estado presente en la base');
   const insights = await request('admin-dashboard-insights');
   assert.equal(insights.data.top_products[0].name, 'Router de prueba');
   assert.equal(insights.data.top_products[0].units, 2, 'El ranking debe leer articulos del JSON legado');

@@ -56,9 +56,12 @@
     .panel-title-row { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }
     .panel-title-row h3 { margin:0; color:#0f172a; font-size:17px; }
     .panel-title-row a { color:#0369a1; text-decoration:none; font-size:12.5px; font-weight:800; }
-    .mini-chart { height:165px; display:flex; align-items:end; gap:8px; padding:14px 8px 0; border-bottom:1px solid #e2e8f0; background:linear-gradient(#eef2f7 1px, transparent 1px) 0 16px / 100% 38px; }
-    .mini-bar { flex:1; min-width:12px; border-radius:8px 8px 0 0; background:linear-gradient(180deg, #60a5fa, #0ea5e9); opacity:.9; }
-    .mini-chart-labels { display:flex; justify-content:space-between; color:#64748b; font-size:11px; padding:8px 6px 0; }
+    .status-chart-list { min-height:165px; display:grid; align-content:center; gap:13px; padding:10px 4px; }
+    .status-chart-row { display:grid; grid-template-columns:minmax(88px, 124px) minmax(0, 1fr) 36px; align-items:center; gap:10px; }
+    .status-chart-name { overflow:hidden; color:#475569; font-size:12px; text-overflow:ellipsis; white-space:nowrap; }
+    .status-chart-track { height:10px; overflow:hidden; border-radius:999px; background:#e8eef2; }
+    .status-chart-track span { display:block; height:100%; min-width:0; border-radius:inherit; background:#0784a5; }
+    .status-chart-count { color:#0f172a; font-size:12px; text-align:right; }
     .attention-panel { padding:18px; }
     .attention-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px; }
     .attention-head h3 { margin:0 0 4px; font-size:16px; color:#0f172a; }
@@ -174,11 +177,10 @@
       <div class="dashboard-grid">
         <section class="dashboard-card chart-panel">
           <div class="panel-title-row">
-            <h3 id="ordersStatusTitle">Actividad por estado</h3>
+            <h3 id="ordersStatusTitle">Pedidos por estado actual</h3>
             <a href="pedidos.html">Ver pedidos</a>
           </div>
-          <div id="ordersStatusChart" class="mini-chart"></div>
-          <div id="ordersStatusLabels" class="mini-chart-labels"><span>Cotizaciones</span><span>Pagos</span><span>Preparación</span><span>Enviados</span><span>Entregados</span></div>
+          <div id="ordersStatusChart" class="status-chart-list" aria-live="polite"></div>
         </section>
         <section class="dashboard-card attention-panel" aria-labelledby="attentionTitle">
           <div class="attention-head">
@@ -385,23 +387,27 @@
     const renderStatusChart = stats => {
       const chart = document.getElementById('ordersStatusChart');
       if (!chart) return;
-      const byStatus = Object.fromEntries((stats.by_status || []).map(s => [s.status, s.total]));
-      const daily = stats.daily || [];
-      const showDaily = new Set(daily.map(item => item.day)).size >= 2;
-      const values = showDaily
-        ? daily.map(item => Number(item.orders || 0))
-        : ['quote_requested', 'pending', 'preparing', 'shipped', 'delivered'].map(key => byStatus[key] || 0);
-      const max = Math.max(1, ...values);
-      chart.innerHTML = values.map((value, index) => {
-        const height = Math.max(10, Math.round((value / max) * 100));
-        const day = showDaily ? daily[index] : null;
-        const label = day ? `${day.day}: ${value} pedidos · ${formatMoney(day.revenue)}` : `${value} pedidos`;
-        return `<span class="mini-bar" title="${escapeHtml(label)}" style="height:${height}%"></span>`;
-      }).join('');
-      document.getElementById('ordersStatusTitle').textContent = showDaily ? 'Pedidos últimos 7 días' : 'Actividad por estado';
-      document.getElementById('ordersStatusLabels').innerHTML = showDaily
-        ? daily.map(item => `<span>${new Date(`${item.day}T12:00:00`).toLocaleDateString('es-EC', { day: '2-digit', month: 'short' })}</span>`).join('')
-        : '<span>Cotizaciones</span><span>Pagos</span><span>Preparación</span><span>Enviados</span><span>Entregados</span>';
+      const order = ['quote_requested', 'pending', 'paid', 'preparing', 'shipped', 'delivered', 'cancelled', 'received'];
+      const statuses = (stats.by_status || []).slice().sort((a, b) => {
+        const aIndex = order.indexOf(a.status);
+        const bIndex = order.indexOf(b.status);
+        return (aIndex < 0 ? order.length : aIndex) - (bIndex < 0 ? order.length : bIndex)
+          || String(a.status || '').localeCompare(String(b.status || ''), 'es');
+      });
+      const max = Math.max(1, ...statuses.map(item => Number(item.total || 0)));
+      chart.innerHTML = statuses.length
+        ? statuses.map(item => {
+          const status = String(item.status || 'sin_estado');
+          const count = Math.max(0, Number(item.total || 0));
+          const label = statusLabels[status] || status.replaceAll('_', ' ');
+          const width = count ? Math.max(2, (count / max) * 100) : 0;
+          return `<div class="status-chart-row">
+            <span class="status-chart-name" title="${escapeHtml(label)}">${escapeHtml(label)}</span>
+            <div class="status-chart-track" role="progressbar" aria-label="${escapeHtml(label)}" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${count}"><span style="width:${width}%"></span></div>
+            <strong class="status-chart-count">${count.toLocaleString('es-EC')}</strong>
+          </div>`;
+        }).join('')
+        : '<p class="insight-empty">Aún no hay pedidos para mostrar.</p>';
     };
 
     const renderCatalogHealth = stats => {
