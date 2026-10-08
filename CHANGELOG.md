@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- Insights operativos en el dashboard: productos incluidos en pedidos recientes e inventario disponible/reservado cuando existen datos normalizados.
 - Menú móvil de pantalla completa en la tienda, con navegación a páginas comerciales y categorías; al abrirlo, el catálogo queda cubierto.
 - Enlace de cierre propio para el menú móvil y navegación de cuenta reutilizable en las páginas comerciales.
 - Acceso a la tienda desde el login administrativo.
@@ -19,6 +20,7 @@
 ### Fixed
 - Unificado el rol efectivo del panel con `users_rows.role`, refrescado desde la base en cada petición; se quitaron privilegios por allowlist de correo y los módulos distinguen 401 de 403 sin cerrar sesiones válidas.
 - Reparadas métricas del dashboard y pedidos con conteos desde la base, ingresos solo de pagos confirmados, carga independiente/reintentable y serie diaria cuando hay datos.
+- El dashboard combina `order_items` con artículos JSON antiguos sin duplicar pedidos, y diferencia inventario sin configurar de stock agotado.
 - El catálogo público excluye credenciales SMTP y claves secretas; el artefacto ya no publica `package.json` y Apache bloquea handlers PHP internos.
 - Añadidas pruebas de integración de autenticación, permisos, revocación, endpoints y métricas en MariaDB aislada.
 - El modal de detalle de producto ahora queda por encima del menú, la navegación y el drawer del carrito.
@@ -29,4 +31,4 @@
 ### Notes
 - La compilación no ejecuta migraciones ni altera la base de datos.
 - El workflow de GitHub valida código, artefactos y migraciones en una base temporal; el despliegue sigue a cargo de Hostinger.
-- `tablasnuevas.md` documenta una propuesta y consultas de Fase 0; las tablas propuestas no se crean ni se consideran desplegadas.
+- `migrations/007_expandir_base_segura.sql` documenta expansión aditiva por fases; las tablas nuevas requieren backfill controlado y adaptación del backend antes de convertirse en fuente de escritura.

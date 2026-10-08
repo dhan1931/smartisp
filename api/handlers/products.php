@@ -143,6 +143,102 @@ if ($action === 'catalog' && $method === 'GET') {
 // 2. GESTIÓN DE PRODUCTOS PARA EL EDITOR (/api/auth/admin-products)
 // -------------------------------------------------------------
 
+if ($action === 'admin-dashboard-insights') {
+    requireAdminAuth();
+
+    $tableExists = static function (string $table) use ($pdo): bool {
+        $stmt = $pdo->prepare('SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table LIMIT 1');
+        $stmt->execute([':table' => $table]);
+        return (bool)$stmt->fetchColumn();
+    };
+
+    $products = [];
+    $hasOrderItems = $tableExists('order_items');
+    if ($hasOrderItems) {
+        $stmt = $pdo->query("SELECT COALESCE(NULLIF(oi.product_id, ''), NULLIF(oi.sku, ''), oi.product_name) AS product_key,
+                MAX(oi.product_name) AS product_name, SUM(oi.quantity) AS units,
+                COUNT(DISTINCT oi.order_id) AS order_count
+            FROM order_items oi
+            INNER JOIN orders_rows o ON o.id = oi.order_id
+            WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+              AND LOWER(COALESCE(o.status, '')) NOT IN ('cancelled', 'canceled', 'refunded')
+            GROUP BY COALESCE(NULLIF(oi.product_id, ''), NULLIF(oi.sku, ''), oi.product_name)
+            ORDER BY units DESC, order_count DESC, product_name ASC
+            LIMIT 10");
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $key = (string)$row['product_key'];
+            $products[$key] = [
+                'name' => (string)$row['product_name'],
+                'units' => (int)$row['units'],
+                'orders' => (int)$row['order_count'],
+            ];
+        }
+    }
+
+    // Los pedidos anteriores a la normalizacion conservan sus articulos en JSON.
+    $legacySql = "SELECT o.id, o.items FROM orders_rows o
+        WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+          AND o.items IS NOT NULL AND TRIM(o.items) <> ''
+          AND LOWER(COALESCE(o.status, '')) NOT IN ('cancelled', 'canceled', 'refunded')";
+    if ($hasOrderItems) {
+        $legacySql .= ' AND NOT EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = o.id)';
+    }
+    $legacyRows = $pdo->query($legacySql)->fetchAll(PDO::FETCH_ASSOC);
+    $legacyOrders = [];
+    foreach ($legacyRows as $order) {
+        $decoded = json_decode((string)$order['items'], true);
+        if (!is_array($decoded)) continue;
+        if (isset($decoded['items']) && is_array($decoded['items'])) {
+            $items = $decoded['items'];
+        } elseif (isset($decoded['products']) && is_array($decoded['products'])) {
+            $items = $decoded['products'];
+        } elseif (isset($decoded['name']) || isset($decoded['product_name']) || isset($decoded['productId']) || isset($decoded['product_id'])) {
+            $items = [$decoded];
+        } else {
+            $items = $decoded;
+        }
+
+        foreach ($items as $item) {
+            if (!is_array($item)) continue;
+            $name = trim((string)($item['name'] ?? $item['product_name'] ?? $item['title'] ?? ''));
+            if ($name === '') continue;
+            $sku = trim((string)($item['sku'] ?? ''));
+            $productId = trim((string)($item['productId'] ?? $item['product_id'] ?? $item['id'] ?? ''));
+            $key = $productId !== '' ? $productId : ($sku !== '' ? $sku : strtolower($name));
+            $quantity = max(1, (int)($item['quantity'] ?? $item['qty'] ?? $item['cantidad'] ?? 1));
+            if (!isset($legacyOrders[$key])) {
+                $legacyOrders[$key] = ['name' => $name, 'units' => 0, 'order_ids' => []];
+            }
+            $legacyOrders[$key]['units'] += $quantity;
+            $legacyOrders[$key]['order_ids'][(string)$order['id']] = true;
+        }
+    }
+    foreach ($legacyOrders as $key => $item) {
+        if (!isset($products[$key])) $products[$key] = ['name' => $item['name'], 'units' => 0, 'orders' => 0];
+        $products[$key]['units'] += $item['units'];
+        $products[$key]['orders'] += count($item['order_ids']);
+    }
+    uasort($products, static fn(array $a, array $b): int => ($b['units'] <=> $a['units']) ?: ($b['orders'] <=> $a['orders']));
+
+    $inventory = ['tracked_products' => 0, 'available_units' => 0, 'reserved_units' => 0, 'out_of_stock' => 0];
+    if ($tableExists('product_inventory')) {
+        $row = $pdo->query("SELECT COUNT(*) AS tracked_products,
+                COALESCE(SUM(GREATEST(quantity_available - quantity_reserved, 0)), 0) AS available_units,
+                COALESCE(SUM(quantity_reserved), 0) AS reserved_units,
+                COALESCE(SUM(quantity_available <= quantity_reserved), 0) AS out_of_stock
+            FROM product_inventory")->fetch(PDO::FETCH_ASSOC) ?: [];
+        $inventory = array_map('intval', $row);
+    }
+
+    echo json_encode([
+        'period_days' => 30,
+        'top_products' => array_slice(array_values($products), 0, 5),
+        'inventory' => $inventory,
+        'inventory_configured' => $inventory['tracked_products'] > 0,
+    ]);
+    exit;
+}
+
 if ($action === 'admin-dashboard-stats') {
     requireAdminAuth();
     $pTable = getProductsTableName($pdo);

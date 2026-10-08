@@ -88,6 +88,7 @@ try {
     await db.execute('INSERT INTO orders_rows (id, total, status, payment_status) VALUES (?, ?, ?, ?)', [id, total, status, payment]);
   }
   await db.execute("INSERT INTO orders_rows (id, total, status, payment_status, created_at) VALUES (?, 5, 'paid', 'confirmed', DATE_SUB(NOW(), INTERVAL 1 DAY))", [orderIds[5]]);
+  await db.execute('UPDATE orders_rows SET items = ? WHERE id = ?', [JSON.stringify([{ productId: 'ci-dashboard-router', name: 'Router de prueba', quantity: 2 }]), orderIds[0]]);
 
   php = spawn('php', ['-S', `127.0.0.1:${port}`, '-t', root], { cwd: root, env: process.env, stdio: ['ignore', 'ignore', 'pipe'] });
   let startupError = '';
@@ -109,13 +110,18 @@ try {
 
   const admin = await login(fixtures.admin);
   assert.equal(admin.role, 'admin', 'Los roles admin equivalentes deben normalizarse');
-  for (const action of ['admin-orders-stats', 'admin-orders', 'admin-products', 'categories', 'admin-dashboard-stats']) {
+  for (const action of ['admin-orders-stats', 'admin-orders', 'admin-products', 'categories', 'admin-dashboard-stats', 'admin-dashboard-insights']) {
     const result = await request(action);
     assert.equal(result.status, 200, `Admin debe poder consultar ${action}: ${result.data.error || ''}`);
   }
   const stats = await request('admin-orders-stats');
   assert.equal(stats.data.revenue, 55, 'Ingresos solo suman pagos marcados como confirmados; excluyen pendientes, cancelados, reembolsados y filas legacy sin confirmación');
   assert.ok(stats.data.daily.length >= 2, 'Las métricas deben ofrecer evolución cuando hay pedidos en varios días');
+  const insights = await request('admin-dashboard-insights');
+  assert.equal(insights.data.top_products[0].name, 'Router de prueba');
+  assert.equal(insights.data.top_products[0].units, 2, 'El ranking debe leer articulos del JSON legado');
+  assert.equal(insights.data.top_products[0].orders, 1);
+  assert.equal(insights.data.inventory_configured, false, 'La ausencia de inventario registrado no debe mostrarse como stock cero');
   const changedOrder = await request('admin-order-status', { method: 'POST', body: { id: orderIds[0], status: 'shipped' } });
   assert.equal(changedOrder.status, 200, 'Admin debe actualizar el estado operativo del pedido');
   const [[stillPendingPayment]] = await db.query('SELECT payment_status FROM orders_rows WHERE id = ?', [orderIds[0]]);
