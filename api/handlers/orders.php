@@ -362,6 +362,11 @@ if ($action === 'admin-order-status' && $method === 'POST') {
     }
 
     $fromStatus = $order['status'] ?? null;
+    if (strtolower(trim((string)$fromStatus)) === strtolower($newStatus)) {
+        http_response_code(409);
+        echo json_encode(['error' => 'El pedido ya está en ese estado. No se registró un cambio duplicado.']);
+        exit;
+    }
 
     // El estado logístico no demuestra que el proveedor haya confirmado el pago.
     $upd = $pdo->prepare('UPDATE orders_rows SET status = :status, updated_at = NOW() WHERE id = :id');
@@ -385,6 +390,63 @@ if ($action === 'admin-order-status' && $method === 'POST') {
         'order' => smartispDecodeOrderRow($order),
         'email' => $emailResult,
     ]);
+    exit;
+}
+
+if ($action === 'admin-order-delete' && $method === 'POST') {
+    requireAdminAuth();
+
+    $id = trim((string)($body['id'] ?? ''));
+    if ($id === '') {
+        http_response_code(400);
+        echo json_encode(['error' => 'Falta el id del pedido.']);
+        exit;
+    }
+
+    $pdo->beginTransaction();
+    $stmt = $pdo->prepare('SELECT status, payment_status FROM orders_rows WHERE id = :id LIMIT 1 FOR UPDATE');
+    $stmt->execute([':id' => $id]);
+    $order = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$order) {
+        $pdo->rollBack();
+        http_response_code(404);
+        echo json_encode(['error' => 'Pedido no encontrado.']);
+        exit;
+    }
+
+    if (!in_array(strtolower(trim((string)$order['status'])), ['cancelled', 'canceled'], true)) {
+        $pdo->rollBack();
+        http_response_code(409);
+        echo json_encode(['error' => 'Solo se pueden eliminar pedidos cancelados.']);
+        exit;
+    }
+
+    $paymentStatus = strtolower(trim((string)($order['payment_status'] ?? '')));
+    if ($paymentStatus !== '' && !in_array($paymentStatus, ['pending', 'failed', 'cancelled', 'canceled', 'declined', 'expired'], true)) {
+        $pdo->rollBack();
+        http_response_code(409);
+        echo json_encode(['error' => 'No se puede eliminar: el pedido tiene un estado de pago que debe conservarse para auditoría.']);
+        exit;
+    }
+
+    $tableStmt = $pdo->prepare('SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table LIMIT 1');
+    $tableStmt->execute([':table' => 'order_payments']);
+    if ($tableStmt->fetchColumn()) {
+        $payments = $pdo->prepare('SELECT COUNT(*) FROM order_payments WHERE order_id = :id');
+        $payments->execute([':id' => $id]);
+        if ((int)$payments->fetchColumn() > 0) {
+            $pdo->rollBack();
+            http_response_code(409);
+            echo json_encode(['error' => 'No se puede eliminar: existen registros de pago asociados.']);
+            exit;
+        }
+    }
+
+    $delete = $pdo->prepare('DELETE FROM orders_rows WHERE id = :id');
+    $delete->execute([':id' => $id]);
+    $pdo->commit();
+
+    echo json_encode(['ok' => true, 'deleted_id' => $id]);
     exit;
 }
 

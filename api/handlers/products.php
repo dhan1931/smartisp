@@ -11,9 +11,6 @@
 if ($action === 'catalog' && $method === 'GET') {
     try {
         $pTable = getProductsTableName($pdo);
-        // Garantiza las columnas esperadas y un índice (visible, created_at) antes de filtrar/paginar en SQL.
-        ensureProductTableColumns($pdo, $pTable);
-
         $page = max(1, (int)($_GET['page'] ?? 1));
         $limit = min(100, max(1, (int)($_GET['limit'] ?? 36)));
         $offset = ($page - 1) * $limit;

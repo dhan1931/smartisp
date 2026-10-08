@@ -329,87 +329,7 @@ function getDynamicCategoriesList(PDO $pdo): array {
 // 1. CATÁLOGO PÚBLICO (/api/auth/catalog)
 // -------------------------------------------------------------
 if ($action === 'catalog' && $method === 'GET') {
-    try {
-        $pTable = getProductsTableName($pdo);
-        
-        $stmt = $pdo->query("SELECT * FROM `$pTable`");
-        $rawProducts = $stmt->fetchAll();
-        $products = [];
-        foreach ($rawProducts as $p) {
-            $norm = normalizeProductRow($p);
-            if ($norm['visible']) {
-                $products[] = $norm;
-            }
-        }
-
-        $stmtContent = $pdo->query("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows");
-        $allContent = $stmtContent ? $stmtContent->fetchAll() : [];
-        $content = [];
-        $hasLogoImage = false;
-        foreach ($allContent as $item) {
-            if (($item['key'] ?? '') === 'logo_image' && !empty($item['value'])) {
-                $hasLogoImage = true;
-                break;
-            }
-        }
-        $excludePrefixes = [
-            'solutions_grid_html', 'advantages_grid_html', 'about_visual_html', 'stats_grid_html',
-            'landing_logo_dark_image', 'about_', 'contact_', 'mission_', 'vision_', 'value', 'sol', 'adv', 'stat'
-        ];
-        $sensitiveKeys = [
-            'admin_email', 'smtp_provider', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass',
-            'smtp_secure', 'smtp_from', 'resend_api_key', 'email_from'
-        ];
-        foreach ($allContent as $item) {
-            $k = (string)($item['key'] ?? '');
-            $normalizedKey = strtolower($k);
-            if (in_array($normalizedKey, $sensitiveKeys, true)
-                || str_contains($normalizedKey, 'pass')
-                || str_contains($normalizedKey, 'secret')
-                || str_contains($normalizedKey, 'api_key')) {
-                continue;
-            }
-            if ($k === 'landing_logo_image' && $hasLogoImage) {
-                continue; // Evitar duplicar 1MB en la tienda
-            }
-            $shouldExclude = false;
-            foreach ($excludePrefixes as $prefix) {
-                if (str_starts_with($k, $prefix)) {
-                    $shouldExclude = true;
-                    break;
-                }
-            }
-            if (!$shouldExclude) {
-                $content[] = $item;
-            }
-        }
-
-        $categories = getDynamicCategoriesList($pdo);
-        $total = count($products);
-
-        $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : null;
-        $limit = isset($_GET['limit']) ? min(100, max(1, (int)$_GET['limit'])) : 36;
-
-        $returnProducts = $products;
-        if ($page !== null) {
-            $offset = ($page - 1) * $limit;
-            $returnProducts = array_slice($products, $offset, $limit);
-        }
-
-        echo json_encode([
-            'products'   => $returnProducts,
-            'total'      => $total,
-            'page'       => $page ?: 1,
-            'limit'      => $limit,
-            'totalPages' => ceil($total / $limit),
-            'content'    => $content,
-            'categories' => $categories
-        ]);
-    } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode(['error' => $e->getMessage(), 'products' => [], 'content' => [], 'categories' => []]);
-    }
-    exit;
+    require __DIR__ . '/handlers/products.php';
 }
 
 // -------------------------------------------------------------
@@ -420,10 +340,62 @@ if ($action === 'admin-products') {
     $pTable = getProductsTableName($pdo);
 
     if ($method === 'GET') {
-        $stmt = $pdo->query("SELECT * FROM `$pTable` ORDER BY created_at DESC");
-        $rows = $stmt->fetchAll();
-        $products = array_map('normalizeProductRow', $rows);
-        echo json_encode(['products' => $products]);
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $limit = min(200, max(1, (int)($_GET['limit'] ?? 50)));
+        $offset = ($page - 1) * $limit;
+        $where = ['1=1'];
+        $params = [];
+
+        $category = trim((string)($_GET['category'] ?? ''));
+        if ($category !== '' && $category !== 'all') {
+            $where[] = 'category = :category';
+            $params[':category'] = $category;
+        }
+        $subcategory = trim((string)($_GET['subcategory'] ?? ''));
+        if ($subcategory !== '' && $subcategory !== 'all') {
+            $where[] = 'subcategory = :subcategory';
+            $params[':subcategory'] = $subcategory;
+        }
+        $visible = trim((string)($_GET['visible'] ?? ''));
+        if ($visible === 'visible') $where[] = 'visible = 1';
+        elseif ($visible === 'hidden') $where[] = 'visible = 0';
+
+        $photo = trim((string)($_GET['photo'] ?? ''));
+        if ($photo === 'with_photo') $where[] = "(image_url IS NOT NULL AND image_url != '')";
+        elseif ($photo === 'without_photo') $where[] = "(image_url IS NULL OR image_url = '')";
+
+        $price = trim((string)($_GET['price'] ?? ''));
+        if ($price === 'with_price') $where[] = '(price IS NOT NULL AND price > 0)';
+        elseif ($price === 'quote') $where[] = '(price IS NULL OR price <= 0)';
+
+        $search = trim((string)($_GET['q'] ?? ''));
+        if ($search !== '') {
+            $where[] = '(name LIKE :q_name OR sku LIKE :q_sku OR category LIKE :q_cat OR subcategory LIKE :q_sub OR description LIKE :q_desc)';
+            $likeSearch = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $search) . '%';
+            foreach (['name', 'sku', 'cat', 'sub', 'desc'] as $field) {
+                $params[':q_' . $field] = $likeSearch;
+            }
+        }
+
+        $whereSql = implode(' AND ', $where);
+        $totalStmt = $pdo->prepare("SELECT COUNT(*) FROM `$pTable` WHERE $whereSql");
+        $totalStmt->execute($params);
+        $total = (int)$totalStmt->fetchColumn();
+
+        $stmt = $pdo->prepare("SELECT * FROM `$pTable` WHERE $whereSql ORDER BY created_at DESC, id ASC LIMIT :limit OFFSET :offset");
+        foreach ($params as $key => $value) $stmt->bindValue($key, $value);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $products = array_map('normalizeProductRow', $stmt->fetchAll());
+
+        echo json_encode([
+            'products' => $products,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit,
+            'totalPages' => (int)ceil($total / max(1, $limit)),
+        ]);
         exit;
     }
 

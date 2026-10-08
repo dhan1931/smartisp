@@ -119,6 +119,33 @@ $imgSrc = $product ? $product['imageUrl'] : ($siteUrl . '/assets/favicons/favico
 if (strpos($imgSrc, '/') === 0) {
     $imgSrc = $siteUrl . $imgSrc;
 }
+$productSchema = null;
+if ($product) {
+    $productSchema = [
+        '@context' => 'https://schema.org/',
+        '@type' => 'Product',
+        'name' => $product['name'],
+        'image' => [$imgSrc],
+        'description' => $rawDesc,
+        'sku' => $product['sku'] ?: $product['id'],
+        'category' => $product['category'],
+        'brand' => ['@type' => 'Brand', 'name' => 'SmartISP'],
+    ];
+    if ($productPrice > 0) {
+        $productSchema['offers'] = [
+            '@type' => 'Offer',
+            'url' => $canonicalUrl,
+            'priceCurrency' => 'USD',
+            'price' => number_format($productPrice, 2, '.', ''),
+            'itemCondition' => 'https://schema.org/NewCondition',
+            'seller' => [
+                '@type' => 'Organization',
+                'name' => 'SmartISP',
+                'url' => $siteUrl,
+            ],
+        ];
+    }
+}
 
 // Productos relacionados en la misma categoría
 $relatedProducts = [];
@@ -165,7 +192,6 @@ $waUrl = "https://wa.me/593983576667?text={$waMessage}";
     <?php if ($product && $productPrice > 0): ?>
     <meta property="product:price:amount" content="<?= $productPrice ?>">
     <meta property="product:price:currency" content="USD">
-    <meta property="product:availability" content="instock">
     <?php endif; ?>
 
     <!-- Twitter Card -->
@@ -177,33 +203,7 @@ $waUrl = "https://wa.me/593983576667?text={$waMessage}";
     <?php if ($product): ?>
     <!-- Microdatos Schema.org Product para Google Search & Google Shopping -->
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org/",
-      "@type": "Product",
-      "name": <?= json_encode($product['name'], JSON_UNESCAPED_UNICODE) ?>,
-      "image": [<?= json_encode($imgSrc, JSON_UNESCAPED_SLASHES) ?>],
-      "description": <?= json_encode($rawDesc, JSON_UNESCAPED_UNICODE) ?>,
-      "sku": <?= json_encode($product['sku'] ?: $product['id'], JSON_UNESCAPED_UNICODE) ?>,
-      "category": <?= json_encode($product['category'], JSON_UNESCAPED_UNICODE) ?>,
-      "brand": {
-        "@type": "Brand",
-        "name": "SmartISP"
-      },
-      "offers": {
-        "@type": "Offer",
-        "url": <?= json_encode($canonicalUrl, JSON_UNESCAPED_SLASHES) ?>,
-        "priceCurrency": "USD",
-        "price": "<?= number_format($productPrice, 2, '.', '') ?>",
-        "priceValidUntil": "2027-12-31",
-        "itemCondition": "https://schema.org/NewCondition",
-        "availability": "https://schema.org/InStock",
-        "seller": {
-          "@type": "Organization",
-          "name": "SmartISP",
-          "url": "https://smart-isp.com.ec"
-        }
-      }
-    }
+    <?= json_encode($productSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
     </script>
     <script type="application/ld+json">
     {

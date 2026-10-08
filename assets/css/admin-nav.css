@@ -12,8 +12,8 @@
   --nav-danger: #a53b3b;
   --nav-width: 240px;
   --nav-width-collapsed: 72px;
-  --nav-z-sidebar: 200000;
-  --nav-z-editor: 2000;
+  --nav-z-sidebar: 150;
+  --nav-z-editor: 140;
 }
 
 body.admin-sidebar-collapsed {
@@ -86,6 +86,7 @@ body.has-admin-sidebar {
 body.has-admin-sidebar > .top,
 body.has-admin-sidebar > .topbar,
 body.has-admin-sidebar > .navbar,
+body.has-admin-sidebar > .top-header,
 body.has-admin-sidebar > main {
   margin-left: var(--nav-width);
   width: calc(100vw - var(--nav-width));
@@ -107,6 +108,13 @@ body.has-admin-sidebar > .top span { color: var(--nav-muted); }
 
 body.has-admin-sidebar > main.shell {
   width: min(1180px, calc(100vw - var(--nav-width) - 48px));
+  max-width: calc(100vw - var(--nav-width) - 48px);
+  margin-left: calc(var(--nav-width) + 24px);
+  margin-right: 24px;
+}
+
+body.has-admin-sidebar > .main-shell {
+  width: min(1400px, calc(100vw - var(--nav-width) - 48px));
   max-width: calc(100vw - var(--nav-width) - 48px);
   margin-left: calc(var(--nav-width) + 24px);
   margin-right: 24px;
@@ -152,6 +160,28 @@ body.has-admin-sidebar > .navbar * {
   height: 22px;
   color: #7dd3fc;
 }
+
+#smartisp-admin-nav .admin-nav-logo {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 1 auto;
+  max-width: 150px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+#smartisp-admin-nav .admin-nav-logo img {
+  display: block;
+  width: auto;
+  max-width: 150px;
+  max-height: 42px;
+  object-fit: contain;
+}
+
+#smartisp-admin-nav .admin-nav-logo-dot { color: #f5a524; }
 
 #smartisp-admin-nav .admin-nav-brand strong {
   display: block;
@@ -335,9 +365,12 @@ body.admin-sidebar-collapsed #smartisp-admin-nav {
 
 body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-brand {
   justify-content: center;
-  padding: 18px 10px 12px;
+  min-height: 64px;
+  flex: 0 0 64px;
+  padding: 10px;
 }
 
+body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-logo,
 body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-brand > div,
 body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-group-label,
 body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-links a .label,
@@ -349,14 +382,15 @@ body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-logout span {
 
 body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-toggle {
   position: absolute;
-  left: 8px;
+  left: 50%;
   right: auto;
-  top: 52px;
+  top: 50%;
+  transform: translate(-50%, -50%);
   margin-left: 0;
 }
 
 body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-links {
-  padding: 48px 10px 12px;
+  padding: 12px 10px;
 }
 
 body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-group {
@@ -422,6 +456,7 @@ body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-user-row {
   body.has-admin-sidebar > .top,
   body.has-admin-sidebar > .topbar,
   body.has-admin-sidebar > .navbar,
+  body.has-admin-sidebar > .top-header,
   body.has-admin-sidebar > main {
     margin-left: 0 !important;
     width: 100% !important;
@@ -431,6 +466,13 @@ body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-user-row {
   body.has-admin-sidebar > .top { padding: 14px 16px; }
   body.has-admin-sidebar > main.shell {
     width: min(1180px, calc(100% - 24px)) !important;
+    max-width: calc(100% - 24px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    margin-top: 16px;
+  }
+  body.has-admin-sidebar > .main-shell {
+    width: calc(100% - 24px) !important;
     max-width: calc(100% - 24px) !important;
     margin-left: auto !important;
     margin-right: auto !important;
@@ -490,6 +532,7 @@ body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-user-row {
   #smartisp-admin-nav .admin-nav-logout span { display: inline; }
   body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-brand > div,
   body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-user-info { display: block; }
+  body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-logo { display: inline-flex; }
   body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-group-label { display: block; }
   body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-links a .label,
   body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-storelink span,

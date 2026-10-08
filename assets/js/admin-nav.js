@@ -56,6 +56,44 @@
     }).join('');
   }
 
+  function loadConfiguredLogo(root) {
+    fetch('/api/auth/site-content', { credentials: 'include', cache: 'no-store' })
+      .then(function (response) { return response.ok ? response.json() : null; })
+      .then(function (data) {
+        if (!data || !Array.isArray(data.content)) return;
+        var content = Object.fromEntries(data.content.map(function (item) { return [item.key, item.value]; }));
+        var logo = root.querySelector('.admin-nav-logo');
+        if (!logo) return;
+
+        var mode = content.landing_logo_type || (content.landing_logo_image ? 'image' : content.logo_type || (content.logo_image ? 'image' : 'text'));
+        var brand = content.landing_logo_text || content.brand_name || content.logo_text || 'SmartISP';
+        var image = content.landing_logo_image || content.logo_image || '';
+        var height = parseInt(content.landing_logo_height || content.logo_height, 10) || 38;
+        logo.replaceChildren();
+        if (mode === 'image' && image) {
+          var img = document.createElement('img');
+          img.src = image;
+          img.alt = brand;
+          img.style.height = height + 'px';
+          logo.appendChild(img);
+          return;
+        }
+
+        var text = content.landing_logo_text || content.logo_text || brand;
+        var value = String(text || 'SmartISP').trim() || 'SmartISP';
+        var splitAt = Math.ceil(value.length / 2);
+        logo.appendChild(document.createTextNode(value.slice(0, splitAt)));
+        var bold = document.createElement('b');
+        bold.textContent = value.slice(splitAt);
+        logo.appendChild(bold);
+        var dot = document.createElement('span');
+        dot.className = 'admin-nav-logo-dot';
+        dot.textContent = '.';
+        logo.appendChild(dot);
+      })
+      .catch(function () { /* Se conserva el nombre de marca de respaldo. */ });
+  }
+
   function render(root, user) {
     var activeKey = root.getAttribute('data-active') || '';
     var name = (user && (user.name || user.email)) || '';
@@ -73,8 +111,8 @@
     root.innerHTML =
       '<div class="admin-nav-brand">' +
       '<button type="button" class="admin-nav-mobile-toggle" title="Abrir menú" aria-label="Abrir menú" aria-expanded="false" aria-controls="admin-nav-links"><i data-lucide="menu" aria-hidden="true"></i></button>' +
-      '<i data-lucide="store" aria-hidden="true"></i>' +
-      '<div><strong>SmartISP</strong><span>Panel Administrativo</span></div>' +
+      '<span class="admin-nav-logo">SmartISP</span>' +
+      '<div><strong>Panel Administrativo</strong></div>' +
       '<button type="button" class="admin-nav-toggle" title="' + (collapsed ? 'Expandir barra lateral' : 'Contraer barra lateral') + '" aria-label="' + (collapsed ? 'Expandir barra lateral' : 'Contraer barra lateral') + '" aria-controls="admin-nav-links" aria-expanded="' + (!collapsed) + '">' +
       '<i data-lucide="' + (collapsed ? 'panel-left-open' : 'panel-left-close') + '" aria-hidden="true"></i>' +
       '</button>' +
@@ -91,6 +129,7 @@
 
     if (window.lucide) window.lucide.createIcons();
 
+    loadConfiguredLogo(root);
     root.querySelector('.admin-nav-toggle').addEventListener('click', function () {
       var nextCollapsed = !document.body.classList.contains('admin-sidebar-collapsed');
       document.body.classList.toggle('admin-sidebar-collapsed', nextCollapsed);
@@ -154,14 +193,14 @@
           sessionStorage.removeItem('smartisp.adminToken');
           sessionStorage.removeItem('smartisp.accountUser');
         } catch (e) { /* almacenamiento bloqueado (modo privado); no es crítico */ }
-        window.location.href = '/login.html';
+        window.location.href = '/login.html?admin=1';
       });
     });
   }
 
   function redirectToLogin() {
     var back = encodeURIComponent(window.location.pathname + window.location.search);
-    window.location.href = '/login.html?redirect=' + back;
+    window.location.href = '/login.html?admin=1&redirect=' + back;
   }
 
   function renderNotice(root, title, message, retry) {
@@ -172,7 +211,7 @@
       '<strong>' + escapeHtml(title) + '</strong><span>' + escapeHtml(message) + '</span>' +
       (retry ? '<button type="button" class="admin-nav-retry" aria-label="Reintentar" title="Reintentar"><i data-lucide="refresh-cw" aria-hidden="true"></i> Reintentar</button>' : '') +
       '<a href="/tienda.html"><i data-lucide="store" aria-hidden="true"></i> Ver tienda</a>' +
-      '<a href="/login.html"><i data-lucide="log-in" aria-hidden="true"></i> Iniciar sesión</a></section>';
+      '<a href="/login.html?admin=1&redirect=' + encodeURIComponent(window.location.pathname + window.location.search) + '"><i data-lucide="log-in" aria-hidden="true"></i> Iniciar sesión de administrador</a></section>';
     if (window.lucide) window.lucide.createIcons();
     var retryButton = root.querySelector('.admin-nav-retry');
     if (retryButton) retryButton.addEventListener('click', function () {

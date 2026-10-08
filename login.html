@@ -35,8 +35,8 @@
 </head>
 <body>
   <main class="card">
-    <h1>Iniciar sesión</h1>
-    <p class="sub">Un solo acceso para clientes y administradores. El rol lo decide el servidor, no esta página.</p>
+    <h1 id="loginTitle">Iniciar sesión</h1>
+    <p class="sub" id="loginSubtitle">Accede a tu cuenta SmartISP.</p>
 
     <form id="loginForm" autocomplete="on">
       <label>Correo
@@ -53,7 +53,7 @@
       <button type="submit" id="loginSubmit">Entrar</button>
     </form>
 
-    <p class="links">
+    <p class="links" id="loginLinks">
       ¿No tienes cuenta? <a href="/tienda.html">Regístrate en la tienda</a><br>
       <a href="/reset-password.html">¿Olvidaste tu contraseña?</a>
     </p>
@@ -65,6 +65,13 @@
       var form = document.getElementById('loginForm');
       var submitBtn = document.getElementById('loginSubmit');
       var message = document.getElementById('loginMessage');
+      var params = new URLSearchParams(window.location.search);
+      var adminOnly = params.get('admin') === '1';
+      if (adminOnly) {
+        document.getElementById('loginTitle').textContent = 'Acceso administrativo';
+        document.getElementById('loginSubtitle').textContent = 'Inicia sesión con una cuenta autorizada para administrar SmartISP.';
+        document.getElementById('loginLinks').innerHTML = '<a href="/tienda.html">Volver a la tienda</a><br><a href="/reset-password.html">¿Olvidaste tu contraseña?</a>';
+      }
 
       function showMessage(text, isError) {
         message.textContent = text;
@@ -72,9 +79,9 @@
       }
 
       function targetFor(role) {
-        var params = new URLSearchParams(window.location.search);
         var redirect = params.get('redirect');
-        if (redirect && redirect.startsWith('/')) return redirect;
+        if (adminOnly && role !== 'admin') return '/admin.html';
+        if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) return redirect;
         return role === 'admin' ? '/admin.html' : '/tienda.html';
       }
 
@@ -90,7 +97,7 @@
           method: 'POST',
           credentials: 'include', // la sesión real queda en una cookie del backend
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email, password: password })
+          body: JSON.stringify({ email: email, password: password, adminOnly: adminOnly })
         })
           .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
           .then(function (result) {
@@ -100,6 +107,11 @@
               return;
             }
             var user = result.data.user;
+            if (adminOnly && user.role !== 'admin') {
+              showMessage('Esta cuenta no tiene acceso al panel administrativo.', true);
+              submitBtn.disabled = false;
+              return;
+            }
             // Puente transicional mientras el resto del panel migra de localStorage a la cookie
             // de sesión real (DEV-20261005-002). La fuente de verdad es el backend, no esto.
             try {

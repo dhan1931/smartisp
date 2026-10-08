@@ -25,7 +25,7 @@ const fixtures = {
   admin: { id: 'ci-auth-admin', email: 'ci-admin-auth@example.test', password: 'ci-admin-pass-2026', role: 'Administrator' },
   customer: { id: 'ci-auth-customer', email: 'ci-customer-auth@example.test', password: 'ci-customer-pass-2026', role: 'customer' },
 };
-const orderIds = ['ci-auth-pending', 'ci-auth-paid', 'ci-auth-cancelled', 'ci-auth-refunded', 'ci-auth-legacy', 'ci-auth-paid-yesterday'];
+const orderIds = ['ci-auth-pending', 'ci-auth-paid', 'ci-auth-cancelled', 'ci-auth-refunded', 'ci-auth-legacy', 'ci-auth-paid-yesterday', 'ci-auth-cancelled-delete'];
 const settingKey = 'ci_auth_integration';
 const secretSetting = 'smtp_pass';
 const secretValue = 'ci-secret-must-not-be-public';
@@ -44,7 +44,9 @@ async function request(action, { method = 'GET', body, session = cookie } = {}) 
   const headers = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (session) headers.Cookie = session;
-  const response = await fetch(`${baseUrl}/api/router.php?action=${encodeURIComponent(action)}`, {
+  const [name, query] = action.split('?', 2);
+  const url = `${baseUrl}/api/router.php?action=${encodeURIComponent(name)}${query ? `&${query}` : ''}`;
+  const response = await fetch(url, {
     method,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -57,8 +59,8 @@ async function request(action, { method = 'GET', body, session = cookie } = {}) 
   return { status: response.status, data };
 }
 
-async function login(user) {
-  const response = await request('login', { method: 'POST', body: { email: user.email, password: user.password }, session: '' });
+async function login(user, adminOnly = false) {
+  const response = await request('login', { method: 'POST', body: { email: user.email, password: user.password, adminOnly }, session: '' });
   assert.equal(response.status, 200, `Login de ${user.role} debió aceptar la contraseña válida`);
   return response.data.user;
 }
@@ -83,6 +85,7 @@ try {
     [orderIds[2], 'cancelled', 'confirmed', 900],
     [orderIds[3], 'delivered', 'refunded', 800],
     [orderIds[4], 'delivered', null, 25],
+    [orderIds[6], 'cancelled', 'pending', 4],
   ];
   for (const [id, status, payment, total] of orders) {
     await db.execute('INSERT INTO orders_rows (id, total, status, payment_status) VALUES (?, ?, ?, ?)', [id, total, status, payment]);
@@ -107,13 +110,27 @@ try {
   const publicCatalog = await request('catalog', { session: '' });
   assert.equal(publicCatalog.status, 200, 'El catálogo público debe estar disponible');
   assert.ok(!JSON.stringify(publicCatalog.data.content).includes(secretValue), 'El catálogo público no debe filtrar secretos SMTP');
+  const publicPage = await request('catalog?page=1&limit=2', { session: '' });
+  assert.equal(publicPage.status, 200, 'El catálogo público debe aceptar paginación SQL');
+  assert.ok(publicPage.data.products.length <= 2, 'El catálogo público debe respetar el límite de página');
+  assert.equal(typeof publicPage.data.total, 'number', 'El catálogo público debe exponer el total para paginar');
 
-  const admin = await login(fixtures.admin);
+  const customerAdminLogin = await request('login', { method: 'POST', body: { email: fixtures.customer.email, password: fixtures.customer.password, adminOnly: true }, session: '' });
+  assert.equal(customerAdminLogin.status, 403, 'El login administrativo debe rechazar clientes antes de crear una sesión');
+  assert.equal(customerAdminLogin.data.user, undefined);
+  assert.equal((await request('me')).status, 401, 'El intento adminOnly de un cliente no debe autenticarlo');
+
+  const admin = await login(fixtures.admin, true);
   assert.equal(admin.role, 'admin', 'Los roles admin equivalentes deben normalizarse');
   for (const action of ['admin-orders-stats', 'admin-orders', 'admin-products', 'categories', 'admin-dashboard-stats', 'admin-dashboard-insights']) {
     const result = await request(action);
     assert.equal(result.status, 200, `Admin debe poder consultar ${action}: ${result.data.error || ''}`);
   }
+  const productPage = await request('admin-products?page=1&limit=2');
+  assert.equal(productPage.status, 200, 'Admin debe cargar la primera página del catálogo');
+  assert.ok(Array.isArray(productPage.data.products), 'El catálogo debe devolver una lista de productos');
+  assert.equal(typeof productPage.data.total, 'number', 'El catálogo debe devolver el total para el paginador');
+  assert.ok(productPage.data.products.length <= 2, 'El catálogo debe respetar el límite de página');
   const stats = await request('admin-orders-stats');
   assert.equal(stats.data.revenue, 55, 'Ingresos solo suman pagos marcados como confirmados; excluyen pendientes, cancelados, reembolsados y filas legacy sin confirmación');
   assert.ok(stats.data.daily.length >= 2, 'Las métricas deben ofrecer evolución cuando hay pedidos en varios días');
@@ -128,6 +145,16 @@ try {
   assert.equal(changedOrder.status, 200, 'Admin debe actualizar el estado operativo del pedido');
   const [[stillPendingPayment]] = await db.query('SELECT payment_status FROM orders_rows WHERE id = ?', [orderIds[0]]);
   assert.equal(stillPendingPayment.payment_status, 'pending', 'Cambiar el estado operativo no debe fingir una confirmación de pago');
+  const repeatedStatus = await request('admin-order-status', { method: 'POST', body: { id: orderIds[2], status: 'cancelled' } });
+  assert.equal(repeatedStatus.status, 409, 'No debe registrar dos veces consecutivas el mismo estado cancelado');
+  const deleteActiveOrder = await request('admin-order-delete', { method: 'POST', body: { id: orderIds[0] } });
+  assert.equal(deleteActiveOrder.status, 409, 'No se pueden eliminar pedidos que no estén cancelados');
+  const deletePaidCancelledOrder = await request('admin-order-delete', { method: 'POST', body: { id: orderIds[2] } });
+  assert.equal(deletePaidCancelledOrder.status, 409, 'No se deben eliminar pedidos con pago/registro financiero que conservar');
+  const deleteCancelledOrder = await request('admin-order-delete', { method: 'POST', body: { id: orderIds[6] } });
+  assert.equal(deleteCancelledOrder.status, 200, 'Admin puede eliminar un pedido cancelado sin pago registrado');
+  const [[deletedCount]] = await db.query('SELECT COUNT(*) AS total FROM orders_rows WHERE id = ?', [orderIds[6]]);
+  assert.equal(Number(deletedCount.total), 0, 'La eliminacion confirmada debe retirar el pedido cancelado');
 
   const saved = await request('admin-content', { method: 'POST', body: { content: [{ key: settingKey, value: 'admin-ok' }] } });
   assert.equal(saved.status, 200, 'Admin debe completar una operación administrativa autorizada');
@@ -136,6 +163,8 @@ try {
   assert.equal(customer.role, 'customer');
   const forbidden = await request('admin-orders-stats');
   assert.equal(forbidden.status, 403, 'Un cliente autenticado debe recibir 403');
+  const forbiddenDelete = await request('admin-order-delete', { method: 'POST', body: { id: orderIds[0] } });
+  assert.equal(forbiddenDelete.status, 403, 'Un cliente no puede eliminar pedidos');
   const meBefore = await request('me');
   assert.equal(meBefore.status, 200);
   assert.equal(meBefore.data.user.role, 'customer');
@@ -158,6 +187,10 @@ try {
       for (const match of source.matchAll(/\$\('#([^']+)'\)\.addEventListener/g)) {
         assert.ok(ids.has(match[1]), `admin.html registra un listener directo para #${match[1]}, pero ese elemento no existe`);
       }
+    }
+    if (page === 'editor-catalogo.html') {
+      assert.ok(!source.includes('adminAuthModal'), 'El editor no debe volver a incrustar el login administrativo');
+      assert.ok(source.includes('/login.html?admin=1&redirect='), 'El editor debe enviar al login administrativo dedicado');
     }
   }
 

@@ -49,6 +49,10 @@
     .status-badge { display: inline-flex; padding: 3px 10px; border-radius: 14px; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
     .row-link { background: none; border: 0; color: var(--blue); font-weight: 700; cursor: pointer; font-size: 12.5px; padding: 0; }
     .row-link:hover { text-decoration: underline; }
+    .row-actions { display:flex; align-items:center; gap:12px; }
+    .row-delete { display:grid; place-items:center; width:30px; height:30px; border:1px solid #f1caca; border-radius:7px; color:#a53b3b; background:#fff; }
+    .row-delete:hover { color:#7f1d1d; background:#fff4f4; border-color:#e8aaaa; }
+    .row-delete:disabled { opacity:.55; cursor:wait; }
     .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
 
     .pager { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 18px; font-size: 13px; }
@@ -72,9 +76,9 @@
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
-  <link rel="stylesheet" href="/assets/css/admin-nav.css?v=mobile-hitbox">
+  <link rel="stylesheet" href="/assets/css/admin-nav.css?v=admin-shell-brand-20261008">
   <div id="smartisp-admin-nav" class="is-loading" data-active="pedidos"></div>
-  <script src="/assets/js/admin-nav.js?v=mobile-hitbox" defer></script>
+  <script src="/assets/js/admin-nav.js?v=admin-shell-brand-20261008" defer></script>
   <header class="top"><div><h1>SmartISP Administracion</h1><span>Centro de pedidos</span></div></header>
   <main class="shell">
     <section id="accessDeniedPanel" class="login hidden">
@@ -298,13 +302,31 @@
             <td>${itemCount} ud.</td>
             <td>${money(o.total)}</td>
             <td>${statusBadge(o.status)}</td>
-            <td><button class="row-link" data-id="${escapeHtml(o.id)}">Ver detalle <i data-lucide="arrow-right" style="width:12px;height:12px;"></i></button></td>
+            <td><div class="row-actions"><button class="row-link" data-id="${escapeHtml(o.id)}">Ver detalle <i data-lucide="arrow-right" style="width:12px;height:12px;"></i></button>
+              ${['cancelled', 'canceled'].includes(String(o.status || '').toLowerCase()) ? `<button class="row-delete" type="button" data-delete-id="${escapeHtml(o.id)}" aria-label="Eliminar pedido cancelado ${escapeHtml(o.id)}" title="Eliminar pedido cancelado"><i data-lucide="trash-2" style="width:15px;height:15px;"></i></button>` : ''}
+            </div></td>
           </tr>`;
       }).join('');
       body.querySelectorAll('.row-link').forEach(btn => {
         btn.addEventListener('click', () => openOrderModal(btn.dataset.id));
       });
+      body.querySelectorAll('.row-delete').forEach(btn => {
+        btn.addEventListener('click', () => deleteCancelledOrder(btn.dataset.deleteId, btn));
+      });
       if (window.lucide) window.lucide.createIcons();
+    };
+
+    const deleteCancelledOrder = async (id, button) => {
+      if (!window.confirm(`Eliminar definitivamente el pedido cancelado ${id}? Esta accion no se puede deshacer.`)) return;
+      button.disabled = true;
+      try {
+        await api('admin-order-delete', { method: 'POST', body: JSON.stringify({ id }) });
+        await Promise.all([loadOrders(), loadStats()]);
+      } catch (error) {
+        window.alert(error.message);
+      } finally {
+        button.disabled = false;
+      }
     };
 
     const loadOrders = async () => {
@@ -330,6 +352,12 @@
     $('#nextPageBtn').addEventListener('click', () => { if (state.page < state.totalPages) { state.page++; loadOrders(); } });
 
     let currentModalOrder = null;
+    let updatingStatus = false;
+    const syncStatusSubmitButton = () => {
+      const selectedStatus = String($('#statusSelect').value || '').toLowerCase();
+      const currentStatus = String(currentModalOrder?.status || '').toLowerCase();
+      $('#statusSubmitBtn').disabled = updatingStatus || !currentModalOrder || selectedStatus === currentStatus;
+    };
 
     const openOrderModal = async (id) => {
       try {
@@ -362,6 +390,7 @@
         const select = $('#statusSelect');
         select.innerHTML = STATUS_FLOW.concat(STATUS_META[o.status] && !STATUS_FLOW.includes(o.status) ? [o.status] : [])
           .map(s => `<option value="${s}" ${s === o.status ? 'selected' : ''}>${escapeHtml(STATUS_META[s]?.label || s)}</option>`).join('');
+        syncStatusSubmitButton();
         $('#statusNote').value = '';
         $('#statusMessage').classList.remove('show');
 
@@ -382,12 +411,18 @@
 
     $('#closeOrderModalBtn').addEventListener('click', () => { $('#orderModal').hidden = true; });
     $('#orderModal').addEventListener('click', e => { if (e.target.id === 'orderModal') $('#orderModal').hidden = true; });
+    $('#statusSelect').addEventListener('change', syncStatusSubmitButton);
 
     $('#statusForm').addEventListener('submit', async e => {
       e.preventDefault();
       if (!currentModalOrder) return;
+      if (String($('#statusSelect').value).toLowerCase() === String(currentModalOrder.status || '').toLowerCase()) {
+        showMessage($('#statusMessage'), 'El pedido ya está en ese estado.', true);
+        return;
+      }
       const btn = $('#statusSubmitBtn');
-      btn.disabled = true;
+      updatingStatus = true;
+      syncStatusSubmitButton();
       try {
         await api('admin-order-status', {
           method: 'POST',
@@ -400,7 +435,8 @@
       } catch (err) {
         showMessage($('#statusMessage'), err.message, true);
       } finally {
-        btn.disabled = false;
+        updatingStatus = false;
+        syncStatusSubmitButton();
       }
     });
 

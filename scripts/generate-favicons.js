@@ -117,10 +117,9 @@ async function generate() {
   fs.writeFileSync(path.join(faviconsDir, 'favicon.ico'), icoBuffer);
   console.log('Generated: favicon.ico (multi-resolution 16x16, 32x32, 48x48)');
 
-  // 5. Generate vector favicon.svg with embedded high-res circular logo
-  const base64CirclePng = circularMaster.toString('base64');
-  const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="100%" height="100%">
-  <image href="data:image/png;base64,${base64CirclePng}" width="1024" height="1024"/>
+  // 5. Keep SVG favicon lightweight; PNG is already shipped for the small icon sizes.
+  const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <image href="/assets/favicons/favicon-48x48.png" width="48" height="48"/>
 </svg>`;
   fs.writeFileSync(path.join(faviconsDir, 'favicon.svg'), svgContent);
   console.log('Generated: favicon.svg (vector wrapper for high-res rendering)');

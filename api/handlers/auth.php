@@ -82,6 +82,7 @@ if ($action === 'login' && $method === 'POST') {
         $uTable = getUsersTableName($pdo);
         $email = trim(strtolower($body['email'] ?? ''));
         $password = (string)($body['password'] ?? '');
+        $adminOnly = filter_var($body['adminOnly'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         if (!$email || !$password) {
             http_response_code(400);
@@ -146,6 +147,11 @@ if ($action === 'login' && $method === 'POST') {
                 'phone'   => (string)($user['phone'] ?? ($user['telefono'] ?? ($user['COL 6'] ?? ''))),
                 'role'    => smartispNormalizeRole($user['role'] ?? ($user['rol'] ?? ($user['COL 8'] ?? 'customer')))
             ];
+            if ($adminOnly && !isAdminUser($normUser)) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Esta cuenta no tiene acceso al panel administrativo.']);
+                exit;
+            }
             if (session_status() === PHP_SESSION_ACTIVE) session_regenerate_id(true);
             $_SESSION['user'] = $normUser;
             $token = null;

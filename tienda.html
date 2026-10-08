@@ -4,9 +4,6 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<script>if (new URLSearchParams(location.search).has('embedAccount')) document.documentElement.classList.add('account-embed-mode');</script>
-	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-	<meta http-equiv="Pragma" content="no-cache">
-	<meta http-equiv="Expires" content="0">
 	<meta name="description" content="SmartISP Ecuador: tienda online de equipamiento tecnologico, redes, servidores, fibra optica, seguridad y soluciones TI para empresas e ISP.">
 	<meta name="robots" content="index, follow, max-image-preview:large">
 	<link rel="canonical" href="https://smart-isp.com.ec/">
@@ -95,8 +92,10 @@
 
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-	<script src="https://unpkg.com/lucide@latest"></script>
+	<link rel="preconnect" href="https://images.unsplash.com">
+	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+	<noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"></noscript>
+	<script src="https://unpkg.com/lucide@latest" defer onload="window.lucide && window.lucide.createIcons()"></script>
 	<style>
 		:root {
 			--navy: #102a43;
@@ -166,7 +165,7 @@
 		.cart-count { background: var(--orange); border-radius: 50%; color: #172b3a; font-size: 10px; min-width: 17px; height: 17px; display: grid; place-items: center; position: absolute; top: -7px; left: 17px; }
 		.cart-count.bump { animation: cartBump .45s ease; }
 		@keyframes cartBump { 0% { transform: scale(1); } 45% { transform: scale(1.45); } 100% { transform: scale(1); } }
-		.hero { margin: 28px 5vw 0; min-height: 335px; padding: 46px clamp(24px, 7vw, 90px); background: #c9ebfc url('https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1600&q=85') center right/cover; position: relative; overflow: hidden; display: flex; align-items: center; }
+		.hero { margin: 28px 5vw 0; min-height: 335px; padding: 46px clamp(24px, 7vw, 90px); background: #c9ebfc url('https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1280&q=72') center right/cover; position: relative; overflow: hidden; display: flex; align-items: center; }
 		.hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(223,243,255,.98) 0%, rgba(223,243,255,.91) 42%, rgba(223,243,255,.1) 78%); }
 		.hero-content { max-width: 475px; position: relative; z-index: 1; }
 		.eyebrow { color: var(--blue); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .15em; }
@@ -1757,10 +1756,7 @@
 		let isCatalogLoading = true;
 		let fullCatalogState = 'idle'; // 'idle' | 'loading' | 'loaded'
 
-		// Trae el resto del catálogo (más allá de los primeros 36) solo cuando realmente hace falta:
-		// al buscar, filtrar por categoría o pedir "ver más", o en un momento ocioso del navegador
-		// como red de seguridad. Antes se pedía sin excepción 1.2s después de abrir la tienda, aunque
-		// la persona nunca buscara ni pasara de la primera página (DEV-20261005-022, parte del front).
+		// Trae el resto del catálogo solo cuando una vista local realmente lo necesita.
 		const ensureFullCatalog = async () => {
 			if (fullCatalogState !== 'idle') return;
 			fullCatalogState = 'loading';
@@ -1806,15 +1802,6 @@
 			}
 		};
 
-		const scheduleFullCatalogIdle = () => {
-			// Red de seguridad pasiva: si la persona no interactúa, igual queda listo sin competir
-			// con la carga inicial (requestIdleCallback espera a que el navegador esté libre).
-			if (typeof requestIdleCallback === 'function') {
-				requestIdleCallback(ensureFullCatalog, { timeout: 4000 });
-			} else {
-				setTimeout(ensureFullCatalog, 2500);
-			}
-		};
 		let selectedFilter = 'all';
 		let expandedGroups = new Set();
 
@@ -1828,7 +1815,8 @@
 		let serverView = { active: false, page: 1, totalPages: 1, total: 0, items: [] };
 		const isServerMode = () => {
 			const q = document.querySelector('#searchInput').value.trim();
-			return q !== '' || (selectedFilter && selectedFilter.type === 'sub');
+			const exactFilter = selectedFilter === 'all' || (selectedFilter && selectedFilter.type === 'sub');
+			return q !== '' || exactFilter;
 		};
 		const fetchServerPage = async reset => {
 			if (reset) serverView.page = 1;
@@ -2414,7 +2402,7 @@
 			const query = document.querySelector('#searchInput').value.toLowerCase();
 			const sort = document.querySelector('#sortSelect').value;
 			const serverMode = isServerMode();
-			// Modo servidor (busqueda activa o filtro de subcategoria): el backend ya filtro,
+			// Modo servidor (catalogo, busqueda o filtro exacto): el backend ya filtro,
 			// ordeno y pagino en SQL (fetchServerPage) -- se usa tal cual, sin repetir el trabajo.
 			let shown = serverMode ? serverView.items : products.filter(product => productMatchesFilter(product, selectedFilter) && `${product.name} ${product.brand} ${product.category}`.toLowerCase().includes(query));
 			if (!serverMode) {
@@ -2459,7 +2447,10 @@
 			if (countEl) {
 				const filterNote = breadcrumbLabel ? ` en ${breadcrumbLabel}` : '';
 				const queryNote = query ? ` para "${query}"` : (!breadcrumbLabel ? ' destacados' : '');
-				countEl.textContent = `Mostrando ${totalMatching} producto${totalMatching === 1 ? '' : 's'}${filterNote}${queryNote}`;
+				const countText = serverMode
+					? `Mostrando ${shown.length} de ${totalMatching} producto${totalMatching === 1 ? '' : 's'}`
+					: `Mostrando ${totalMatching} producto${totalMatching === 1 ? '' : 's'}`;
+				countEl.textContent = `${countText}${filterNote}${queryNote}`;
 			}
 
 			const badge = document.querySelector('#activeCategoryBadge');
@@ -2485,7 +2476,9 @@
 				const reviewsHtml = hasReviews
 					? `<div><span class="stars">★★★★★</span><span class="reviews">(${product.reviews})</span></div>`
 					: `<div><span class="reviews" style="margin-left:0;font-style:italic;">Sin reseñas aún</span></div>`;
-				return `<article class="product" data-index="${productIndexMap.get(product)}" tabindex="0" role="group" aria-label="Ver especificaciones de ${product.name}"><div class="product-image">${product.tag ? `<span class="tag">${product.tag}</span>` : ''}<button class="heart" aria-label="Agregar a favoritos"><i data-lucide="heart" width="16"></i></button><a href="${pUrl}" class="product-card-link" aria-label="${product.name}" tabindex="-1"><img src="${pImg}" alt="${product.name}" loading="lazy" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></a></div><div class="product-info"><div class="product-brand">${product.brand}</div><a href="${pUrl}" class="product-title-link" title="${product.name}"><h3>${product.name}</h3></a>${reviewsHtml}<div class="price-row"><div class="price-block"><span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span>${Number(product.price || 0) > 0 ? '<span class="price-tax-label">Precios incluye iva</span>' : ''}</div><div class="card-btn-group"><a href="${pUrl}" class="btn-card-view" title="Ver producto en página completa" aria-label="Ver ficha completa de ${product.name}"><i data-lucide="external-link" width="15"></i></a><button class="add" data-index="${productIndexMap.get(product)}" aria-label="Agregar ${product.name} al carrito"><i data-lucide="plus" width="18"></i></button></div></div></div></article>`;
+				const productIndex = productIndexMap.get(product);
+				const priority = productIndex < 4;
+				return `<article class="product" data-index="${productIndex}" tabindex="0" role="group" aria-label="Ver especificaciones de ${product.name}"><div class="product-image">${product.tag ? `<span class="tag">${product.tag}</span>` : ''}<button class="heart" aria-label="Agregar a favoritos"><i data-lucide="heart" width="16"></i></button><a href="${pUrl}" class="product-card-link" aria-label="${product.name}" tabindex="-1"><img src="${pImg}" alt="${product.name}" width="320" height="278" loading="${priority ? 'eager' : 'lazy'}" fetchpriority="${productIndex === 0 ? 'high' : 'auto'}" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></a></div><div class="product-info"><div class="product-brand">${product.brand}</div><a href="${pUrl}" class="product-title-link" title="${product.name}"><h3>${product.name}</h3></a>${reviewsHtml}<div class="price-row"><div class="price-block"><span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span>${Number(product.price || 0) > 0 ? '<span class="price-tax-label">Precios incluye iva</span>' : ''}</div><div class="card-btn-group"><a href="${pUrl}" class="btn-card-view" title="Ver producto en página completa" aria-label="Ver ficha completa de ${product.name}"><i data-lucide="external-link" width="15"></i></a><button class="add" data-index="${productIndex}" aria-label="Agregar ${product.name} al carrito"><i data-lucide="plus" width="18"></i></button></div></div></div></article>`;
 			}).join('');
 
 			const loadMoreHtml = hasMore ? `
@@ -2498,7 +2491,7 @@
 			` : '';
 
 			document.querySelector('#products').innerHTML = shown.length ? (productsHtml + loadMoreHtml) : '<div class="empty">No encontramos productos con esa búsqueda.</div>';
-			lucide.createIcons();
+			window.lucide && window.lucide.createIcons();
 
 			const loadMoreBtn = document.querySelector('#loadMoreProductsBtn');
 			if (loadMoreBtn) {
@@ -2720,7 +2713,7 @@
 				</div>
 			`;
 			document.querySelector('#productModal').classList.add('open');
-			lucide.createIcons();
+			window.lucide && window.lucide.createIcons();
 
 			if (updateHistory) {
 				const currentParams = new URLSearchParams(window.location.search);
@@ -2860,7 +2853,7 @@
 			if (cartTotalEl) {
 				cartTotalEl.textContent = totalNum > 0 ? money(totalNum) : (hasQuoteOnly ? 'Solicitar cotización' : '$0');
 			}
-			lucide.createIcons();
+			window.lucide && window.lucide.createIcons();
 
 			document.querySelectorAll('[data-cart-qty-delta]').forEach(btn => {
 				btn.addEventListener('click', () => {
@@ -3188,16 +3181,20 @@
 						tag: product.tag || '',
 						specs: Array.isArray(product.specs) ? product.specs : []
 					}));
+					serverView = {
+						active: true,
+						page: Number(remote.page) || 1,
+						totalPages: Number(remote.totalPages) || 1,
+						total: Number(remote.total) || products.length,
+						items: products.slice()
+					};
 					rebuildProductIndex();
 					isCatalogLoading = false;
 					render();
 					if (typeof renderSidebarCategories === 'function') renderSidebarCategories();
 					checkDirectProductLanding();
 
-					// El resto del catálogo (filtro, búsqueda y "ver más" en la vista "todas") se carga
-					// aparte y solo cuando hace falta (abajo: ensureFullCatalog), en vez de traer todos
-					// los productos sin pedirlo en cada apertura de la tienda.
-					if (remote.totalPages > 1) scheduleFullCatalogIdle();
+					// La primera vista usa solo esta página; el resto se solicita ante una acción del usuario.
 				} else {
 					isCatalogLoading = false;
 					render();
@@ -3332,7 +3329,7 @@
 
 		renderSidebarCategories();
 		render();
-		lucide.createIcons();
+		window.lucide && window.lucide.createIcons();
 		applyRemoteSite();
 
 		// =============================================================
@@ -3631,7 +3628,7 @@
 			accountSystem.querySelectorAll('[data-hub-panel]').forEach(panel => {
 				panel.hidden = panel.dataset.hubPanel !== panelName;
 			});
-			lucide.createIcons();
+			window.lucide && window.lucide.createIcons();
 		};
 
 		accountSystem.querySelectorAll('[data-account-panel]').forEach(button => {
@@ -3694,7 +3691,7 @@
 					</div>
 				</div>
 			`).join('') : '<div class="hub-empty">Todavía no tienes productos guardados en tu wishlist. Haz clic en el corazón de cualquier producto para guardarlo aquí.</div>';
-			lucide.createIcons();
+			window.lucide && window.lucide.createIcons();
 		};
 
 		const renderOrders = () => {
@@ -3711,7 +3708,7 @@
 					<small>${order.items?.items?.length || order.items?.length || 0} producto(s) · <b style="color:var(--navy);">${money(Number(order.total || 0))}</b> · <span style="text-transform:capitalize;color:var(--blue);">${order.status === 'completed' ? 'Completado' : order.status === 'processing' ? 'En proceso' : 'Pendiente'}</span></small>
 				</div>
 			`).join('') : '<div class="hub-empty">Aún no tienes pedidos registrados. Tus compras aparecerán aquí para seguimiento.</div>';
-			lucide.createIcons();
+					window.lucide && window.lucide.createIcons();
 		};
 
 		const loadCustomerData = async () => {
@@ -3827,7 +3824,7 @@
 			if (adminBadge) {
 				adminBadge.style.setProperty('display', isAdmin ? 'inline-flex' : 'none', 'important');
 			}
-			lucide.createIcons();
+			window.lucide && window.lucide.createIcons();
 		};
 
 		const renderAccountProfile = () => {
@@ -3844,7 +3841,7 @@
 			if (themeSel) themeSel.value = accountState.theme;
 			const compactTog = accountSystem.querySelector('[data-compact-toggle]');
 			if (compactTog) compactTog.checked = accountState.compact;
-			lucide.createIcons();
+			window.lucide && window.lucide.createIcons();
 		};
 
 		const openAccountSystem = () => {
@@ -3856,7 +3853,7 @@
 				const loginInput = accountSystem.querySelector('#accountLoginPane input[name="email"]');
 				if (loginInput) loginInput.focus();
 			}
-			lucide.createIcons();
+			window.lucide && window.lucide.createIcons();
 		};
 
 		const closeAccountSystem = () => {
@@ -4077,7 +4074,7 @@
 
 		applyAccountPreferences();
 		updateAdminAccess(null);
-		lucide.createIcons();
+		window.lucide && window.lucide.createIcons();
 
 		// Restaurar sesión de localStorage / sessionStorage inmediatamente al cargar la página
 		try {
