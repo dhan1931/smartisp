@@ -151,6 +151,12 @@ try {
     assert.ok(!source.includes('acercado28@gmail.com'), `${page} no debe contener identidad admin fija`);
     assert.ok(!source.includes('X-Admin-Email'), `${page} no debe enviar identidad privilegiada del navegador`);
     assert.ok(!source.includes('getStoredAdminUser'), `${page} no debe inventar sesión local`);
+    if (page === 'admin.html') {
+      const ids = new Set([...source.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]));
+      for (const match of source.matchAll(/\$\('#([^']+)'\)\.addEventListener/g)) {
+        assert.ok(ids.has(match[1]), `admin.html registra un listener directo para #${match[1]}, pero ese elemento no existe`);
+      }
+    }
   }
 
   console.log('Autenticación admin/customer, revocación de sesión, endpoints y métricas verificadas contra MariaDB CI.');

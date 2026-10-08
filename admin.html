@@ -543,11 +543,11 @@
         showMessage($('#loginMessage'), error.message, true);
       }
     });
-    $('#contentForm').addEventListener('submit', async event => { event.preventDefault(); try { await saveForm(event.currentTarget, $('#contentMessage'), 'Apariencia guardada correctamente.'); } catch (error) { showMessage($('#contentMessage'), error.message, true); } });
-    $('#contentForm').addEventListener('input', updateDesignPreview);
-    $('#contentForm').addEventListener('change', updateDesignPreview);
-    $('#contentForm').addEventListener('image-applied', updateDesignPreview);
-    $('#visibilityForm').addEventListener('submit', async event => { event.preventDefault(); try { await saveForm(event.currentTarget, $('#visibilityMessage'), 'Visibilidad guardada correctamente.'); } catch (error) { showMessage($('#visibilityMessage'), error.message, true); } });
+    $('#contentForm')?.addEventListener('submit', async event => { event.preventDefault(); try { await saveForm(event.currentTarget, $('#contentMessage'), 'Apariencia guardada correctamente.'); } catch (error) { showMessage($('#contentMessage'), error.message, true); } });
+    $('#contentForm')?.addEventListener('input', updateDesignPreview);
+    $('#contentForm')?.addEventListener('change', updateDesignPreview);
+    $('#contentForm')?.addEventListener('image-applied', updateDesignPreview);
+    $('#visibilityForm')?.addEventListener('submit', async event => { event.preventDefault(); try { await saveForm(event.currentTarget, $('#visibilityMessage'), 'Visibilidad guardada correctamente.'); } catch (error) { showMessage($('#visibilityMessage'), error.message, true); } });
     $('#smtpProviderSelect')?.addEventListener('change', event => {
       updateProviderPanels(event.target.value);
     });
@@ -622,7 +622,7 @@
       return payload;
     };
 
-    $('#notificationsForm').addEventListener('submit', async event => {
+    $('#notificationsForm')?.addEventListener('submit', async event => {
       event.preventDefault();
       const payload = getNotificationPayload();
 
@@ -707,14 +707,14 @@
         btn.innerHTML = originalHtml;
       }
     });
-    $('#resetContentButton').addEventListener('click', async () => { const form = $('#contentForm'); fillForm(form, DEFAULT_CONTENT); syncLogoSettings(DEFAULT_CONTENT); updateDesignPreview(); try { await saveForm(form, $('#contentMessage'), 'Apariencia restaurada al predeterminado.'); } catch (error) { showMessage($('#contentMessage'), error.message, true); } });
-    $('#resetVisibilityButton').addEventListener('click', async () => { const form = $('#visibilityForm'); fillForm(form, DEFAULT_VISIBILITY); try { await saveForm(form, $('#visibilityMessage'), 'Visibilidad restaurada al predeterminado.'); } catch (error) { showMessage($('#visibilityMessage'), error.message, true); } });
-    $('#clearContentButton').addEventListener('click', () => { fillForm($('#contentForm'), DEFAULT_CONTENT); syncLogoSettings(DEFAULT_CONTENT); updateDesignPreview(); showMessage($('#contentMessage'), 'Campos restablecidos. Guarda para aplicar los cambios.'); });
+    $('#resetContentButton')?.addEventListener('click', async () => { const form = $('#contentForm'); fillForm(form, DEFAULT_CONTENT); syncLogoSettings(DEFAULT_CONTENT); updateDesignPreview(); try { await saveForm(form, $('#contentMessage'), 'Apariencia restaurada al predeterminado.'); } catch (error) { showMessage($('#contentMessage'), error.message, true); } });
+    $('#resetVisibilityButton')?.addEventListener('click', async () => { const form = $('#visibilityForm'); fillForm(form, DEFAULT_VISIBILITY); try { await saveForm(form, $('#visibilityMessage'), 'Visibilidad restaurada al predeterminado.'); } catch (error) { showMessage($('#visibilityMessage'), error.message, true); } });
+    $('#clearContentButton')?.addEventListener('click', () => { fillForm($('#contentForm'), DEFAULT_CONTENT); syncLogoSettings(DEFAULT_CONTENT); updateDesignPreview(); showMessage($('#contentMessage'), 'Campos restablecidos. Guarda para aplicar los cambios.'); });
     $('#adminPanel').addEventListener('change', event => { const input = event.target; if (input.type !== 'file' || !input.files[0]) return; if (input.name === 'logo_image_file') return; const form = input.closest('form'); if (input.name === 'imageFile') return openCropEditor(input.files[0], input, form.querySelector('[name="imageUrl"]')); const outputInput = form.querySelector('[name="hero_image"]'); try { openCropEditor(input.files[0], input, outputInput); } catch (error) { input.value = ''; showMessage($('#contentMessage'), error.message, true); } });
-    $('#cropAspect').addEventListener('change', updateCropBox);
-    $('#cropBox').addEventListener('pointerdown', event => { cropState.dragging = true; cropState.resizeHandle = event.target.dataset.resize || ''; cropState.startX = event.clientX; cropState.startY = event.clientY; cropState.startBoxX = cropState.box.x; cropState.startBoxY = cropState.box.y; cropState.startBoxW = cropState.box.w; cropState.startBoxH = cropState.box.h; event.currentTarget.setPointerCapture(event.pointerId); });
-    $('#cropBox').addEventListener('pointermove', event => { if (!cropState.dragging) return; const box = cropState.box; const dx = event.clientX - cropState.startX; const dy = event.clientY - cropState.startY; const handle = cropState.resizeHandle; if (handle) { if (handle.includes('e')) box.w = Math.max(40, Math.min(cropState.canvasWidth - box.x, cropState.startBoxW + dx)); if (handle.includes('s')) box.h = Math.max(40, Math.min(cropState.canvasHeight - box.y, cropState.startBoxH + dy)); if (handle.includes('w')) { const nextX = Math.max(0, Math.min(cropState.startBoxX + cropState.startBoxW - 40, cropState.startBoxX + dx)); box.x = nextX; box.w = cropState.startBoxW + cropState.startBoxX - nextX; } if (handle.includes('n')) { const nextY = Math.max(0, Math.min(cropState.startBoxY + cropState.startBoxH - 40, cropState.startBoxY + dy)); box.y = nextY; box.h = cropState.startBoxH + cropState.startBoxY - nextY; } } else { box.x = Math.max(0, Math.min(cropState.canvasWidth - box.w, cropState.startBoxX + dx)); box.y = Math.max(0, Math.min(cropState.canvasHeight - box.h, cropState.startBoxY + dy)); } event.currentTarget.style.left = `${cropState.offsetX + box.x}px`; event.currentTarget.style.top = `${cropState.offsetY + box.y}px`; event.currentTarget.style.width = `${box.w}px`; event.currentTarget.style.height = `${box.h}px`; });
-    $('#cropBox').addEventListener('pointerup', () => { cropState.dragging = false; });
+    $('#cropAspect')?.addEventListener('change', updateCropBox);
+    $('#cropBox')?.addEventListener('pointerdown', event => { cropState.dragging = true; cropState.resizeHandle = event.target.dataset.resize || ''; cropState.startX = event.clientX; cropState.startY = event.clientY; cropState.startBoxX = cropState.box.x; cropState.startBoxY = cropState.box.y; cropState.startBoxW = cropState.box.w; cropState.startBoxH = cropState.box.h; event.currentTarget.setPointerCapture(event.pointerId); });
+    $('#cropBox')?.addEventListener('pointermove', event => { if (!cropState.dragging) return; const box = cropState.box; const dx = event.clientX - cropState.startX; const dy = event.clientY - cropState.startY; const handle = cropState.resizeHandle; if (handle) { if (handle.includes('e')) box.w = Math.max(40, Math.min(cropState.canvasWidth - box.x, cropState.startBoxW + dx)); if (handle.includes('s')) box.h = Math.max(40, Math.min(cropState.canvasHeight - box.y, cropState.startBoxH + dy)); if (handle.includes('w')) { const nextX = Math.max(0, Math.min(cropState.startBoxX + cropState.startBoxW - 40, cropState.startBoxX + dx)); box.x = nextX; box.w = cropState.startBoxW + cropState.startBoxX - nextX; } if (handle.includes('n')) { const nextY = Math.max(0, Math.min(cropState.startBoxY + cropState.startBoxH - 40, cropState.startBoxY + dy)); box.y = nextY; box.h = cropState.startBoxH + cropState.startBoxY - nextY; } } else { box.x = Math.max(0, Math.min(cropState.canvasWidth - box.w, cropState.startBoxX + dx)); box.y = Math.max(0, Math.min(cropState.canvasHeight - box.h, cropState.startBoxY + dy)); } event.currentTarget.style.left = `${cropState.offsetX + box.x}px`; event.currentTarget.style.top = `${cropState.offsetY + box.y}px`; event.currentTarget.style.width = `${box.w}px`; event.currentTarget.style.height = `${box.h}px`; });
+    $('#cropBox')?.addEventListener('pointerup', () => { cropState.dragging = false; });
     $('#cancelCropButton')?.addEventListener('click', () => closeCropEditor(true));
     $('#applyCropButton')?.addEventListener('click', applyCrop);
     $('#newProductButton')?.addEventListener('click', () => openProductEditModal({}));
