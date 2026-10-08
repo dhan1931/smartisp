@@ -89,6 +89,7 @@ foreach ($categories as $idx => $category) {
     @media(max-width:1080px){.nav{display:flex;flex-wrap:wrap}.search{order:3;flex:1 1 100%}.search input{text-align:left}}
     @media(max-width:800px){body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}.topbar{display:none}.mobile-bottom-nav{display:flex}.public-menu-btn{display:inline-flex}.public-nav{display:none;flex-direction:column;align-items:stretch;gap:0;padding:6px 16px;box-shadow:0 10px 20px rgba(16,44,61,.14)}.public-nav.is-open{display:flex}.public-nav a{padding:12px 4px;border-bottom:1px solid rgba(255,255,255,.12)}.public-nav a:last-child{border-bottom:0}.nav{padding:12px 4vw;gap:10px;overflow:hidden}.logo img{max-width:140px}.nav-actions{gap:8px}.nav-action span{display:none}.hero{grid-template-columns:1fr;padding:24px}.section-head{align-items:flex-start;flex-direction:column}.grid{grid-template-columns:1fr}footer{flex-direction:column}}
   </style>
+  <style>.nav, .public-nav { position: relative !important; top: auto !important; }</style>
 </head>
 <body>
   <div class="topbar"><span><i data-lucide="truck" width="14"></i> Envio gratis en Guayas</span><span><i data-lucide="clock" width="13"></i> Atencion experta · Lun a Vie 9:00 a 18:00</span></div>

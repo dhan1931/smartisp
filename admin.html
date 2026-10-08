@@ -24,6 +24,9 @@
     .top h1 { margin: 0; font-size: 27px; letter-spacing: .2px; } .top span { color: #b7d4dc; font-size: 13px; }
     .shell { width: min(1180px, 90vw); margin: 32px auto; } .login, .panel { background: rgba(255,255,255,.94); border: 1px solid var(--line); border-radius: 14px; padding: 28px; box-shadow: 0 12px 30px rgba(16,44,61,.08); }
     .login { width: min(430px, 100%); margin: 80px auto; } h2 { margin-top: 0; } h3 { margin: 0 0 17px; } label { display: block; margin: 14px 0; color: var(--muted); font-size: 13px; font-weight: 700; }
+    .admin-store-return { margin: 16px 0 0; text-align: center; font-size: 14px; }
+    .admin-store-return a { color: var(--blue-dark); font-weight: 700; text-decoration: none; }
+    .admin-store-return a:hover { text-decoration: underline; }
     input, textarea, select { width: 100%; margin-top: 7px; padding: 11px 12px; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; background: #fbfefe; transition: border-color .2s, box-shadow .2s; } input:focus, textarea:focus, select:focus { outline: 0; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(8,126,164,.12); }
     .button { padding: 11px 16px; color: white; border: 0; border-radius: 8px; background: var(--blue); font-weight: 700; transition: transform .2s, background .2s, box-shadow .2s; } .button:hover { background: var(--blue-dark); transform: translateY(-1px); box-shadow: 0 5px 12px rgba(8,126,164,.2); } .button.secondary { color: var(--ink); background: #e7f2f3; } .button.secondary:hover { background: #d3e9eb; } .button.danger { background: var(--danger); }
     .message { display: none; align-items: center; gap: 8px; margin: 14px 0; padding: 11px; border-radius: 8px; background: #e5faf1; color: var(--success); font-size: 13px; } .message.show { display: flex; animation: save-confirm .55s ease both; } .message.show::before { content: '\2713'; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: currentColor; color: white; font-weight: 700; } .message.error { color: var(--danger); background: #fff0f0; } .message.error.show::before { content: '!'; }
@@ -113,6 +116,7 @@
         <button class="button" type="submit">Entrar al Panel</button>
         <div id="loginMessage" class="message"></div>
       </form>
+      <p class="admin-store-return"><a href="/tienda.html">Ir a la tienda</a></p>
     </section>
     <section id="adminPanel" class="hidden">
       <div class="dashboard-hero">
