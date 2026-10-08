@@ -30,6 +30,16 @@ if ($pdo) {
         error_log('Error cargando productos-destacados.php: ' . $e->getMessage());
     }
 }
+$productItemList = [];
+foreach ($products as $idx => $product) {
+    $url = $siteUrl . '/producto/' . rawurlencode($product['id']) . '-' . seoSlugFeatured($product['name']);
+    $productItemList[] = [
+        '@type' => 'ListItem',
+        'position' => $idx + 1,
+        'url' => $url,
+        'name' => (string)$product['name']
+    ];
+}
 ?>
 <!doctype html>
 <html lang="es">
@@ -42,6 +52,20 @@ if ($pdo) {
   <link rel="canonical" href="<?= $siteUrl ?>/productos-destacados">
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
   <script src="/assets/js/public-brand.js" defer></script>
+  <script type="application/ld+json">
+  <?= json_encode([
+      '@context' => 'https://schema.org',
+      '@type' => 'CollectionPage',
+      'name' => 'Productos Destacados SmartISP Ecuador',
+      'description' => 'Selección comercial de productos recientes y destacados del catálogo SmartISP Ecuador.',
+      'url' => $siteUrl . '/productos-destacados',
+      'mainEntity' => [
+          '@type' => 'ItemList',
+          'name' => 'Productos destacados',
+          'itemListElement' => $productItemList
+      ]
+  ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
+  </script>
   <style>
     :root{--navy:#102a43;--blue:#1177c9;--pale:#f5fbff;--line:#d7e7f1;--muted:#60798f;--white:#fff}
     *{box-sizing:border-box}body{margin:0;background:var(--pale);color:#17324d;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}a{text-decoration:none;color:inherit}

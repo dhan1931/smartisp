@@ -78,6 +78,19 @@
 		]
 	}
 	</script>
+	<script type="application/ld+json">
+	{
+		"@context": "https://schema.org",
+		"@type": "ItemList",
+		"name": "Secciones comerciales SmartISP",
+		"itemListElement": [
+			{ "@type": "ListItem", "position": 1, "name": "Categorías destacadas", "url": "https://smart-isp.com.ec/categorias-destacadas" },
+			{ "@type": "ListItem", "position": 2, "name": "Productos destacados", "url": "https://smart-isp.com.ec/productos-destacados" },
+			{ "@type": "ListItem", "position": 3, "name": "Servicios SmartISP", "url": "https://smart-isp.com.ec/servicios" },
+			{ "@type": "ListItem", "position": 4, "name": "Catálogo SmartISP", "url": "https://smart-isp.com.ec/#catalogo" }
+		]
+	}
+	</script>
 
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -143,6 +156,31 @@
 		.hero p { color: #45667e; line-height: 1.6; margin: 0 0 26px; max-width: 400px; }
 		.primary { background: var(--blue); color: white; border: 0; padding: 13px 19px; border-radius: 5px; font-weight: 700; display: inline-flex; align-items: center; gap: 9px; }
 		.primary:hover { background: #0d64aa; }
+		.commercial-home { padding: 28px 5vw 0; display: grid; gap: 18px; }
+		.solution-strip { display: grid; grid-template-columns: 1.25fr repeat(3, minmax(180px, 1fr)); gap: 14px; }
+		.solution-lead, .solution-card, .trust-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 24px rgba(16,44,61,.05); }
+		.solution-lead { padding: 22px; border-left: 5px solid var(--blue); }
+		.solution-lead h2 { color: var(--navy); font-size: 28px; margin-bottom: 7px; }
+		.solution-lead p { margin: 0; color: var(--muted); line-height: 1.55; font-size: 14px; }
+		.solution-card { padding: 18px; display: flex; flex-direction: column; gap: 10px; min-height: 150px; transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
+		.solution-card:hover { transform: translateY(-3px); border-color: #9acfe9; box-shadow: 0 14px 28px rgba(16,44,61,.09); }
+		.solution-icon { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: #e9f6fc; color: var(--blue); }
+		.solution-card strong { color: var(--navy); font-size: 15px; }
+		.solution-card span { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+		.merch-band { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+		.merch-card { min-height: 138px; padding: 17px; border-radius: 12px; color: #fff; display: flex; flex-direction: column; justify-content: space-between; background: #102a43; position: relative; overflow: hidden; }
+		.merch-card:nth-child(2) { background: #0f5f93; }
+		.merch-card:nth-child(3) { background: #17324d; }
+		.merch-card:nth-child(4) { background: #0d6f8f; }
+		.merch-card::after { content: ''; position: absolute; width: 120px; height: 120px; right: -48px; top: -40px; border-radius: 50%; background: rgba(255,255,255,.12); }
+		.merch-card small { position: relative; z-index: 1; opacity: .82; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; font-size: 10.5px; }
+		.merch-card strong { position: relative; z-index: 1; font-size: 18px; line-height: 1.15; }
+		.merch-card span { position: relative; z-index: 1; font-size: 12px; opacity: .9; }
+		.trust-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+		.trust-card { padding: 16px; display: flex; gap: 12px; align-items: flex-start; }
+		.trust-card i { color: var(--blue); flex-shrink: 0; margin-top: 2px; }
+		.trust-card strong { display: block; color: var(--navy); font-size: 13.5px; margin-bottom: 3px; }
+		.trust-card span { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
 		.content { padding: 38px 5vw; }
 		.section-heading { display: flex; align-items: end; justify-content: space-between; margin-bottom: 20px; }
 		.section-heading h2 { font-size: 29px; color: var(--navy); }
@@ -256,6 +294,9 @@
 		.result-count { color: var(--muted); font-size: 13px; }
 		.select { border: 1px solid var(--line); background: white; padding: 10px 13px; color: var(--ink); border-radius: 4px; }
 		.products { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 15px; }
+		.products .product:nth-child(1), .products .product:nth-child(7n) { border-top-color: var(--blue); }
+		.products .product:nth-child(3n) { border-top-color: #f5a524; }
+		.products .product:nth-child(4n) { border-top-color: #16a085; }
 		.product { background: white; border: 1px solid var(--line); border-top: 4px solid #d7e7f1; position: relative; padding: 12px; display: flex; flex-direction: column; min-width: 0; border-radius: 10px; transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
 		.product:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(16,44,61,.1); border-top-color: var(--blue); }
 		.product-image { background: linear-gradient(180deg, #f8fcff, #fff); aspect-ratio: 1.15; display: grid; place-items: center; overflow: hidden; position: relative; border-radius: 8px; border: 1px solid #ebf2f5; padding: 10px; }
@@ -917,6 +958,17 @@
 				grid-template-columns: 1fr !important;
 				margin-bottom: 14px !important;
 			}
+			.commercial-home {
+				padding: 16px 4vw 0 !important;
+				gap: 12px !important;
+			}
+			.solution-strip, .merch-band, .trust-row {
+				grid-template-columns: 1fr !important;
+				gap: 10px !important;
+			}
+			.solution-lead, .solution-card, .trust-card {
+				border-radius: 10px !important;
+			}
 			.hero::after {
 				background: linear-gradient(90deg, rgba(228, 245, 243, 0.98) 0%, rgba(228, 245, 243, 0.90) 58%, rgba(228, 245, 243, 0.45) 100%) !important;
 			}
@@ -1368,6 +1420,56 @@
 	</nav>
 	<main>
 		<section class="hero"><div class="hero-content"><div class="eyebrow" id="heroEyebrow">Tecnología, Gaming y Conectividad</div><h1 id="heroTitle">Equipos y Soluciones Tecnológicas de Alta Gama</h1><p id="heroText">Laptops, componentes, consolas, networking y periféricos con garantía oficial y entrega rápida.</p><a class="primary" id="heroButton" href="#catalogo"><span id="heroButtonText">Explorar catálogo</span> <i data-lucide="arrow-right" width="17"></i></a></div></section>
+		<section class="commercial-home" aria-label="Comprar por necesidad">
+			<div class="solution-strip">
+				<div class="solution-lead">
+					<h2>Compra por proyecto, no por lista infinita</h2>
+					<p>Entra por la necesidad real: montar una red, renovar cómputo, proteger energía, mejorar seguridad o completar accesorios para operación diaria.</p>
+				</div>
+				<a class="solution-card" href="/categoria/redes-y-comunicaciones/">
+					<span class="solution-icon"><i data-lucide="router" width="20"></i></span>
+					<strong>Redes y conectividad</strong>
+					<span>Routers, switches, WiFi, cableado, fibra y enlaces para crecer con orden.</span>
+				</a>
+				<a class="solution-card" href="/categoria/computadores-y-tablets/">
+					<span class="solution-icon"><i data-lucide="laptop" width="20"></i></span>
+					<strong>Cómputo y productividad</strong>
+					<span>Laptops, PCs, monitores, periféricos y equipos para trabajo diario.</span>
+				</a>
+				<a class="solution-card" href="/servicios">
+					<span class="solution-icon"><i data-lucide="headphones" width="20"></i></span>
+					<strong>Asesoría antes de comprar</strong>
+					<span>Te ayudamos a comparar, cotizar y elegir según uso, presupuesto y compatibilidad.</span>
+				</a>
+			</div>
+			<div class="merch-band" aria-label="Familias destacadas">
+				<a class="merch-card" href="/categoria/proteccion-de-energia/">
+					<small>Continuidad</small>
+					<strong>Energía, UPS y protección</strong>
+					<span>Evita caídas y protege tu operación.</span>
+				</a>
+				<a class="merch-card" href="/categoria/seguridad-y-vigilancia/">
+					<small>Control</small>
+					<strong>Seguridad y monitoreo</strong>
+					<span>Cámaras, grabadores y acceso.</span>
+				</a>
+				<a class="merch-card" href="/categoria/impresoras-y-multifuncionales/">
+					<small>Oficina</small>
+					<strong>Impresión y punto de venta</strong>
+					<span>Equipos para venta, soporte y documentos.</span>
+				</a>
+				<a class="merch-card" href="/productos-destacados">
+					<small>Selección</small>
+					<strong>Productos destacados</strong>
+					<span>Novedades y equipos con alta demanda.</span>
+				</a>
+			</div>
+			<div class="trust-row" aria-label="Ventajas SmartISP">
+				<div class="trust-card"><i data-lucide="badge-check" width="20"></i><div><strong>Catálogo amplio</strong><span>Más que seguridad: redes, cómputo, energía, impresión, software y accesorios.</span></div></div>
+				<div class="trust-card"><i data-lucide="message-circle" width="20"></i><div><strong>Cotización por WhatsApp</strong><span>Contacto directo para resolver dudas antes de comprar.</span></div></div>
+				<div class="trust-card"><i data-lucide="truck" width="20"></i><div><strong>Despacho y soporte</strong><span>Atención comercial para empresas, hogares técnicos e ISP en Ecuador.</span></div></div>
+			</div>
+		</section>
 		<section class="content" id="catalogo">
 			<div class="catalog-intro">
 				<div class="catalog-intro-main">

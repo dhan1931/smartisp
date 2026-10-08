@@ -93,6 +93,15 @@ $metaDesc = $categoryName !== ''
     : 'Categoria no encontrada en el catalogo de SmartISP Ecuador.';
 $robots = $categoryName !== '' ? 'index, follow, max-image-preview:large' : 'noindex, follow';
 $relatedNames = array_slice(array_keys($allCategoryNames), 0, 12);
+$productItemList = [];
+foreach ($products as $idx => $product) {
+    $productItemList[] = [
+        '@type' => 'ListItem',
+        'position' => $idx + 1,
+        'url' => $siteUrl . '/producto/' . productSlugForCategoryPage($product),
+        'name' => (string)$product['name']
+    ];
+}
 ?>
 <!doctype html>
 <html lang="es">
@@ -124,6 +133,11 @@ $relatedNames = array_slice(array_keys($allCategoryNames), 0, 12);
     "name": <?= json_encode($categoryName . ' SmartISP Ecuador', JSON_UNESCAPED_UNICODE) ?>,
     "description": <?= json_encode($metaDesc, JSON_UNESCAPED_UNICODE) ?>,
     "url": <?= json_encode($canonicalUrl, JSON_UNESCAPED_SLASHES) ?>,
+    "mainEntity": {
+      "@type": "ItemList",
+      "name": <?= json_encode('Productos de ' . $categoryName, JSON_UNESCAPED_UNICODE) ?>,
+      "itemListElement": <?= json_encode($productItemList, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>
+    },
     "isPartOf": {
       "@type": "WebSite",
       "name": "SmartISP Ecuador",

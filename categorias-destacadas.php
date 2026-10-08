@@ -37,6 +37,16 @@ if ($pdo) {
         error_log('Error cargando categorias-destacadas.php: ' . $e->getMessage());
     }
 }
+$categoryItemList = [];
+foreach ($categories as $idx => $category) {
+    $name = (string)$category['name'];
+    $categoryItemList[] = [
+        '@type' => 'ListItem',
+        'position' => $idx + 1,
+        'url' => $siteUrl . '/categoria/' . rawurlencode(seoSlugCategoryHub($name)) . '/',
+        'name' => $name
+    ];
+}
 ?>
 <!doctype html>
 <html lang="es">
@@ -49,6 +59,20 @@ if ($pdo) {
   <link rel="canonical" href="<?= $siteUrl ?>/categorias-destacadas">
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
   <script src="/assets/js/public-brand.js" defer></script>
+  <script type="application/ld+json">
+  <?= json_encode([
+      '@context' => 'https://schema.org',
+      '@type' => 'CollectionPage',
+      'name' => 'Categorías Destacadas SmartISP Ecuador',
+      'description' => 'Hub comercial de categorías de tecnología, redes, cómputo, energía, seguridad y accesorios.',
+      'url' => $siteUrl . '/categorias-destacadas',
+      'mainEntity' => [
+          '@type' => 'ItemList',
+          'name' => 'Categorías destacadas',
+          'itemListElement' => $categoryItemList
+      ]
+  ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
+  </script>
   <style>
     :root{--navy:#102a43;--blue:#1177c9;--pale:#f5fbff;--line:#d7e7f1;--muted:#60798f;--white:#fff}
     *{box-sizing:border-box}body{margin:0;background:var(--pale);color:#17324d;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}a{text-decoration:none;color:inherit}
