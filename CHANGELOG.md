@@ -7,6 +7,7 @@
 - Enlace de cierre propio para el menú móvil y navegación de cuenta reutilizable en las páginas comerciales.
 - Acceso a la tienda desde el login administrativo.
 - Diseño adaptable para la barra lateral del panel, tablas de pedidos, resúmenes del dashboard y formularios de configuración.
+- CI de GitHub adaptado al stack activo: comprobación PHP/JS, compilación multipágina, control de archivos del artefacto y migraciones contra MariaDB efímera.
 
 ### Changed
 - Actualizada la prioridad del logo público para usar primero la identidad configurada desde el editor de landing.
@@ -22,4 +23,5 @@
 
 ### Notes
 - La compilación no ejecuta migraciones ni altera la base de datos.
+- El workflow de GitHub valida código, artefactos y migraciones en una base temporal; el despliegue sigue a cargo de Hostinger.
 - `tablasnuevas.md` documenta una propuesta y consultas de Fase 0; las tablas propuestas no se crean ni se consideran desplegadas.

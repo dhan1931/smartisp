@@ -2,12 +2,15 @@
   "name": "smartisp",
   "version": "1.0.0",
   "private": true,
-  "description": "Backend de NexoTech para autenticacion y carrito",
+  "description": "Tienda SmartISP con frontend Vite y API PHP/MySQL para Hostinger",
   "type": "module",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
     "build": "vite build",
+    "lint": "node scripts/lint-source.mjs",
+    "test": "npm run build && node scripts/check-build.mjs",
+    "test:db": "php tests/bootstrap-mariadb.php && php scripts/migrate.php && php tests/assert-migrations.php && php scripts/migrate.php",
     "import:intcomex": "node scripts/import-intcomex-products.js",
     "devflow": "bash scripts/devflow.sh",
     "devflow:login": "node scripts/devflow-login.cjs"

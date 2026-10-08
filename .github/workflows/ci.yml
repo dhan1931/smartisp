@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: PHP, MariaDB y Vite
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_DATABASE: smartisp_ci
+          MARIADB_USER: smartisp_ci
+          MARIADB_PASSWORD: ci-only-password
+          MARIADB_ROOT_PASSWORD: ci-only-root-password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: smartisp_ci
+      MYSQL_USER: smartisp_ci
+      MYSQL_PASSWORD: ci-only-password
+      SESSION_SECRET: ci-only-session-secret-not-for-production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql
+          coverage: none
+      - name: Install Node dependencies
+        run: npm ci
+      - name: Lint JavaScript and PHP
+        run: npm run lint
+      - name: Build and check deploy artifact
+        run: npm test
+      - name: Initialize isolated MariaDB fixture
+        run: php tests/bootstrap-mariadb.php
+      - name: Apply migrations to isolated MariaDB
+        run: php scripts/migrate.php
+      - name: Assert migrated schema and data
+        run: php tests/assert-migrations.php
+      - name: Confirm migration runner is repeatable
+        run: php scripts/migrate.php

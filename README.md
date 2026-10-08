@@ -8,6 +8,7 @@ Tienda en línea de SmartISP Ecuador para productos de conectividad, cómputo, r
 - API de producción: PHP con MySQL/MariaDB.
 - Compilación de páginas y assets: Vite (`npm run build`). El resultado se genera en `dist/`.
 - Hosting actual: Hostinger; el despliegue desde `main` compila y sincroniza `dist/` con `public_html`.
+- CI en GitHub Actions: lint de JavaScript/PHP, build multipágina y pruebas de migración contra MariaDB efímera; no despliega desde GitHub.
 - `server.js` y sus dependencias son un backend paralelo/legacy; no sustituyen la API PHP que usa la tienda en producción.
 
 ## Páginas principales
@@ -36,7 +37,11 @@ Para validar la compilación de producción sin iniciar el servidor:
 ```powershell
 npm ci
 npm run build
+npm run lint
+npm test
 ```
+
+La prueba de esquema `npm run test:db` requiere una MariaDB desechable cuyo nombre termine en `_ci`; el fixture se niega a ejecutarse contra otra base. GitHub Actions crea y destruye su propia base por ejecución.
 
 Vite escribe las páginas y assets compilados en `dist/`. No edites `dist/` a mano.
 

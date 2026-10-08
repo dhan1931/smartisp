@@ -2,6 +2,10 @@
 
 Esta guía cubre la publicación del código en Hostinger y la aplicación deliberada de cambios de esquema. El build no ejecuta migraciones ni modifica la base de datos. Verifica en hPanel el último despliegue y el estado real de las migraciones antes de operar producción.
 
+GitHub Actions valida sintaxis PHP/JavaScript, el build y las migraciones sobre una MariaDB temporal
+con credenciales de prueba. No tiene acceso a Hostinger ni modifica la base de producción. Hostinger
+mantiene su publicación independiente desde `main`.
+
 ## 1. Antes de tocar nada en producción
 
 - [ ] **Respaldo completo de la base real de Hostinger** (`mysqldump`, fuera del repo). Sin esto no se sigue.

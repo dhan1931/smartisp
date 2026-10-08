@@ -14,16 +14,16 @@ audit:
   profile: fullstack
   require_evidence: true
 commands:
-  build: ''
+  build: npm run build
   dead_code_scan: ''
   duplication_scan: ''
   format_check: ''
-  install: ''
-  lint: ''
+  install: npm ci
+  lint: npm run lint
   load_test: ''
   security_scan: ''
-  test: ''
-  test_integration: ''
+  test: npm test
+  test_integration: npm run test:db
   typecheck: ''
 preferences:
   avoid_premature_kubernetes: true
@@ -42,20 +42,12 @@ project:
   type: fullstack
 stack:
   backend:
-    alternatives:
-    - fastapi
-    - go
-    - nodejs
-    - quarkus
-    - php
-    primary: nodejs
+    alternatives: []
+    primary: php
   ci_cd:
-    provider: none
+    provider: github-actions
   database:
-    alternatives:
-    - postgresql
-    - mariadb
-    - sqlite
+    alternatives: []
     primary: mariadb
   frontend:
     alternatives:
@@ -70,7 +62,7 @@ stack:
     container: none
     edge: none
     orchestration: none
-    os: ubuntu-server
+    os: hostinger-shared-hosting
   observability:
     load_testing: []
     metrics: []
