@@ -3743,8 +3743,7 @@
 		};
 
 		const updateAdminAccess = user => {
-			const userEmail = (user && user.email) ? String(user.email).toLowerCase().trim() : '';
-			const isAdmin = Boolean(user && (userEmail === 'acercado28@gmail.com' || userEmail === 'acercado28@ggmail.com'));
+			const isAdmin = Boolean(user && String(user.role || '').trim().toLowerCase() === 'admin');
 			const adminNav = document.querySelector('#adminNavLink');
 			if (adminNav) {
 				adminNav.classList.toggle('is-visible', isAdmin);
@@ -3797,7 +3796,7 @@
 
 		const setAccountUser = (user, remember = localStorage.getItem('smartisp.accountRemembered') === 'true') => {
 			accountState.user = user;
-			const displayUser = { id: user?.id, name: user?.name, email: user?.email };
+			const displayUser = { id: user?.id, name: user?.name, email: user?.email, role: user?.role };
 			(remember ? localStorage : sessionStorage).setItem('smartisp.accountUser', JSON.stringify(displayUser));
 			if (remember) localStorage.setItem('smartisp.accountRemembered', 'true');
 			else {
