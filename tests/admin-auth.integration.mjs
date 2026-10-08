@@ -103,6 +103,9 @@ try {
 
   const unauth = await request('admin-orders-stats', { session: '' });
   assert.equal(unauth.status, 401, 'Una petición anónima debe recibir 401');
+  const publicCatalog = await request('catalog', { session: '' });
+  assert.equal(publicCatalog.status, 200, 'El catálogo público debe estar disponible');
+  assert.ok(!JSON.stringify(publicCatalog.data.content).includes(secretValue), 'El catálogo público no debe filtrar secretos SMTP');
 
   const admin = await login(fixtures.admin);
   assert.equal(admin.role, 'admin', 'Los roles admin equivalentes deben normalizarse');
@@ -110,9 +113,6 @@ try {
     const result = await request(action);
     assert.equal(result.status, 200, `Admin debe poder consultar ${action}: ${result.data.error || ''}`);
   }
-  const publicCatalog = await request('catalog', { session: '' });
-  assert.equal(publicCatalog.status, 200, 'El catálogo público debe estar disponible');
-  assert.ok(!JSON.stringify(publicCatalog.data.content).includes(secretValue), 'El catálogo público no debe filtrar secretos SMTP');
   const stats = await request('admin-orders-stats');
   assert.equal(stats.data.revenue, 55, 'Ingresos solo suman pagos marcados como confirmados; excluyen pendientes, cancelados, reembolsados y filas legacy sin confirmación');
   assert.ok(stats.data.daily.length >= 2, 'Las métricas deben ofrecer evolución cuando hay pedidos en varios días');
