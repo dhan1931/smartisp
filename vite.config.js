@@ -14,6 +14,8 @@ export default defineConfig({
       input: {
         main: 'index.html',
         tienda: 'tienda.html',
+        nosotros: 'nosotros.html',
+        servicios: 'servicios.html',
         checkout: 'checkout.html',
         admin: 'admin.html',
         configuracion: 'configuracion.html',
@@ -32,7 +34,11 @@ export default defineConfig({
       closeBundle() {
         // Favicons, logos y manifests viven en assets/ (DEV-20261005-035): se copia la carpeta
         // completa en vez de listar cada archivo suelto, como antes.
-        const filesToCopy = ['.htaccess', 'package.json', 'robots.txt', 'sitemap.xml', 'sitemap-main.xml', 'producto.php', 'sitemap-products.php'];
+        const filesToCopy = [
+          '.htaccess', 'package.json', 'robots.txt', 'sitemap.xml', 'sitemap-main.xml',
+          'producto.php', 'categoria.php', 'sitemap-products.php', 'sitemap-categories.php',
+          'productos-destacados.php', 'categorias-destacadas.php'
+        ];
         for (const file of filesToCopy) {
           if (fs.existsSync(file)) {
             fs.copyFileSync(file, path.resolve('dist', file));
