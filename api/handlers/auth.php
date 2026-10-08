@@ -141,12 +141,12 @@ if ($action === 'login' && $method === 'POST') {
                 'surname' => (string)($user['surname'] ?? ($user['apellido'] ?? ($user['COL 5'] ?? ''))),
                 'email'   => (string)($user[$emailCol] ?? ($user['COL 2'] ?? $email)),
                 'phone'   => (string)($user['phone'] ?? ($user['telefono'] ?? ($user['COL 6'] ?? ''))),
-                'role'    => (string)($user['role'] ?? ($user['rol'] ?? ($user['COL 8'] ?? 'customer')))
+                'role'    => strtolower(trim((string)($user['role'] ?? ($user['rol'] ?? ($user['COL 8'] ?? 'customer')))))
             ];
             // $normUser['role'] ya viene de la columna role de la base (línea de arriba);
             // ya no se recalcula por email.
-            $token = generateAdminAuthToken($normUser);
             $_SESSION['user'] = $normUser;
+            try { $token = generateAdminAuthToken($normUser); } catch (Throwable $e) { $token = null; }
             echo json_encode(['user' => $normUser, 'token' => $token]);
         } else {
             http_response_code(401);
@@ -210,7 +210,7 @@ if ($action === 'me' && $method === 'GET') {
     $user = getAuthUser();
     $token = null;
     if ($user && is_array($user) && isAdminUser($user)) {
-        $token = generateAdminAuthToken($user);
+        try { $token = generateAdminAuthToken($user); } catch (Throwable $e) { $token = null; }
     }
     echo json_encode(['user' => $user, 'token' => $token]);
     exit;

@@ -216,23 +216,6 @@
     };
     const api = async (action, options = {}) => {
       const token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
-      let storedUser = null;
-      try {
-        const u = localStorage.getItem('smartisp.accountUser') || sessionStorage.getItem('smartisp.accountUser');
-        if (u) storedUser = JSON.parse(u);
-      } catch (e) {}
-      const validAdminEmails = [
-        'acercado28@gmail.com',
-        'acercado28@ggmail.com'
-      ];
-      let adminEmail = 'acercado28@gmail.com';
-      if (storedUser && storedUser.email) {
-        const em = storedUser.email.toLowerCase().trim();
-        if (validAdminEmails.includes(em)) {
-          adminEmail = em;
-        }
-      }
-
       const isForm = (options.body instanceof FormData);
       const customHeaders = {};
       if (!isForm) {
@@ -241,9 +224,6 @@
       if (token) {
         customHeaders['Authorization'] = `Bearer ${token}`;
         customHeaders['X-Admin-Token'] = token;
-      }
-      if (adminEmail) {
-        customHeaders['X-Admin-Email'] = adminEmail;
       }
       const reqHeaders = { ...customHeaders, ...(options.headers || {}) };
 
@@ -257,23 +237,14 @@
       }
       let url = `/api/router.php?action=${encodeURIComponent(baseAction)}${queryPart}`;
 
-      if (isForm && options.body instanceof FormData && adminEmail) {
-        if (!options.body.has('admin_email')) {
-          options.body.append('admin_email', adminEmail);
-        }
-      }
-
       let finalBody = options.body;
       if (!isForm && finalBody && typeof finalBody === 'string' && (options.method === 'POST' || options.method === 'PUT')) {
         try {
           const parsed = JSON.parse(finalBody);
-          if (adminEmail && !parsed.admin_email) {
-            parsed.admin_email = adminEmail;
-          }
           if (!parsed.payload && typeof toUtf8Base64 === 'function') {
             const b64 = toUtf8Base64(JSON.stringify(parsed));
             if (b64) {
-              finalBody = JSON.stringify({ payload: b64, admin_email: adminEmail });
+              finalBody = JSON.stringify({ payload: b64 });
             } else {
               finalBody = JSON.stringify(parsed);
             }
@@ -505,15 +476,9 @@
       await loadProductCount();
     };
 
-    const adminEmails = [
-      'acercado28@gmail.com',
-      'acercado28@ggmail.com'
-    ];
-
     const isUserAdmin = u => {
       if (!u) return false;
-      const email = String(u.email || '').toLowerCase().trim();
-      return adminEmails.includes(email);
+      return String(u.role || '').trim().toLowerCase() === 'admin';
     };
 
     $('#loginForm').addEventListener('submit', async event => {
@@ -522,6 +487,10 @@
         const values = Object.fromEntries(new FormData(event.currentTarget));
         const remember = values.remember === 'on';
         const result = await api('login', { method: 'POST', body: JSON.stringify(values) });
+        if (!isUserAdmin(result.user)) {
+          showDenied(result.user?.email);
+          return;
+        }
         if (result.token) {
           (remember ? localStorage : sessionStorage).setItem('smartisp.adminToken', result.token);
         }
@@ -1662,13 +1631,6 @@
         const res = await api('me');
         if (res && res.user) activeUser = res.user;
       } catch (e) {}
-
-      if (!activeUser) {
-        try {
-          const stored = sessionStorage.getItem('smartisp.accountUser') || (localStorage.getItem('smartisp.accountRemembered') === 'true' ? localStorage.getItem('smartisp.accountUser') : null);
-          if (stored) activeUser = JSON.parse(stored);
-        } catch (e) {}
-      }
 
       if (activeUser && isUserAdmin(activeUser)) {
         await openPanel(activeUser);

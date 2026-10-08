@@ -2,7 +2,7 @@
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Admin-Token, X-Admin-Email');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Admin-Token');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
@@ -55,12 +55,15 @@ function slugify(string $text): string {
 }
 
 function generateAdminAuthToken(array $user): string {
-    $secretKey = 'smartisp_admin_jwt_secret_key_2026';
+    $secretKey = getenv('SESSION_SECRET') ?: '';
+    if ($secretKey === '') {
+        throw new RuntimeException('Falta configurar SESSION_SECRET para firmar sesiones.');
+    }
     $payload = [
         'id'    => $user['id'] ?? uniqid('usr_'),
         'email' => strtolower(trim((string)($user['email'] ?? ''))),
         'name'  => $user['name'] ?? '',
-        'role'  => $user['role'] ?? 'admin',
+        'role'  => strtolower(trim((string)($user['role'] ?? 'customer'))),
         'exp'   => time() + (86400 * 30) // 30 días de vigencia
     ];
     $b64 = base64_encode(json_encode($payload));
@@ -75,8 +78,7 @@ function getAuthUser(): ?array {
     $user = $_SESSION['user'] ?? null;
 
     // Validar token Bearer o cabecera X-Admin-Token o parámetro si no hay usuario o si el usuario actual no es admin
-    $isAdminSession = (is_array($user) && !empty($user['role']) && $user['role'] === 'admin');
-    if (!$isAdminSession) {
+    if (!is_array($user)) {
         $token = '';
         $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? ($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '');
         if (preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
@@ -103,83 +105,31 @@ function getAuthUser(): ?array {
         }
 
         if (!empty($token)) {
-            $secretKey = 'smartisp_admin_jwt_secret_key_2026';
+            $secretKey = getenv('SESSION_SECRET') ?: '';
             $parts = explode('.', $token);
-            if (count($parts) === 2) {
+            if ($secretKey !== '' && count($parts) === 2) {
                 list($payloadB64, $sig) = $parts;
                 $expectedSig = hash_hmac('sha256', $payloadB64, $secretKey);
                 if (hash_equals($expectedSig, $sig)) {
                     $decoded = json_decode(base64_decode($payloadB64), true);
-                    if (is_array($decoded) && !empty($decoded['email'])) {
+                    if (is_array($decoded) && !empty($decoded['id'])) {
                         if (empty($decoded['exp']) || $decoded['exp'] > time()) {
-                            $user = $decoded;
-                            $_SESSION['user'] = $user;
-                            $isAdminSession = true;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // Respaldo por email de administrador autorizado si la sesión o token no son admin
-    if (!$isAdminSession) {
-        $adminEmail = strtolower(trim((string)($_SERVER['HTTP_X_ADMIN_EMAIL'] ?? ($_SERVER['REDIRECT_HTTP_X_ADMIN_EMAIL'] ?? ($_REQUEST['admin_email'] ?? '')))));
-        if (empty($adminEmail) && function_exists('getallheaders')) {
-            $hdrs = (array)getallheaders();
-            foreach ($hdrs as $k => $v) {
-                if (strtolower($k) === 'x-admin-email' && !empty($v)) {
-                    $adminEmail = strtolower(trim((string)$v));
-                    break;
-                }
-            }
-        }
-        if (empty($adminEmail)) {
-            $rawInp = @file_get_contents('php://input');
-            if (!empty($rawInp)) {
-                $jInp = @json_decode($rawInp, true);
-                if (is_array($jInp)) {
-                    if (!empty($jInp['admin_email'])) {
-                        $adminEmail = strtolower(trim((string)$jInp['admin_email']));
-                    } elseif (!empty($jInp['payload']) && is_string($jInp['payload'])) {
-                        $decInp = @base64_decode($jInp['payload']);
-                        if ($decInp) {
-                            $ujInp = @json_decode($decInp, true);
-                            if (is_array($ujInp) && !empty($ujInp['admin_email'])) {
-                                $adminEmail = strtolower(trim((string)$ujInp['admin_email']));
+                            try {
+                                $stmt = getDbConnection()->prepare('SELECT id, email, name, surname, phone, role FROM users_rows WHERE id = :id LIMIT 1');
+                                $stmt->execute([':id' => $decoded['id']]);
+                                $currentUser = $stmt->fetch(PDO::FETCH_ASSOC);
+                                if ($currentUser) {
+                                    $currentUser['role'] = strtolower(trim((string)($currentUser['role'] ?? 'customer')));
+                                    $user = $currentUser;
+                                    $_SESSION['user'] = $user;
+                                }
+                            } catch (Throwable $e) {
+                                error_log('No se pudo validar el usuario del token: ' . $e->getMessage());
                             }
                         }
                     }
                 }
             }
-        }
-        if (!empty($adminEmail) && in_array($adminEmail, getAdminEmailsList(), true) && $adminEmail !== 'gestion@smart-isp.es') {
-            try {
-                $db = getDbConnection();
-                if ($db) {
-                    $stmt = $db->prepare("SELECT id, email, name, role FROM users_rows WHERE LOWER(TRIM(email)) = :email LIMIT 1");
-                    $stmt->execute([':email' => $adminEmail]);
-                    $dbRow = $stmt->fetch(PDO::FETCH_ASSOC);
-                    if ($dbRow) {
-                        $user = [
-                            'id'    => $dbRow['id'],
-                            'email' => $dbRow['email'],
-                            'name'  => $dbRow['name'] ?? 'Administrador',
-                            'role'  => 'admin'
-                        ];
-                    }
-                }
-            } catch (Throwable $e) {}
-
-            if (!$user || ($user['role'] ?? '') !== 'admin') {
-                $user = [
-                    'id'    => '7af355cc-65f0-4ebe-b768-4093b74afbb3',
-                    'email' => $adminEmail,
-                    'name'  => 'Administrador',
-                    'role'  => 'admin'
-                ];
-            }
-            $_SESSION['user'] = $user;
         }
     }
 
@@ -199,7 +149,7 @@ function isAdminUser(?array $user = null): bool {
     }
     // El rol ya quedó fijado al autenticar (sesión real o token firmado); no se vuelve
     // a decidir aquí por email.
-    return ($user['role'] ?? '') === 'admin';
+    return strtolower(trim((string)($user['role'] ?? ''))) === 'admin';
 }
 
 function requireAdminAuth(): void {
@@ -235,22 +185,6 @@ if (is_array($body) && !empty($body['payload']) && is_string($body['payload'])) 
     // como un ajuste" (p. ej. admin-content POST) lo guardaban tal cual bajo una clave llamada
     // literalmente "payload", exponiendo la contraseña SMTP real sin enmascarar.
     unset($body['payload']);
-}
-
-// Respaldo de autenticación admin si vino en el body
-if (is_array($body) && !empty($body['admin_email'])) {
-    $bEmail = strtolower(trim((string)$body['admin_email']));
-    if (in_array($bEmail, getAdminEmailsList(), true)) {
-        if (session_status() === PHP_SESSION_NONE) @session_start();
-        if (empty($_SESSION['user']) || ($_SESSION['user']['role'] ?? '') !== 'admin') {
-            $_SESSION['user'] = [
-                'id'    => '7af355cc-65f0-4ebe-b768-4093b74afbb3',
-                'email' => $bEmail,
-                'name'  => 'Administrador',
-                'role'  => 'admin'
-            ];
-        }
-    }
 }
 
 $action = $_GET['action'] ?? ($_GET['route'] ?? ($body['action'] ?? ($_POST['action'] ?? '')));
