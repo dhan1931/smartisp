@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
 const required = [
@@ -15,6 +15,16 @@ const missing = required.filter(file => !existsSync(path.join('dist', file)));
 if (missing.length) throw new Error(`Faltan archivos del despliegue en dist/: ${missing.join(', ')}`);
 
 const forbidden = [];
+for (const file of ['package.json', 'server.js', 'vite.config.js']) {
+  if (existsSync(path.join('dist', file))) forbidden.push(path.join('dist', file));
+}
+const htaccess = readFileSync(path.join('dist', '.htaccess'), 'utf8');
+for (const protection of [
+  /RewriteRule\s+\^api\/\(\?\!router\\\.php\$\)\.\+\\\.php\$/,
+  /RewriteRule\s+\^\(\?:package\\\.json\|server\\\.js\|vite\\\.config\\\.js/
+]) {
+  if (!protection.test(htaccess)) forbidden.push('dist/.htaccess: falta regla de protección interna');
+}
 const walk = directory => {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const file = path.join(directory, entry.name);

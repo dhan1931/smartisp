@@ -195,12 +195,11 @@
       let result = {};
       try { result = text ? JSON.parse(text) : {}; } catch { result = { error: `Respuesta inválida (${response.status})` }; }
       if (result && result.token) localStorage.setItem('smartisp.adminToken', result.token);
-      if (!response.ok) throw new Error(result.error || 'No se pudo completar la operación.');
+      if (!response.ok) { const error = new Error(result.error || 'No se pudo completar la operación.'); error.status = response.status; throw error; }
       return result;
     };
 
-    const adminEmails = ['acercado28@gmail.com', 'acercado28@ggmail.com'];
-    const isUserAdmin = u => !!u && adminEmails.includes(String(u.email || '').toLowerCase().trim());
+    const isUserAdmin = u => !!u && ['admin', 'administrator', 'administrador'].includes(String(u.role || '').trim().toLowerCase());
 
     let adminConfiguredCategories = [];
 
@@ -359,6 +358,7 @@
         const values = Object.fromEntries(new FormData(event.currentTarget));
         const remember = values.remember === 'on';
         const result = await api('login', { method: 'POST', body: JSON.stringify(values) });
+        if (!isUserAdmin(result.user)) { showDenied(result.user?.email); return; }
         if (result.token) (remember ? localStorage : sessionStorage).setItem('smartisp.adminToken', result.token);
         const displayUser = { id: result.user?.id, name: result.user?.name, email: result.user?.email };
         (remember ? localStorage : sessionStorage).setItem('smartisp.accountUser', JSON.stringify(displayUser));
@@ -404,31 +404,18 @@
       const cp = $('#categoriasPanel');
       if (cp) cp.remove();
       $('#accessDeniedPanel').classList.remove('hidden');
-      setTimeout(() => { window.location.replace('tienda.html'); }, 2500);
     };
 
     const checkAuthAndInit = async () => {
-      let activeUser = null;
       try {
         const res = await api('me');
-        if (res && res.user) activeUser = res.user;
-      } catch (e) {}
-
-      if (!activeUser) {
-        try {
-          const stored = sessionStorage.getItem('smartisp.accountUser') || (localStorage.getItem('smartisp.accountRemembered') === 'true' ? localStorage.getItem('smartisp.accountUser') : null);
-          if (stored) activeUser = JSON.parse(stored);
-        } catch (e) {}
-      }
-
-      if (activeUser && isUserAdmin(activeUser)) {
-        await openPanel(activeUser);
-      } else if (activeUser && !isUserAdmin(activeUser)) {
-        showDenied(activeUser.email);
-      } else {
+        if (isUserAdmin(res.user)) await openPanel(res.user);
+        else showDenied(res.user?.email);
+      } catch (e) {
         const cp = $('#categoriasPanel');
         if (cp) cp.classList.add('hidden');
         $('#loginPanel').classList.remove('hidden');
+        if (e.status && e.status !== 401) showMessage($('#loginMessage'), e.message, true);
       }
     };
 

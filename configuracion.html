@@ -831,23 +831,6 @@
     };
     const api = async (action, options = {}) => {
       const token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
-      let storedUser = null;
-      try {
-        const u = localStorage.getItem('smartisp.accountUser') || sessionStorage.getItem('smartisp.accountUser');
-        if (u) storedUser = JSON.parse(u);
-      } catch (e) {}
-      const validAdminEmails = [
-        'acercado28@gmail.com',
-        'acercado28@ggmail.com'
-      ];
-      let adminEmail = 'acercado28@gmail.com';
-      if (storedUser && storedUser.email) {
-        const em = storedUser.email.toLowerCase().trim();
-        if (validAdminEmails.includes(em)) {
-          adminEmail = em;
-        }
-      }
-
       const isForm = (options.body instanceof FormData);
       const customHeaders = {};
       if (!isForm) {
@@ -856,9 +839,6 @@
       if (token) {
         customHeaders['Authorization'] = `Bearer ${token}`;
         customHeaders['X-Admin-Token'] = token;
-      }
-      if (adminEmail) {
-        customHeaders['X-Admin-Email'] = adminEmail;
       }
       const reqHeaders = { ...customHeaders, ...(options.headers || {}) };
 
@@ -891,7 +871,7 @@
       } catch (e) { response = null; }
 
       // Contingencia WAF: Si el servidor devuelve 403 Forbidden en POST/PUT, reintentar con el formato alternativo
-      if (response && response.status === 403 && (options.method === 'POST' || options.method === 'PUT')) {
+      if (response && response.status === 403 && !response.headers.get('Content-Type')?.includes('application/json') && (options.method === 'POST' || options.method === 'PUT')) {
         try {
           if (isForm && options.body instanceof FormData) {
             const obj = {};
@@ -952,7 +932,7 @@
       if (result && result.token) {
         localStorage.setItem('smartisp.adminToken', result.token);
       }
-      if (!response.ok) throw new Error(result.error || 'No se pudo completar la operación.');
+      if (!response.ok) { const error = new Error(result.error || 'No se pudo completar la operación.'); error.status = response.status; throw error; }
       return result;
     };
     const updateDesignPreview = () => { const form = $('#contentForm'); const values = formValues(form); const preview = $('.design-preview-hero'); preview.style.setProperty('--preview-image', values.hero_image ? `url("${values.hero_image}")` : 'none'); preview.style.setProperty('--preview-accent', values.primary_color || '#087ea4'); preview.style.setProperty('--preview-text', values.hero_text_color || '#102c3d'); preview.style.setProperty('--preview-width', `${values.hero_content_width || 510}px`); preview.style.setProperty('--preview-overlay', `rgba(228,245,243,${Number(values.hero_overlay_opacity || 0) / 100})`); preview.style.minHeight = `${values.hero_height || 370}px`; preview.style.backgroundPosition = values.hero_image_position || 'center'; form.querySelectorAll('[data-preview]').forEach(element => { element.textContent = values[element.dataset.preview] || ''; }); form.querySelectorAll('[data-range-value]').forEach(element => { element.textContent = `${values[element.dataset.rangeValue] || 0}%`; }); };
@@ -1036,15 +1016,9 @@
       showMessage(messageEl, successText);
     };
 
-    const adminEmails = [
-      'acercado28@gmail.com',
-      'acercado28@ggmail.com'
-    ];
-
     const isUserAdmin = u => {
       if (!u) return false;
-      const email = String(u.email || '').toLowerCase().trim();
-      return adminEmails.includes(email);
+      return ['admin', 'administrator', 'administrador'].includes(String(u.role || '').trim().toLowerCase());
     };
 
     const openPanel = async user => {
@@ -1061,6 +1035,7 @@
         const values = Object.fromEntries(new FormData(event.currentTarget));
         const remember = values.remember === 'on';
         const result = await api('login', { method: 'POST', body: JSON.stringify(values) });
+        if (!isUserAdmin(result.user)) { showDenied(result.user?.email); return; }
         if (result.token) {
           (remember ? localStorage : sessionStorage).setItem('smartisp.adminToken', result.token);
         }
@@ -1253,33 +1228,18 @@
       const ap = $('#adminPanel');
       if (ap) ap.remove(); // Elimina el dashboard del DOM para evitar exposición por manipulación de CSS (QA-027)
       $('#accessDeniedPanel').classList.remove('hidden');
-      setTimeout(() => {
-        window.location.replace('tienda.html');
-      }, 2500);
     };
 
     const checkAuthAndInit = async () => {
-      let activeUser = null;
       try {
         const res = await api('me');
-        if (res && res.user) activeUser = res.user;
-      } catch (e) {}
-
-      if (!activeUser) {
-        try {
-          const stored = sessionStorage.getItem('smartisp.accountUser') || (localStorage.getItem('smartisp.accountRemembered') === 'true' ? localStorage.getItem('smartisp.accountUser') : null);
-          if (stored) activeUser = JSON.parse(stored);
-        } catch (e) {}
-      }
-
-      if (activeUser && isUserAdmin(activeUser)) {
-        await openPanel(activeUser);
-      } else if (activeUser && !isUserAdmin(activeUser)) {
-        showDenied(activeUser.email);
-      } else {
+        if (isUserAdmin(res.user)) await openPanel(res.user);
+        else showDenied(res.user?.email);
+      } catch (e) {
         const ap = $('#adminPanel');
         if (ap) ap.classList.add('hidden');
         $('#loginPanel').classList.remove('hidden');
+        if (e.status && e.status !== 401) showMessage($('#loginMessage'), e.message, true);
       }
     };
 

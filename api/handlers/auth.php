@@ -113,24 +113,27 @@ if ($action === 'login' && $method === 'POST') {
 
         if (!$user) {
             http_response_code(401);
-            echo json_encode(['error' => 'No se encontró ninguna cuenta con el correo: ' . $email]);
+            echo json_encode(['error' => 'Correo o contraseña incorrectos.']);
             exit;
         }
 
         $storedPass = (string)($user[$passCol] ?? '');
-        $match = false;
+        $modernHashValid = password_verify($password, $storedPass);
+        $match = $modernHashValid;
 
-        if (password_verify($password, $storedPass)) {
+        if (!$match && $storedPass === $password) {
             $match = true;
-        } elseif ($storedPass === $password) {
+        } elseif (!$match && md5($password) === $storedPass) {
             $match = true;
-        } elseif (md5($password) === $storedPass) {
-            $match = true;
-        } elseif (sha1($password) === $storedPass) {
+        } elseif (!$match && sha1($password) === $storedPass) {
             $match = true;
         }
 
         if ($match) {
+            if (!$modernHashValid && !empty($user['id'])) {
+                $upgrade = $pdo->prepare("UPDATE `$uTable` SET `$passCol` = :hash WHERE id = :id");
+                $upgrade->execute([':hash' => password_hash($password, PASSWORD_DEFAULT), ':id' => $user['id']]);
+            }
             unset($user[$passCol]);
             if (isset($user['password'])) unset($user['password']);
             if (isset($user['password_hash'])) unset($user['password_hash']);
@@ -141,20 +144,23 @@ if ($action === 'login' && $method === 'POST') {
                 'surname' => (string)($user['surname'] ?? ($user['apellido'] ?? ($user['COL 5'] ?? ''))),
                 'email'   => (string)($user[$emailCol] ?? ($user['COL 2'] ?? $email)),
                 'phone'   => (string)($user['phone'] ?? ($user['telefono'] ?? ($user['COL 6'] ?? ''))),
-                'role'    => strtolower(trim((string)($user['role'] ?? ($user['rol'] ?? ($user['COL 8'] ?? 'customer')))))
+                'role'    => smartispNormalizeRole($user['role'] ?? ($user['rol'] ?? ($user['COL 8'] ?? 'customer')))
             ];
-            // $normUser['role'] ya viene de la columna role de la base (línea de arriba);
-            // ya no se recalcula por email.
+            if (session_status() === PHP_SESSION_ACTIVE) session_regenerate_id(true);
             $_SESSION['user'] = $normUser;
-            try { $token = generateAdminAuthToken($normUser); } catch (Throwable $e) { $token = null; }
+            $token = null;
+            if (isAdminUser($normUser)) {
+                try { $token = generateAdminAuthToken($normUser); } catch (Throwable $e) { $token = null; }
+            }
             echo json_encode(['user' => $normUser, 'token' => $token]);
         } else {
             http_response_code(401);
-            echo json_encode(['error' => 'Contraseña incorrecta. Verifica tus datos.']);
+            echo json_encode(['error' => 'Correo o contraseña incorrectos.']);
         }
     } catch (Throwable $e) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Error al iniciar sesión: ' . $e->getMessage()]);
+        error_log('SmartISP login error: ' . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(['error' => 'No se pudo iniciar sesión por un error del servidor.']);
     }
     exit;
 }
@@ -196,6 +202,7 @@ if ($action === 'register' && $method === 'POST') {
             'phone'   => $phone,
             'role'    => 'customer'
         ];
+        if (session_status() === PHP_SESSION_ACTIVE) session_regenerate_id(true);
         $_SESSION['user'] = $regUser;
         echo json_encode(['user' => $regUser]);
     } catch (Throwable $e) {
@@ -208,6 +215,11 @@ if ($action === 'register' && $method === 'POST') {
 
 if ($action === 'me' && $method === 'GET') {
     $user = getAuthUser();
+    if (!$user) {
+        http_response_code(401);
+        echo json_encode(['user' => null, 'error' => 'No hay una sesión activa.']);
+        exit;
+    }
     $token = null;
     if ($user && is_array($user) && isAdminUser($user)) {
         try { $token = generateAdminAuthToken($user); } catch (Throwable $e) { $token = null; }
@@ -218,7 +230,11 @@ if ($action === 'me' && $method === 'GET') {
 
 
 if ($action === 'logout') {
-    $_SESSION['user'] = null;
+    $_SESSION = [];
+    if (ini_get('session.use_cookies')) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
+    }
     @session_destroy();
     echo json_encode(['ok' => true]);
     exit;

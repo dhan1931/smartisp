@@ -35,7 +35,7 @@ export default defineConfig({
         // Favicons, logos y manifests viven en assets/ (DEV-20261005-035): se copia la carpeta
         // completa en vez de listar cada archivo suelto, como antes.
         const filesToCopy = [
-          '.htaccess', 'package.json', 'robots.txt', 'sitemap.xml', 'sitemap-main.xml',
+          '.htaccess', 'robots.txt', 'sitemap.xml', 'sitemap-main.xml',
           'producto.php', 'categoria.php', 'sitemap-products.php', 'sitemap-categories.php',
           'productos-destacados.php', 'categorias-destacadas.php'
         ];

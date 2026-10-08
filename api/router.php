@@ -1,6 +1,5 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Admin-Token');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
@@ -9,12 +8,9 @@ header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
 
 // Manejador global de excepciones para evitar cualquier error 500 vacío
 set_exception_handler(function (Throwable $e) {
+    error_log('SmartISP API exception: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
     http_response_code(500);
-    echo json_encode([
-        'error' => 'Error en el servidor: ' . $e->getMessage(),
-        'file'  => basename($e->getFile()),
-        'line'  => $e->getLine()
-    ]);
+    echo json_encode(['error' => 'Ocurrió un error interno. Inténtalo nuevamente.']);
     exit;
 });
 
@@ -34,6 +30,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/mailer.php';
+require_once __DIR__ . '/roles.php';
 
 $pdo = getDbConnection();
 
@@ -55,6 +52,9 @@ function slugify(string $text): string {
 }
 
 function generateAdminAuthToken(array $user): string {
+    if (smartispNormalizeRole($user['role'] ?? '') !== 'admin') {
+        throw new RuntimeException('Solo se emiten tokens administrativos a usuarios autorizados.');
+    }
     $secretKey = getenv('SESSION_SECRET') ?: '';
     if ($secretKey === '') {
         throw new RuntimeException('Falta configurar SESSION_SECRET para firmar sesiones.');
@@ -76,9 +76,10 @@ function getAuthUser(): ?array {
         @session_start();
     }
     $user = $_SESSION['user'] ?? null;
+    $userId = is_array($user) ? trim((string)($user['id'] ?? '')) : '';
 
-    // Validar token Bearer o cabecera X-Admin-Token o parámetro si no hay usuario o si el usuario actual no es admin
-    if (!is_array($user)) {
+    // Aceptar tokens heredados solo por cabeceras; nunca en URL/body donde acabarían en logs.
+    if ($userId === '') {
         $token = '';
         $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? ($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '');
         if (preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
@@ -100,10 +101,6 @@ function getAuthUser(): ?array {
                 }
             }
         }
-        if (empty($token)) {
-            $token = trim((string)($_REQUEST['admin_token'] ?? ($_REQUEST['token'] ?? '')));
-        }
-
         if (!empty($token)) {
             $secretKey = getenv('SESSION_SECRET') ?: '';
             $parts = explode('.', $token);
@@ -118,11 +115,7 @@ function getAuthUser(): ?array {
                                 $stmt = getDbConnection()->prepare('SELECT id, email, name, surname, phone, role FROM users_rows WHERE id = :id LIMIT 1');
                                 $stmt->execute([':id' => $decoded['id']]);
                                 $currentUser = $stmt->fetch(PDO::FETCH_ASSOC);
-                                if ($currentUser) {
-                                    $currentUser['role'] = strtolower(trim((string)($currentUser['role'] ?? 'customer')));
-                                    $user = $currentUser;
-                                    $_SESSION['user'] = $user;
-                                }
+                                if ($currentUser) $userId = trim((string)$currentUser['id']);
                             } catch (Throwable $e) {
                                 error_log('No se pudo validar el usuario del token: ' . $e->getMessage());
                             }
@@ -133,11 +126,20 @@ function getAuthUser(): ?array {
         }
     }
 
-    if (is_array($user) && !empty($user['email'])) {
-        return $user;
-    }
+    if ($userId === '') return null;
 
-    return null;
+    // La sesión conserva identidad, no permisos: recargar rol y perfil desde la fuente
+    // autorizada en cada petición invalida permisos revocados y corrige sesiones antiguas.
+    $stmt = getDbConnection()->prepare('SELECT id, email, name, surname, phone, role FROM users_rows WHERE id = :id LIMIT 1');
+    $stmt->execute([':id' => $userId]);
+    $freshUser = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$freshUser) {
+        unset($_SESSION['user']);
+        return null;
+    }
+    $freshUser['role'] = smartispNormalizeRole($freshUser['role'] ?? 'customer');
+    $_SESSION['user'] = $freshUser;
+    return $freshUser;
 }
 
 function isAdminUser(?array $user = null): bool {
@@ -149,16 +151,21 @@ function isAdminUser(?array $user = null): bool {
     }
     // El rol ya quedó fijado al autenticar (sesión real o token firmado); no se vuelve
     // a decidir aquí por email.
-    return strtolower(trim((string)($user['role'] ?? ''))) === 'admin';
+    return smartispNormalizeRole($user['role'] ?? '') === 'admin';
 }
 
 function requireAdminAuth(): void {
-    if (!isAdminUser()) {
+    $user = getAuthUser();
+    if (!$user) {
+        http_response_code(401);
+        echo json_encode(['ok' => false, 'error' => 'Inicia sesión para continuar.']);
+        exit;
+    }
+    if (!isAdminUser($user)) {
         http_response_code(403);
         echo json_encode([
             'ok' => false,
-            'error' => 'Acceso denegado: Se requieren permisos de administrador.',
-            'unauthorized' => true
+            'error' => 'Esta cuenta no tiene permisos para administrar la tienda.'
         ]);
         exit;
     }
@@ -349,8 +356,19 @@ if ($action === 'catalog' && $method === 'GET') {
             'solutions_grid_html', 'advantages_grid_html', 'about_visual_html', 'stats_grid_html',
             'landing_logo_dark_image', 'about_', 'contact_', 'mission_', 'vision_', 'value', 'sol', 'adv', 'stat'
         ];
+        $sensitiveKeys = [
+            'admin_email', 'smtp_provider', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass',
+            'smtp_secure', 'smtp_from', 'resend_api_key', 'email_from'
+        ];
         foreach ($allContent as $item) {
             $k = (string)($item['key'] ?? '');
+            $normalizedKey = strtolower($k);
+            if (in_array($normalizedKey, $sensitiveKeys, true)
+                || str_contains($normalizedKey, 'pass')
+                || str_contains($normalizedKey, 'secret')
+                || str_contains($normalizedKey, 'api_key')) {
+                continue;
+            }
             if ($k === 'landing_logo_image' && $hasLogoImage) {
                 continue; // Evitar duplicar 1MB en la tienda
             }

@@ -59,7 +59,7 @@
   function render(root, user) {
     var activeKey = root.getAttribute('data-active') || '';
     var name = (user && (user.name || user.email)) || '';
-    var role = user && user.role === 'admin' ? 'Administrador' : 'Cliente';
+    var role = user && ['admin', 'administrator', 'administrador'].indexOf(String(user.role || '').toLowerCase()) >= 0 ? 'Administrador' : 'Cliente';
     var initial = escapeHtml((name || '?').trim().charAt(0).toUpperCase());
     var collapsed = false;
 
@@ -164,16 +164,49 @@
     window.location.href = '/login.html?redirect=' + back;
   }
 
+  function renderNotice(root, title, message, retry) {
+    root.classList.remove('is-loading');
+    root.classList.add('is-access-notice');
+    document.body.classList.remove('has-admin-sidebar', 'admin-sidebar-collapsed');
+    root.innerHTML = '<section class="admin-nav-notice" role="status"><i data-lucide="shield-alert" aria-hidden="true"></i>' +
+      '<strong>' + escapeHtml(title) + '</strong><span>' + escapeHtml(message) + '</span>' +
+      (retry ? '<button type="button" class="admin-nav-retry" aria-label="Reintentar" title="Reintentar"><i data-lucide="refresh-cw" aria-hidden="true"></i> Reintentar</button>' : '') +
+      '<a href="/tienda.html"><i data-lucide="store" aria-hidden="true"></i> Ver tienda</a>' +
+      '<a href="/login.html"><i data-lucide="log-in" aria-hidden="true"></i> Iniciar sesión</a></section>';
+    if (window.lucide) window.lucide.createIcons();
+    var retryButton = root.querySelector('.admin-nav-retry');
+    if (retryButton) retryButton.addEventListener('click', function () {
+      root.classList.remove('is-access-notice');
+      root.classList.add('is-loading');
+      init();
+    });
+  }
+
   function init() {
     var root = document.getElementById('smartisp-admin-nav');
     if (!root) return;
 
-    fetch('/api/auth/me', { credentials: 'include', cache: 'no-store' })
-      .then(function (res) { return res.ok ? res.json() : { user: null }; })
+    var authHeaders = {};
+    try {
+      var token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
+      if (token) authHeaders.Authorization = 'Bearer ' + token;
+    } catch (e) { /* cookies siguen siendo suficientes si el almacenamiento está bloqueado */ }
+
+    fetch('/api/auth/me', { credentials: 'include', cache: 'no-store', headers: authHeaders })
+      .then(function (res) {
+        if (res.status === 401) { redirectToLogin(); return null; }
+        if (!res.ok) throw new Error('No se pudo validar la sesión (' + res.status + ').');
+        return res.json();
+      })
       .then(function (data) {
+        if (!data) return;
         var user = data && data.user;
-        if (!user || user.role !== 'admin') {
+        if (!user) {
           redirectToLogin();
+          return;
+        }
+        if (['admin', 'administrator', 'administrador'].indexOf(String(user.role || '').toLowerCase()) < 0) {
+          renderNotice(root, 'Acceso administrativo', 'Esta cuenta no tiene permisos de administrador.', false);
           return;
         }
         // Puente transicional (DEV-20261005-002 aún pendiente): hasta que todas las páginas del
@@ -185,7 +218,7 @@
         } catch (e) { /* almacenamiento bloqueado; no es critico para el navbar */ }
         render(root, user);
       })
-      .catch(function () { redirectToLogin(); });
+      .catch(function (error) { renderNotice(root, 'No se pudo validar la sesión', error.message || 'Comprueba tu conexión e inténtalo de nuevo.', true); });
   }
 
   if (document.readyState === 'loading') {

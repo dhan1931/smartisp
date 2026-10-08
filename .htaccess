@@ -7,6 +7,8 @@ DirectoryIndex tienda.html index.html index.htm index.php
     # Proteger archivos sensibles
     RewriteRule ^\.env - [F,L]
     RewriteRule ^api/config\.php - [F,L]
+    RewriteRule ^api/(?!router\.php$).+\.php$ - [F,L]
+    RewriteRule ^(?:package\.json|server\.js|vite\.config\.js|README\.md|CHANGELOG\.md|.*\.sql(?:\.gz)?)$ - [F,L,NC]
 
     # La raiz publica es la tienda; la presentacion queda archivada como index-presentacion.html.
     RewriteRule ^index\.html$ / [R=301,L]

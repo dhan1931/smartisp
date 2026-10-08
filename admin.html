@@ -37,6 +37,9 @@
     .dashboard-hero h2 { margin:0; color:#0f172a; font-size:28px; letter-spacing:-.02em; }
     .dashboard-hero p { margin:5px 0 0; color:#64748b; }
     .dashboard-date { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:9px 12px; color:#0f172a; font-weight:700; font-size:13px; box-shadow:0 2px 8px rgba(15,23,42,.03); }
+    .dashboard-tools { display:flex; align-items:center; gap:8px; }
+    .dashboard-refresh { width:38px; height:38px; display:grid; place-items:center; border:1px solid #d8e5e7; border-radius:8px; background:#fff; color:#075d7d; }
+    .dashboard-refresh:disabled { opacity:.55; cursor:wait; }
     .dashboard-grid { display:grid; grid-template-columns:minmax(0, 1.8fr) minmax(300px, .9fr); gap:14px; margin-bottom:14px; }
     .dashboard-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 2px 10px rgba(15,23,42,.04); }
     .kpi-row { display:grid; grid-template-columns:repeat(auto-fit, minmax(165px, 1fr)); gap:14px; margin-bottom:14px; }
@@ -125,13 +128,13 @@
           <h2 id="dashboardGreeting">Buenos días</h2>
           <p><span id="adminIdentity"></span> · Resumen operativo de tu tienda</p>
         </div>
-        <div class="dashboard-date"><i data-lucide="calendar-days"></i> <span id="dashboardDate">Hoy</span></div>
+        <div class="dashboard-tools"><button id="refreshDashboardBtn" class="dashboard-refresh" type="button" aria-label="Actualizar dashboard" title="Actualizar"><i data-lucide="refresh-cw"></i></button><div class="dashboard-date"><i data-lucide="calendar-days"></i> <span id="dashboardDate">Hoy</span></div></div>
       </div>
       <div id="dashboardStatsRow" class="kpi-row">
         <a class="dashboard-card kpi-card is-green" href="pedidos.html">
           <div class="kpi-head"><span class="kpi-icon"><i data-lucide="shopping-bag"></i></span>Ingresos</div>
           <div class="kpi-value" id="dashRevenue">—</div>
-          <div class="kpi-foot">Pedidos no cancelados</div>
+          <div class="kpi-foot">Pagos confirmados</div>
         </a>
         <a class="dashboard-card kpi-card" href="pedidos.html">
           <div class="kpi-head"><span class="kpi-icon"><i data-lucide="shopping-cart"></i></span>Pedidos hoy</div>
@@ -148,15 +151,20 @@
           <div class="kpi-value" id="adminCatalogProdCount">—</div>
           <div class="kpi-foot"><span id="adminCatalogCatCount">—</span> macro-categorías</div>
         </a>
+        <div class="dashboard-card kpi-card">
+          <div class="kpi-head"><span class="kpi-icon"><i data-lucide="users"></i></span>Clientes registrados</div>
+          <div class="kpi-value" id="dashboardCustomerCount">—</div>
+          <div class="kpi-foot">Cuentas con rol de cliente</div>
+        </div>
       </div>
       <div class="dashboard-grid">
         <section class="dashboard-card chart-panel">
           <div class="panel-title-row">
-            <h3>Actividad por estado</h3>
+            <h3 id="ordersStatusTitle">Actividad por estado</h3>
             <a href="pedidos.html">Ver pedidos</a>
           </div>
           <div id="ordersStatusChart" class="mini-chart"></div>
-          <div class="mini-chart-labels"><span>Cotizaciones</span><span>Pagos</span><span>Preparación</span><span>Enviados</span><span>Entregados</span></div>
+          <div id="ordersStatusLabels" class="mini-chart-labels"><span>Cotizaciones</span><span>Pagos</span><span>Preparación</span><span>Enviados</span><span>Entregados</span></div>
         </section>
         <section class="dashboard-card attention-panel" aria-labelledby="attentionTitle">
           <div class="attention-head">
@@ -261,7 +269,7 @@
       } catch (e) { response = null; }
 
       // Contingencia WAF: Si el servidor devuelve 403 Forbidden en POST/PUT, reintentar con el formato alternativo
-      if (response && response.status === 403 && (options.method === 'POST' || options.method === 'PUT')) {
+      if (response && response.status === 403 && !response.headers.get('Content-Type')?.includes('application/json') && (options.method === 'POST' || options.method === 'PUT')) {
         try {
           if (isForm && options.body instanceof FormData) {
             const obj = {};
@@ -322,7 +330,7 @@
       if (result && result.token) {
         localStorage.setItem('smartisp.adminToken', result.token);
       }
-      if (!response.ok) throw new Error(result.error || 'No se pudo completar la operación.');
+      if (!response.ok) { const error = new Error(result.error || 'No se pudo completar la operación.'); error.status = response.status; throw error; }
       return result;
     };
 
@@ -354,12 +362,22 @@
       const chart = document.getElementById('ordersStatusChart');
       if (!chart) return;
       const byStatus = Object.fromEntries((stats.by_status || []).map(s => [s.status, s.total]));
-      const values = ['quote_requested', 'pending', 'preparing', 'shipped', 'delivered'].map(key => byStatus[key] || 0);
+      const daily = stats.daily || [];
+      const showDaily = new Set(daily.map(item => item.day)).size >= 2;
+      const values = showDaily
+        ? daily.map(item => Number(item.orders || 0))
+        : ['quote_requested', 'pending', 'preparing', 'shipped', 'delivered'].map(key => byStatus[key] || 0);
       const max = Math.max(1, ...values);
-      chart.innerHTML = values.map(value => {
+      chart.innerHTML = values.map((value, index) => {
         const height = Math.max(10, Math.round((value / max) * 100));
-        return `<span class="mini-bar" title="${value} pedidos" style="height:${height}%"></span>`;
+        const day = showDaily ? daily[index] : null;
+        const label = day ? `${day.day}: ${value} pedidos · ${formatMoney(day.revenue)}` : `${value} pedidos`;
+        return `<span class="mini-bar" title="${escapeHtml(label)}" style="height:${height}%"></span>`;
       }).join('');
+      document.getElementById('ordersStatusTitle').textContent = showDaily ? 'Pedidos últimos 7 días' : 'Actividad por estado';
+      document.getElementById('ordersStatusLabels').innerHTML = showDaily
+        ? daily.map(item => `<span>${new Date(`${item.day}T12:00:00`).toLocaleDateString('es-EC', { day: '2-digit', month: 'short' })}</span>`).join('')
+        : '<span>Cotizaciones</span><span>Pagos</span><span>Preparación</span><span>Enviados</span><span>Entregados</span>';
     };
 
     const renderCatalogHealth = stats => {
@@ -471,15 +489,12 @@
       $('#adminPanel').classList.remove('hidden');
       hydrateDashboardHeader(user);
       $('#adminIdentity').textContent = `${user.name || 'Administrador'}${user.email ? ' · ' + user.email : ''}`;
-      await loadOrderStats();
-      await loadRecentOrders();
-      await loadCategories();
-      await loadProductCount();
+      await refreshDashboardData();
     };
 
     const isUserAdmin = u => {
       if (!u) return false;
-      return String(u.role || '').trim().toLowerCase() === 'admin';
+      return ['admin', 'administrator', 'administrador'].includes(String(u.role || '').trim().toLowerCase());
     };
 
     $('#loginForm').addEventListener('submit', async event => {
@@ -1621,30 +1636,43 @@
       const ap = $('#adminPanel');
       if (ap) ap.remove(); // Elimina el dashboard del DOM para evitar exposición por manipulación de CSS (QA-027)
       $('#accessDeniedPanel').classList.remove('hidden');
-      setTimeout(() => {
-        window.location.replace('tienda.html');
-      }, 2500);
+    };
+
+    const loadBusinessSummary = async () => {
+      const output = document.getElementById('dashboardCustomerCount');
+      try {
+        const stats = await api('admin-dashboard-stats');
+        output.textContent = Number(stats.customers || 0).toLocaleString('es-EC');
+      } catch (e) {
+        output.textContent = '—';
+      }
+    };
+
+    const refreshDashboardData = async () => {
+      const button = document.getElementById('refreshDashboardBtn');
+      if (button) button.disabled = true;
+      try {
+        await Promise.all([loadOrderStats(), loadRecentOrders(), loadCategories(), loadProductCount(), loadBusinessSummary()]);
+      } finally {
+        if (button) button.disabled = false;
+      }
     };
 
     const checkAuthAndInit = async () => {
-      let activeUser = null;
       try {
         const res = await api('me');
-        if (res && res.user) activeUser = res.user;
-      } catch (e) {}
-
-      if (activeUser && isUserAdmin(activeUser)) {
-        await openPanel(activeUser);
-      } else if (activeUser && !isUserAdmin(activeUser)) {
-        showDenied(activeUser.email);
-      } else {
+        if (isUserAdmin(res.user)) await openPanel(res.user);
+        else showDenied(res.user?.email);
+      } catch (e) {
         const ap = $('#adminPanel');
         if (ap) ap.classList.add('hidden');
         $('#loginPanel').classList.remove('hidden');
+        if (e.status && e.status !== 401) showMessage($('#loginMessage'), e.message, true);
       }
     };
 
     if (window.lucide) window.lucide.createIcons();
+    document.getElementById('refreshDashboardBtn')?.addEventListener('click', refreshDashboardData);
     checkAuthAndInit();
   </script>
 </body>

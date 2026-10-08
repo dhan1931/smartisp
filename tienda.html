@@ -4043,7 +4043,6 @@
 					reqHeaders['X-Admin-Token'] = token;
 				}
 				if (accountState.user && accountState.user.email) {
-					reqHeaders['X-Admin-Email'] = accountState.user.email;
 					values.email = accountState.user.email;
 				}
 				const response = await fetch('/api/router.php?action=change-password', {

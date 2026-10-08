@@ -1449,7 +1449,7 @@
         </p>
         <div class="form-group" style="margin-bottom:14px;">
           <label class="form-label" for="authEmailInput">* Correo Electrónico:</label>
-          <input type="email" id="authEmailInput" class="form-control" placeholder="acercado28@gmail.com" required value="acercado28@gmail.com">
+          <input type="email" id="authEmailInput" class="form-control" placeholder="admin@empresa.com" required>
         </div>
         <div class="form-group" style="margin-bottom:18px;">
           <label class="form-label" for="authPasswordInput">* Contraseña:</label>
@@ -1535,6 +1535,7 @@
     let productsTotalPages = 1;
     let productsStats = { total: 0, visible: 0, with_photo: 0, without_photo: 0, by_category: [] };
     let currentAdminUser = null;
+    const isAdminRole = user => !!user && ['admin', 'administrator', 'administrador'].includes(String(user.role || '').trim().toLowerCase());
     let currentImportState = null;
     let targetImageProduct = null;
 
@@ -1566,37 +1567,9 @@
       }
     };
 
-    // --- OBTENER USUARIO ADMINISTRADOR DE RESPALDO O LOCALSTORAGE ---
-    const getStoredAdminUser = () => {
-      const allowedAdminEmails = [
-        'acercado28@gmail.com',
-        'acercado28@ggmail.com'
-      ];
-      if (currentAdminUser && currentAdminUser.email) {
-        const em = currentAdminUser.email.toLowerCase().trim();
-        if (allowedAdminEmails.includes(em)) {
-          return currentAdminUser;
-        }
-      }
-      try {
-        const s = localStorage.getItem('smartisp.accountUser') || sessionStorage.getItem('smartisp.accountUser');
-        if (s) {
-          const u = JSON.parse(s);
-          if (u && u.email) {
-            const em = u.email.toLowerCase().trim();
-            if (allowedAdminEmails.includes(em)) {
-              return { ...u, role: 'admin' };
-            }
-          }
-        }
-      } catch (e) {}
-      return { id: '7af355cc-65f0-4ebe-b768-4093b74afbb3', email: 'acercado28@gmail.com', name: 'Administrador', role: 'admin' };
-    };
-
     // --- HELPER DE LLAMADAS API CON CREDENCIALES, RUTA DIRECTA Y RESILENCIA WAF ---
     const api = async (endpoint, options = {}) => {
       const token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
-      const adminUser = getStoredAdminUser();
 
       const isForm = (options.body instanceof FormData);
       const customHeaders = {};
@@ -1619,30 +1592,17 @@
         customHeaders['Authorization'] = `Bearer ${token}`;
         customHeaders['X-Admin-Token'] = token;
       }
-      if (adminUser && adminUser.email) {
-        customHeaders['X-Admin-Email'] = adminUser.email;
-      }
       const reqHeaders = { ...customHeaders, ...(options.headers || {}) };
-
-      // Adjuntar admin_email en FormData automáticamente para inmunidad contra filtrado de cabeceras en Hostinger
-      if (isForm && options.body instanceof FormData && adminUser && adminUser.email) {
-        if (!options.body.has('admin_email')) {
-          options.body.append('admin_email', adminUser.email);
-        }
-      }
 
       // Protección WAF: empaquetar automáticamente payloads JSON como Base64 para prevenir bloqueos falsos positivos de ModSecurity en Hostinger
       let finalBody = options.body;
       if (!isForm && finalBody && typeof finalBody === 'string' && (options.method === 'POST' || options.method === 'PUT')) {
         try {
           const parsed = JSON.parse(finalBody);
-          if (adminUser && adminUser.email && !parsed.admin_email) {
-            parsed.admin_email = adminUser.email;
-          }
           if (!parsed.payload && typeof toUtf8Base64 === 'function') {
             const b64 = toUtf8Base64(JSON.stringify(parsed));
             if (b64) {
-              finalBody = JSON.stringify({ payload: b64, admin_email: adminUser.email });
+              finalBody = JSON.stringify({ payload: b64 });
             } else {
               finalBody = JSON.stringify(parsed);
             }
@@ -1665,7 +1625,7 @@
       }
 
       // Contingencia WAF: Si el servidor devuelve 403 Forbidden en POST/PUT, reintentar con el formato alternativo
-      if (res && res.status === 403 && (options.method === 'POST' || options.method === 'PUT')) {
+      if (res && res.status === 403 && !res.headers.get('Content-Type')?.includes('application/json') && (options.method === 'POST' || options.method === 'PUT')) {
         try {
           if (isForm && options.body instanceof FormData) {
             // Reintentar convirtiendo FormData a JSON protegido con Base64
@@ -1741,7 +1701,9 @@
 
       if (!res.ok) {
         console.warn('Respuesta de error del servidor:', res.status, data.error);
-        throw new Error(data.error || 'Ocurrió un error en la solicitud.');
+        const error = new Error(data.error || 'Ocurrió un error en la solicitud.');
+        error.status = res.status;
+        throw error;
       }
       return data;
     };
@@ -2662,16 +2624,10 @@
           let uploadUrl = '/api/router.php?action=upload-image';
           const uploadHeaders = {};
           const token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
-          const adminUser = getStoredAdminUser();
-
           if (token) {
             uploadHeaders['Authorization'] = `Bearer ${token}`;
             uploadHeaders['X-Admin-Token'] = token;
           }
-          if (adminUser && adminUser.email) {
-            uploadHeaders['X-Admin-Email'] = adminUser.email;
-          }
-
           const uploadRes = await fetch(uploadUrl, {
             method: 'POST',
             credentials: 'include',
@@ -2893,16 +2849,10 @@
             let upUrl = '/api/router.php?action=upload-image';
             const token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
             const upHeaders = {};
-            const adminUser = getStoredAdminUser();
-
             if (token) {
               upHeaders['Authorization'] = `Bearer ${token}`;
               upHeaders['X-Admin-Token'] = token;
             }
-            if (adminUser && adminUser.email) {
-              upHeaders['X-Admin-Email'] = adminUser.email;
-            }
-
             const b64Parts = imageUrl.split(',');
             const mime = b64Parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
             const byteString = atob(b64Parts[1]);
@@ -3588,15 +3538,13 @@
 
         // Estrategia Nivel 1: Envío por lote (rápido y optimizado)
         try {
-          const rawJson = JSON.stringify({
+        const rawJson = JSON.stringify({
             action: 'import-products',
-            admin_email: adminUser.email,
             products: cleanBatch
           });
           const b64 = toUtf8Base64(rawJson);
           const fd = new FormData();
           fd.append('action', 'import-products');
-          fd.append('admin_email', adminUser.email);
           if (b64) fd.append('payload', b64);
           fd.append('products', rawJson);
 
@@ -3619,7 +3567,6 @@
             try {
               const singleFd = new FormData();
               singleFd.append('action', 'admin-products');
-              singleFd.append('admin_email', adminUser.email);
               if (prod.id) singleFd.append('id', prod.id);
               singleFd.append('name', prod.name);
               singleFd.append('sku', prod.sku);
@@ -3701,6 +3648,7 @@
           body: JSON.stringify({ email, password })
         });
         if (res && res.user) {
+          if (!isAdminRole(res.user)) throw new Error('Esta cuenta no tiene permisos de administrador.');
           currentAdminUser = res.user;
           localStorage.setItem('smartisp.accountUser', JSON.stringify(res.user));
           if (res.token) {
@@ -3728,23 +3676,21 @@
 
     // Verificación de sesión de Administrador
     (async () => {
-      let user = getStoredAdminUser();
-      currentAdminUser = user;
-
+      let user = null;
       try {
         const sessionRes = await api('me');
         if (sessionRes && sessionRes.user) {
           user = sessionRes.user;
-          currentAdminUser = user;
-          localStorage.setItem('smartisp.accountUser', JSON.stringify(user));
-          if (sessionRes.token) {
-            localStorage.setItem('smartisp.adminToken', sessionRes.token);
-          }
         }
       } catch (e) {
-        console.warn('Revalidación de sesión silenciosa, manteniendo sesión local:', e);
+        console.info('No hay sesión administrativa activa.');
       }
 
+      if (!isAdminRole(user)) {
+        currentAdminUser = null;
+        openAdminAuthModal(user ? 'Esta cuenta no tiene permisos de administrador.' : 'Inicia sesión con una cuenta autorizada para administrar el catálogo.');
+        return;
+      }
       currentAdminUser = user;
       const badge = document.getElementById('userBadge');
       if (badge) badge.textContent = `👤 ${user.email || user.name || 'Admin'}`;

@@ -90,8 +90,19 @@ if ($action === 'catalog' && $method === 'GET') {
             'solutions_grid_html', 'advantages_grid_html', 'about_visual_html', 'stats_grid_html',
             'landing_logo_dark_image', 'about_', 'contact_', 'mission_', 'vision_', 'value', 'sol', 'adv', 'stat'
         ];
+        $sensitiveKeys = [
+            'admin_email', 'smtp_provider', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass',
+            'smtp_secure', 'smtp_from', 'resend_api_key', 'email_from'
+        ];
         foreach ($allContent as $item) {
             $k = (string)($item['key'] ?? '');
+            $normalizedKey = strtolower($k);
+            if (in_array($normalizedKey, $sensitiveKeys, true)
+                || str_contains($normalizedKey, 'pass')
+                || str_contains($normalizedKey, 'secret')
+                || str_contains($normalizedKey, 'api_key')) {
+                continue;
+            }
             if ($k === 'landing_logo_image' && $hasLogoImage) {
                 continue; // Evitar duplicar 1MB en la tienda
             }
@@ -131,6 +142,24 @@ if ($action === 'catalog' && $method === 'GET') {
 // -------------------------------------------------------------
 // 2. GESTIÓN DE PRODUCTOS PARA EL EDITOR (/api/auth/admin-products)
 // -------------------------------------------------------------
+
+if ($action === 'admin-dashboard-stats') {
+    requireAdminAuth();
+    $pTable = getProductsTableName($pdo);
+    $productStats = $pdo->query("SELECT COUNT(*) AS total, SUM(visible = 1) AS visible
+        FROM `$pTable`")->fetch(PDO::FETCH_ASSOC) ?: [];
+    $categoryCount = (int)$pdo->query('SELECT COUNT(*) FROM categories_rows')->fetchColumn();
+    $customerCount = (int)$pdo->query("SELECT COUNT(*) FROM users_rows
+        WHERE COALESCE(LOWER(TRIM(role)), 'customer') NOT IN ('admin', 'administrator', 'administrador')")->fetchColumn();
+
+    echo json_encode([
+        'products' => (int)($productStats['total'] ?? 0),
+        'visible_products' => (int)($productStats['visible'] ?? 0),
+        'categories' => $categoryCount,
+        'customers' => $customerCount,
+    ]);
+    exit;
+}
 
 if ($action === 'admin-products-stats') {
     requireAdminAuth();
@@ -810,7 +839,8 @@ if ($action === 'product-image' || $action === 'proxy-image') {
             CURLOPT_MAXREDIRS      => 4,
             CURLOPT_TIMEOUT        => 8,
             CURLOPT_CONNECTTIMEOUT => 4,
-            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             CURLOPT_REFERER        => $referer,
             CURLOPT_HTTPHEADER     => [

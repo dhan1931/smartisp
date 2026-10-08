@@ -241,7 +241,10 @@ if ($action === 'admin-orders') {
         $params[':status'] = $status;
     }
     if ($q !== '') {
-        $where[] = '(id LIKE :q OR customer_name LIKE :q OR customer_email LIKE :q OR customer_phone LIKE :q)';
+        $columns = $pdo->query('SHOW COLUMNS FROM orders_rows')->fetchAll(PDO::FETCH_COLUMN);
+        $searchColumns = array_values(array_intersect(['id', 'customer_name', 'customer_email', 'customer_phone', 'shipping'], $columns));
+        if (!$searchColumns) $searchColumns = ['id'];
+        $where[] = '(' . implode(' OR ', array_map(static fn($column) => "`$column` LIKE :q", $searchColumns)) . ')';
         $params[':q'] = '%' . $q . '%';
     }
     $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
@@ -272,11 +275,21 @@ if ($action === 'admin-orders') {
 if ($action === 'admin-orders-stats') {
     requireAdminAuth();
 
-    $byStatus = $pdo->query("SELECT status, COUNT(*) AS total, SUM(total) AS revenue FROM orders_rows GROUP BY status")->fetchAll(PDO::FETCH_ASSOC);
+    $confirmedPayment = "LOWER(COALESCE(payment_status, '')) IN ('paid', 'confirmed', 'succeeded', 'completed', 'approved', 'captured')";
+    $eligibleSale = "LOWER(COALESCE(status, '')) NOT IN ('cancelled', 'canceled', 'refunded') AND ($confirmedPayment)";
+    $byStatus = $pdo->query("SELECT status, COUNT(*) AS total,
+        SUM(CASE WHEN $eligibleSale THEN total ELSE 0 END) AS revenue
+        FROM orders_rows GROUP BY status")->fetchAll(PDO::FETCH_ASSOC);
     $totals = $pdo->query("SELECT COUNT(*) AS total,
-        SUM(CASE WHEN status != 'cancelled' THEN total ELSE 0 END) AS revenue,
+        SUM(CASE WHEN $eligibleSale THEN total ELSE 0 END) AS revenue,
+        SUM(CASE WHEN LOWER(status) IN ('delivered', 'completed') THEN 1 ELSE 0 END) AS completed_count,
+        SUM(CASE WHEN LOWER(status) = 'pending' THEN 1 ELSE 0 END) AS pending_count,
         SUM(CASE WHEN DATE(created_at) = CURDATE() THEN 1 ELSE 0 END) AS today_count
         FROM orders_rows")->fetch(PDO::FETCH_ASSOC) ?: [];
+    $daily = $pdo->query("SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS day, COUNT(*) AS orders,
+        SUM(CASE WHEN $eligibleSale THEN total ELSE 0 END) AS revenue
+        FROM orders_rows WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
+        GROUP BY DATE(created_at) ORDER BY day ASC")->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode([
         'by_status'  => array_map(fn($r) => [
@@ -286,7 +299,14 @@ if ($action === 'admin-orders-stats') {
         ], $byStatus),
         'total'       => (int)($totals['total'] ?? 0),
         'revenue'     => (float)($totals['revenue'] ?? 0),
+        'completed_count' => (int)($totals['completed_count'] ?? 0),
+        'pending_count' => (int)($totals['pending_count'] ?? 0),
         'today_count' => (int)($totals['today_count'] ?? 0),
+        'daily' => array_map(static fn($row) => [
+            'day' => $row['day'],
+            'orders' => (int)$row['orders'],
+            'revenue' => (float)($row['revenue'] ?? 0),
+        ], $daily),
     ]);
     exit;
 }
@@ -343,6 +363,7 @@ if ($action === 'admin-order-status' && $method === 'POST') {
 
     $fromStatus = $order['status'] ?? null;
 
+    // El estado logístico no demuestra que el proveedor haya confirmado el pago.
     $upd = $pdo->prepare('UPDATE orders_rows SET status = :status, updated_at = NOW() WHERE id = :id');
     $upd->execute([':status' => $newStatus, ':id' => $id]);
 

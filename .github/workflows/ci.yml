@@ -53,6 +53,8 @@ jobs:
         run: npm ci
       - name: Lint JavaScript and PHP
         run: npm run lint
+      - name: Verify canonical authorization roles
+        run: php tests/assert-auth-roles.php
       - name: Build and check deploy artifact
         run: npm test
       - name: Initialize isolated MariaDB fixture
@@ -61,5 +63,7 @@ jobs:
         run: php scripts/migrate.php
       - name: Assert migrated schema and data
         run: php tests/assert-migrations.php
+      - name: Exercise admin authorization and dashboard metrics
+        run: node tests/admin-auth.integration.mjs
       - name: Confirm migration runner is repeatable
         run: php scripts/migrate.php

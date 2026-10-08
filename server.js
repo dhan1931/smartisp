@@ -69,6 +69,10 @@ const saveEnvVariables = (updates = {}) => {
 
 const app = express();
 const port = process.env.PORT || 3000;
+if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
+  throw new Error('SESSION_SECRET es obligatorio en producción.');
+}
+const sessionSecret = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
 const users = new Map();
 const wishlists = new Map();
 const orders = new Map();
@@ -82,29 +86,18 @@ const getPool = () => {
     const isLocalhost = connectionUrl.hostname === 'localhost' || connectionUrl.hostname === '127.0.0.1';
     return new Pool({
       connectionString: connectionUrl.toString(),
-      ssl: isLocalhost ? undefined : { rejectUnauthorized: false }
+      ssl: isLocalhost ? undefined : { rejectUnauthorized: true }
     });
   } catch {
     return new Pool({
       connectionString: configuredUrl,
-      ssl: { rejectUnauthorized: false }
+      ssl: { rejectUnauthorized: true }
     });
   }
 };
 const pool = getPool();
 
-const demoPasswordHash = await bcrypt.hash('pepe1234', 12);
-const demoUser = {
-  id: 'demo-medardo',
-  email: 'medardo@gmail.com',
-  passwordHash: demoPasswordHash,
-  name: 'Medardo',
-  surname: 'Demo',
-  phone: '+593 999 000 000',
-  role: 'admin'
-};
-
-if (!pool) users.set(demoUser.email, demoUser);
+const normalizeRole = role => ['admin', 'administrator', 'administrador'].includes(String(role || '').trim().toLowerCase()) ? 'admin' : 'customer';
 
 const publicUser = user => ({
   id: user.id,
@@ -112,16 +105,16 @@ const publicUser = user => ({
   name: user.name,
   surname: user.surname || '',
   phone: user.phone || '',
-  role: user.role || (user.email === demoUser.email || (process.env.ADMIN_EMAIL && user.email === process.env.ADMIN_EMAIL.toLowerCase()) ? 'admin' : 'customer')
+  role: normalizeRole(user.role)
 });
 const findUserByEmail = async email => {
   if (!pool) return users.get(email);
-  const result = await pool.query('SELECT id, email, password_hash AS "passwordHash", name, surname, phone FROM users WHERE email = $1 LIMIT 1', [email]);
+  const result = await pool.query('SELECT id, email, password_hash AS "passwordHash", name, surname, phone, role FROM users WHERE email = $1 LIMIT 1', [email]);
   return result.rows[0];
 };
 const findUserById = async id => {
   if (!pool) return [...users.values()].find(user => user.id === id);
-  const result = await pool.query('SELECT id, email, password_hash AS "passwordHash", name, surname, phone FROM users WHERE id = $1 LIMIT 1', [id]);
+  const result = await pool.query('SELECT id, email, password_hash AS "passwordHash", name, surname, phone, role FROM users WHERE id = $1 LIMIT 1', [id]);
   return result.rows[0];
 };
 const sendResetEmail = async (email, resetUrl) => { if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) throw new Error('El servicio de correo no está configurado.'); const response = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: process.env.EMAIL_FROM, to: [email], subject: 'Restablece tu contraseña de SmartISP', html: `<p>Recibimos una solicitud para cambiar tu contraseña.</p><p><a href="${resetUrl}">Cambiar contraseña</a></p><p>Este enlace caduca en 1 hora y solo puede utilizarse una vez.</p>` }) }); if (!response.ok) throw new Error('No se pudo enviar el correo de recuperación.'); };
@@ -134,9 +127,10 @@ const initializeDatabase = async () => {
     name TEXT NOT NULL,
     surname TEXT NOT NULL,
     phone TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'customer',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`);
-  await pool.query('INSERT INTO users (id, email, password_hash, name, surname, phone) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (email) DO NOTHING', [demoUser.id, demoUser.email, demoUser.passwordHash, demoUser.name, demoUser.surname, demoUser.phone]);
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'customer'");
 };
 
 app.use((req, res, next) => {
@@ -175,7 +169,7 @@ app.use((req, res, next) => {
 });
 app.use(session({
   name: 'nexotech.sid',
-  secret: process.env.SESSION_SECRET || 'cambia-esta-clave-en-produccion',
+  secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -280,6 +274,7 @@ app.post('/api/auth/login', async (req, res) => {
     return res.status(401).json({ error: 'Correo o contraseña incorrectos.' });
   }
 
+  await new Promise((resolve, reject) => req.session.regenerate(error => error ? reject(error) : resolve()));
   req.session.userId = user.id;
   req.session.cookie.maxAge = remember ? 1000 * 60 * 60 * 24 * 30 : null;
   return res.json({ user: publicUser(user) });
@@ -300,10 +295,11 @@ app.post('/api/auth/register', async (req, res) => {
     return res.status(409).json({ error: 'Ya existe una cuenta con ese correo.' });
   }
 
-  const user = { id: crypto.randomUUID(), email, passwordHash: await bcrypt.hash(password, 12), name, surname, phone };
+  const user = { id: crypto.randomUUID(), email, passwordHash: await bcrypt.hash(password, 12), name, surname, phone, role: 'customer' };
   if (pool) {
     await pool.query('INSERT INTO users (id, email, password_hash, name, surname, phone) VALUES ($1, $2, $3, $4, $5, $6)', [user.id, user.email, user.passwordHash, user.name, user.surname, user.phone]);
   } else users.set(email, user);
+  await new Promise((resolve, reject) => req.session.regenerate(error => error ? reject(error) : resolve()));
   req.session.userId = user.id;
   return res.status(201).json({ user: publicUser(user) });
 });
@@ -982,7 +978,7 @@ app.post('/api/auth/customer-orders', async (req, res) => {
     adminRecipient = String(inMemoryContent.get('admin_email') || '').trim();
   }
   if (!adminRecipient) {
-    adminRecipient = process.env.ADMIN_EMAIL || process.env.COMPANY_EMAIL || (demoUser ? demoUser.email : 'ventas@smartisp.com');
+    adminRecipient = process.env.ADMIN_EMAIL || process.env.COMPANY_EMAIL || 'ventas@smartisp.com';
   }
   const adminHtml = buildAdminAlertEmail({
     orderId,
@@ -1340,7 +1336,7 @@ const requireAdminUser = async (req, res) => {
     res.status(401).json({ error: 'Debes iniciar sesión.' });
     return null;
   }
-  const role = user.role || (user.email === demoUser.email || (process.env.ADMIN_EMAIL && user.email === process.env.ADMIN_EMAIL.toLowerCase()) ? 'admin' : 'customer');
+  const role = normalizeRole(user.role);
   if (role !== 'admin') {
     res.status(403).json({ error: 'No tienes permisos de administrador.' });
     return null;
@@ -1870,7 +1866,7 @@ app.post('/api/auth/test-email', async (req, res) => {
   if (req.body.smtp_from || req.body.email_from) cfg.from = String(req.body.smtp_from || req.body.email_from).trim();
   if (!cfg.from && cfg.user) cfg.from = `SmartISP <${cfg.user}>`;
 
-  const recipient = targetEmail || cfg.adminEmail || process.env.ADMIN_EMAIL || (demoUser ? demoUser.email : '');
+  const recipient = targetEmail || cfg.adminEmail || process.env.ADMIN_EMAIL || '';
 
   if (!recipient || !recipient.includes('@')) {
     return res.status(400).json({ error: 'Debes ingresar un correo de destino válido para la prueba.' });

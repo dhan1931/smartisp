@@ -37,10 +37,50 @@ body.admin-sidebar-collapsed {
   transition: width .2s ease;
 }
 
+#smartisp-admin-nav.is-access-notice {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-height: none;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+  z-index: auto;
+}
+
+#smartisp-admin-nav .admin-nav-notice {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--nav-line);
+  background: #fff7ed;
+  color: #7c2d12;
+  font-size: 13px;
+}
+
+#smartisp-admin-nav .admin-nav-notice > span { flex: 1 1 240px; }
+#smartisp-admin-nav .admin-nav-notice a,
+#smartisp-admin-nav .admin-nav-notice button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 9px;
+  border: 1px solid #fed7aa;
+  border-radius: 5px;
+  background: #fff;
+  color: #7c2d12;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
 /* Cada pagina que incluye el sidebar le cede este espacio a la izquierda de su propio contenido,
    sin que esa pagina tenga que definir nada: un solo lugar (este archivo) decide el ancho. */
 body.has-admin-sidebar {
   overflow-x: hidden;
+  background: #f4f8fa;
 }
 
 body.has-admin-sidebar > .top,
@@ -52,6 +92,18 @@ body.has-admin-sidebar > main {
   max-width: calc(100vw - var(--nav-width));
   box-sizing: border-box;
 }
+
+body.has-admin-sidebar > .top {
+  min-height: 72px;
+  padding: 14px 28px;
+  color: var(--nav-ink);
+  background: #fff;
+  border-bottom: 1px solid var(--nav-line);
+  box-shadow: none;
+}
+
+body.has-admin-sidebar > .top h1 { color: #102c3d; font-size: 22px; }
+body.has-admin-sidebar > .top span { color: var(--nav-muted); }
 
 body.has-admin-sidebar > main.shell {
   width: min(1180px, calc(100vw - var(--nav-width) - 48px));
@@ -376,6 +428,7 @@ body.admin-sidebar-collapsed #smartisp-admin-nav .admin-nav-user-row {
     max-width: 100% !important;
     box-sizing: border-box;
   }
+  body.has-admin-sidebar > .top { padding: 14px 16px; }
   body.has-admin-sidebar > main.shell {
     width: min(1180px, calc(100% - 24px)) !important;
     max-width: calc(100% - 24px) !important;
