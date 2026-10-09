@@ -128,6 +128,7 @@ foreach ($categories as $idx => $category) {
   <meta name="robots" content="index, follow, max-image-preview:large">
   <link rel="canonical" href="<?= $siteUrl ?>/categorias-destacadas">
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
+  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=20261009">
   <script src="/assets/js/public-brand.js?v=landing-logo" defer></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script type="application/ld+json">
@@ -197,24 +198,8 @@ foreach ($categories as $idx => $category) {
   <style>.nav, .public-nav { position: relative !important; top: auto !important; }</style>
 </head>
 <body>
-  <div class="topbar"><span><i data-lucide="truck" width="14"></i> Envio gratis en Guayas</span><span><i data-lucide="clock" width="13"></i> Atencion experta · Lun a Vie 9:00 a 18:00</span></div>
-  <header class="nav">
-    <a class="logo" href="/" title="SmartISP Tienda Online">SmartISP</a>
-    <form class="search" action="/tienda.html" method="get"><input name="q" type="search" placeholder="¿Qué buscas hoy?" aria-label="Buscar productos"><button aria-label="Buscar"><i data-lucide="search" width="18"></i></button></form>
-    <div class="nav-actions">
-      <a class="nav-action" href="/tienda.html?openAccount=1"><i data-lucide="user" width="16"></i><span>Mi cuenta</span></a>
-      <a class="nav-action cart-button" href="/tienda.html?openCart=1"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="cart-count">0</b></a>
-      <button class="public-menu-btn" type="button" aria-label="Abrir secciones" aria-expanded="false" aria-controls="publicNav"><i data-lucide="menu" width="20"></i></button>
-    </div>
-  </header>
-  <nav class="public-nav" id="publicNav" aria-label="Secciones principales">
-    <a href="/categorias-destacadas" class="active">Categorias Destacadas</a>
-    <a href="/productos-destacados">Productos Destacados</a>
-    <a href="/servicios">Servicios</a>
-    <a href="/nosotros">Nosotros</a>
-    <a href="/tienda.html#catalogo">Catalogo</a>
-  </nav>
-  <main class="page-wrap">
+  <?php $storefrontActivePage = 'categories'; require __DIR__ . '/includes/storefront-discovery-nav.php'; ?>
+  <main class="storefront-page">
     <section class="category-hero">
       <div class="category-hero-copy">
         <div class="category-eyebrow">Compra por necesidad</div>
@@ -286,40 +271,8 @@ foreach ($categories as $idx => $category) {
       <section class="category-empty">No hay categorías visibles todavía. <a href="/tienda.html">Ir al catálogo completo</a>.</section>
     <?php endif; ?>
   </main>
-  <footer class="page-wrap">SmartISP Ecuador · Categorías comerciales para descubrir productos y soluciones.</footer>
-  <nav class="mobile-bottom-nav" aria-label="Navegación rápida móvil">
-    <a class="mobile-nav-item" href="/tienda.html"><i data-lucide="store" width="20"></i><span>Tienda</span></a>
-    <a class="mobile-nav-item is-active" href="/categorias-destacadas"><i data-lucide="layout-grid" width="20"></i><span>Categorías</span></a>
-    <a class="mobile-nav-item" href="/tienda.html#catalogo"><i data-lucide="search" width="20"></i><span>Buscar</span></a>
-    <a class="mobile-nav-item mobile-nav-cart" href="/tienda.html?openCart=1"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b>0</b></a>
-    <a class="mobile-nav-item" href="/tienda.html?openAccount=1"><i data-lucide="user" width="20"></i><span>Cuenta</span></a>
-  </nav>
-  <script>
-    const publicMenuBtn = document.querySelector('.public-menu-btn');
-    const publicNav = document.querySelector('#publicNav');
-    const updateStickyNavOffset = () => {
-      const header = document.querySelector('.nav');
-      document.documentElement.style.setProperty('--sticky-nav-height', `${header?.offsetHeight || 70}px`);
-    };
-    updateStickyNavOffset();
-    window.addEventListener('resize', updateStickyNavOffset);
-    if (publicMenuBtn && publicNav) {
-      publicMenuBtn.addEventListener('click', () => {
-        const open = publicNav.classList.toggle('is-open');
-        publicMenuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-        publicMenuBtn.innerHTML = open ? '<i data-lucide="x" width="20"></i>' : '<i data-lucide="menu" width="20"></i>';
-        if (window.lucide) lucide.createIcons();
-        updateStickyNavOffset();
-      });
-      publicNav.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
-        publicNav.classList.remove('is-open');
-        publicMenuBtn.setAttribute('aria-expanded', 'false');
-        publicMenuBtn.innerHTML = '<i data-lucide="menu" width="20"></i>';
-        if (window.lucide) lucide.createIcons();
-      }));
-    }
-    if (window.lucide) lucide.createIcons();
-  </script>
+  <footer class="storefront-footer">SmartISP Ecuador · Categorías comerciales para descubrir productos y soluciones.</footer>
+  <script src="/assets/js/storefront-discovery.js?v=20261009" defer></script>
   <script src="/assets/js/public-account.js" defer></script>
 </body>
 </html>

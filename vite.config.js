@@ -47,6 +47,9 @@ export default defineConfig({
         if (fs.existsSync('assets')) {
           fs.cpSync('assets', path.resolve('dist', 'assets'), { recursive: true });
         }
+        if (fs.existsSync('includes')) {
+          fs.cpSync('includes', path.resolve('dist', 'includes'), { recursive: true });
+        }
         if (fs.existsSync('api')) {
           fs.cpSync('api', path.resolve('dist', 'api'), { recursive: true });
         }

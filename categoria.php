@@ -115,6 +115,9 @@ foreach ($products as $idx => $product) {
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
   <link rel="icon" type="image/svg+xml" href="/assets/favicons/favicon.svg">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
+  <script src="/assets/js/public-brand.js?v=landing-logo" defer></script>
+  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=20261009">
+  <script src="https://unpkg.com/lucide@latest"></script>
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="SmartISP Ecuador">
   <meta property="og:title" content="<?= escapeCategoryPage($pageTitle) ?>">
@@ -147,72 +150,53 @@ foreach ($products as $idx => $product) {
   </script>
   <?php endif; ?>
   <style>
-    :root { --navy:#102a43; --blue:#1177c9; --ink:#17324d; --muted:#60798f; --line:#d7e7f1; --pale:#f5fbff; --white:#fff; }
-    * { box-sizing:border-box; }
-    body { margin:0; background:var(--pale); color:var(--ink); font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; line-height:1.55; }
-    a { color:inherit; }
-    header, main, footer { width:min(1120px, calc(100% - 32px)); margin-inline:auto; }
-    header { padding:22px 0 12px; display:flex; justify-content:space-between; gap:16px; align-items:center; }
-    .logo { font-weight:800; color:var(--navy); text-decoration:none; font-size:22px; letter-spacing:-.04em; }
-    .logo b { color:var(--blue); }
-    .navlink { color:var(--blue); font-weight:700; text-decoration:none; }
-    .hero { background:var(--white); border:1px solid var(--line); border-radius:14px; padding:28px; margin:16px auto 22px; }
-    .eyebrow { color:var(--blue); text-transform:uppercase; letter-spacing:.12em; font-size:12px; font-weight:800; }
-    h1 { color:var(--navy); font-size:clamp(30px,5vw,48px); line-height:1.05; margin:8px 0 10px; letter-spacing:-.045em; }
-    .hero p { max-width:720px; color:var(--muted); margin:0; }
-    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; margin:22px 0; }
-    .product { background:var(--white); border:1px solid var(--line); border-radius:12px; padding:14px; text-decoration:none; display:flex; flex-direction:column; min-height:100%; }
-    .product img { width:100%; aspect-ratio:1.1; object-fit:contain; background:#fff; border-radius:8px; border:1px solid #edf4f8; margin-bottom:10px; }
-    .product strong { color:var(--navy); font-size:14px; line-height:1.35; }
-    .product span { color:var(--blue); font-weight:800; margin-top:auto; padding-top:10px; }
-    .empty { background:var(--white); border:1px solid var(--line); border-radius:12px; padding:24px; }
-    .chips { display:flex; flex-wrap:wrap; gap:8px; margin:18px 0 34px; }
-    .chips a { border:1px solid var(--line); background:var(--white); border-radius:999px; padding:7px 11px; color:var(--navy); text-decoration:none; font-size:13px; font-weight:700; }
-    footer { padding:24px 0 34px; color:var(--muted); font-size:13px; }
+    .category-hero{margin:24px 0 18px;padding:28px;border:1px solid #d8e5e7;border-left:4px solid #087ea4;border-radius:8px;background:#fff}
+    .category-eyebrow{color:#087ea4;font-size:11px;font-weight:850;text-transform:uppercase}
+    .category-hero h1{margin:7px 0;color:#102c3d;font-size:clamp(28px,4vw,42px);line-height:1.1;letter-spacing:0}
+    .category-hero p{max-width:760px;margin:0;color:#60798f;font-size:14px}
+    .category-list-heading{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-top:24px}
+    .category-list-heading h2{margin:0;color:#102c3d;font-size:22px}
+    .category-list-heading p{margin:3px 0 0;color:#60798f;font-size:13px}
+    .category-empty{padding:22px;border:1px solid #d8e5e7;border-radius:8px;background:#fff}
+    .category-empty a{color:#087ea4;font-weight:800}
+    .category-chips{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 34px}
+    .category-chips a{padding:7px 11px;border:1px solid #d8e5e7;border-radius:6px;background:#fff;color:#102c3d;font-size:12px;font-weight:750}
+    .category-chips a:hover{border-color:#087ea4;color:#087ea4}
+    @media(max-width:760px){.category-hero{margin-top:16px;padding:20px}.category-list-heading{align-items:start;flex-direction:column}}
   </style>
 </head>
 <body>
-  <header>
-    <a class="logo" href="/">smart<b>isp</b><span style="color:#f5a524">.</span></a>
-    <a class="navlink" href="/tienda.html">Ver catalogo completo</a>
-  </header>
-  <main>
+  <?php $storefrontActivePage = 'categories'; require __DIR__ . '/includes/storefront-discovery-nav.php'; ?>
+  <main class="storefront-page">
     <section class="hero">
-      <div class="eyebrow">Categoria SmartISP Ecuador</div>
+      <div class="category-eyebrow">Categoria SmartISP Ecuador</div>
       <h1><?= escapeCategoryPage($categoryName !== '' ? $categoryName : 'Categoria no encontrada') ?></h1>
       <p><?= escapeCategoryPage($categoryName !== '' ? $metaDesc : 'Vuelve al catalogo para explorar los productos disponibles.') ?></p>
     </section>
 
     <?php if ($categoryName !== '' && !empty($products)): ?>
-      <section class="grid" aria-label="Productos de <?= escapeCategoryPage($categoryName) ?>">
-        <?php foreach ($products as $product): ?>
-          <?php
-            $productUrl = '/producto/' . productSlugForCategoryPage($product);
-            $imageUrl = (string)($product['imageUrl'] ?: '/assets/favicons/favicon-512x512.png');
-            $price = (float)($product['price'] ?? 0);
-          ?>
-          <a class="product" href="<?= escapeCategoryPage($productUrl) ?>">
-            <img src="<?= escapeCategoryPage($imageUrl) ?>" alt="<?= escapeCategoryPage($product['name']) ?>" loading="lazy" onerror="this.src='/assets/favicons/favicon-512x512.png'">
-            <strong><?= escapeCategoryPage($product['name']) ?></strong>
-            <span><?= $price > 0 ? '$' . number_format($price, 2, '.', ',') : 'Cotizar' ?></span>
-          </a>
+      <div class="category-list-heading"><div><h2>Productos en <?= escapeCategoryPage($categoryName) ?></h2><p><?= count($products) ?> productos disponibles</p></div></div>
+      <section class="store-product-grid" aria-label="Productos de <?= escapeCategoryPage($categoryName) ?>">
+        <?php foreach ($products as $index => $product): ?>
+          <?php $storeProduct = $product; $storeProductUrl = '/producto/' . productSlugForCategoryPage($product); $storeProductIndex = $index; require __DIR__ . '/includes/storefront-product-card.php'; ?>
         <?php endforeach; ?>
       </section>
     <?php else: ?>
-      <section class="empty">
+      <section class="category-empty">
         <strong>No encontramos productos visibles para esta categoria.</strong>
         <p><a href="/tienda.html">Ir al catalogo completo</a></p>
       </section>
     <?php endif; ?>
 
     <?php if (!empty($relatedNames)): ?>
-      <nav class="chips" aria-label="Otras categorias">
+      <nav class="category-chips" aria-label="Otras categorias">
         <?php foreach ($relatedNames as $name): ?>
           <a href="/categoria/<?= rawurlencode(slugifyCategoryPage($name)) ?>/"><?= escapeCategoryPage($name) ?></a>
         <?php endforeach; ?>
       </nav>
     <?php endif; ?>
   </main>
-  <footer>SmartISP Ecuador · Equipamiento tecnologico, redes e infraestructura TI.</footer>
+  <footer class="storefront-footer">SmartISP Ecuador · Equipamiento tecnologico, redes e infraestructura TI.</footer>
+  <script src="/assets/js/storefront-discovery.js?v=20261009" defer></script>
 </body>
 </html>
