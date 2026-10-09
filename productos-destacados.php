@@ -51,7 +51,7 @@ foreach ($products as $idx => $product) {
   <meta name="robots" content="index, follow, max-image-preview:large">
   <link rel="canonical" href="<?= $siteUrl ?>/productos-destacados">
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
-  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=20261009">
+  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=mobile-category-drawer-20261008">
   <script src="/assets/js/public-brand.js?v=landing-logo" defer></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script type="application/ld+json">
@@ -119,7 +119,7 @@ foreach ($products as $idx => $product) {
     <?php endif; ?>
   </main>
   <footer class="storefront-footer">SmartISP Ecuador · Catalogo tecnologico amplio para empresas, hogares e ISP.</footer>
-  <script src="/assets/js/storefront-discovery.js?v=20261009" defer></script>
+  <script src="/assets/js/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
   <script src="/assets/js/public-account.js" defer></script>
 </body>
 </html>

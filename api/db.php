@@ -120,6 +120,9 @@ function ensureAuxiliaryTables(PDO $pdo) {
             id VARCHAR(191) PRIMARY KEY,
             name VARCHAR(255) NOT NULL,
             subcategories TEXT NULL,
+            banner_image_url VARCHAR(500) NULL,
+            banner_alt VARCHAR(200) NULL,
+            description VARCHAR(500) NULL,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 

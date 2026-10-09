@@ -1251,6 +1251,28 @@
           <small style="color:var(--muted); font-size:11px;">Estas subcategorías aparecerán en el menú y filtros de la tienda.</small>
         </div>
         <div class="form-group">
+          <label class="form-label" for="catBannerUrlInput">Banner de esta categoría (opcional):</label>
+          <input type="text" id="catBannerUrlInput" class="form-control" inputmode="url" placeholder="https://... o /uploads/products/imagen.webp">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:9px;">
+            <label class="btn btn-secondary btn-sm" for="catBannerFileInput" style="margin:0;cursor:pointer;"><i data-lucide="image-up" width="15"></i> Subir imagen</label>
+            <input type="file" id="catBannerFileInput" accept="image/jpeg,image/png,image/webp" hidden>
+            <button type="button" id="catBannerClearBtn" class="btn btn-secondary btn-sm">Quitar imagen</button>
+            <span id="catBannerUploadStatus" style="font-size:12px;color:var(--muted);"></span>
+          </div>
+          <div id="catBannerPreview" style="display:grid;place-items:center;min-height:90px;margin-top:10px;border:1px dashed var(--line);border-radius:8px;background:#f8fbfc;color:var(--muted);font-size:12px;overflow:hidden;">Sin banner seleccionado</div>
+          <small style="color:var(--muted);font-size:11px;">Las subcategorías usarán el banner de su categoría principal.</small>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="catBannerAltInput">Texto alternativo de la imagen:</label>
+            <input type="text" id="catBannerAltInput" class="form-control" maxlength="200" placeholder="Equipos de audio y video">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="catDescriptionInput">Descripción corta para la portada:</label>
+            <textarea id="catDescriptionInput" class="form-control" rows="2" maxlength="500" placeholder="Descripción breve de esta categoría"></textarea>
+          </div>
+        </div>
+        <div class="form-group">
           <label class="form-label" for="catKeywordsInput">
             Palabras Clave de Afinidad para Excel (separadas por coma):
           </label>
@@ -2069,6 +2091,47 @@
       }
     };
 
+    const updateCategoryBannerPreview = rawUrl => {
+      const preview = document.getElementById('catBannerPreview');
+      if (!preview) return;
+      const url = String(rawUrl || '').trim();
+      preview.replaceChildren();
+      if (!url || (!url.startsWith('/') && !/^https:\/\//i.test(url)) || url.startsWith('//') || url.includes('..')) {
+        preview.textContent = 'Sin banner seleccionado';
+        return;
+      }
+      const image = document.createElement('img');
+      image.src = url;
+      image.alt = '';
+      image.style.cssText = 'display:block;width:100%;max-height:190px;object-fit:cover';
+      image.onerror = () => { preview.textContent = 'No se pudo cargar esta imagen'; };
+      preview.append(image);
+    };
+
+    document.getElementById('catBannerUrlInput').addEventListener('input', e => updateCategoryBannerPreview(e.target.value));
+    document.getElementById('catBannerClearBtn').addEventListener('click', () => {
+      document.getElementById('catBannerUrlInput').value = '';
+      updateCategoryBannerPreview('');
+    });
+    document.getElementById('catBannerFileInput').addEventListener('change', async e => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const status = document.getElementById('catBannerUploadStatus');
+      status.textContent = 'Subiendo imagen…';
+      try {
+        const form = new FormData();
+        form.append('image', file);
+        const result = await api('upload-image', { method: 'POST', body: form });
+        document.getElementById('catBannerUrlInput').value = result.url;
+        updateCategoryBannerPreview(result.url);
+        status.textContent = 'Imagen lista';
+      } catch (err) {
+        status.textContent = err.message || 'No se pudo subir la imagen';
+      } finally {
+        e.target.value = '';
+      }
+    });
+
     // --- CREAR / EDITAR CATEGORÍA COMPLETA ---
     document.getElementById('btnNewCategory').addEventListener('click', () => {
       document.getElementById('catModalTitle').textContent = 'Nueva Categoría';
@@ -2078,6 +2141,11 @@
       document.getElementById('catIconInput').value = 'package';
       document.getElementById('catSubcategoriesInput').value = '';
       document.getElementById('catKeywordsInput').value = '';
+      document.getElementById('catBannerUrlInput').value = '';
+      document.getElementById('catBannerAltInput').value = '';
+      document.getElementById('catDescriptionInput').value = '';
+      document.getElementById('catBannerUploadStatus').textContent = '';
+      updateCategoryBannerPreview('');
       openModal('categoryModal');
     });
 
@@ -2091,6 +2159,11 @@
       document.getElementById('catIconInput').value = cat.icon || 'package';
       document.getElementById('catSubcategoriesInput').value = (cat.subcategories || []).join('\n');
       document.getElementById('catKeywordsInput').value = (cat.keywords || []).join(', ');
+      document.getElementById('catBannerUrlInput').value = cat.bannerImageUrl || '';
+      document.getElementById('catBannerAltInput').value = cat.bannerAlt || '';
+      document.getElementById('catDescriptionInput').value = cat.description || '';
+      document.getElementById('catBannerUploadStatus').textContent = '';
+      updateCategoryBannerPreview(cat.bannerImageUrl || '');
       document.getElementById('catIconPreview').innerHTML = `<i data-lucide="${cat.icon || 'package'}" width="18"></i>`;
       openModal('categoryModal');
       lucide.createIcons();
@@ -2131,14 +2204,17 @@
         .split(/[\n,]+/)
         .map(k => k.trim().toLowerCase())
         .filter(Boolean);
+      const bannerImageUrl = document.getElementById('catBannerUrlInput').value.trim();
+      const bannerAlt = document.getElementById('catBannerAltInput').value.trim();
+      const description = document.getElementById('catDescriptionInput').value.trim();
 
       if (origId) {
         const idx = categoriesList.findIndex(c => c.id === origId);
         if (idx !== -1) {
-          categoriesList[idx] = { ...categoriesList[idx], id, name, icon, subcategories, keywords };
+          categoriesList[idx] = { ...categoriesList[idx], id, name, icon, subcategories, keywords, bannerImageUrl, bannerAlt, description };
         }
       } else {
-        categoriesList.push({ id, name, icon, subcategories, keywords });
+        categoriesList.push({ id, name, icon, subcategories, keywords, bannerImageUrl, bannerAlt, description });
       }
 
       closeModal('categoryModal');

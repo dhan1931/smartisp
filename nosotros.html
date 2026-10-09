@@ -9,6 +9,8 @@
   <link rel="canonical" href="https://smart-isp.com.ec/nosotros">
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
   <script src="/assets/js/public-brand.js?v=landing-logo" defer></script>
+  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=mobile-category-drawer-20261008">
+  <script src="https://unpkg.com/lucide@latest"></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -35,7 +37,19 @@
   </style>
 </head>
 <body>
-  <header class="top"><a class="logo" href="/">SmartISP</a><nav class="nav"><a href="/categorias-destacadas">Categorias</a><a href="/productos-destacados">Destacados</a><a href="/servicios">Servicios</a><a href="/tienda.html">Catalogo</a><a href="/tienda.html?openAccount=1">Mi cuenta</a></nav></header>
+  <div class="storefront-topbar"><span><i data-lucide="truck" width="14"></i> Envío gratis en Guayas</span><span><i data-lucide="headphones" width="14"></i> Atención experta · Lun a Vie 9:00 a 18:00</span></div>
+  <header class="storefront-header">
+    <a class="storefront-logo logo" href="/" title="SmartISP Tienda Online">SmartISP</a>
+    <form class="storefront-search" action="/tienda.html" method="get" role="search"><input type="search" name="q" placeholder="¿Qué estás buscando hoy?" aria-label="Buscar productos" required><button type="submit" aria-label="Buscar"><i data-lucide="search" width="18"></i></button></form>
+    <div class="storefront-actions"><a href="/tienda.html?openAccount=1" aria-label="Mi cuenta"><i data-lucide="user" width="18"></i><span>Mi cuenta</span></a><a class="storefront-cart" href="/tienda.html?openCart=1" aria-label="Carrito"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span></a><button class="storefront-menu-button" type="button" aria-label="Abrir categorías" aria-expanded="false" aria-controls="storefrontNavigation"><i data-lucide="menu" width="20"></i></button></div>
+  </header>
+  <button class="storefront-menu-backdrop" type="button" aria-label="Cerrar categorías" hidden></button>
+  <nav class="storefront-navigation" id="storefrontNavigation" aria-label="Secciones principales">
+    <div class="storefront-drawer-head"><a class="storefront-drawer-logo logo" href="/" aria-label="SmartISP inicio">SmartISP</a><button class="storefront-menu-close" type="button" aria-label="Cerrar categorías"><i data-lucide="x" width="25"></i></button></div>
+    <a href="/categorias-destacadas">Categorías destacadas</a><a href="/productos-destacados">Productos destacados</a><a href="/servicios">Servicios</a><a href="/nosotros">Nosotros</a><a href="/tienda.html#catalogo">Catálogo</a>
+    <div class="storefront-category-menu"><button class="storefront-category-trigger" type="button" aria-expanded="false" aria-controls="storefrontCategoryPanel"><span>Categorías</span><i data-lucide="chevron-down" width="16"></i></button><div class="storefront-category-panel" id="storefrontCategoryPanel" hidden><div class="storefront-category-panel-head"><strong>Categorías</strong><a href="/categorias-destacadas">Ver todas <i data-lucide="arrow-right" width="16"></i></a></div><label class="storefront-category-search"><i data-lucide="search" width="15"></i><input type="search" placeholder="Buscar categoría..." aria-label="Buscar categoría"></label><div class="storefront-category-list" id="storefrontCategoryList"><a href="/tienda.html#catalogo" data-store-category="todo el catálogo">Todo el catálogo <i data-lucide="chevron-right" width="16"></i></a></div></div></div>
+  </nav>
+  <nav class="storefront-mobile-bar" aria-label="Accesos rápidos"><a href="/tienda.html"><i data-lucide="store" width="19"></i><span>Tienda</span></a><a href="/categorias-destacadas"><i data-lucide="layout-grid" width="19"></i><span>Categorías</span></a><a href="/tienda.html#catalogo"><i data-lucide="search" width="19"></i><span>Buscar</span></a><a href="/tienda.html?openCart=1"><i data-lucide="shopping-cart" width="19"></i><span>Carrito</span></a><a href="/tienda.html?openAccount=1"><i data-lucide="user" width="19"></i><span>Cuenta</span></a></nav>
   <main>
     <section class="hero"><div class="eyebrow">Sobre SmartISP</div><h1>Una tienda tecnologica pensada para comprar con claridad</h1><p>SmartISP Ecuador reune productos y asesoria para redes, infraestructura, computo, energia, seguridad, impresion, software y accesorios. La idea es simple: ayudar a elegir bien, cotizar rapido y conectar cada compra con una necesidad real.</p></section>
     <section class="grid">
@@ -46,6 +60,7 @@
     <a class="cta" href="/tienda.html">Explorar catalogo SmartISP</a>
   </main>
   <footer>SmartISP Ecuador · Tecnologia, conectividad e infraestructura.</footer>
+  <script src="/assets/js/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
   <script src="/assets/js/public-account.js" defer></script>
 </body>
 </html>

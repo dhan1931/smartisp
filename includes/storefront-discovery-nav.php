@@ -18,26 +18,27 @@ $storefrontNavLinks = [
   <div class="storefront-actions">
     <a href="/tienda.html?openAccount=1" aria-label="Mi cuenta"><i data-lucide="user" width="18"></i><span>Mi cuenta</span></a>
     <a class="storefront-cart" href="/tienda.html?openCart=1" aria-label="Carrito"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span></a>
-    <button class="storefront-menu-button" type="button" aria-label="Abrir navegación" aria-expanded="false" aria-controls="storefrontNavigation"><i data-lucide="menu" width="20"></i></button>
+    <button class="storefront-menu-button" type="button" aria-label="Abrir categorías" aria-expanded="false" aria-controls="storefrontNavigation"><i data-lucide="menu" width="20"></i></button>
   </div>
 </header>
+<button class="storefront-menu-backdrop" type="button" aria-label="Cerrar categorías" hidden></button>
 <nav class="storefront-navigation" id="storefrontNavigation" aria-label="Secciones principales">
-  <button class="storefront-menu-close" type="button" aria-label="Cerrar navegación"><i data-lucide="x" width="20"></i><span>Cerrar</span></button>
+  <div class="storefront-drawer-head"><a class="storefront-drawer-logo logo" href="/" aria-label="SmartISP inicio">SmartISP</a><button class="storefront-menu-close" type="button" aria-label="Cerrar categorías"><i data-lucide="x" width="25"></i></button></div>
   <?php foreach ($storefrontNavLinks as [$key, $href, $label]): ?>
     <a href="<?= htmlspecialchars($href, ENT_QUOTES, 'UTF-8') ?>"<?= $storefrontActivePage === $key ? ' aria-current="page"' : '' ?>><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></a>
   <?php endforeach; ?>
   <div class="storefront-category-menu" id="storefrontCategoryMenu">
     <button class="storefront-category-trigger" type="button" aria-expanded="false" aria-controls="storefrontCategoryPanel"><span>Categorías</span><i data-lucide="chevron-down" width="16"></i></button>
     <div class="storefront-category-panel" id="storefrontCategoryPanel" hidden>
-      <div class="storefront-category-panel-head"><strong>Categorías</strong><a href="/categorias-destacadas">Ver todas</a></div>
+      <div class="storefront-category-panel-head"><strong>Categorías</strong><a href="/categorias-destacadas">Ver todas <i data-lucide="arrow-right" width="16"></i></a></div>
       <label class="storefront-category-search"><i data-lucide="search" width="15"></i><input type="search" placeholder="Buscar categoría..." aria-label="Buscar categoría"></label>
-      <div class="storefront-category-list">
+      <div class="storefront-category-list" id="storefrontCategoryList">
+        <a href="/tienda.html#catalogo" data-store-category="todo el catálogo">Todo el catálogo <i data-lucide="chevron-right" width="16"></i></a>
         <a href="/tienda.html?macro=computacion#catalogo" data-store-category="computacion equipos">Computación y Equipos <i data-lucide="chevron-right" width="16"></i></a>
         <a href="/tienda.html?macro=componentes#catalogo" data-store-category="componentes almacenamiento">Componentes y Almacenamiento <i data-lucide="chevron-right" width="16"></i></a>
         <a href="/tienda.html?macro=redes#catalogo" data-store-category="redes conectividad">Redes y Conectividad <i data-lucide="chevron-right" width="16"></i></a>
         <a href="/tienda.html?macro=monitores#catalogo" data-store-category="monitores pantallas">Monitores y Pantallas <i data-lucide="chevron-right" width="16"></i></a>
         <a href="/tienda.html?macro=perifericos#catalogo" data-store-category="perifericos accesorios">Periféricos y Accesorios <i data-lucide="chevron-right" width="16"></i></a>
-        <a href="/categorias-destacadas">Explorar todas las categorías <i data-lucide="arrow-up-right" width="16"></i></a>
       </div>
     </div>
   </div>

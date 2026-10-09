@@ -24,6 +24,10 @@ $assert = static function (bool $condition, string $message): void {
 };
 $campaignMigration = (int)$pdo->query("SELECT COUNT(*) FROM schema_migrations WHERE migration = '008_storefront_campaigns.sql'")->fetchColumn();
 $assert($campaignMigration === 1, 'No quedó registrada la migración de campañas del storefront.');
+$merchMigration = (int)$pdo->query("SELECT COUNT(*) FROM schema_migrations WHERE migration = '009_storefront_merchandising.sql'")->fetchColumn();
+$assert($merchMigration === 1, 'No quedó registrada la migración de merchandising.');
+$categoryBannerMigration = (int)$pdo->query("SELECT COUNT(*) FROM schema_migrations WHERE migration = '010_category_banners.sql'")->fetchColumn();
+$assert($categoryBannerMigration === 1, 'No quedó registrada la migración de banners por categoría.');
 
 $primaryKeys = (int)$pdo->query("SELECT COUNT(DISTINCT TABLE_NAME) FROM information_schema.STATISTICS
     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('products_rows', 'orders_rows', 'users_rows')
@@ -64,6 +68,14 @@ $campaignTables = (int)$pdo->query("SELECT COUNT(DISTINCT TABLE_NAME) FROM infor
       'storefront_campaigns', 'storefront_campaign_slides', 'storefront_campaign_products'
     )")->fetchColumn();
 $assert($campaignTables === 3, 'Falta alguna tabla dedicada a campañas del storefront.');
+$merchTables = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'storefront_promo_chips'")->fetchColumn();
+$assert($merchTables === 1, 'Falta la tabla de accesos promocionales.');
+$displayModeColumn = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'storefront_campaigns' AND COLUMN_NAME = 'display_mode'")->fetchColumn();
+$assert($displayModeColumn === 1, 'La campaña no tiene presentación configurable.');
+$imageFitColumn = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'storefront_campaign_slides' AND COLUMN_NAME = 'image_fit'")->fetchColumn();
+$assert($imageFitColumn === 1, 'Las diapositivas no tienen ajuste de imagen configurable.');
+$categoryBannerColumns = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'categories_rows' AND COLUMN_NAME IN ('banner_image_url', 'banner_alt', 'description')")->fetchColumn();
+$assert($categoryBannerColumns === 3, 'Faltan campos de banner o descripción en categories_rows.');
 $homeCampaign = $pdo->query("SELECT code, name, is_active, rotation_seconds FROM storefront_campaigns WHERE code = 'store-home'")->fetch();
 $assert($homeCampaign && $homeCampaign['name'] === 'Portada de la tienda' && (int)$homeCampaign['is_active'] === 1 && (int)$homeCampaign['rotation_seconds'] === 7, 'No se creó correctamente la campaña inicial de tienda.');
 $campaignFk = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE

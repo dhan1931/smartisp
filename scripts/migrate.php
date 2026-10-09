@@ -75,7 +75,7 @@ foreach ($pending as $file) {
     // migracion parcialmente aplicada, p. ej. porque una sentencia posterior fallo la vez
     // anterior) y no un error real: 1068 PK duplicada, 1061 nombre de indice duplicado,
     // 1050 la tabla ya existe, 1091 no existe lo que se queria borrar/quitar.
-    $benignCodes = ['1068', '1061', '1050', '1091'];
+    $benignCodes = ['1068', '1061', '1050', '1060', '1091'];
     try {
         foreach ($statements as $i => $stmt) {
             try {
