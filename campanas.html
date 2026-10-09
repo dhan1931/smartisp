@@ -232,7 +232,7 @@
         const draft=JSON.parse(localStorage.getItem(draftKey)||'null');
         if(draft?.state&&draft.saved_at>Date.now()-7*24*60*60*1000&&confirm('Hay un borrador local de campañas. ¿Quieres recuperarlo?')) restoreDraft(draft.state);
         else if(draft) localStorage.removeItem(draftKey);
-      } catch(error) { message(`No se pudo cargar el gestor. Revisa las migraciones 008, 009, 012 y 013. ${error.message}`,true); }
+      } catch(error) { message(`No se pudo cargar el gestor de campañas: ${error.message}`,true); }
     }
     $('#loginForm').addEventListener('submit',async event=>{event.preventDefault();const form=event.currentTarget;const data=Object.fromEntries(new FormData(form));try{const result=await api('login',{method:'POST',body:JSON.stringify(data)});if(!isAdmin(result.user)){showDenied();return;}if(result.token)localStorage.setItem('smartisp.adminToken',result.token);showApp(result.user);}catch(error){message(error.message,true,$('#loginMessage'));}});
     async function authenticate(){try{const result=await api('me');if(isAdmin(result.user))showApp(result.user);else showDenied();}catch(error){showLogin();if(error.status&&error.status!==401)message(error.message,true,$('#loginMessage'));}}
