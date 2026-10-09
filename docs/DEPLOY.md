@@ -25,6 +25,8 @@ migrations/008_storefront_campaigns.sql         -- campañas, diapositivas y pro
 migrations/009_storefront_merchandising.sql    -- presentación de campaña, imágenes y accesos promocionales
 migrations/010_category_banners.sql             -- banners y descripciones para páginas de categoría
 migrations/011_category_metadata.sql            -- iconos y palabras clave editables de categoría
+migrations/012_storefront_campaign_gallery.sql  -- galerías, formatos, chips y programación de banners
+migrations/013_campaign_slide_promotions.sql    -- acceso promocional por banner
 ```
 
 Runner: `scripts/migrate.php` (soporta `--dry-run` y `--status`; no usa transacciones reales porque

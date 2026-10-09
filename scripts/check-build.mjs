@@ -8,7 +8,7 @@ const required = [
   '.htaccess', 'robots.txt', 'sitemap.xml', 'sitemap-main.xml',
   'producto.php', 'categoria.php', 'productos-destacados.php', 'categorias-destacadas.php',
   'sitemap-products.php', 'sitemap-categories.php', 'api/router.php', 'api/config.php',
-  'assets/js/admin-nav.js', 'assets/js/public-brand.js', 'assets/js/public-account.js',
+  'assets/js/admin-nav.js', 'assets/js/public-brand.js', 'assets/js/public-account.js', 'assets/js/public-admin-link.js',
   'assets/js/storefront-discovery.js', 'assets/css/storefront-discovery.css',
   'includes/storefront-discovery-nav.php', 'includes/storefront-product-card.php'
 ];

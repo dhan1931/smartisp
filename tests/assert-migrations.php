@@ -74,6 +74,10 @@ $displayModeColumn = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.C
 $assert($displayModeColumn === 1, 'La campaña no tiene presentación configurable.');
 $imageFitColumn = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'storefront_campaign_slides' AND COLUMN_NAME = 'image_fit'")->fetchColumn();
 $assert($imageFitColumn === 1, 'Las diapositivas no tienen ajuste de imagen configurable.');
+$campaignGalleryTables = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'storefront_campaign_slide_images'")->fetchColumn();
+$assert($campaignGalleryTables === 1, 'Falta la galería múltiple de imágenes por banner.');
+$campaignEditorColumns = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'storefront_campaign_slides' AND COLUMN_NAME IN ('starts_at', 'ends_at', 'badge_label', 'badge_tone', 'image_opacity', 'overlay_opacity', 'image_interval_seconds', 'promo_chip_label', 'promo_chip_icon', 'promo_chip_target_url')")->fetchColumn();
+$assert($campaignEditorColumns === 10, 'Faltan campos de programación, chip u opacidad para campañas.');
 $categoryMetadataColumns = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'categories_rows' AND COLUMN_NAME IN ('banner_image_url', 'banner_alt', 'description', 'icon', 'keywords')")->fetchColumn();
 $assert($categoryMetadataColumns === 5, 'Faltan campos de banner, descripción o metadatos en categories_rows.');
 $homeCampaign = $pdo->query("SELECT code, name, is_active, rotation_seconds FROM storefront_campaigns WHERE code = 'store-home'")->fetch();
