@@ -301,5 +301,109 @@ foreach ($categories as $idx => $category) {
   <footer class="storefront-footer">SmartISP Ecuador · Categorías comerciales para descubrir productos y soluciones.</footer>
   <script src="/assets/js/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
   <script src="/assets/js/public-account.js" defer></script>
+  <script>
+    (() => {
+      const emptyState = document.querySelector('.category-empty');
+      if (!emptyState) return;
+
+      const safeIcon = value => /^[a-z0-9-]+$/i.test(String(value || '')) ? String(value) : 'package';
+      const slug = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 90) || 'categoria';
+      const makeIcon = (name, className) => {
+        const icon = document.createElement('i');
+        icon.dataset.lucide = safeIcon(name);
+        if (className) icon.className = className;
+        return icon;
+      };
+      const categoryLink = category => `/categoria/${encodeURIComponent(slug(category.name))}/`;
+      const countText = category => `${Number(category.productCount || 0).toLocaleString('es-EC')} productos`;
+
+      fetch('/api/auth/catalog?page=1&limit=1', { cache: 'no-store' })
+        .then(response => response.ok ? response.json() : null)
+        .then(data => {
+          if (!Array.isArray(data?.categories)) return;
+          const categories = data.categories
+            .filter(category => String(category.name || '').trim() && Number(category.productCount || 0) > 0)
+            .sort((a, b) => Number(b.productCount) - Number(a.productCount))
+            .slice(0, 36);
+          if (!categories.length) return;
+
+          const head = document.createElement('div');
+          head.className = 'category-section-head';
+          head.id = 'familias';
+          head.innerHTML = '<div><span class="section-eyebrow">Nuestras categorías</span><h2>Familias principales</h2><p>Empieza por las más exploradas o recorre todas las familias del catálogo.</p></div>';
+          const total = document.createElement('span');
+          total.className = 'category-total';
+          total.append(makeIcon('layers'), document.createTextNode(` ${categories.length} categorías`));
+          head.append(total);
+
+          const featured = document.createElement('section');
+          featured.className = 'featured-category-grid';
+          featured.setAttribute('aria-label', 'Familias con más productos');
+          categories.slice(0, 4).forEach(category => {
+            const card = document.createElement('a');
+            card.className = 'featured-category';
+            card.href = categoryLink(category);
+            const copy = document.createElement('div');
+            copy.className = 'featured-copy';
+            const row = document.createElement('div');
+            row.className = 'featured-title-row';
+            const iconBox = document.createElement('span');
+            iconBox.className = 'featured-icon';
+            iconBox.append(makeIcon(category.icon));
+            const title = document.createElement('h3');
+            title.textContent = category.name;
+            row.append(iconBox, title);
+            const description = document.createElement('p');
+            description.className = 'featured-description';
+            description.textContent = category.description || 'Explora equipos y soluciones disponibles en esta categoría.';
+            const count = document.createElement('span');
+            count.className = 'featured-count';
+            count.append(document.createTextNode(countText(category) + ' '), makeIcon('chevron-right'));
+            copy.append(row, description, count);
+            card.append(copy);
+
+            const banner = String(category.bannerImageUrl || '').trim();
+            if (banner.startsWith('/') && !banner.startsWith('//') && !banner.includes('..') || /^https:\/\//i.test(banner)) {
+              const media = document.createElement('span');
+              media.className = 'featured-image';
+              const image = document.createElement('img');
+              image.src = banner;
+              image.alt = category.bannerAlt || category.name;
+              image.loading = 'lazy';
+              image.width = 180;
+              image.height = 150;
+              media.append(image);
+              card.append(media);
+            }
+            featured.append(card);
+          });
+
+          const others = categories.slice(4);
+          const list = document.createElement('section');
+          list.className = 'category-grid';
+          list.setAttribute('aria-label', 'Más categorías del catálogo');
+          others.forEach(category => {
+            const link = document.createElement('a');
+            link.className = 'category-link';
+            link.href = categoryLink(category);
+            const iconBox = document.createElement('span');
+            iconBox.className = 'category-link-icon';
+            iconBox.append(makeIcon(category.icon));
+            const copy = document.createElement('span');
+            copy.className = 'category-link-copy';
+            const name = document.createElement('strong');
+            name.textContent = category.name;
+            const count = document.createElement('small');
+            count.textContent = countText(category);
+            copy.append(name, count);
+            link.append(iconBox, copy, makeIcon('chevron-right', 'category-link-arrow'));
+            list.append(link);
+          });
+          emptyState.replaceWith(head, featured, ...(others.length ? [list] : []));
+          window.lucide?.createIcons();
+        })
+        .catch(() => {});
+    })();
+  </script>
 </body>
 </html>
