@@ -29,7 +29,7 @@
     { key: 'pedidos', group: 'operacion', href: '/pedidos.html', label: 'Pedidos', icon: 'receipt' },
     { key: 'catalogo', group: 'catalogo', href: '/editor-catalogo.html', label: 'Catálogo', icon: 'package' },
     { key: 'categorias', group: 'catalogo', href: '/categorias.html', label: 'Categorías', icon: 'folder' },
-    { key: 'campanas', group: 'catalogo', href: '/campanas.html', label: 'Campañas', icon: 'megaphone' },
+    { key: 'campanas', group: 'catalogo', href: '/campanas.html', label: 'Campañas y banners', icon: 'megaphone' },
     { key: 'config', group: 'sistema', href: '/configuracion.html', label: 'Configuración', icon: 'settings' }
   ];
 

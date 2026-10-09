@@ -252,6 +252,8 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
             `banner_image_url` VARCHAR(500) NULL,
             `banner_alt` VARCHAR(200) NULL,
             `description` VARCHAR(500) NULL,
+            `icon` VARCHAR(64) NOT NULL DEFAULT 'package',
+            `keywords` LONGTEXT NULL,
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
@@ -289,6 +291,10 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
             'bannerImageUrl' => (string)($row['banner_image_url'] ?? ''),
             'bannerAlt' => (string)($row['banner_alt'] ?? ''),
             'description' => (string)($row['description'] ?? ''),
+            'icon' => (string)($row['icon'] ?? 'package'),
+            'keywords' => is_array($decodedKeywords = json_decode((string)($row['keywords'] ?? ''), true))
+                ? $decodedKeywords
+                : array_values(array_filter(array_map('trim', explode(',', (string)($row['keywords'] ?? ''))))),
             'productCount'  => $catMap[$name]['count'] ?? 0,
             'updated_at'    => $row['updated_at'] ?? null
         ];
@@ -307,6 +313,8 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
                 'bannerImageUrl' => '',
                 'bannerAlt' => '',
                 'description' => '',
+                'icon' => 'package',
+                'keywords' => [],
                 'productCount'  => $info['count'],
                 'updated_at'    => date('Y-m-d H:i:s')
             ];
@@ -904,23 +912,26 @@ if ($action === 'categories') {
         $cats = $body['categories'] ?? [];
         if (is_array($cats)) {
             $savedVisuals = [];
-            $existingVisuals = $pdo->query('SELECT id, name, banner_image_url, banner_alt, description FROM categories_rows');
+            $existingVisuals = $pdo->query('SELECT id, name, banner_image_url, banner_alt, description, icon, keywords FROM categories_rows');
             foreach ($existingVisuals->fetchAll(PDO::FETCH_ASSOC) as $existing) {
                 $visual = [
                     'bannerImageUrl' => (string)($existing['banner_image_url'] ?? ''),
                     'bannerAlt' => (string)($existing['banner_alt'] ?? ''),
-                    'description' => (string)($existing['description'] ?? '')
+                    'description' => (string)($existing['description'] ?? ''),
+                    'icon' => (string)($existing['icon'] ?? 'package'),
+                    'keywords' => (string)($existing['keywords'] ?? '[]')
                 ];
                 $savedVisuals['id:' . (string)$existing['id']] = $visual;
                 $savedVisuals['name:' . strtolower(trim((string)$existing['name']))] = $visual;
             }
             $pdo->exec("DELETE FROM categories_rows");
-            $stmt = $pdo->prepare("INSERT INTO categories_rows (id, name, subcategories, banner_image_url, banner_alt, description) VALUES (:id, :name, :sub, :banner, :alt, :description)");
+            $stmt = $pdo->prepare("INSERT INTO categories_rows (id, name, subcategories, banner_image_url, banner_alt, description, icon, keywords) VALUES (:id, :name, :sub, :banner, :alt, :description, :icon, :keywords)");
             $clipCategoryText = static function (string $value, int $limit): string {
                 if (function_exists('mb_substr')) return mb_substr($value, 0, $limit, 'UTF-8');
                 if (preg_match('/^.{0,' . $limit . '}/us', $value, $match)) return $match[0];
                 return substr($value, 0, $limit);
             };
+            $knownCategoryIcons = ['laptop','network','cable','server','shield-check','zap','monitor','hard-drive','headphones','printer','phone-call','file-code','package','cpu','wifi','camera'];
             foreach ($cats as $c) {
                 $cId = $c['id'] ?? uniqid('cat_');
                 $cName = $c['name'] ?? 'General';
@@ -936,7 +947,12 @@ if ($action === 'categories') {
                     ':sub' => $sub,
                     ':banner' => $clipCategoryText($banner, 500),
                     ':alt' => $clipCategoryText(trim((string)($c['bannerAlt'] ?? $previousVisual['bannerAlt'] ?? '')), 200),
-                    ':description' => $clipCategoryText(trim((string)($c['description'] ?? $previousVisual['description'] ?? '')), 500)
+                    ':description' => $clipCategoryText(trim((string)($c['description'] ?? $previousVisual['description'] ?? '')), 500),
+                    ':icon' => in_array((string)($c['icon'] ?? $previousVisual['icon'] ?? 'package'), $knownCategoryIcons, true) ? (string)($c['icon'] ?? $previousVisual['icon'] ?? 'package') : 'package',
+                    ':keywords' => json_encode(array_values(array_unique(array_slice(array_filter(array_map(static function ($keyword) {
+                        $keyword = trim((string)$keyword);
+                        return function_exists('mb_strtolower') ? mb_strtolower($keyword, 'UTF-8') : strtolower($keyword);
+                    }, is_array($c['keywords'] ?? null) ? $c['keywords'] : [])), 0, 100))), JSON_UNESCAPED_UNICODE)
                 ]);
             }
         }

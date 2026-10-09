@@ -821,9 +821,9 @@
   </style>
 </head>
 <body>
-  <link rel="stylesheet" href="/assets/css/admin-nav.css?v=admin-shell-brand-20261008">
+  <link rel="stylesheet" href="/assets/css/admin-nav.css?v=admin-campaign-link-20261009">
   <div id="smartisp-admin-nav" class="is-loading" data-active="catalogo"></div>
-  <script src="/assets/js/admin-nav.js?v=admin-shell-brand-20261008" defer></script>
+  <script src="/assets/js/admin-nav.js?v=admin-campaign-link-20261009" defer></script>
 
   <!-- Top Navigation -->
   <header class="top-header">
@@ -1029,6 +1029,10 @@
           </div>
         </div>
 
+        <label for="categorySearchInput" style="display:block;max-width:460px;margin:16px 0 4px;font-weight:700;">Buscar categoría
+          <input type="search" id="categorySearchInput" class="form-control" placeholder="Nombre o identificador" autocomplete="off">
+        </label>
+        <p id="categorySearchCount" class="card-desc" aria-live="polite"></p>
         <!-- Categories Grid -->
         <div class="categories-grid" id="categoriesContainer">
           <!-- Dynamically populated -->
@@ -1260,7 +1264,7 @@
             <span id="catBannerUploadStatus" style="font-size:12px;color:var(--muted);"></span>
           </div>
           <div id="catBannerPreview" style="display:grid;place-items:center;min-height:90px;margin-top:10px;border:1px dashed var(--line);border-radius:8px;background:#f8fbfc;color:var(--muted);font-size:12px;overflow:hidden;">Sin banner seleccionado</div>
-          <small style="color:var(--muted);font-size:11px;">Las subcategorías usarán el banner de su categoría principal.</small>
+          <small style="color:var(--muted);font-size:11px;">Se muestra en la portada pública de la categoría. Recomendado: imagen horizontal 1600 × 700 px, JPG o WebP. Las subcategorías usarán el banner de su categoría principal.</small>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -1949,7 +1953,11 @@
       if (statKws) statKws.textContent = totalKws;
       if (statProds) statProds.textContent = productsStats.total || 0;
 
-      container.innerHTML = categoriesList.map((cat, idx) => {
+      const query = (document.getElementById('categorySearchInput')?.value || '').trim().toLocaleLowerCase();
+      const visibleCategories = categoriesList.filter(cat => `${cat.name || ''} ${cat.id || ''}`.toLocaleLowerCase().includes(query));
+      const searchCount = document.getElementById('categorySearchCount');
+      if (searchCount) searchCount.textContent = query ? `${visibleCategories.length} de ${categoriesList.length} categorías` : `${categoriesList.length} categorías`;
+      container.innerHTML = visibleCategories.map((cat, idx) => {
         const pCount = catCountMap.get(cat.name) || 0;
         const subs = Array.isArray(cat.subcategories) ? cat.subcategories : [];
         const kws = Array.isArray(cat.keywords) ? cat.keywords : [];
@@ -2021,10 +2029,12 @@
             </div>
           </div>
         `;
-      }).join('');
+      }).join('') || '<p class="card-desc">No hay categorías que coincidan con la búsqueda.</p>';
 
       lucide.createIcons();
     };
+
+    document.getElementById('categorySearchInput')?.addEventListener('input', renderCategoriesTab);
 
     window.filterByCatAndSwitch = encodedCatName => {
       const catName = decodeURIComponent(encodedCatName);

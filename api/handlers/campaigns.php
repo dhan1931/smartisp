@@ -73,11 +73,23 @@ if ($action === 'admin-store-campaigns') {
     $code = 'store-home';
 
     if ($method === 'GET') {
+        $featuredPage = [
+            'eyebrow' => 'Selección comercial',
+            'title' => 'Productos destacados para redes, empresas y tecnología',
+            'description' => 'Una vitrina rápida de artículos del catálogo SmartISP: conectividad, cómputo, energía, seguridad, periféricos y equipamiento TI.',
+            'note' => 'Selección pensada para partir rápido: revisa precio, categoría y ficha antes de cotizar o comprar.',
+            'products_title' => 'Selección destacada',
+            'products_description' => 'Productos elegidos para mostrar novedades y alta rotación.',
+        ];
+        $featuredSettings = $pdo->query("SELECT setting_key, setting_value FROM settings_rows WHERE setting_key LIKE 'store_featured_%'")->fetchAll(PDO::FETCH_KEY_PAIR);
+        foreach (['eyebrow', 'title', 'description', 'note', 'products_title', 'products_description'] as $field) {
+            if (isset($featuredSettings['store_featured_' . $field])) $featuredPage[$field] = (string)$featuredSettings['store_featured_' . $field];
+        }
         $stmt = $pdo->prepare('SELECT * FROM storefront_campaigns WHERE code = :code LIMIT 1');
         $stmt->execute([':code' => $code]);
         $campaign = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$campaign) {
-            echo json_encode(['campaign' => null, 'slides' => [], 'products' => []]);
+            echo json_encode(['campaign' => null, 'slides' => [], 'products' => [], 'chips' => [], 'featured_page' => $featuredPage]);
             exit;
         }
         $slides = $pdo->prepare('SELECT id, eyebrow, title, subtitle, button_text, target_url, image_url, image_alt, image_fit, is_active FROM storefront_campaign_slides WHERE campaign_id = :id ORDER BY sort_order, id');
@@ -86,7 +98,7 @@ if ($action === 'admin-store-campaigns') {
         $products = $pdo->prepare("SELECT p.* FROM storefront_campaign_products cp JOIN `$productTable` p ON p.id = cp.product_id WHERE cp.campaign_id = :id ORDER BY cp.sort_order, cp.product_id");
         $products->execute([':id' => $campaign['id']]);
         $chips = $pdo->query('SELECT id, label, icon, target_url, is_active FROM storefront_promo_chips ORDER BY sort_order, id')->fetchAll(PDO::FETCH_ASSOC);
-        echo json_encode(['campaign' => $campaign, 'slides' => $slides->fetchAll(PDO::FETCH_ASSOC), 'products' => array_map('normalizeProductRow', $products->fetchAll(PDO::FETCH_ASSOC)), 'chips' => $chips]);
+        echo json_encode(['campaign' => $campaign, 'slides' => $slides->fetchAll(PDO::FETCH_ASSOC), 'products' => array_map('normalizeProductRow', $products->fetchAll(PDO::FETCH_ASSOC)), 'chips' => $chips, 'featured_page' => $featuredPage]);
         exit;
     }
 
@@ -97,6 +109,27 @@ if ($action === 'admin-store-campaigns') {
         $name = trim((string)($settings['name'] ?? 'Portada de la tienda'));
         $rotation = max(4, min(20, (int)($settings['rotation_seconds'] ?? 7)));
         $displayMode = in_array(($settings['display_mode'] ?? 'carousel'), ['carousel', 'single', 'triple'], true) ? $settings['display_mode'] : 'carousel';
+        $featuredPageDefaults = [
+            'eyebrow' => 'Selección comercial',
+            'title' => 'Productos destacados para redes, empresas y tecnología',
+            'description' => 'Una vitrina rápida de artículos del catálogo SmartISP: conectividad, cómputo, energía, seguridad, periféricos y equipamiento TI.',
+            'note' => 'Selección pensada para partir rápido: revisa precio, categoría y ficha antes de cotizar o comprar.',
+            'products_title' => 'Selección destacada',
+            'products_description' => 'Productos elegidos para mostrar novedades y alta rotación.',
+        ];
+        $existingFeaturedRows = $pdo->query("SELECT setting_key, setting_value FROM settings_rows WHERE setting_key LIKE 'store_featured_%'")->fetchAll(PDO::FETCH_KEY_PAIR);
+        $featuredInput = is_array($body['featured_page'] ?? null) ? $body['featured_page'] : [];
+        $featuredPage = [];
+        foreach ($featuredPageDefaults as $field => $fallback) {
+            $current = $existingFeaturedRows['store_featured_' . $field] ?? $fallback;
+            $limit = ['eyebrow' => 80, 'title' => 180, 'description' => 500, 'note' => 300, 'products_title' => 120, 'products_description' => 300][$field];
+            $featuredPage[$field] = storefrontCampaignText((string)($featuredInput[$field] ?? $current), $limit);
+        }
+        if ($featuredPage['title'] === '') {
+            http_response_code(400);
+            echo json_encode(['error' => 'El título de Selección comercial es obligatorio.']);
+            exit;
+        }
         $chips = is_array($body['chips'] ?? null) ? array_slice($body['chips'], 0, 8) : [];
         if ($name === '' || strlen($name) > 150) {
             http_response_code(400);
@@ -131,6 +164,8 @@ if ($action === 'admin-store-campaigns') {
         try {
             $pdo->prepare("INSERT INTO storefront_campaigns (code, name, placement, is_active, rotation_seconds, display_mode) VALUES (:code, :name, 'home', :active, :rotation, :mode) ON DUPLICATE KEY UPDATE name = VALUES(name), is_active = VALUES(is_active), rotation_seconds = VALUES(rotation_seconds), display_mode = VALUES(display_mode)")
                 ->execute([':code' => $code, ':name' => $name, ':active' => !empty($settings['is_active']) ? 1 : 0, ':rotation' => $rotation, ':mode' => $displayMode]);
+            $saveFeaturedSetting = $pdo->prepare('INSERT INTO settings_rows (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = CURRENT_TIMESTAMP');
+            foreach ($featuredPage as $field => $value) $saveFeaturedSetting->execute(['store_featured_' . $field, $value]);
             $campaignId = (int)$pdo->query("SELECT id FROM storefront_campaigns WHERE code = 'store-home'")->fetchColumn();
             if ($productIds) {
                 $productTable = getProductsTableName($pdo);

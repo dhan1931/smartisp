@@ -12,7 +12,7 @@ mantiene su publicación independiente desde `main`.
 - [ ] Confirmar que nadie más está desplegando/editando el sitio en ese momento.
 - [ ] Revisar el commit que se publicará en `main` y confirmar que el build anterior terminó correctamente.
 
-## 2. Migraciones versionadas de base de datos (7)
+## 2. Migraciones versionadas de base de datos
 
 ```
 migrations/001_products_rows_tipos_reales.sql   -- tipos reales + PK en products_rows
@@ -22,6 +22,9 @@ migrations/004_users_rows_llaves.sql            -- tipos reales + PK/UNIQUE en u
 migrations/005_quitar_password_resets_rows.sql  -- borra una tabla muerta
 migrations/006_mail_settings.sql                -- separa SMTP/correo de settings_rows a tabla propia
 migrations/008_storefront_campaigns.sql         -- campañas, diapositivas y productos destacados
+migrations/009_storefront_merchandising.sql    -- presentación de campaña, imágenes y accesos promocionales
+migrations/010_category_banners.sql             -- banners y descripciones para páginas de categoría
+migrations/011_category_metadata.sql            -- iconos y palabras clave editables de categoría
 ```
 
 Runner: `scripts/migrate.php` (soporta `--dry-run` y `--status`; no usa transacciones reales porque
@@ -47,7 +50,7 @@ php scripts/migrate.php
 
 - [ ] `--status` revisado antes de aplicar.
 - [ ] Migraciones aplicadas.
-- [ ] `--status` otra vez después; las siete migraciones versionadas deben figurar como `[aplicada]`.
+- [ ] `--status` otra vez después; las migraciones versionadas listadas deben figurar como `[aplicada]`.
 
 ### Alternativa: un solo archivo, aplicado a mano
 

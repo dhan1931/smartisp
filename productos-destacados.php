@@ -17,13 +17,27 @@ function escFeatured(string $value): string {
 
 $siteUrl = 'https://smart-isp.com.ec';
 $products = [];
+$featuredPage = [
+    'eyebrow' => 'Selección comercial',
+    'title' => 'Productos destacados para redes, empresas y tecnología',
+    'description' => 'Una vitrina rápida de artículos del catálogo SmartISP: conectividad, cómputo, energía, seguridad, periféricos y equipamiento TI.',
+    'note' => 'Selección pensada para partir rápido: revisa precio, categoría y ficha antes de cotizar o comprar.',
+    'products_title' => 'Selección destacada',
+    'products_description' => 'Productos elegidos para mostrar novedades y alta rotación.',
+];
 $pdo = getDbConnection();
 if ($pdo) {
     try {
+        $pageSettings = $pdo->query("SELECT setting_key, setting_value FROM settings_rows WHERE setting_key LIKE 'store_featured_%'")->fetchAll(PDO::FETCH_KEY_PAIR);
+        foreach (array_keys($featuredPage) as $field) {
+            if (isset($pageSettings['store_featured_' . $field])) $featuredPage[$field] = (string)$pageSettings['store_featured_' . $field];
+        }
         $pTable = getProductsTableName($pdo);
         ensureProductTableColumns($pdo, $pTable);
-        $stmt = $pdo->query("SELECT * FROM `$pTable` WHERE visible = 1 ORDER BY updated_at DESC, created_at DESC, name ASC LIMIT 24");
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $selectedStmt = $pdo->query("SELECT p.* FROM storefront_campaign_products cp JOIN storefront_campaigns c ON c.id = cp.campaign_id JOIN `$pTable` p ON p.id = cp.product_id WHERE c.code = 'store-home' AND p.visible = 1 ORDER BY cp.sort_order, p.name LIMIT 12");
+        $selectedRows = $selectedStmt->fetchAll(PDO::FETCH_ASSOC);
+        if (!$selectedRows) $selectedRows = $pdo->query("SELECT * FROM `$pTable` WHERE visible = 1 ORDER BY updated_at DESC, created_at DESC, name ASC LIMIT 24")->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($selectedRows as $row) {
             $products[] = normalizeProductRow($row);
         }
     } catch (Throwable $e) {
@@ -46,8 +60,8 @@ foreach ($products as $idx => $product) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Productos Destacados | SmartISP Ecuador</title>
-  <meta name="description" content="Productos destacados de SmartISP Ecuador: networking, fibra optica, computo, energia, seguridad, perifericos y soluciones TI para empresas e ISP.">
+  <title><?= escFeatured($featuredPage['title']) ?> | SmartISP Ecuador</title>
+  <meta name="description" content="<?= escFeatured($featuredPage['description']) ?>">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <link rel="canonical" href="<?= $siteUrl ?>/productos-destacados">
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
@@ -58,8 +72,8 @@ foreach ($products as $idx => $product) {
   <?= json_encode([
       '@context' => 'https://schema.org',
       '@type' => 'CollectionPage',
-      'name' => 'Productos Destacados SmartISP Ecuador',
-      'description' => 'Selección comercial de productos recientes y destacados del catálogo SmartISP Ecuador.',
+      'name' => $featuredPage['title'] . ' | SmartISP Ecuador',
+      'description' => $featuredPage['description'],
       'url' => $siteUrl . '/productos-destacados',
       'mainEntity' => [
           '@type' => 'ItemList',
@@ -91,21 +105,21 @@ foreach ($products as $idx => $product) {
   <main class="storefront-page">
     <section class="hero">
       <div>
-        <div class="eyebrow">Seleccion comercial</div>
-        <h1>Productos destacados para redes, empresas y tecnologia</h1>
-        <p>Una vitrina rapida de articulos recientes del catalogo SmartISP: conectividad, computo, energia, seguridad, perifericos y equipamiento TI.</p>
+            <div class="eyebrow"><?= escFeatured($featuredPage['eyebrow']) ?></div>
+        <h1><?= escFeatured($featuredPage['title']) ?></h1>
+        <p><?= escFeatured($featuredPage['description']) ?></p>
         <div class="hero-actions">
           <a class="btn primary" href="/tienda.html#catalogo">Ver catalogo</a>
           <a class="btn secondary" href="/categorias-destacadas">Ver categorias</a>
         </div>
       </div>
-      <div class="hero-panel">Seleccion pensada para partir rapido: revisa precio, categoria y ficha antes de cotizar o comprar.</div>
+      <div class="hero-panel"><?= escFeatured($featuredPage['note']) ?></div>
     </section>
     <?php if (!empty($products)): ?>
       <div class="section-head">
         <div>
-          <h2>Seleccion destacada</h2>
-          <p>Productos visibles del catalogo, ordenados para mostrar novedades y alta rotacion primero.</p>
+          <h2><?= escFeatured($featuredPage['products_title']) ?></h2>
+          <p><?= escFeatured($featuredPage['products_description']) ?></p>
         </div>
         <span class="count-pill"><?= count($products) ?> productos</span>
       </div>
