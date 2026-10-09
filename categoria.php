@@ -257,10 +257,10 @@ foreach ($products as $idx => $product) {
     .category-eyebrow{color:#087ea4;font-size:11px;font-weight:850;text-transform:uppercase}
     .category-hero h1{margin:5px 0 7px;color:#102c3d;font-size:clamp(24px,2.6vw,32px);line-height:1.1;letter-spacing:0}
     .category-hero p{max-width:760px;margin:0;color:#60798f;font-size:15px}
-    .category-total{display:inline-flex;width:max-content;margin-top:14px;padding:9px 13px;border:1px solid #d8e5e7;border-radius:99px;background:#fff;color:#17324d;font-size:13px;font-weight:800;white-space:nowrap}
-    .category-chips-row{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 22px}
-    .category-chips-row span{display:inline-flex;align-items:center;gap:8px;padding:9px 13px;border:1px solid #d8e5e7;border-radius:8px;background:#fff;color:#17324d;font-size:12px;font-weight:750}
-    .category-chips-row span i{color:#087ea4}
+    .category-chips-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+    .category-chips-row span{display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border:1px solid rgba(8,126,164,.18);border-radius:8px;background:rgba(255,255,255,.8);color:#17324d;font-size:12px;font-weight:750;white-space:nowrap}
+    .category-chips-row span i{color:#087ea4;flex-shrink:0}
+    @media(max-width:520px){.category-chips-row span{font-size:11px;padding:7px 10px}}
     .category-results-layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:18px;align-items:start}
     .category-sidebar{position:sticky;top:16px;padding:16px;border:1px solid #c5d7e0;border-radius:8px;background:#fff}
     .category-sidebar-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 4px}
@@ -325,17 +325,15 @@ foreach ($products as $idx => $product) {
       <div class="category-hero-copy"><div class="category-eyebrow"><?= $categoryParentName !== '' ? escapeCategoryPage($categoryParentName) : 'Catálogo de productos' ?></div>
       <h1><?= escapeCategoryPage($categoryName !== '' ? $categoryName : 'Categoría no encontrada') ?></h1>
       <p><?= escapeCategoryPage($categoryName !== '' ? $metaDesc : 'Vuelve al catálogo para explorar los productos disponibles.') ?></p>
-      <?php if ($categoryName !== ''): ?><div class="category-total"><?= number_format($totalProducts, 0, ',', '.') ?> productos</div><?php endif; ?></div>
+      <?php if ($categoryName !== '' && $totalProducts > 0): ?>
+        <div class="category-chips-row">
+          <span><i data-lucide="box" width="14"></i> <?= number_format($totalProducts, 0, ',', '.') ?> productos disponibles</span>
+          <span><i data-lucide="truck" width="14"></i> Envío gratis en Guayas</span>
+          <span><i data-lucide="headphones" width="14"></i> Atención experta</span>
+        </div>
+      <?php endif; ?></div>
       <?php if ($categoryName !== '' && $categoryBannerUrl !== ''): ?><img class="category-banner" src="<?= escapeCategoryPage($categoryBannerUrl) ?>" alt="<?= escapeCategoryPage($categoryBannerAlt !== '' ? $categoryBannerAlt : $categoryName) ?>" width="900" height="440" fetchpriority="high" onerror="this.hidden=true;this.parentElement.classList.remove('has-banner')"><?php endif; ?>
     </section>
-
-    <?php if ($categoryName !== '' && $totalProducts > 0): ?>
-      <div class="category-chips-row">
-        <span><i data-lucide="box" width="14"></i> <?= number_format($totalProducts, 0, ',', '.') ?> productos disponibles</span>
-        <span><i data-lucide="truck" width="14"></i> Envío gratis en Guayas</span>
-        <span><i data-lucide="headphones" width="14"></i> Atención experta · Lun a Vie 9:00 a 18:00</span>
-      </div>
-    <?php endif; ?>
 
     <?php if ($categoryName !== '' && $totalProducts > 0): ?>
       <?php $categoryPath = '/categoria/' . rawurlencode(slugifyCategoryPage($categoryName)) . '/'; ?>
