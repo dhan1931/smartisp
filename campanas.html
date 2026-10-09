@@ -25,6 +25,12 @@
        el ancho real de imagen/texto y la posicion del degradado los fija el JS en linea
        segun image_width_pct, no un porcentaje fijo en CSS. */
     .campaign-preview.preview-triple .preview-card.is-layout-side{aspect-ratio:2.1;min-height:185px}
+    .preview-card.is-layout-full{aspect-ratio:2.1;min-height:185px;background:#e7f3f8}
+    .preview-card.is-layout-full .preview-backdrop{position:absolute;z-index:0;inset:-8px;background-position:center;background-size:cover;filter:blur(9px);opacity:.25;transform:scale(1.04)}
+    .preview-card.is-layout-full .preview-media{z-index:0;inset:5% 3% 5% auto;width:60%;height:90%;object-fit:contain!important}
+    .preview-card.is-layout-full .preview-overlay{z-index:1;background:linear-gradient(90deg,rgba(248,252,254,.94),rgba(248,252,254,.84) 38%,rgba(248,252,254,.16) 72%,rgba(248,252,254,.04))}
+    .preview-card.is-layout-full .preview-copy{display:flex;width:58%;max-width:58%;height:100%;flex-direction:column;align-items:flex-start;justify-content:center;padding:14px 10px 14px 18px;background:linear-gradient(90deg,rgba(248,252,254,.94),rgba(248,252,254,.76) 78%,rgba(248,252,254,0));backdrop-filter:blur(3px)}
+    @media(max-width:760px){.campaign-preview.preview-triple .preview-card.is-layout-full{aspect-ratio:1.9;min-height:160px}.preview-card.is-layout-full .preview-copy{width:58%;max-width:58%;padding:12px}.preview-card.is-layout-full .preview-copy h4{font-size:16px}}
     .preview-card.is-layout-side .preview-media{z-index:0;inset:0 0 0 auto;height:100%;object-position:right center;background:transparent;transition:width .15s ease,opacity .15s ease}
     .preview-card.is-layout-side .preview-overlay{z-index:1;background:linear-gradient(90deg,#f8fcfee8,transparent)}
     .preview-card.is-layout-side .preview-copy{display:flex;max-width:none;height:100%;flex-direction:column;align-items:flex-start;justify-content:center;padding:14px 8px 14px 18px;background:linear-gradient(90deg,#f8fcfe 0%,#f8fcfe 78%,rgba(248,252,254,.94) 100%)}
@@ -126,7 +132,7 @@
         const chipIcon=['sparkles','star','truck'].includes(slide.promo_chip_icon)?slide.promo_chip_icon:'tag';
         const imageWidth=Math.max(35,Math.min(65,Number(slide.image_width_pct??55)));
         const isSide=slide.card_layout==='side';
-        let mediaStyle=`object-fit:${slide.image_fit==='cover'?'cover':'contain'};opacity:${Math.max(0,Math.min(100,Number(slide.image_opacity??100)))/100}`;
+        let mediaStyle=`object-fit:${isSide&&slide.image_fit==='cover'?'cover':'contain'};opacity:${Math.max(0,Math.min(100,Number(slide.image_opacity??100)))/100}`;
         let overlayStyle=`opacity:${opacity}`;
         let copyStyle='';
         if(isSide){
@@ -137,7 +143,7 @@
           overlayStyle=`inset:0 auto 0 ${overlayStart}%;width:${overlayBandWidth}%;${overlayStyle}`;
           copyStyle=`width:${textWidth}%;max-width:${textWidth}%`;
         }
-        return `<article class="preview-card${isSide?' is-layout-side':''}"><img class="preview-media" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(primary?.image_alt||slide.title||'') }" style="${mediaStyle}"><span class="preview-overlay" style="${overlayStyle}"></span>${slide.badge_label?`<span class="preview-badge ${escapeHtml(slide.badge_tone||'discount')}">${escapeHtml(slide.badge_label)}</span>`:''}${slide.promo_chip_label?`<span class="preview-promo"><i data-lucide="${chipIcon}"></i>${escapeHtml(slide.promo_chip_label)}</span>`:''}<div class="preview-copy" style="${copyStyle}"><small>${escapeHtml(slide.eyebrow||'SMARTISP')}</small><h4>${escapeHtml(slide.title||'Título del banner '+(previewSlideIndex+index+1))}</h4><p>${escapeHtml(slide.subtitle||'Descripción del anuncio')}</p><strong>${escapeHtml(slide.button_text||'Explorar')} →</strong></div></article>`;
+        return `<article class="preview-card${isSide?' is-layout-side':' is-layout-full'}"><span class="preview-backdrop" aria-hidden="true" style="background-image:url('${escapeHtml(imageUrl)}')"></span><img class="preview-media" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(primary?.image_alt||slide.title||'') }" style="${mediaStyle}"><span class="preview-overlay" style="${overlayStyle}"></span>${slide.badge_label?`<span class="preview-badge ${escapeHtml(slide.badge_tone||'discount')}">${escapeHtml(slide.badge_label)}</span>`:''}${slide.promo_chip_label?`<span class="preview-promo"><i data-lucide="${chipIcon}"></i>${escapeHtml(slide.promo_chip_label)}</span>`:''}<div class="preview-copy" style="${copyStyle}"><small>${escapeHtml(slide.eyebrow||'SMARTISP')}</small><h4>${escapeHtml(slide.title||'Título del banner '+(previewSlideIndex+index+1))}</h4><p>${escapeHtml(slide.subtitle||'Descripción del anuncio')}</p><strong>${escapeHtml(slide.button_text||'Explorar')} →</strong></div></article>`;
       }).join('') || '<p class="muted">Añade y activa al menos una pieza para ver la portada.</p>';
       const controls=mode==='carousel'&&active.length>1?`<div class="preview-carousel-controls"><button class="icon-button" type="button" data-preview-step="-1" aria-label="Banner anterior">‹</button><span>${previewSlideIndex+1} / ${active.length}</span><button class="icon-button" type="button" data-preview-step="1" aria-label="Siguiente banner">›</button></div>`:'';
       host.innerHTML=content+controls;
