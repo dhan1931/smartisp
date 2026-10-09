@@ -80,12 +80,13 @@ if ($action === 'admin-store-campaigns') {
             echo json_encode(['campaign' => null, 'slides' => [], 'products' => []]);
             exit;
         }
-        $slides = $pdo->prepare('SELECT id, eyebrow, title, subtitle, button_text, target_url, image_url, image_alt, is_active FROM storefront_campaign_slides WHERE campaign_id = :id ORDER BY sort_order, id');
+        $slides = $pdo->prepare('SELECT id, eyebrow, title, subtitle, button_text, target_url, image_url, image_alt, image_fit, is_active FROM storefront_campaign_slides WHERE campaign_id = :id ORDER BY sort_order, id');
         $slides->execute([':id' => $campaign['id']]);
         $productTable = getProductsTableName($pdo);
         $products = $pdo->prepare("SELECT p.* FROM storefront_campaign_products cp JOIN `$productTable` p ON p.id = cp.product_id WHERE cp.campaign_id = :id ORDER BY cp.sort_order, cp.product_id");
         $products->execute([':id' => $campaign['id']]);
-        echo json_encode(['campaign' => $campaign, 'slides' => $slides->fetchAll(PDO::FETCH_ASSOC), 'products' => array_map('normalizeProductRow', $products->fetchAll(PDO::FETCH_ASSOC))]);
+        $chips = $pdo->query('SELECT id, label, icon, target_url, is_active FROM storefront_promo_chips ORDER BY sort_order, id')->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['campaign' => $campaign, 'slides' => $slides->fetchAll(PDO::FETCH_ASSOC), 'products' => array_map('normalizeProductRow', $products->fetchAll(PDO::FETCH_ASSOC)), 'chips' => $chips]);
         exit;
     }
 
@@ -95,6 +96,8 @@ if ($action === 'admin-store-campaigns') {
         $productIds = is_array($body['product_ids'] ?? null) ? array_values(array_unique(array_slice(array_filter(array_map(static fn($id) => trim((string)$id), $body['product_ids']), static fn($id) => $id !== ''), 0, 12))) : [];
         $name = trim((string)($settings['name'] ?? 'Portada de la tienda'));
         $rotation = max(4, min(20, (int)($settings['rotation_seconds'] ?? 7)));
+        $displayMode = in_array(($settings['display_mode'] ?? 'carousel'), ['carousel', 'single', 'triple'], true) ? $settings['display_mode'] : 'carousel';
+        $chips = is_array($body['chips'] ?? null) ? array_slice($body['chips'], 0, 8) : [];
         if ($name === '' || strlen($name) > 150) {
             http_response_code(400);
             echo json_encode(['error' => 'El nombre de la campaña es obligatorio (máximo 150 caracteres).']);
@@ -110,11 +113,24 @@ if ($action === 'admin-store-campaigns') {
                 exit;
             }
         }
+        foreach ($chips as $chip) {
+            if (trim((string)($chip['label'] ?? '')) === '' || strlen((string)$chip['label']) > 60 || !storefrontCampaignSafeUrl((string)($chip['target_url'] ?? ''))) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Cada acceso promocional necesita un texto y un enlace válido.']);
+                exit;
+            }
+        }
+        $activeSlides = array_filter($slides, static fn($slide) => !array_key_exists('is_active', $slide) || !empty($slide['is_active']));
+        if ($displayMode === 'triple' && count($activeSlides) < 3) {
+            http_response_code(400);
+            echo json_encode(['error' => 'El formato de tres anuncios requiere al menos tres piezas visibles.']);
+            exit;
+        }
 
         $pdo->beginTransaction();
         try {
-            $pdo->prepare("INSERT INTO storefront_campaigns (code, name, placement, is_active, rotation_seconds) VALUES (:code, :name, 'home', :active, :rotation) ON DUPLICATE KEY UPDATE name = VALUES(name), is_active = VALUES(is_active), rotation_seconds = VALUES(rotation_seconds)")
-                ->execute([':code' => $code, ':name' => $name, ':active' => !empty($settings['is_active']) ? 1 : 0, ':rotation' => $rotation]);
+            $pdo->prepare("INSERT INTO storefront_campaigns (code, name, placement, is_active, rotation_seconds, display_mode) VALUES (:code, :name, 'home', :active, :rotation, :mode) ON DUPLICATE KEY UPDATE name = VALUES(name), is_active = VALUES(is_active), rotation_seconds = VALUES(rotation_seconds), display_mode = VALUES(display_mode)")
+                ->execute([':code' => $code, ':name' => $name, ':active' => !empty($settings['is_active']) ? 1 : 0, ':rotation' => $rotation, ':mode' => $displayMode]);
             $campaignId = (int)$pdo->query("SELECT id FROM storefront_campaigns WHERE code = 'store-home'")->fetchColumn();
             if ($productIds) {
                 $productTable = getProductsTableName($pdo);
@@ -126,7 +142,8 @@ if ($action === 'admin-store-campaigns') {
             }
             $pdo->prepare('DELETE FROM storefront_campaign_slides WHERE campaign_id = ?')->execute([$campaignId]);
             $pdo->prepare('DELETE FROM storefront_campaign_products WHERE campaign_id = ?')->execute([$campaignId]);
-            $slideInsert = $pdo->prepare('INSERT INTO storefront_campaign_slides (campaign_id, eyebrow, title, subtitle, button_text, target_url, image_url, image_alt, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+            $pdo->prepare('DELETE FROM storefront_promo_chips')->execute();
+            $slideInsert = $pdo->prepare('INSERT INTO storefront_campaign_slides (campaign_id, eyebrow, title, subtitle, button_text, target_url, image_url, image_alt, image_fit, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
             foreach ($slides as $index => $slide) {
                 $slideInsert->execute([
                     $campaignId,
@@ -137,12 +154,15 @@ if ($action === 'admin-store-campaigns') {
                     substr(trim((string)$slide['target_url']), 0, 500),
                     substr(trim((string)$slide['image_url']), 0, 500),
                     storefrontCampaignText((string)($slide['image_alt'] ?? $slide['title']), 200) ?: null,
+                    in_array(($slide['image_fit'] ?? 'cover'), ['cover', 'contain'], true) ? $slide['image_fit'] : 'cover',
                     $index,
                     !array_key_exists('is_active', $slide) || !empty($slide['is_active']) ? 1 : 0,
                 ]);
             }
             $productInsert = $pdo->prepare('INSERT INTO storefront_campaign_products (campaign_id, product_id, sort_order) VALUES (?, ?, ?)');
             foreach ($productIds as $index => $productId) $productInsert->execute([$campaignId, $productId, $index]);
+            $chipInsert = $pdo->prepare('INSERT INTO storefront_promo_chips (label, icon, target_url, sort_order, is_active) VALUES (?, ?, ?, ?, ?)');
+            foreach ($chips as $index => $chip) $chipInsert->execute([storefrontCampaignText((string)$chip['label'], 60), storefrontCampaignText((string)($chip['icon'] ?? 'tag'), 40) ?: 'tag', substr(trim((string)$chip['target_url']), 0, 500), $index, !empty($chip['is_active']) ? 1 : 0]);
             $pdo->commit();
             echo json_encode(['ok' => true]);
         } catch (Throwable $error) {
@@ -158,19 +178,21 @@ if ($action === 'admin-store-campaigns') {
 
 if ($action === 'store-campaigns' && $method === 'GET') {
     $now = 'UTC_TIMESTAMP()';
-    $stmt = $pdo->query("SELECT id, rotation_seconds FROM storefront_campaigns WHERE code = 'store-home' AND is_active = 1 AND (starts_at IS NULL OR starts_at <= $now) AND (ends_at IS NULL OR ends_at > $now) LIMIT 1");
+    $stmt = $pdo->query("SELECT id, rotation_seconds, display_mode FROM storefront_campaigns WHERE code = 'store-home' AND is_active = 1 AND (starts_at IS NULL OR starts_at <= $now) AND (ends_at IS NULL OR ends_at > $now) LIMIT 1");
     $campaign = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$campaign) {
-        echo json_encode(['slides' => [], 'products' => []]);
+        $chips = $pdo->query("SELECT label, icon, target_url FROM storefront_promo_chips WHERE is_active = 1 AND (starts_at IS NULL OR starts_at <= UTC_TIMESTAMP()) AND (ends_at IS NULL OR ends_at > UTC_TIMESTAMP()) ORDER BY sort_order, id")->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode(['slides' => [], 'products' => [], 'chips' => $chips]);
         exit;
     }
-    $slideStmt = $pdo->prepare('SELECT eyebrow, title, subtitle, button_text, target_url, image_url, image_alt FROM storefront_campaign_slides WHERE campaign_id = :id AND is_active = 1 ORDER BY sort_order, id');
+    $slideStmt = $pdo->prepare('SELECT eyebrow, title, subtitle, button_text, target_url, image_url, image_alt, image_fit FROM storefront_campaign_slides WHERE campaign_id = :id AND is_active = 1 ORDER BY sort_order, id');
     $slideStmt->execute([':id' => $campaign['id']]);
     $productTable = getProductsTableName($pdo);
     $productStmt = $pdo->prepare("SELECT p.* FROM storefront_campaign_products cp JOIN `$productTable` p ON p.id = cp.product_id WHERE cp.campaign_id = :id AND p.visible = 1 ORDER BY cp.sort_order, cp.product_id");
     $productStmt->execute([':id' => $campaign['id']]);
     $products = array_map('storefrontCampaignPublicProduct', $productStmt->fetchAll(PDO::FETCH_ASSOC));
+    $chips = $pdo->query("SELECT label, icon, target_url FROM storefront_promo_chips WHERE is_active = 1 AND (starts_at IS NULL OR starts_at <= UTC_TIMESTAMP()) AND (ends_at IS NULL OR ends_at > UTC_TIMESTAMP()) ORDER BY sort_order, id")->fetchAll(PDO::FETCH_ASSOC);
     header('Cache-Control: public, max-age=60');
-    echo json_encode(['rotation_seconds' => max(4, min(20, (int)$campaign['rotation_seconds'])), 'slides' => $slideStmt->fetchAll(PDO::FETCH_ASSOC), 'products' => $products]);
+    echo json_encode(['rotation_seconds' => max(4, min(20, (int)$campaign['rotation_seconds'])), 'display_mode' => $campaign['display_mode'] ?: 'carousel', 'slides' => $slideStmt->fetchAll(PDO::FETCH_ASSOC), 'products' => $products, 'chips' => $chips]);
     exit;
 }

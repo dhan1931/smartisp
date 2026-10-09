@@ -249,6 +249,9 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
             `id` VARCHAR(100) NOT NULL PRIMARY KEY,
             `name` VARCHAR(255) NOT NULL,
             `subcategories` LONGTEXT NULL,
+            `banner_image_url` VARCHAR(500) NULL,
+            `banner_alt` VARCHAR(200) NULL,
+            `description` VARCHAR(500) NULL,
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
@@ -283,6 +286,9 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
             'id'            => (string)($row['id'] ?? uniqid('cat_')),
             'name'          => $name,
             'subcategories' => array_values($subs),
+            'bannerImageUrl' => (string)($row['banner_image_url'] ?? ''),
+            'bannerAlt' => (string)($row['banner_alt'] ?? ''),
+            'description' => (string)($row['description'] ?? ''),
             'productCount'  => $catMap[$name]['count'] ?? 0,
             'updated_at'    => $row['updated_at'] ?? null
         ];
@@ -298,6 +304,9 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
                 'id'            => $cId,
                 'name'          => $cName,
                 'subcategories' => array_values($info['subcategories']),
+                'bannerImageUrl' => '',
+                'bannerAlt' => '',
+                'description' => '',
                 'productCount'  => $info['count'],
                 'updated_at'    => date('Y-m-d H:i:s')
             ];
@@ -308,12 +317,15 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
 
     if (!empty($toInsert)) {
         try {
-            $ins = $pdo->prepare("INSERT INTO categories_rows (id, name, subcategories) VALUES (:id, :name, :sub) ON DUPLICATE KEY UPDATE name = VALUES(name), subcategories = VALUES(sub)");
+            $ins = $pdo->prepare("INSERT INTO categories_rows (id, name, subcategories, banner_image_url, banner_alt, description) VALUES (:id, :name, :sub, :banner, :alt, :description) ON DUPLICATE KEY UPDATE name = VALUES(name), subcategories = VALUES(sub)");
             foreach ($toInsert as $tc) {
                 $ins->execute([
                     ':id'   => $tc['id'],
                     ':name' => $tc['name'],
-                    ':sub'  => json_encode($tc['subcategories'], JSON_UNESCAPED_UNICODE)
+                    ':sub'  => json_encode($tc['subcategories'], JSON_UNESCAPED_UNICODE),
+                    ':banner' => '',
+                    ':alt' => '',
+                    ':description' => ''
                 ]);
             }
         } catch (Throwable $e) {}
@@ -891,13 +903,41 @@ if ($action === 'categories') {
     if ($method === 'POST') {
         $cats = $body['categories'] ?? [];
         if (is_array($cats)) {
+            $savedVisuals = [];
+            $existingVisuals = $pdo->query('SELECT id, name, banner_image_url, banner_alt, description FROM categories_rows');
+            foreach ($existingVisuals->fetchAll(PDO::FETCH_ASSOC) as $existing) {
+                $visual = [
+                    'bannerImageUrl' => (string)($existing['banner_image_url'] ?? ''),
+                    'bannerAlt' => (string)($existing['banner_alt'] ?? ''),
+                    'description' => (string)($existing['description'] ?? '')
+                ];
+                $savedVisuals['id:' . (string)$existing['id']] = $visual;
+                $savedVisuals['name:' . strtolower(trim((string)$existing['name']))] = $visual;
+            }
             $pdo->exec("DELETE FROM categories_rows");
-            $stmt = $pdo->prepare("INSERT INTO categories_rows (id, name, subcategories) VALUES (:id, :name, :sub)");
+            $stmt = $pdo->prepare("INSERT INTO categories_rows (id, name, subcategories, banner_image_url, banner_alt, description) VALUES (:id, :name, :sub, :banner, :alt, :description)");
+            $clipCategoryText = static function (string $value, int $limit): string {
+                if (function_exists('mb_substr')) return mb_substr($value, 0, $limit, 'UTF-8');
+                if (preg_match('/^.{0,' . $limit . '}/us', $value, $match)) return $match[0];
+                return substr($value, 0, $limit);
+            };
             foreach ($cats as $c) {
                 $cId = $c['id'] ?? uniqid('cat_');
                 $cName = $c['name'] ?? 'General';
                 $sub = is_array($c['subcategories'] ?? null) ? json_encode($c['subcategories']) : (string)($c['subcategories'] ?? '');
-                $stmt->execute([':id' => $cId, ':name' => $cName, ':sub' => $sub]);
+                $previousVisual = $savedVisuals['id:' . (string)$cId] ?? $savedVisuals['name:' . strtolower(trim((string)$cName))] ?? [];
+                $banner = trim((string)($c['bannerImageUrl'] ?? $previousVisual['bannerImageUrl'] ?? ''));
+                $safeBanner = str_starts_with($banner, '/') && !str_starts_with($banner, '//') && !str_contains($banner, '..') && !str_contains($banner, '\\');
+                $safeBanner = $safeBanner || (filter_var($banner, FILTER_VALIDATE_URL) !== false && strtolower((string)parse_url($banner, PHP_URL_SCHEME)) === 'https');
+                if (!$safeBanner || preg_match('/[\\x00-\\x1F\\x7F]/', $banner)) $banner = '';
+                $stmt->execute([
+                    ':id' => $cId,
+                    ':name' => $cName,
+                    ':sub' => $sub,
+                    ':banner' => $clipCategoryText($banner, 500),
+                    ':alt' => $clipCategoryText(trim((string)($c['bannerAlt'] ?? $previousVisual['bannerAlt'] ?? '')), 200),
+                    ':description' => $clipCategoryText(trim((string)($c['description'] ?? $previousVisual['description'] ?? '')), 500)
+                ]);
             }
         }
         echo json_encode(['ok' => true]);

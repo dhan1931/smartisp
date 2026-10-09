@@ -32,7 +32,7 @@
 	<link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
 	<link rel="manifest" href="/assets/site.webmanifest">
 	<meta name="theme-color" content="#102a43">
-	<script src="/assets/js/public-brand.js?v=landing-logo" defer></script>
+	<script src="/assets/js/public-brand.js?v=landing-logo-fallback-20261008" defer></script>
 	<script type="application/ld+json">
 	{
 		"@context": "https://schema.org",
@@ -1588,7 +1588,8 @@
     <style>
         .nav, .public-nav { position: relative !important; top: auto !important; }
         @media (max-width: 800px) {
-            .public-nav.is-open { position: fixed !important; inset: 0 !important; }
+            .public-nav { display: none !important; }
+            .store-sidebar { width: min(80vw, 440px) !important; max-width: 440px !important; background: #fff !important; }
         }
         .store-campaign-area { padding: 14px 1.7vw 0; }
         .store-campaign { position: relative; display: none; min-height: 270px; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: #e8f3f7; isolation: isolate; }
@@ -1607,6 +1608,21 @@
         .store-campaign-dots { display: flex; gap: 6px; align-items: center; }
         .store-campaign-dot { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 8px; background: rgba(16,44,61,.35); }
         .store-campaign-dot[aria-current="true"] { width: 22px; background: var(--blue); }
+        .store-campaign.is-single { min-height: 300px; }
+        .store-campaign.is-contain .store-campaign-media img { object-fit: contain; }
+        .store-campaign.is-triple { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; min-height:0; overflow:visible; background:transparent; border:0; }
+        .store-campaign.is-triple::after, .store-campaign.is-triple .store-campaign-controls { display:none; }
+        .store-campaign.is-triple .store-campaign-media { position:absolute; inset:0; z-index:0; border-radius:8px; overflow:hidden; }
+        .store-campaign.is-triple .store-campaign-media img { display:none; }
+        .store-campaign-card { position:relative; display:flex; min-height:260px; overflow:hidden; align-items:end; border:1px solid var(--line); border-radius:8px; background:#e7f3f8 center/cover no-repeat; }
+        .store-campaign-card::before { content:""; position:absolute; inset:0; background:linear-gradient(90deg,rgba(239,248,252,.96),rgba(239,248,252,.76) 50%,rgba(239,248,252,.04)); }
+        .store-campaign-card .store-campaign-copy { position:relative; width:78%; padding:22px; }
+        .store-campaign-card .store-campaign-eyebrow, .store-campaign-card .store-campaign-title, .store-campaign-card .store-campaign-subtitle { display:block; }
+        .store-campaign-card .store-campaign-title { margin:8px 0; font-size:24px; }
+        .store-campaign-card .store-campaign-subtitle { margin-bottom:13px; font-size:13px; }
+        .store-promo-chips { display:flex; gap:10px; overflow-x:auto; padding:12px 1.7vw 0; }
+        .store-promo-chip { display:inline-flex; flex:0 0 auto; align-items:center; gap:8px; padding:10px 15px; border:1px solid #d8e7ed; border-radius:7px; background:#fff; color:var(--navy); font-weight:700; }
+        .store-promo-chip:hover { border-color:#64b9db; color:var(--blue); }
         .campaign-featured { display: none; padding: 25px 1.7vw 0; }
         .campaign-featured.is-visible { display: block; }
         .campaign-featured-heading { display: flex; justify-content: space-between; align-items: end; gap: 12px; margin-bottom: 13px; }
@@ -1625,6 +1641,10 @@
         @media (max-width: 800px) {
           .store-campaign-area { padding: 10px 4vw 0; }
           .store-campaign { min-height: 230px; }
+          .store-campaign.is-triple { grid-template-columns:repeat(3,minmax(0,1fr)); }
+          .store-campaign-card { min-height:200px; }
+          .store-campaign-card .store-campaign-copy { width:100%; padding:14px; }
+          .store-promo-chips { padding:10px 4vw 0; }
           .store-campaign-copy { width: 72%; padding: 22px; }
           .store-campaign-title { font-size: 26px; }
           .store-campaign-subtitle { font-size: 13px; }
@@ -1633,6 +1653,8 @@
         }
         @media (max-width: 420px) {
           .store-campaign { min-height: 205px; }
+          .store-campaign.is-triple { grid-template-columns:1fr; }
+          .store-campaign-card { min-height:175px; }
           .store-campaign-copy { width: 84%; padding: 16px; }
           .store-campaign-title { font-size: 22px; }
           .store-campaign-subtitle { font-size: 12px; margin-bottom: 12px; }
@@ -1791,6 +1813,12 @@
           body.dark-mode .store-sidebar { background: var(--white); }
           body.dark-mode .sidebar-card { background: var(--white); }
           body.category-drawer-open .mobile-bottom-nav { z-index: 12000; }
+          .store-sidebar {
+            width: min(80vw, 440px) !important;
+            max-width: 440px !important;
+            background: #fff !important;
+          }
+          .store-sidebar .sidebar-card { background: #fff !important; }
         }
     </style>
 </head>
@@ -1799,7 +1827,7 @@
 	<header class="nav">
 		<a class="logo" href="/" title="SmartISP Tienda Online">SmartISP</a>
 		<form class="search" id="searchForm"><input id="searchInput" type="search" placeholder="¿Qué estás buscando hoy?" aria-label="Buscar productos"><button aria-label="Buscar"><i data-lucide="search" width="18"></i></button></form>
-		<div class="nav-actions"><button class="nav-action" id="openAccount" aria-label="Abrir mi cuenta"><i data-lucide="user" width="16" aria-hidden="true"></i><span id="accountLabel">Mi cuenta</span></button><a class="admin-nav-link" id="adminNavLink" href="admin.html" style="display: none;"><i data-lucide="layout-dashboard" width="16"></i><span>Panel admin</span></a><button class="nav-action cart-button" id="openCart"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="cart-count" id="cartCount">0</b></button><button class="public-menu-btn" id="publicMenuBtn" type="button" aria-label="Abrir secciones" aria-expanded="false" aria-controls="publicNav"><i data-lucide="menu" width="20"></i></button></div>
+		<div class="nav-actions"><button class="nav-action" id="openAccount" aria-label="Abrir mi cuenta"><i data-lucide="user" width="16" aria-hidden="true"></i><span id="accountLabel">Mi cuenta</span></button><a class="admin-nav-link" id="adminNavLink" href="admin.html" style="display: none;"><i data-lucide="layout-dashboard" width="16"></i><span>Panel admin</span></a><button class="nav-action cart-button" id="openCart"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="cart-count" id="cartCount">0</b></button><button class="public-menu-btn" id="publicMenuBtn" type="button" aria-label="Abrir categorías" aria-expanded="false" aria-controls="storeCategoryDrawer"><i data-lucide="menu" width="20"></i></button></div>
 	</header>
 	<nav class="public-nav" id="publicNav" aria-label="Secciones principales">
 		<button class="public-menu-close" id="publicMenuClose" type="button"><span>Secciones</span><i data-lucide="x" width="20"></i></button>
@@ -1839,6 +1867,7 @@
 			<div class="store-campaign-controls" id="storeCampaignControls" hidden><button class="store-campaign-control" id="storeCampaignPrev" type="button" aria-label="Banner anterior"><i data-lucide="chevron-left"></i></button><div class="store-campaign-dots" id="storeCampaignDots"></div><button class="store-campaign-control" id="storeCampaignNext" type="button" aria-label="Banner siguiente"><i data-lucide="chevron-right"></i></button></div>
 		</div>
 	</section>
+	<nav class="store-promo-chips" id="storePromoChips" aria-label="Accesos promocionales" hidden></nav>
 	<section class="campaign-featured" id="campaignFeatured" aria-labelledby="campaignFeaturedTitle">
 		<div class="campaign-featured-heading"><h2 id="campaignFeaturedTitle">Productos destacados</h2><span>Selección SmartISP</span></div>
 		<div class="campaign-products-grid" id="campaignProductsGrid"></div>
@@ -1868,7 +1897,7 @@
 			</div>
 			<div class="store-layout">
 				<button type="button" class="category-drawer-backdrop" id="categoryDrawerBackdrop" aria-label="Cerrar categorías" hidden></button>
-				<aside class="store-sidebar" aria-label="Filtrar por categorías">
+				<aside class="store-sidebar" id="storeCategoryDrawer" aria-label="Filtrar por categorías">
 					<div class="sidebar-card">
 						<a class="logo category-drawer-brand" href="/" aria-label="SmartISP tienda online">SmartISP</a>
 						<button type="button" class="category-drawer-close" id="categoryDrawerClose" aria-label="Cerrar categorías"><i data-lucide="x" width="26" height="26"></i></button>
@@ -3146,6 +3175,9 @@
 			backdrop.hidden = false;
 			document.body.classList.add('category-drawer-open');
 			document.querySelector('#mNavCategories')?.setAttribute('aria-expanded', 'true');
+			document.querySelector('#publicMenuBtn')?.setAttribute('aria-expanded', 'true');
+			const menuButton = document.querySelector('#publicMenuBtn');
+			if (menuButton) menuButton.innerHTML = '<i data-lucide="x" width="20"></i>';
 			const activeMacro = selectedFilter && selectedFilter.type === 'macro' ? String(selectedFilter.id) : '';
 			if (activeMacro) document.querySelector(`.sidebar-group[data-macro-id="${CSS.escape(activeMacro)}"]`)?.classList.add('is-expanded');
 			window.lucide && window.lucide.createIcons();
@@ -3161,6 +3193,10 @@
 			backdrop.hidden = true;
 			document.body.classList.remove('category-drawer-open');
 			document.querySelector('#mNavCategories')?.setAttribute('aria-expanded', 'false');
+			const menuButton = document.querySelector('#publicMenuBtn');
+			menuButton?.setAttribute('aria-expanded', 'false');
+			if (menuButton) menuButton.innerHTML = '<i data-lucide="menu" width="20"></i>';
+			window.lucide?.createIcons();
 		};
 		document.querySelector('#categoryDrawerClose')?.addEventListener('click', closeCategoryDrawer);
 		document.querySelector('#categoryDrawerBackdrop')?.addEventListener('click', closeCategoryDrawer);
@@ -3177,11 +3213,14 @@
 			} else if (!document.body.classList.contains('category-drawer-open')) {
 				closeCategoryDrawer();
 			}
+			const menuButton = document.querySelector('#publicMenuBtn');
+			menuButton?.setAttribute('aria-expanded', 'false');
+			if (menuButton) menuButton.innerHTML = '<i data-lucide="menu" width="20"></i>';
 		});
 		document.addEventListener('keydown', event => {
 			if (event.key === 'Escape' && document.body.classList.contains('category-drawer-open')) {
 				closeCategoryDrawer();
-				document.querySelector('#mNavCategories')?.focus({ preventScroll: true });
+				document.querySelector('#publicMenuBtn')?.focus({ preventScroll: true });
 			}
 		});
 		document.addEventListener('click', event => {
@@ -3322,24 +3361,13 @@
 		window.addEventListener('resize', updateStickyNavOffset);
 		if (publicMenuBtn && publicNav) {
 			publicMenuBtn.addEventListener('click', () => {
-				const isOpen = publicNav.classList.toggle('is-open');
-				publicMenuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+				if (document.body.classList.contains('category-drawer-open')) closeCategoryDrawer();
+				else openCategoryDrawer();
+				const isOpen = document.body.classList.contains('category-drawer-open');
 				publicMenuBtn.innerHTML = isOpen ? '<i data-lucide="x" width="20"></i>' : '<i data-lucide="menu" width="20"></i>';
 				lucide?.createIcons();
-				updateStickyNavOffset();
 			});
-			publicNav.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
-				publicNav.classList.remove('is-open');
-				publicMenuBtn.setAttribute('aria-expanded', 'false');
-				publicMenuBtn.innerHTML = '<i data-lucide="menu" width="20"></i>';
-				lucide?.createIcons();
-			}));
-			publicMenuClose?.addEventListener('click', () => {
-				publicNav.classList.remove('is-open');
-				publicMenuBtn.setAttribute('aria-expanded', 'false');
-				publicMenuBtn.innerHTML = '<i data-lucide="menu" width="20"></i>';
-				lucide?.createIcons();
-			});
+			publicMenuClose?.addEventListener('click', closeCategoryDrawer);
 		}
 		const publicCategoryMenu = document.querySelector('#publicCategoryMenu');
 		const publicCategoryTrigger = document.querySelector('#publicCategoryTrigger');
@@ -3415,10 +3443,11 @@
 			const text = (content.landing_logo_text || content.logo_text || brand || 'smartisp').trim();
 
 			// 1. Barra superior / Navbar claro (.nav .logo)
-			const navLogo = document.querySelector('.nav .logo');
+            const navLogo = document.querySelector('.nav .logo');
 			if (navLogo) {
 				if (mode === 'image' && lightImg) {
-					navLogo.innerHTML = `<img src="${lightImg}" alt="${brand}" style="height:${lightHeight}px; max-height:140px; width:auto; object-fit:contain; vertical-align:middle; display:inline-block;">`;
+                    navLogo.innerHTML = `<img src="${lightImg}" alt="${brand}" style="height:${lightHeight}px; max-height:140px; width:auto; object-fit:contain; vertical-align:middle; display:inline-block;">`;
+                    navLogo.querySelector('img').addEventListener('error', () => { navLogo.textContent = brand; }, { once: true });
 				} else if (text) {
 					const mid = Math.ceil(text.length / 2);
 					const part1 = text.slice(0, mid);
@@ -3546,13 +3575,17 @@
 
 		let storefrontSlides = [];
 		let storefrontFeaturedProducts = [];
+		let storefrontPromoChips = [];
+		let storefrontDisplayMode = 'carousel';
 		let storefrontSlideIndex = 0;
 		let storefrontRotationTimer = 0;
 		const renderStorefrontSlide = index => {
 			if (!storefrontSlides.length) return;
+			if (storefrontDisplayMode === 'triple') return;
 			storefrontSlideIndex = (index + storefrontSlides.length) % storefrontSlides.length;
 			const slide = storefrontSlides[storefrontSlideIndex];
 			const banner = document.querySelector('#storeCampaign');
+			banner.classList.toggle('is-contain', slide.image_fit === 'contain');
 			const image = document.querySelector('#storeCampaignImage');
 			image.src = slide.image_url;
 			image.alt = slide.image_alt || slide.title || '';
@@ -3590,7 +3623,7 @@
 		const stopStorefrontRotation = () => { if (storefrontRotationTimer) clearInterval(storefrontRotationTimer); storefrontRotationTimer = 0; };
 		const startStorefrontRotation = seconds => {
 			stopStorefrontRotation();
-			if (storefrontSlides.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+			if (storefrontDisplayMode !== 'carousel' || storefrontSlides.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 			storefrontRotationTimer = setInterval(() => renderStorefrontSlide(storefrontSlideIndex + 1), Math.max(4, Math.min(20, Number(seconds) || 7)) * 1000);
 		};
 		const loadStorefrontCampaigns = async () => {
@@ -3599,6 +3632,8 @@
 				if (!response.ok) return;
 				const data = await response.json();
 				storefrontSlides = Array.isArray(data.slides) ? data.slides : [];
+				storefrontDisplayMode = ['carousel', 'single', 'triple'].includes(data.display_mode) ? data.display_mode : 'carousel';
+				storefrontPromoChips = Array.isArray(data.chips) ? data.chips : [];
 				storefrontFeaturedProducts = Array.isArray(data.products) ? data.products.map(product => ({
 					...product,
 					brand: product.category || 'SmartISP',
@@ -3609,24 +3644,41 @@
 				})) : [];
 				if (storefrontSlides.length) {
 					document.querySelector('.store-campaign-area').hidden = false;
+					const banner = document.querySelector('#storeCampaign');
+					banner.classList.toggle('is-single', storefrontDisplayMode === 'single');
+					banner.classList.toggle('is-triple', storefrontDisplayMode === 'triple');
+					if (storefrontDisplayMode === 'triple') {
+						const chosen = storefrontSlides.slice(0, 3);
+						banner.innerHTML = chosen.map(slide => `<a class="store-campaign-card" href="${escapeHtml(slide.target_url)}" style="background-image:url('${escapeHtml(slide.image_url)}');background-size:${slide.image_fit === 'contain' ? 'contain' : 'cover'}"><span class="store-campaign-copy"><span class="store-campaign-eyebrow">${escapeHtml(slide.eyebrow || '')}</span><span class="store-campaign-title">${escapeHtml(slide.title || '')}</span><span class="store-campaign-subtitle">${escapeHtml(slide.subtitle || '')}</span><span class="store-campaign-cta">${escapeHtml(slide.button_text || 'Explorar')} →</span></span></a>`).join('') + '<div class="store-campaign-controls" id="storeCampaignControls" hidden><div class="store-campaign-dots" id="storeCampaignDots"></div></div>';
+					} else if (storefrontDisplayMode === 'single') {
+						storefrontSlides = storefrontSlides.slice(0, 1);
+					}
 					const dots = document.querySelector('#storeCampaignDots');
-					dots.innerHTML = storefrontSlides.map((slide, index) => `<button class="store-campaign-dot" type="button" aria-label="Mostrar banner ${index + 1}: ${escapeHtml(slide.title)}" aria-current="${index === 0 ? 'true' : 'false'}" data-campaign-slide="${index}"></button>`).join('');
+					dots.innerHTML = storefrontDisplayMode === 'triple' ? '' : storefrontSlides.map((slide, index) => `<button class="store-campaign-dot" type="button" aria-label="Mostrar banner ${index + 1}: ${escapeHtml(slide.title)}" aria-current="${index === 0 ? 'true' : 'false'}" data-campaign-slide="${index}"></button>`).join('');
 					const controls = document.querySelector('#storeCampaignControls');
-					controls.hidden = storefrontSlides.length < 2;
-					document.querySelector('#storeCampaignPrev').addEventListener('click', () => { renderStorefrontSlide(storefrontSlideIndex - 1); startStorefrontRotation(data.rotation_seconds); });
-					document.querySelector('#storeCampaignNext').addEventListener('click', () => { renderStorefrontSlide(storefrontSlideIndex + 1); startStorefrontRotation(data.rotation_seconds); });
-					dots.addEventListener('click', event => {
+					if (controls) controls.hidden = storefrontDisplayMode !== 'carousel' || storefrontSlides.length < 2;
+					if (storefrontDisplayMode === 'triple') banner.classList.add('is-visible');
+					if (storefrontDisplayMode !== 'triple') {
+						document.querySelector('#storeCampaignPrev')?.addEventListener('click', () => { renderStorefrontSlide(storefrontSlideIndex - 1); startStorefrontRotation(data.rotation_seconds); });
+						document.querySelector('#storeCampaignNext')?.addEventListener('click', () => { renderStorefrontSlide(storefrontSlideIndex + 1); startStorefrontRotation(data.rotation_seconds); });
+						dots.addEventListener('click', event => {
 						const dot = event.target.closest('[data-campaign-slide]');
 						if (dot) { renderStorefrontSlide(Number(dot.dataset.campaignSlide)); startStorefrontRotation(data.rotation_seconds); }
-					});
-					renderStorefrontSlide(0);
-					startStorefrontRotation(data.rotation_seconds);
-					const banner = document.querySelector('#storeCampaign');
-					banner.addEventListener('mouseenter', stopStorefrontRotation);
-					banner.addEventListener('mouseleave', () => startStorefrontRotation(data.rotation_seconds));
-					banner.addEventListener('focusin', stopStorefrontRotation);
-					banner.addEventListener('focusout', () => startStorefrontRotation(data.rotation_seconds));
-					document.addEventListener('visibilitychange', () => document.hidden ? stopStorefrontRotation() : startStorefrontRotation(data.rotation_seconds));
+						});
+						renderStorefrontSlide(0);
+						startStorefrontRotation(data.rotation_seconds);
+						banner.addEventListener('mouseenter', stopStorefrontRotation);
+						banner.addEventListener('mouseleave', () => startStorefrontRotation(data.rotation_seconds));
+						banner.addEventListener('focusin', stopStorefrontRotation);
+						banner.addEventListener('focusout', () => startStorefrontRotation(data.rotation_seconds));
+						document.addEventListener('visibilitychange', () => document.hidden ? stopStorefrontRotation() : startStorefrontRotation(data.rotation_seconds));
+					}
+				}
+				const chipsHost = document.querySelector('#storePromoChips');
+				if (chipsHost && storefrontPromoChips.length) {
+					chipsHost.innerHTML = storefrontPromoChips.map(chip => `<a class="store-promo-chip" href="${escapeHtml(chip.target_url)}"><i data-lucide="${escapeHtml(chip.icon || 'tag')}" width="17"></i>${escapeHtml(chip.label)}</a>`).join('');
+					chipsHost.hidden = false;
+					window.lucide?.createIcons();
 				}
 				renderStorefrontFeatured();
 			} catch (error) {
