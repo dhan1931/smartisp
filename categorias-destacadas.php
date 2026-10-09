@@ -129,7 +129,7 @@ foreach ($categories as $idx => $category) {
   <link rel="canonical" href="<?= $siteUrl ?>/categorias-destacadas">
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
   <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=mobile-category-drawer-20261008">
-  <script src="/assets/js/public-brand.js?v=landing-logo" defer></script>
+  <script src="/assets/js/public-brand.js?v=public-brand-20261009" defer></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script type="application/ld+json">
   <?= json_encode([
