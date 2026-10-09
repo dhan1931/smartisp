@@ -125,14 +125,17 @@ foreach ($products as $idx => $product) {
         <span class="count-pill"><?= count($products) ?> productos</span>
       </div>
       <section class="grid" aria-label="Productos destacados">
-        <?php foreach ($products as $product): ?>
+        <?php foreach ($products as $index => $product): ?>
           <?php
             $url = '/producto/' . rawurlencode($product['id']) . '-' . seoSlugFeatured($product['name']);
             $image = (string)($product['imageUrl'] ?: '/assets/favicons/favicon-512x512.png');
+            if (preg_match('~^/api/auth/(?:product-image|proxy-image)(?:\?|$)~', $image)) {
+                $image .= (str_contains($image, '?') ? '&' : '?') . 'imgrev=2';
+            }
             $price = (float)($product['price'] ?? 0);
           ?>
           <a class="card" href="<?= escFeatured($url) ?>">
-            <img src="<?= escFeatured($image) ?>" alt="<?= escFeatured($product['name']) ?>" loading="lazy" onerror="this.src='/assets/favicons/favicon-512x512.png'">
+            <img src="<?= escFeatured($image) ?>" alt="<?= escFeatured($product['name']) ?>" width="640" height="572" loading="<?= $index < 4 ? 'eager' : 'lazy' ?>" fetchpriority="<?= $index < 4 ? 'high' : 'auto' ?>" onerror="this.onerror=null;this.src='/assets/favicons/favicon-512x512.png'">
             <strong><?= escFeatured($product['name']) ?></strong>
             <small><?= escFeatured((string)($product['category'] ?: 'SmartISP')) ?></small>
             <span class="card-foot"><span class="price"><?= $price > 0 ? '$' . number_format($price, 2, '.', ',') : 'Cotizar' ?></span><span class="see">Ver ficha</span></span>
