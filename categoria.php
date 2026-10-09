@@ -194,8 +194,8 @@ foreach ($products as $idx => $product) {
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
   <link rel="icon" type="image/svg+xml" href="/assets/favicons/favicon.svg">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
-  <script src="/assets/js/public-brand.js?v=store-grid-20261009" defer></script>
-  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=mobile-category-drawer-20261008">
+  <script src="/assets/js/public-brand.js?v=store-grid-density-20261009" defer></script>
+  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=store-grid-density-20261009">
   <script src="https://unpkg.com/lucide@latest"></script>
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="SmartISP Ecuador">

@@ -51,8 +51,8 @@ foreach ($products as $idx => $product) {
   <meta name="robots" content="index, follow, max-image-preview:large">
   <link rel="canonical" href="<?= $siteUrl ?>/productos-destacados">
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
-  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=mobile-category-drawer-20261008">
-  <script src="/assets/js/public-brand.js?v=store-grid-20261009" defer></script>
+  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=store-grid-density-20261009">
+  <script src="/assets/js/public-brand.js?v=store-grid-density-20261009" defer></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script type="application/ld+json">
   <?= json_encode([
