@@ -3246,8 +3246,19 @@
 			const backdrop = document.querySelector('#categoryDrawerBackdrop');
 			if (!sidebar || !backdrop) return;
 			sidebar.classList.remove('is-mobile-open');
-			sidebar.setAttribute('inert', '');
-			sidebar.setAttribute('aria-hidden', 'true');
+			// 'inert' solo tiene sentido cuando el sidebar es un drawer movil que se cierra -- en
+			// escritorio es un panel siempre visible. Sin este guard (el mismo que ya usa
+			// openCategoryDrawer), la primera seleccion de categoria en escritorio marcaba el
+			// sidebar entero como inert para siempre: nada volvia a quitarlo (el handler de
+			// 'resize' solo corre si de verdad cambia el ancho), asi que cualquier clic posterior
+			// en una categoria o subcategoria quedaba bloqueado.
+			if (window.matchMedia('(max-width: 800px)').matches) {
+				sidebar.setAttribute('inert', '');
+				sidebar.setAttribute('aria-hidden', 'true');
+			} else {
+				sidebar.removeAttribute('inert');
+				sidebar.removeAttribute('aria-hidden');
+			}
 			backdrop.hidden = true;
 			document.body.classList.remove('category-drawer-open');
 			document.querySelector('#mNavCategories')?.setAttribute('aria-expanded', 'false');
