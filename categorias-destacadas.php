@@ -124,6 +124,12 @@ if ($pdo) {
         }
     } catch (Throwable $e) {
         error_log('Error cargando categorias-destacadas.php: ' . $e->getMessage());
+        try {
+            $fallback = $pdo->query("\n+                SELECT p.category AS name, COUNT(*) AS total, MAX(p.updated_at) AS updated_at,\n+                  image_product.image_url AS image_url, image_product.id AS image_product_id,\n+                  NULL AS category_icon, NULL AS category_description,\n+                  NULL AS category_banner, NULL AS category_banner_alt\n+                FROM `$pTable` p\n+                LEFT JOIN `$pTable` image_product ON image_product.id = (\n+                  SELECT p2.id FROM `$pTable` p2\n+                  WHERE p2.visible = 1 AND p2.category = p.category AND TRIM(p2.image_url) <> ''\n+                  ORDER BY p2.updated_at DESC, p2.id ASC LIMIT 1\n+                )\n+                WHERE p.visible = 1 AND TRIM(p.category) <> ''\n+                GROUP BY p.category, image_product.id, image_product.image_url\n+                ORDER BY total DESC, p.category ASC\n+                LIMIT 36\n+            ");
+            $categories = $fallback->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Throwable $fallbackError) {
+            error_log('Error en consulta de respaldo de categorias-destacadas.php: ' . $fallbackError->getMessage());
+        }
     }
 }
 $featuredCategories = array_slice($categories, 0, 4);
