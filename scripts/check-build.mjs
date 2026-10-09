@@ -3,7 +3,7 @@ import path from 'node:path';
 
 const required = [
   'index.html', 'tienda.html', 'nosotros.html', 'servicios.html', 'checkout.html',
-  'admin.html', 'configuracion.html', 'pedidos.html', 'categorias.html',
+  'admin.html', 'configuracion.html', 'campanas.html', 'pedidos.html', 'categorias.html',
   'editor-catalogo.html', 'editor-landing.html', 'login.html', 'reset-password.html',
   '.htaccess', 'robots.txt', 'sitemap.xml', 'sitemap-main.xml',
   'producto.php', 'categoria.php', 'productos-destacados.php', 'categorias-destacadas.php',
