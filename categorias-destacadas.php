@@ -372,6 +372,7 @@ foreach ($categories as $idx => $category) {
               image.loading = 'lazy';
               image.width = 180;
               image.height = 150;
+              image.addEventListener('error', () => media.remove(), { once: true });
               media.append(image);
               card.append(media);
             }
