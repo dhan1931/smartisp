@@ -1641,6 +1641,157 @@
           .campaign-product-bottom { align-items: flex-start; flex-direction: column; }
           .campaign-product-add { width: 100%; }
         }
+        .category-drawer-backdrop { display: none; }
+        .category-drawer-brand, .category-drawer-close { display: none; }
+        @media (max-width: 800px) {
+          .content { overflow: visible !important; }
+          body.category-drawer-open { overflow: hidden !important; }
+          .category-drawer-backdrop:not([hidden]) {
+            display: block;
+            position: fixed;
+            inset: 0;
+            z-index: 12001;
+            width: 100%;
+            height: 100%;
+            border: 0;
+            padding: 0;
+            background: rgba(9, 25, 39, .58);
+            backdrop-filter: blur(2px);
+          }
+          .store-sidebar {
+            position: fixed !important;
+            z-index: 12002 !important;
+            inset: 0 auto 0 0 !important;
+            width: min(88vw, 440px) !important;
+            max-width: 440px !important;
+            height: 100vh !important;
+            height: 100dvh !important;
+            margin: 0 !important;
+            overflow: hidden !important;
+            background: var(--white);
+            box-shadow: 18px 0 48px rgba(9, 25, 39, .2);
+            transform: translateX(-105%);
+            visibility: hidden;
+            transition: transform .24s ease, visibility .24s ease;
+            will-change: transform;
+          }
+          .store-sidebar.is-mobile-open {
+            transform: translateX(0);
+            visibility: visible;
+          }
+          .sidebar-card {
+            display: flex;
+            flex-direction: column;
+            width: 100% !important;
+            height: 100% !important;
+            max-height: none !important;
+            padding: max(14px, env(safe-area-inset-top)) 14px max(18px, env(safe-area-inset-bottom)) !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            overflow: hidden !important;
+          }
+          .category-drawer-brand {
+            display: inline-flex;
+            align-items: center;
+            align-self: flex-start;
+            min-height: 44px;
+            max-width: calc(100% - 58px);
+            margin: 0 0 12px 2px;
+            font-size: 22px;
+          }
+          .category-drawer-brand img { max-height: 42px !important; }
+          .category-drawer-close {
+            position: absolute;
+            z-index: 1;
+            top: max(14px, env(safe-area-inset-top));
+            right: 14px;
+            display: grid;
+            place-items: center;
+            width: 42px;
+            height: 42px;
+            border: 0;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--navy);
+          }
+          .category-drawer-close:hover { background: var(--pale); }
+          .sidebar-header {
+            min-height: 52px;
+            padding: 2px 4px 12px !important;
+            margin-bottom: 12px !important;
+          }
+          .sidebar-title {
+            font-size: 21px !important;
+            text-transform: none !important;
+            letter-spacing: 0 !important;
+          }
+          .sidebar-title i, .sidebar-title svg { display: none; }
+          .sidebar-clear-btn { font-size: 14px !important; }
+          .sidebar-search-box {
+            display: flex !important;
+            flex: 0 0 46px;
+            margin-bottom: 10px !important;
+            padding: 0 12px !important;
+          }
+          .sidebar-search-box input { font-size: 15px !important; }
+          .sidebar-categories {
+            flex: 1 1 auto;
+            min-height: 0;
+            max-height: none !important;
+            flex-direction: column !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            overscroll-behavior: contain;
+            gap: 2px !important;
+            padding: 0 2px 18px !important;
+            scroll-snap-type: none !important;
+          }
+          .sidebar-cat-btn, .sidebar-group-header {
+            flex: 0 0 auto !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-height: 58px !important;
+            padding: 9px 10px !important;
+            border: 0 !important;
+            border-bottom: 1px solid var(--line) !important;
+            border-radius: 0 !important;
+            background: transparent !important;
+            font-size: 15px !important;
+            white-space: normal !important;
+            scroll-snap-align: none !important;
+          }
+          .sidebar-group { flex: 0 0 auto !important; width: 100% !important; margin: 0 !important; }
+          .sidebar-group-header { border-radius: 0 !important; }
+          .sidebar-group-btn {
+            min-height: 56px !important;
+            padding: 8px 4px 8px 2px !important;
+            font-size: 15px !important;
+          }
+          .sidebar-cat-icon { width: 24px !important; height: 24px !important; }
+          .sidebar-cat-icon svg { width: 21px !important; height: 21px !important; }
+          .sidebar-cat-count, .sidebar-subcat-count {
+            padding: 4px 10px !important;
+            font-size: 12px !important;
+          }
+          .sidebar-group-toggle { width: 38px !important; min-height: 54px !important; }
+          .sidebar-subcat-list {
+            display: none !important;
+            gap: 0 !important;
+            padding: 4px 0 8px 18px !important;
+            margin: 0 0 2px 12px !important;
+            border-left-width: 2px !important;
+          }
+          .sidebar-group.is-expanded .sidebar-subcat-list { display: flex !important; }
+          .sidebar-subcat-btn {
+            min-height: 48px !important;
+            padding: 7px 8px !important;
+            font-size: 14px !important;
+          }
+          body.dark-mode .store-sidebar { background: var(--white); }
+          body.dark-mode .sidebar-card { background: var(--white); }
+          body.category-drawer-open .mobile-bottom-nav { z-index: 12000; }
+        }
     </style>
 </head>
 <body>
@@ -1716,8 +1867,11 @@
 				</a>
 			</div>
 			<div class="store-layout">
+				<button type="button" class="category-drawer-backdrop" id="categoryDrawerBackdrop" aria-label="Cerrar categorías" hidden></button>
 				<aside class="store-sidebar" aria-label="Filtrar por categorías">
 					<div class="sidebar-card">
+						<a class="logo category-drawer-brand" href="/" aria-label="SmartISP tienda online">SmartISP</a>
+						<button type="button" class="category-drawer-close" id="categoryDrawerClose" aria-label="Cerrar categorías"><i data-lucide="x" width="26" height="26"></i></button>
 						<div class="sidebar-header">
 							<div class="sidebar-title"><i data-lucide="layout-grid"></i><span>Categorías</span></div>
 							<button type="button" class="sidebar-clear-btn" id="clearCategoryFilter" title="Mostrar todas las categorías">Ver todas</button>
@@ -2379,6 +2533,9 @@
 			const { totalProducts, groups } = buildCategoryTree();
 			updatePublicNavCategoryCounts(totalProducts, groups);
 			const isAllActive = !selectedFilter || selectedFilter === 'all';
+			if (document.body.classList.contains('category-drawer-open') && !expandedGroups.size && groups[0]) {
+				expandedGroups.add(groups[0].id);
+			}
 
 			let html = `
 				<button type="button" class="sidebar-cat-btn ${isAllActive ? 'active' : ''}" data-filter-action="all" title="Ver todo el catálogo">
@@ -2974,11 +3131,65 @@
 			updateSidebarActiveStates();
 			refreshView(true);
 		};
+		const openCategoryDrawer = () => {
+			if (!window.matchMedia('(max-width: 800px)').matches) return;
+			const sidebar = document.querySelector('.store-sidebar');
+			const backdrop = document.querySelector('#categoryDrawerBackdrop');
+			if (!sidebar || !backdrop) return;
+			if (!expandedGroups.size) {
+				const firstGroup = buildCategoryTree().groups[0];
+				if (firstGroup) expandedGroups.add(firstGroup.id);
+			}
+			sidebar.classList.add('is-mobile-open');
+			sidebar.removeAttribute('inert');
+			sidebar.setAttribute('aria-hidden', 'false');
+			backdrop.hidden = false;
+			document.body.classList.add('category-drawer-open');
+			document.querySelector('#mNavCategories')?.setAttribute('aria-expanded', 'true');
+			const activeMacro = selectedFilter && selectedFilter.type === 'macro' ? String(selectedFilter.id) : '';
+			if (activeMacro) document.querySelector(`.sidebar-group[data-macro-id="${CSS.escape(activeMacro)}"]`)?.classList.add('is-expanded');
+			window.lucide && window.lucide.createIcons();
+			window.setTimeout(() => document.querySelector('#categoryDrawerClose')?.focus({ preventScroll: true }), 180);
+		};
+		const closeCategoryDrawer = () => {
+			const sidebar = document.querySelector('.store-sidebar');
+			const backdrop = document.querySelector('#categoryDrawerBackdrop');
+			if (!sidebar || !backdrop) return;
+			sidebar.classList.remove('is-mobile-open');
+			sidebar.setAttribute('inert', '');
+			sidebar.setAttribute('aria-hidden', 'true');
+			backdrop.hidden = true;
+			document.body.classList.remove('category-drawer-open');
+			document.querySelector('#mNavCategories')?.setAttribute('aria-expanded', 'false');
+		};
+		document.querySelector('#categoryDrawerClose')?.addEventListener('click', closeCategoryDrawer);
+		document.querySelector('#categoryDrawerBackdrop')?.addEventListener('click', closeCategoryDrawer);
+		if (window.matchMedia('(max-width: 800px)').matches) closeCategoryDrawer();
+		window.addEventListener('resize', () => {
+			if (window.matchMedia('(min-width: 801px)').matches) {
+				const sidebar = document.querySelector('.store-sidebar');
+				sidebar?.classList.remove('is-mobile-open');
+				sidebar?.removeAttribute('inert');
+				sidebar?.removeAttribute('aria-hidden');
+				const backdrop = document.querySelector('#categoryDrawerBackdrop');
+				if (backdrop) backdrop.hidden = true;
+				document.body.classList.remove('category-drawer-open');
+			} else if (!document.body.classList.contains('category-drawer-open')) {
+				closeCategoryDrawer();
+			}
+		});
+		document.addEventListener('keydown', event => {
+			if (event.key === 'Escape' && document.body.classList.contains('category-drawer-open')) {
+				closeCategoryDrawer();
+				document.querySelector('#mNavCategories')?.focus({ preventScroll: true });
+			}
+		});
 		document.addEventListener('click', event => {
 			// 1. Quitar filtro / Ver todas las categorías
 			if (event.target.closest('#clearCategoryFilter') || event.target.closest('#removeCategoryPill')) {
 				event.preventDefault();
 				setCategoryFilter('all');
+				closeCategoryDrawer();
 				return;
 			}
 
@@ -2987,6 +3198,7 @@
 			if (allBtn) {
 				event.preventDefault();
 				setCategoryFilter('all');
+				closeCategoryDrawer();
 				const catEl = document.querySelector('#catalogo');
 				if (catEl && window.scrollY > catEl.offsetTop + 120) {
 					catEl.scrollIntoView({ behavior: 'smooth' });
@@ -3016,6 +3228,7 @@
 				const macroId = subBtn.dataset.macroId;
 				const category = subBtn.dataset.category;
 				setCategoryFilter({ type: 'category', macroId, category });
+				closeCategoryDrawer();
 				const catEl = document.querySelector('#catalogo');
 				if (catEl && window.scrollY > catEl.offsetTop + 120) {
 					catEl.scrollIntoView({ behavior: 'smooth' });
@@ -3039,6 +3252,7 @@
 					expandedGroups.add(macroId);
 					if (groupEl) groupEl.classList.add('is-expanded');
 					setCategoryFilter({ type: 'macro', id: macroId });
+					closeCategoryDrawer();
 				}
 				const catEl = document.querySelector('#catalogo');
 				if (catEl && window.scrollY > catEl.offsetTop + 120) {
@@ -3542,10 +3756,7 @@
 		const mNavCategories = document.querySelector('#mNavCategories');
 		if (mNavCategories) {
 			mNavCategories.addEventListener('click', () => {
-				const sidebar = document.querySelector('.store-sidebar');
-				if (sidebar) {
-					sidebar.scrollIntoView({ behavior: 'smooth', block: 'start' });
-				}
+				openCategoryDrawer();
 				document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
 				mNavCategories.classList.add('active');
 			});
