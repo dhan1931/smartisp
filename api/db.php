@@ -317,6 +317,29 @@ function normalizeProductRow(array $row): array {
     ];
 }
 
+// Directorio persistente para archivos subidos en tiempo real (banners, fotos de producto
+// subidas a mano). Vive FUERA de public_html a propósito: en Hostinger cada deploy reconstruye
+// dist/ desde cero y reemplaza la publicación anterior entera -- cualquier archivo que no haya
+// salido de ese build (como estos) no sobrevive. Un nivel arriba de DOCUMENT_ROOT es el mismo
+// lugar donde ya vive el .env (ver api/config.php), que sí sobrevive a cada deploy.
+function getSmartispUploadsDir(string $category): string {
+    static $roots = [];
+    if (isset($roots[$category])) return $roots[$category];
+    $configured = trim((string)(getenv('SMARTISP_UPLOADS_DIR') ?: ''));
+    if ($configured !== '') {
+        $base = rtrim($configured, '/\\');
+    } else {
+        $documentRoot = rtrim((string)($_SERVER['DOCUMENT_ROOT'] ?? ''), '/\\');
+        $base = $documentRoot !== ''
+            ? dirname($documentRoot) . '/smartisp-uploads'
+            : dirname(__DIR__) . '/uploads';
+    }
+    $dir = $base . '/' . $category;
+    if (!is_dir($dir)) @mkdir($dir, 0755, true);
+    $roots[$category] = $dir;
+    return $dir;
+}
+
 // getDynamicCategoriesList() unifica datos reales de products_rows con lo curado en
 // categories_rows (banners/iconos/keywords). Vive aqui (no en router.php) porque tanto
 // router.php (accion 'categories' del admin) como categoria.php (pagina publica) la

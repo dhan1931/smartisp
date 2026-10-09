@@ -5,7 +5,8 @@ function storefrontCampaignSafeUrl(string $url, bool $image = false): bool {
     $url = trim($url);
     if ($url === '' || strlen($url) > 500 || preg_match('/[\x00-\x1F\x7F]/', $url) || str_contains($url, '\\')) return false;
     if (str_starts_with($url, '/') && !str_starts_with($url, '//')) {
-        return !$image || preg_match('#^/uploads/(campaigns|products)/[A-Za-z0-9._-]+$#', $url) === 1;
+        return !$image || preg_match('#^/uploads/(campaigns|products)/[A-Za-z0-9._-]+$#', $url) === 1
+            || preg_match('#^/api/auth/serve-upload\?category=(campaigns|products)&file=[A-Za-z0-9._%-]+$#', $url) === 1;
     }
     if (!$image && str_starts_with($url, '#')) return true;
     return filter_var($url, FILTER_VALIDATE_URL) !== false && strtolower((string)parse_url($url, PHP_URL_SCHEME)) === 'https';
@@ -63,8 +64,8 @@ if ($action === 'upload-campaign-image' && $method === 'POST') {
         echo json_encode(['error' => 'Usa una imagen JPG, PNG o WebP válida de hasta 40 megapíxeles.']);
         exit;
     }
-    $dir = __DIR__ . '/../../uploads/campaigns';
-    if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) {
+    $dir = getSmartispUploadsDir('campaigns');
+    if (!is_dir($dir)) {
         http_response_code(500);
         echo json_encode(['error' => 'No se pudo preparar el almacenamiento de imágenes.']);
         exit;
@@ -75,7 +76,7 @@ if ($action === 'upload-campaign-image' && $method === 'POST') {
         echo json_encode(['error' => 'No se pudo guardar la imagen.']);
         exit;
     }
-    echo json_encode(['ok' => true, 'url' => '/uploads/campaigns/' . $filename]);
+    echo json_encode(['ok' => true, 'url' => '/api/auth/serve-upload?category=campaigns&file=' . rawurlencode($filename)]);
     exit;
 }
 
