@@ -12,6 +12,9 @@
   const applyLogo = content => {
     if (!content) return;
     window.__publicBrandManaged = true;
+    const productColumns = content.storefront_product_columns === '6' ? '6' : '4';
+    document.documentElement.dataset.storeProductColumns = productColumns;
+    document.documentElement.style.setProperty('--store-product-media-ratio', productColumns === '4' ? '1' : '1.15');
     const mode = content.landing_logo_type || (content.landing_logo_image ? 'image' : content.logo_type || (content.logo_image ? 'image' : 'text'));
     const brand = content.landing_logo_text || content.brand_name || content.logo_text || 'SmartISP';
     const lightImg = content.landing_logo_image || content.logo_image || '';
