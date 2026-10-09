@@ -32,7 +32,7 @@
 	<link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
 	<link rel="manifest" href="/assets/site.webmanifest">
 	<meta name="theme-color" content="#102a43">
-		<script src="/assets/js/public-brand.js?v=store-grid-density-20261009" defer></script>
+		<script src="/assets/js/public-brand.js?v=canonical-logo-layout-20261009" defer></script>
 		<script src="/assets/js/public-admin-link.js?v=public-admin-access-20261009" defer></script>
 	<script type="application/ld+json">
 	{
@@ -1857,6 +1857,17 @@
         .store-campaign.is-grid .store-campaign-card { min-height:225px; aspect-ratio:1.7; }
         @media(max-width:800px){.store-campaign.is-split,.store-campaign.is-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.store-campaign.is-triple{grid-template-columns:1fr}.store-campaign-card{min-height:210px}.store-campaign-card-copy{width:82%;padding:17px}.store-campaign-card-copy .store-campaign-title{font-size:21px}}
         @media(max-width:520px){.store-campaign.is-split,.store-campaign.is-grid{grid-template-columns:1fr}.store-campaign.is-cards .store-campaign-card{flex-basis:88vw}.store-campaign-card{min-height:185px;aspect-ratio:1.55}.store-campaign-card-copy{width:78%;padding:14px}.store-campaign-card-copy .store-campaign-title{font-size:19px}.store-campaign-badge{top:10px;right:10px}}
+        .store-campaign-card{min-height:230px;aspect-ratio:2.1;align-items:stretch}
+        .store-campaign.is-triple .store-campaign-card{min-height:230px;aspect-ratio:2.1}
+        .store-campaign-card-media{z-index:0;inset:0 0 0 auto;width:68%;height:100%;object-position:right center}
+        .store-campaign-card-overlay{z-index:1;inset:0 auto 0 58%;width:14%;background:linear-gradient(90deg,#f8fcfee8,transparent)}
+        .store-campaign-card-main{width:62%;background:linear-gradient(90deg,#f8fcfe 0%,#f8fcfe 78%,rgba(248,252,254,.94) 100%)}
+        .store-campaign-card-copy{width:100%;padding:18px 12px 18px 20px}
+        .store-campaign-card-copy .store-campaign-title{font-size:21px;line-height:1.15}
+        .store-campaign-card-copy .store-campaign-subtitle{display:-webkit-box;overflow:hidden;margin-bottom:11px;line-height:1.4;-webkit-box-orient:vertical;-webkit-line-clamp:3}
+        .store-campaign-card-badge,.store-campaign-card-promo{z-index:4}
+        @media(max-width:800px){.store-campaign-card,.store-campaign.is-triple .store-campaign-card{min-height:210px;aspect-ratio:2.15}.store-campaign-card-main{width:61%}.store-campaign-card-copy{padding:16px}.store-campaign-card-copy .store-campaign-title{font-size:20px}}
+        @media(max-width:520px){.store-campaign-card,.store-campaign.is-triple .store-campaign-card{min-height:190px;aspect-ratio:1.8}.store-campaign-card-media{width:67%}.store-campaign-card-main{width:66%}.store-campaign-card-copy{padding:13px}.store-campaign-card-copy .store-campaign-title{font-size:18px}.store-campaign-card-copy .store-campaign-subtitle{-webkit-line-clamp:2}.store-campaign-card-promo{max-width:43%;font-size:10px}}
     </style>
 </head>
 <body>
@@ -3469,6 +3480,7 @@
 				}
 			}
 		});
+		window.__publicBrandManaged = true;
 		const applySiteLogo = content => {
 			if (!content || window.__publicBrandManaged) return;
 			const mode = content.landing_logo_type || (content.landing_logo_image ? 'image' : content.logo_type || (content.logo_image ? 'image' : 'text'));
