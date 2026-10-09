@@ -27,6 +27,7 @@ const fixtures = {
 };
 const orderIds = ['ci-auth-pending', 'ci-auth-paid', 'ci-auth-cancelled', 'ci-auth-refunded', 'ci-auth-legacy', 'ci-auth-paid-yesterday', 'ci-auth-cancelled-delete'];
 const settingKey = 'ci_auth_integration';
+const storefrontColumnsKey = 'storefront_product_columns';
 const secretSetting = 'smtp_pass';
 const secretValue = 'ci-secret-must-not-be-public';
 let php;
@@ -72,8 +73,10 @@ try {
   await db.execute('DELETE FROM orders_rows WHERE id IN (?)', [orderIds]);
   await db.execute('DELETE FROM users_rows WHERE id IN (?, ?)', [fixtures.admin.id, fixtures.customer.id]);
   await db.execute('DELETE FROM settings_rows WHERE setting_key = ?', [settingKey]);
+  await db.execute('DELETE FROM settings_rows WHERE setting_key = ?', [storefrontColumnsKey]);
   await db.execute('DELETE FROM settings_rows WHERE setting_key = ?', [secretSetting]);
   await db.execute('INSERT INTO settings_rows (setting_key, setting_value) VALUES (?, ?)', [secretSetting, secretValue]);
+  await db.execute('INSERT INTO settings_rows (setting_key, setting_value) VALUES (?, ?)', [storefrontColumnsKey, '6']);
   for (const user of Object.values(fixtures)) {
     await db.execute('INSERT INTO users_rows (id, email, password_hash, name, role) VALUES (?, ?, ?, ?, ?)', [
       user.id, user.email, await bcrypt.hash(user.password, 10), user.email.split('@')[0], user.role,
@@ -110,6 +113,10 @@ try {
   const publicCatalog = await request('catalog', { session: '' });
   assert.equal(publicCatalog.status, 200, 'El catálogo público debe estar disponible');
   assert.ok(!JSON.stringify(publicCatalog.data.content).includes(secretValue), 'El catálogo público no debe filtrar secretos SMTP');
+  const publicSiteContent = await request('site-content', { session: '' });
+  assert.equal(publicSiteContent.status, 200, 'Los ajustes de marca públicos deben estar disponibles');
+  assert.equal(publicSiteContent.data.content.find(item => item.key === storefrontColumnsKey)?.value, '6', 'Las categorías públicas deben recibir la densidad elegida desde el admin');
+  assert.ok(!JSON.stringify(publicSiteContent.data.content).includes(secretValue), 'Los ajustes públicos no deben filtrar secretos SMTP');
   const publicPage = await request('catalog?page=1&limit=2', { session: '' });
   assert.equal(publicPage.status, 200, 'El catálogo público debe aceptar paginación SQL');
   assert.ok(publicPage.data.products.length <= 2, 'El catálogo público debe respetar el límite de página');
@@ -203,6 +210,7 @@ try {
   await db.execute('DELETE FROM orders_rows WHERE id IN (?)', [orderIds]).catch(() => {});
   await db.execute('DELETE FROM users_rows WHERE id IN (?, ?)', [fixtures.admin.id, fixtures.customer.id]).catch(() => {});
   await db.execute('DELETE FROM settings_rows WHERE setting_key = ?', [settingKey]).catch(() => {});
+  await db.execute('DELETE FROM settings_rows WHERE setting_key = ?', [storefrontColumnsKey]).catch(() => {});
   await db.execute('DELETE FROM settings_rows WHERE setting_key = ?', [secretSetting]).catch(() => {});
   await db.end();
 }

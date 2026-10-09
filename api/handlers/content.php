@@ -201,6 +201,7 @@ if ($action === 'landing-content' || $action === 'site-content') {
                 'logo_dark_image', 'logo_dark_height', 'logo_dark_invert',
                 'landing_logo_text', 'landing_logo_type', 'landing_logo_image', 'landing_logo_height',
                 'landing_logo_dark_image', 'landing_logo_dark_height', 'landing_logo_dark_invert',
+                'storefront_product_columns',
             ];
             $placeholders = implode(',', array_fill(0, count($brandKeys), '?'));
             $stmt = $pdo->prepare("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows WHERE setting_key IN ($placeholders)");

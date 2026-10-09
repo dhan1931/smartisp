@@ -181,7 +181,7 @@ $waUrl = "https://wa.me/593983576667?text={$waMessage}";
     <link rel="icon" type="image/png" sizes="192x192" href="<?= $siteUrl ?>/assets/favicons/favicon-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="<?= $siteUrl ?>/assets/favicons/apple-touch-icon.png">
     <meta name="theme-color" content="#102a43">
-    <script src="/assets/js/public-brand.js?v=public-brand-20261009" defer></script>
+    <script src="/assets/js/public-brand.js?v=store-grid-20261009" defer></script>
 
     <!-- Open Graph / Redes Sociales (Facebook, WhatsApp, LinkedIn) -->
     <meta property="og:type" content="product">
