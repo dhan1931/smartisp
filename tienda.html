@@ -1590,6 +1590,57 @@
         @media (max-width: 800px) {
             .public-nav.is-open { position: fixed !important; inset: 0 !important; }
         }
+        .store-campaign-area { padding: 14px 1.7vw 0; }
+        .store-campaign { position: relative; display: none; min-height: 270px; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: #e8f3f7; isolation: isolate; }
+        .store-campaign.is-visible { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; }
+        .store-campaign-media { position: absolute; inset: 0; z-index: -2; }
+        .store-campaign-media img { width: 100%; height: 100%; object-fit: cover; }
+        .store-campaign::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(244,250,252,.98) 0%, rgba(244,250,252,.92) 38%, rgba(244,250,252,.25) 72%, rgba(244,250,252,0) 100%); }
+        .store-campaign-copy { width: min(560px, 60%); padding: 32px 38px; }
+        .store-campaign-eyebrow { color: var(--blue); font-size: 12px; font-weight: 800; text-transform: uppercase; }
+        .store-campaign-title { margin: 9px 0 8px; color: var(--navy); font-size: 36px; line-height: 1.08; }
+        .store-campaign-subtitle { max-width: 440px; margin: 0 0 18px; color: #526d7d; font-size: 15px; line-height: 1.5; }
+        .store-campaign-cta { display: inline-flex; align-items: center; gap: 8px; padding: 11px 15px; border-radius: 5px; background: var(--blue); color: white; font-size: 13px; font-weight: 800; }
+        .store-campaign-cta:hover { background: var(--blue-dark, #075d7d); color: white; }
+        .store-campaign-controls { position: absolute; right: 16px; bottom: 14px; display: flex; align-items: center; gap: 8px; }
+        .store-campaign-control { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid rgba(16,44,61,.18); border-radius: 50%; background: rgba(255,255,255,.9); color: var(--navy); }
+        .store-campaign-dots { display: flex; gap: 6px; align-items: center; }
+        .store-campaign-dot { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 8px; background: rgba(16,44,61,.35); }
+        .store-campaign-dot[aria-current="true"] { width: 22px; background: var(--blue); }
+        .campaign-featured { display: none; padding: 25px 1.7vw 0; }
+        .campaign-featured.is-visible { display: block; }
+        .campaign-featured-heading { display: flex; justify-content: space-between; align-items: end; gap: 12px; margin-bottom: 13px; }
+        .campaign-featured-heading h2 { color: var(--navy); font-size: 22px; }
+        .campaign-featured-heading span { color: var(--muted); font-size: 12px; }
+        .campaign-products-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px; }
+        .campaign-product { display: flex; min-width: 0; flex-direction: column; padding: 11px; border: 1px solid var(--line); border-top: 3px solid var(--blue); border-radius: 8px; background: white; }
+        .campaign-product-image { display: grid; place-items: center; overflow: hidden; aspect-ratio: 1.3; background: #f7fafb; border: 1px solid #edf2f4; border-radius: 5px; }
+        .campaign-product-image img { width: 100%; height: 100%; object-fit: contain; }
+        .campaign-product-category { overflow: hidden; margin-top: 10px; color: var(--blue); font-size: 10px; font-weight: 800; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+        .campaign-product-title { display: -webkit-box; overflow: hidden; min-height: 40px; margin: 4px 0 8px; color: var(--navy); font-size: 13px; font-weight: 700; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+        .campaign-product-bottom { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: auto; }
+        .campaign-product-price { color: var(--navy); font-size: 18px; font-weight: 800; }
+        .campaign-product-add { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; padding: 0 10px; border: 1px solid #a9d8d0; border-radius: 5px; background: #eaf7f5; color: var(--blue); font-size: 12px; font-weight: 700; }
+        .campaign-product-add:hover { background: var(--blue); color: white; }
+        @media (max-width: 800px) {
+          .store-campaign-area { padding: 10px 4vw 0; }
+          .store-campaign { min-height: 230px; }
+          .store-campaign-copy { width: 72%; padding: 22px; }
+          .store-campaign-title { font-size: 26px; }
+          .store-campaign-subtitle { font-size: 13px; }
+          .campaign-featured { padding: 20px 4vw 0; }
+          .campaign-products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 420px) {
+          .store-campaign { min-height: 205px; }
+          .store-campaign-copy { width: 84%; padding: 16px; }
+          .store-campaign-title { font-size: 22px; }
+          .store-campaign-subtitle { font-size: 12px; margin-bottom: 12px; }
+          .store-campaign-controls { right: 9px; bottom: 9px; }
+          .campaign-product { padding: 8px; }
+          .campaign-product-bottom { align-items: flex-start; flex-direction: column; }
+          .campaign-product-add { width: 100%; }
+        }
     </style>
 </head>
 <body>
@@ -1630,6 +1681,17 @@
 			</div>
 		</div>
 	</nav>
+	<section class="store-campaign-area" aria-label="Promociones SmartISP" hidden>
+		<div class="store-campaign" id="storeCampaign" aria-roledescription="carrusel" aria-label="Campañas de la tienda" aria-live="polite">
+			<div class="store-campaign-media"><img id="storeCampaignImage" width="1600" height="560" alt="" fetchpriority="high"></div>
+			<div class="store-campaign-copy"><div class="store-campaign-eyebrow" id="storeCampaignEyebrow"></div><h1 class="store-campaign-title" id="storeCampaignTitle"></h1><p class="store-campaign-subtitle" id="storeCampaignSubtitle"></p><a class="store-campaign-cta" id="storeCampaignLink" href="/tienda.html#catalogo"><span id="storeCampaignButton"></span><i data-lucide="arrow-right" width="16"></i></a></div>
+			<div class="store-campaign-controls" id="storeCampaignControls" hidden><button class="store-campaign-control" id="storeCampaignPrev" type="button" aria-label="Banner anterior"><i data-lucide="chevron-left"></i></button><div class="store-campaign-dots" id="storeCampaignDots"></div><button class="store-campaign-control" id="storeCampaignNext" type="button" aria-label="Banner siguiente"><i data-lucide="chevron-right"></i></button></div>
+		</div>
+	</section>
+	<section class="campaign-featured" id="campaignFeatured" aria-labelledby="campaignFeaturedTitle">
+		<div class="campaign-featured-heading"><h2 id="campaignFeaturedTitle">Productos destacados</h2><span>Selección SmartISP</span></div>
+		<div class="campaign-products-grid" id="campaignProductsGrid"></div>
+	</section>
 	<main>
 		<section class="content" id="catalogo">
 			<div class="catalog-intro">
@@ -1754,6 +1816,7 @@
 		let productIndexMap = new Map();
 		const rebuildProductIndex = () => { productIndexMap = new Map(products.map((p, i) => [p, i])); };
 		let isCatalogLoading = true;
+		let catalogLoadError = false;
 		let fullCatalogState = 'idle'; // 'idle' | 'loading' | 'loaded'
 
 		// Trae el resto del catálogo solo cuando una vista local realmente lo necesita.
@@ -2495,8 +2558,13 @@
 				</div>
 			` : '';
 
-			document.querySelector('#products').innerHTML = shown.length ? (productsHtml + loadMoreHtml) : '<div class="empty">No encontramos productos con esa búsqueda.</div>';
+			const emptyHtml = catalogLoadError
+				? '<div class="empty"><p>No se pudo cargar el catálogo.</p><button type="button" class="primary" id="retryCatalogBtn">Reintentar</button></div>'
+				: '<div class="empty">No encontramos productos con esa búsqueda.</div>';
+			document.querySelector('#products').innerHTML = shown.length ? (productsHtml + loadMoreHtml) : emptyHtml;
 			window.lucide && window.lucide.createIcons();
+			const retryCatalogBtn = document.querySelector('#retryCatalogBtn');
+			if (retryCatalogBtn) retryCatalogBtn.addEventListener('click', applyRemoteSite);
 
 			const loadMoreBtn = document.querySelector('#loadMoreProductsBtn');
 			if (loadMoreBtn) {
@@ -3173,14 +3241,27 @@
 		};
 
 		const applyRemoteSite = async () => {
+			isCatalogLoading = true;
+			catalogLoadError = false;
+			render();
 			try {
-				const response = await fetch('/api/auth/catalog?page=1&limit=36&_t=' + Date.now(), { cache: 'no-store' });
-				if (!response.ok) {
-					isCatalogLoading = false;
-					render();
-					return;
+				let remote = null;
+				let lastError = null;
+				for (let attempt = 0; attempt < 3 && !remote; attempt++) {
+					try {
+						const response = await fetch('/api/auth/catalog?page=1&limit=36&_t=' + Date.now(), { cache: 'no-store' });
+						if (!response.ok) throw new Error(`catalog request failed (${response.status})`);
+						const data = await response.json();
+						if (!Array.isArray(data.products) || (Number(data.total) > 0 && data.products.length === 0)) {
+							throw new Error('catalog response was empty');
+						}
+						remote = data;
+					} catch (error) {
+						lastError = error;
+						if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 250 * (attempt + 1)));
+					}
 				}
-				const remote = await response.json();
+				if (!remote) throw lastError || new Error('catalog unavailable');
 				catalogCategoryRows = Array.isArray(remote.categories) ? remote.categories : [];
 				catalogTotalCount = Number(remote.total) || 0;
 				if (remote.products && remote.products.length) {
@@ -3243,10 +3324,107 @@
 				}
 			} catch (error) {
 				console.warn('Contenido remoto no disponible:', error);
+				catalogLoadError = true;
 				isCatalogLoading = false;
 				render();
 			}
 		};
+
+		let storefrontSlides = [];
+		let storefrontFeaturedProducts = [];
+		let storefrontSlideIndex = 0;
+		let storefrontRotationTimer = 0;
+		const renderStorefrontSlide = index => {
+			if (!storefrontSlides.length) return;
+			storefrontSlideIndex = (index + storefrontSlides.length) % storefrontSlides.length;
+			const slide = storefrontSlides[storefrontSlideIndex];
+			const banner = document.querySelector('#storeCampaign');
+			const image = document.querySelector('#storeCampaignImage');
+			image.src = slide.image_url;
+			image.alt = slide.image_alt || slide.title || '';
+			document.querySelector('#storeCampaignEyebrow').textContent = slide.eyebrow || '';
+			document.querySelector('#storeCampaignEyebrow').hidden = !slide.eyebrow;
+			document.querySelector('#storeCampaignTitle').textContent = slide.title || '';
+			document.querySelector('#storeCampaignSubtitle').textContent = slide.subtitle || '';
+			document.querySelector('#storeCampaignSubtitle').hidden = !slide.subtitle;
+			document.querySelector('#storeCampaignButton').textContent = slide.button_text || 'Explorar';
+			const link = document.querySelector('#storeCampaignLink');
+			link.href = slide.target_url;
+			const external = /^https:\/\//i.test(slide.target_url || '');
+			if (external) { link.target = '_blank'; link.rel = 'noopener noreferrer'; }
+			else { link.removeAttribute('target'); link.removeAttribute('rel'); }
+			banner.classList.add('is-visible');
+			document.querySelectorAll('.store-campaign-dot').forEach((dot, dotIndex) => dot.setAttribute('aria-current', dotIndex === storefrontSlideIndex ? 'true' : 'false'));
+		};
+		const renderStorefrontFeatured = () => {
+			const section = document.querySelector('#campaignFeatured');
+			const grid = document.querySelector('#campaignProductsGrid');
+			if (!section || !grid || !storefrontFeaturedProducts.length) return;
+			grid.innerHTML = storefrontFeaturedProducts.map((product, index) => {
+				const imageUrl = getProductImageUrl(product);
+				const productUrl = getProductUrl(product);
+				return `<article class="campaign-product">
+					<a class="campaign-product-image" href="${escapeHtml(productUrl)}" aria-label="Ver ${escapeHtml(product.name)}"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(product.name)}" width="320" height="246" loading="${index < 2 ? 'eager' : 'lazy'}" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${escapeHtml(fallbackImage(product))}';}"></a>
+					<div class="campaign-product-category">${escapeHtml(product.category || 'SmartISP')}</div>
+					<a class="campaign-product-title" href="${escapeHtml(productUrl)}">${escapeHtml(product.name || 'Producto')}</a>
+					<div class="campaign-product-bottom"><strong class="campaign-product-price">${money(product.price)}</strong><button type="button" class="campaign-product-add" data-campaign-add="${index}" aria-label="Agregar ${escapeHtml(product.name)} al carrito"><i data-lucide="shopping-cart" width="15"></i> Agregar</button></div>
+				</article>`;
+			}).join('');
+			section.classList.add('is-visible');
+			window.lucide?.createIcons();
+		};
+		const stopStorefrontRotation = () => { if (storefrontRotationTimer) clearInterval(storefrontRotationTimer); storefrontRotationTimer = 0; };
+		const startStorefrontRotation = seconds => {
+			stopStorefrontRotation();
+			if (storefrontSlides.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+			storefrontRotationTimer = setInterval(() => renderStorefrontSlide(storefrontSlideIndex + 1), Math.max(4, Math.min(20, Number(seconds) || 7)) * 1000);
+		};
+		const loadStorefrontCampaigns = async () => {
+			try {
+				const response = await fetch(`/api/auth/store-campaigns?_t=${Date.now()}`, { cache: 'no-store' });
+				if (!response.ok) return;
+				const data = await response.json();
+				storefrontSlides = Array.isArray(data.slides) ? data.slides : [];
+				storefrontFeaturedProducts = Array.isArray(data.products) ? data.products.map(product => ({
+					...product,
+					brand: product.category || 'SmartISP',
+					image: getProductImageUrl(product),
+					reviews: Number(product.reviews || 0),
+					tag: '',
+					specs: []
+				})) : [];
+				if (storefrontSlides.length) {
+					document.querySelector('.store-campaign-area').hidden = false;
+					const dots = document.querySelector('#storeCampaignDots');
+					dots.innerHTML = storefrontSlides.map((slide, index) => `<button class="store-campaign-dot" type="button" aria-label="Mostrar banner ${index + 1}: ${escapeHtml(slide.title)}" aria-current="${index === 0 ? 'true' : 'false'}" data-campaign-slide="${index}"></button>`).join('');
+					const controls = document.querySelector('#storeCampaignControls');
+					controls.hidden = storefrontSlides.length < 2;
+					document.querySelector('#storeCampaignPrev').addEventListener('click', () => { renderStorefrontSlide(storefrontSlideIndex - 1); startStorefrontRotation(data.rotation_seconds); });
+					document.querySelector('#storeCampaignNext').addEventListener('click', () => { renderStorefrontSlide(storefrontSlideIndex + 1); startStorefrontRotation(data.rotation_seconds); });
+					dots.addEventListener('click', event => {
+						const dot = event.target.closest('[data-campaign-slide]');
+						if (dot) { renderStorefrontSlide(Number(dot.dataset.campaignSlide)); startStorefrontRotation(data.rotation_seconds); }
+					});
+					renderStorefrontSlide(0);
+					startStorefrontRotation(data.rotation_seconds);
+					const banner = document.querySelector('#storeCampaign');
+					banner.addEventListener('mouseenter', stopStorefrontRotation);
+					banner.addEventListener('mouseleave', () => startStorefrontRotation(data.rotation_seconds));
+					banner.addEventListener('focusin', stopStorefrontRotation);
+					banner.addEventListener('focusout', () => startStorefrontRotation(data.rotation_seconds));
+					document.addEventListener('visibilitychange', () => document.hidden ? stopStorefrontRotation() : startStorefrontRotation(data.rotation_seconds));
+				}
+				renderStorefrontFeatured();
+			} catch (error) {
+				console.warn('No se pudieron cargar las campañas de la tienda:', error);
+			}
+		};
+		document.querySelector('#campaignProductsGrid')?.addEventListener('click', event => {
+			const button = event.target.closest('[data-campaign-add]');
+			if (!button) return;
+			const product = storefrontFeaturedProducts[Number(button.dataset.campaignAdd)];
+			if (product) addToCart(product);
+		});
 
 		// Verificación de producto directo por URL (?p= o ?id=)
 		const checkDirectProductLanding = async () => {
@@ -3342,6 +3520,7 @@
 		render();
 		window.lucide && window.lucide.createIcons();
 		applyRemoteSite();
+		loadStorefrontCampaigns();
 
 		// =============================================================
 		// CONTROLADORES DE LA BARRA INFERIOR MÓVIL (BOTTOM NAV)

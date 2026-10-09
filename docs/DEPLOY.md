@@ -12,7 +12,7 @@ mantiene su publicación independiente desde `main`.
 - [ ] Confirmar que nadie más está desplegando/editando el sitio en ese momento.
 - [ ] Revisar el commit que se publicará en `main` y confirmar que el build anterior terminó correctamente.
 
-## 2. Migraciones de base de datos (6, ya probadas en local)
+## 2. Migraciones versionadas de base de datos (7)
 
 ```
 migrations/001_products_rows_tipos_reales.sql   -- tipos reales + PK en products_rows
@@ -21,6 +21,7 @@ migrations/003_order_events.sql                 -- tabla nueva: historial de est
 migrations/004_users_rows_llaves.sql            -- tipos reales + PK/UNIQUE en users_rows
 migrations/005_quitar_password_resets_rows.sql  -- borra una tabla muerta
 migrations/006_mail_settings.sql                -- separa SMTP/correo de settings_rows a tabla propia
+migrations/008_storefront_campaigns.sql         -- campañas, diapositivas y productos destacados
 ```
 
 Runner: `scripts/migrate.php` (soporta `--dry-run` y `--status`; no usa transacciones reales porque
@@ -46,18 +47,19 @@ php scripts/migrate.php
 
 - [ ] `--status` revisado antes de aplicar.
 - [ ] Migraciones aplicadas.
-- [ ] `--status` otra vez después, las 6 en `[aplicada]`.
+- [ ] `--status` otra vez después; las siete migraciones versionadas deben figurar como `[aplicada]`.
 
 ### Alternativa: un solo archivo, aplicado a mano
 
 Si prefieres pegar el SQL directo en phpMyAdmin (o con el cliente `mysql`) en vez de correr
 `scripts/migrate.php` desde una terminal con acceso a Hostinger, existe el mismo cambio consolidado
-en un único archivo: **`docs/MIGRACION-MANUAL-PRODUCCION.sql`**. Mismo contenido que las 6
-migraciones, en el mismo orden, con una sección de verificación al final (conteos esperados: 2789
+en un único archivo: **`docs/MIGRACION-MANUAL-PRODUCCION.sql`**. Ese archivo histórico contiene las
+migraciones 001-006; no incluye la expansión 008 de campañas. Tiene una sección de verificación al
+final (conteos esperados: 2789
 productos, 12 pedidos, 4 usuarios — los del dump original `u606699314_smart_isp.sql`).
 
 Probado dos veces contra una copia local limpia del dump original (`CREATE DATABASE`
-nueva + importar el dump + correr este archivo): corre de punta a punta sin errores, deja las 6
+nueva + importar el dump + correr este archivo): corre de punta a punta sin errores, deja esas seis
 migraciones registradas en `schema_migrations` (para que un futuro `--status` las reconozca como
 aplicadas), y los conteos de verificación coinciden exactamente.
 

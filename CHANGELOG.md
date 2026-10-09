@@ -3,6 +3,8 @@
 ## [Unreleased]
 
 ### Added
+- Gestor de campanas dinamicas de portada con diapositivas rotables, carga segura de imagenes, enlaces y vitrina ordenable de productos basada en el catalogo existente.
+- Esquema dedicado `storefront_campaigns`, `storefront_campaign_slides` y `storefront_campaign_products`, con integridad referencial y prueba de migracion MariaDB.
 - Modo de acceso administrativo separado en el login compartido, con retorno a la página solicitada.
 - Accion para eliminar pedidos cancelados desde su fila, con confirmacion y proteccion para pedidos con pagos asociados.
 - Insights operativos en el dashboard: productos incluidos en pedidos recientes e inventario disponible/reservado cuando existen datos normalizados.

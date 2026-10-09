@@ -50,6 +50,26 @@
     .logo-size-slider-row input[type="number"] { width: 72px; padding: 7px 8px; text-align: center; font-weight: 700; margin: 0; }
     .logo-quick-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; background: #f0f7fa; border: 1px solid #cce5ef; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; }
     .logo-badge-format { font-size: 11px; font-weight: 800; background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 6px; letter-spacing: 0.05em; }
+    .campaign-settings { margin-top: 20px; }
+    .campaign-description { max-width: 760px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .campaign-options, .campaign-product-search { display: grid; grid-template-columns: minmax(0, 1fr) 180px; gap: 14px; align-items: end; }
+    .campaign-options label, .campaign-product-search label { margin-bottom: 0; }
+    .campaign-slides { display: grid; gap: 12px; margin: 18px 0; }
+    .campaign-slide { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 16px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: #fbfdfe; }
+    .campaign-slide-preview { width: 100%; aspect-ratio: 16 / 10; display: grid; place-items: center; overflow: hidden; background: #e8f2f5; border-radius: 6px; color: var(--muted); }
+    .campaign-slide-preview img { width: 100%; height: 100%; object-fit: cover; }
+    .campaign-slide-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+    .campaign-slide-fields .full { grid-column: 1 / -1; }
+    .campaign-slide-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; grid-column: 1 / -1; }
+    .campaign-slide-actions { display: flex; align-items: center; gap: 6px; }
+    .campaign-icon-button { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: white; color: var(--ink); }
+    .campaign-icon-button:hover { color: var(--blue); border-color: var(--blue); }
+    .campaign-product-results, .campaign-product-selected { display: grid; gap: 8px; margin-top: 10px; }
+    .campaign-product-row { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: white; }
+    .campaign-product-row img { width: 48px; height: 48px; object-fit: contain; background: #f6fafb; border-radius: 4px; }
+    .campaign-product-row strong, .campaign-product-row small { display: block; overflow-wrap: anywhere; }
+    .campaign-product-row small { margin-top: 3px; color: var(--muted); }
+    @media (max-width: 720px) { .campaign-options, .campaign-product-search, .campaign-slide { grid-template-columns: 1fr; } .campaign-slide-preview { max-height: 210px; } .campaign-slide-fields { grid-template-columns: 1fr; } .campaign-slide-fields .full { grid-column: auto; } }
     @keyframes save-confirm { 0% { opacity: 0; transform: translateY(-8px) scale(.98); } 55% { transform: translateY(0) scale(1.02); } 100% { opacity: 1; transform: translateY(0) scale(1); } } @keyframes rise-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .panel { animation: rise-in .45s ease both; } @media (max-width: 720px) { .grid, .design-controls, .logo-controls-grid { grid-template-columns: 1fr !important; } .top, .toolbar, .section-heading { align-items: flex-start; flex-direction: column; } .crop-options { align-items: stretch; flex-direction: column; } .crop-actions { flex-wrap: wrap; } .logo-quick-bar { align-items: flex-start; flex-direction: column; } }
     @media (max-width: 420px) { .shell { width: calc(100% - 16px); padding: 14px; } .logo-customizer-card { padding: 14px 12px; } .crop-dialog { padding: 16px; } }
@@ -415,6 +435,22 @@
           </form>
         </section>
       </div>
+      <section class="panel campaign-settings" aria-labelledby="campaignSettingsTitle">
+        <div class="section-heading"><div><h3 id="campaignSettingsTitle">Campañas y productos destacados</h3><p class="campaign-description">Crea diapositivas con portada, textos y enlace. La tienda las rota automáticamente y muestra los productos elegidos en esta sección.</p></div></div>
+        <div class="campaign-options">
+          <label>Nombre de la campaña<input id="campaignName" maxlength="150" value="Portada de la tienda"></label>
+          <label>Rotación (segundos)<input id="campaignRotation" type="number" min="4" max="20" value="7"></label>
+        </div>
+        <label style="display:flex;align-items:center;gap:9px;margin-top:14px;"><input id="campaignActive" type="checkbox" checked style="width:auto;margin:0;">Campaña activa</label>
+        <div id="campaignSlides" class="campaign-slides"></div>
+        <button id="addCampaignSlide" class="button secondary" type="button"><i data-lucide="plus" style="width:15px;height:15px;"></i> Añadir diapositiva</button>
+        <hr style="border:0;border-top:1px solid var(--line);margin:24px 0;">
+        <div><h3 style="margin-bottom:4px;">Productos destacados</h3><p class="campaign-description" style="margin:0;">Busca productos existentes y agrega hasta 12. El orden de esta lista será el orden de la vitrina.</p></div>
+        <div class="campaign-product-search"><label>Buscar por nombre, SKU o categoría<input id="campaignProductSearch" type="search" placeholder="Ej. router, cámara, impresora"></label><button id="campaignProductSearchBtn" class="button secondary" type="button"><i data-lucide="search" style="width:15px;height:15px;"></i> Buscar</button></div>
+        <div id="campaignProductResults" class="campaign-product-results" aria-live="polite"></div>
+        <div id="campaignSelectedProducts" class="campaign-product-selected"></div>
+        <div class="form-actions" style="margin-top:20px;"><button id="saveCampaignSettings" class="button" type="button"><i data-lucide="save" style="width:15px;height:15px;"></i> Guardar campañas</button><div id="campaignSettingsMessage" class="message" style="flex-basis:100%;"></div></div>
+      </section>
     </section>
   </main>
   <div id="cropModal" class="crop-modal" hidden>
@@ -1005,6 +1041,193 @@
       updateDesignPreview();
     };
 
+    let campaignEditor = { settings: { name: 'Portada de la tienda', rotation_seconds: 7, is_active: true }, slides: [], products: [] };
+    let campaignSearchRows = [];
+    const campaignImage = product => product?.imageUrl || product?.image_url || '/assets/favicons/favicon-96x96.png';
+    const renderCampaignSlides = () => {
+      const host = $('#campaignSlides');
+      if (!host) return;
+      host.innerHTML = campaignEditor.slides.map((slide, index) => `
+        <article class="campaign-slide" data-slide-index="${index}">
+          <div class="campaign-slide-preview">${slide.image_url ? `<img src="${escapeHtml(slide.image_url)}" alt="${escapeHtml(slide.image_alt || slide.title || 'Portada')}" width="720" height="450">` : '<span>Sin portada</span>'}</div>
+          <div class="campaign-slide-fields">
+            <div class="campaign-slide-head"><strong>Banner ${index + 1}</strong><div class="campaign-slide-actions">
+              <button class="campaign-icon-button" type="button" data-slide-action="up" aria-label="Mover banner arriba" title="Mover arriba" ${index === 0 ? 'disabled' : ''}><i data-lucide="arrow-up"></i></button>
+              <button class="campaign-icon-button" type="button" data-slide-action="down" aria-label="Mover banner abajo" title="Mover abajo" ${index === campaignEditor.slides.length - 1 ? 'disabled' : ''}><i data-lucide="arrow-down"></i></button>
+              <button class="campaign-icon-button" type="button" data-slide-action="remove" aria-label="Eliminar banner" title="Eliminar"><i data-lucide="trash-2"></i></button>
+            </div></div>
+            <label>Etiqueta<input data-slide-field="eyebrow" maxlength="100" value="${escapeHtml(slide.eyebrow || '')}" placeholder="Conectividad y redes"></label>
+            <label>Título<input data-slide-field="title" maxlength="180" value="${escapeHtml(slide.title || '')}" required></label>
+            <label class="full">Subtítulo<textarea data-slide-field="subtitle" maxlength="500" rows="2">${escapeHtml(slide.subtitle || '')}</textarea></label>
+            <label>Texto del enlace<input data-slide-field="button_text" maxlength="60" value="${escapeHtml(slide.button_text || 'Explorar')}"></label>
+            <label>Enlace interno o HTTPS<input data-slide-field="target_url" maxlength="500" value="${escapeHtml(slide.target_url || '/tienda.html#catalogo')}" placeholder="/tienda.html?macro=redes#catalogo"></label>
+            <label class="full">Imagen de portada<input data-slide-upload type="file" accept="image/jpeg,image/png,image/webp"><small>JPG, PNG o WebP; máximo 8 MB.</small></label>
+            <label class="full">Ruta de imagen<input data-slide-field="image_url" maxlength="500" value="${escapeHtml(slide.image_url || '')}" placeholder="Sube una portada para completar este banner"></label>
+            <label style="display:flex;align-items:center;gap:8px;margin:0;"><input data-slide-field="is_active" type="checkbox" ${slide.is_active !== false ? 'checked' : ''} style="width:auto;margin:0;">Visible en tienda</label>
+          </div>
+        </article>`).join('') || '<p class="campaign-description">Todavía no hay diapositivas. Añade una para crear el primer banner.</p>';
+      window.lucide?.createIcons();
+    };
+    const renderCampaignSelectedProducts = () => {
+      const host = $('#campaignSelectedProducts');
+      if (!host) return;
+      host.innerHTML = campaignEditor.products.map((product, index) => `
+        <div class="campaign-product-row" data-selected-index="${index}">
+          <img src="${escapeHtml(campaignImage(product))}" alt="" width="48" height="48" loading="lazy">
+          <div><strong>${escapeHtml(product.name || 'Producto')}</strong><small>${escapeHtml(product.category || '')}${product.sku ? ` · SKU ${escapeHtml(product.sku)}` : ''}</small></div>
+          <div class="campaign-slide-actions">
+            <button class="campaign-icon-button" type="button" data-product-action="up" aria-label="Mover arriba" title="Mover arriba" ${index === 0 ? 'disabled' : ''}><i data-lucide="arrow-up"></i></button>
+            <button class="campaign-icon-button" type="button" data-product-action="down" aria-label="Mover abajo" title="Mover abajo" ${index === campaignEditor.products.length - 1 ? 'disabled' : ''}><i data-lucide="arrow-down"></i></button>
+            <button class="campaign-icon-button" type="button" data-product-action="remove" aria-label="Quitar producto" title="Quitar"><i data-lucide="x"></i></button>
+          </div>
+        </div>`).join('') || '<p class="campaign-description">No hay productos destacados seleccionados.</p>';
+      window.lucide?.createIcons();
+    };
+    const renderCampaignSearchResults = () => {
+      const host = $('#campaignProductResults');
+      if (!host) return;
+      host.innerHTML = campaignSearchRows.map((product, index) => {
+        const alreadySelected = campaignEditor.products.some(item => String(item.id) === String(product.id));
+        return `<div class="campaign-product-row"><img src="${escapeHtml(campaignImage(product))}" alt="" width="48" height="48" loading="lazy"><div><strong>${escapeHtml(product.name || 'Producto')}</strong><small>${escapeHtml(product.category || '')}${product.sku ? ` · SKU ${escapeHtml(product.sku)}` : ''}</small></div><button class="button secondary" type="button" data-add-campaign-product="${index}" ${alreadySelected || campaignEditor.products.length >= 12 ? 'disabled' : ''}>${alreadySelected ? 'Agregado' : 'Destacar'}</button></div>`;
+      }).join('') || '';
+    };
+    const loadCampaignEditor = async () => {
+      try {
+        const result = await api('admin-store-campaigns');
+        campaignEditor.settings = {
+          name: result.campaign?.name || 'Portada de la tienda',
+          rotation_seconds: Number(result.campaign?.rotation_seconds || 7),
+          is_active: result.campaign ? String(result.campaign.is_active) === '1' : true
+        };
+        campaignEditor.slides = (result.slides || []).map(slide => ({ ...slide, is_active: String(slide.is_active) === '1' }));
+        campaignEditor.products = result.products || [];
+        $('#campaignName').value = campaignEditor.settings.name;
+        $('#campaignRotation').value = campaignEditor.settings.rotation_seconds;
+        $('#campaignActive').checked = campaignEditor.settings.is_active;
+        renderCampaignSlides();
+        renderCampaignSelectedProducts();
+      } catch (error) {
+        showMessage($('#campaignSettingsMessage'), `No se pudo cargar el gestor de campañas. Comprueba que migrations/008_storefront_campaigns.sql esté aplicada. ${error.message}`, true);
+      }
+    };
+    const searchCampaignProducts = async () => {
+      const query = $('#campaignProductSearch').value.trim();
+      if (query.length < 2) {
+        showMessage($('#campaignSettingsMessage'), 'Escribe al menos dos caracteres para buscar productos.', true);
+        return;
+      }
+      const button = $('#campaignProductSearchBtn');
+      button.disabled = true;
+      try {
+        const result = await api(`admin-products?q=${encodeURIComponent(query)}&page=1&limit=8&visible=visible`);
+        campaignSearchRows = result.products || [];
+        renderCampaignSearchResults();
+      } catch (error) {
+        showMessage($('#campaignSettingsMessage'), error.message, true);
+      } finally {
+        button.disabled = false;
+      }
+    };
+    const campaignSlidesHost = $('#campaignSlides');
+    campaignSlidesHost?.addEventListener('input', event => {
+      const index = Number(event.target.closest('[data-slide-index]')?.dataset.slideIndex);
+      const field = event.target.dataset.slideField;
+      if (!Number.isInteger(index) || !field || !campaignEditor.slides[index]) return;
+      campaignEditor.slides[index][field] = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+      if (field === 'image_url') {
+        const image = event.target.closest('.campaign-slide')?.querySelector('.campaign-slide-preview');
+        if (image) image.innerHTML = event.target.value ? `<img src="${escapeHtml(event.target.value)}" alt="" width="720" height="450">` : '<span>Sin portada</span>';
+      }
+    });
+    campaignSlidesHost?.addEventListener('change', async event => {
+      const input = event.target;
+      if (!input.matches('[data-slide-upload]') || !input.files?.[0]) return;
+      const index = Number(input.closest('[data-slide-index]')?.dataset.slideIndex);
+      const file = input.files[0];
+      if (file.size > 8 * 1024 * 1024) {
+        showMessage($('#campaignSettingsMessage'), 'La imagen supera el límite de 8 MB.', true);
+        input.value = '';
+        return;
+      }
+      const form = new FormData();
+      form.append('image', file);
+      input.disabled = true;
+      try {
+        const result = await api('upload-campaign-image', { method: 'POST', body: form });
+        campaignEditor.slides[index].image_url = result.url;
+        renderCampaignSlides();
+        showMessage($('#campaignSettingsMessage'), 'Portada subida. Guarda la campaña para publicarla.');
+      } catch (error) {
+        showMessage($('#campaignSettingsMessage'), error.message, true);
+        input.disabled = false;
+      }
+    });
+    campaignSlidesHost?.addEventListener('click', event => {
+      const button = event.target.closest('[data-slide-action]');
+      if (!button) return;
+      const card = button.closest('[data-slide-index]');
+      const index = Number(card.dataset.slideIndex);
+      const action = button.dataset.slideAction;
+      if (action === 'remove') campaignEditor.slides.splice(index, 1);
+      else {
+        const target = index + (action === 'up' ? -1 : 1);
+        if (target < 0 || target >= campaignEditor.slides.length) return;
+        [campaignEditor.slides[index], campaignEditor.slides[target]] = [campaignEditor.slides[target], campaignEditor.slides[index]];
+      }
+      renderCampaignSlides();
+    });
+    $('#addCampaignSlide')?.addEventListener('click', () => {
+      if (campaignEditor.slides.length >= 12) return showMessage($('#campaignSettingsMessage'), 'La campaña admite hasta 12 diapositivas.', true);
+      campaignEditor.slides.push({ eyebrow: '', title: '', subtitle: '', button_text: 'Explorar', target_url: '/tienda.html#catalogo', image_url: '', image_alt: '', is_active: true });
+      renderCampaignSlides();
+      $('#campaignSlides').lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    $('#campaignProductSearchBtn')?.addEventListener('click', searchCampaignProducts);
+    $('#campaignProductSearch')?.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); searchCampaignProducts(); } });
+    $('#campaignProductResults')?.addEventListener('click', event => {
+      const button = event.target.closest('[data-add-campaign-product]');
+      if (!button || campaignEditor.products.length >= 12) return;
+      const product = campaignSearchRows[Number(button.dataset.addCampaignProduct)];
+      if (product && !campaignEditor.products.some(item => String(item.id) === String(product.id))) campaignEditor.products.push(product);
+      renderCampaignSearchResults();
+      renderCampaignSelectedProducts();
+    });
+    $('#campaignSelectedProducts')?.addEventListener('click', event => {
+      const button = event.target.closest('[data-product-action]');
+      if (!button) return;
+      const row = button.closest('[data-selected-index]');
+      const index = Number(row.dataset.selectedIndex);
+      const action = button.dataset.productAction;
+      if (action === 'remove') campaignEditor.products.splice(index, 1);
+      else {
+        const target = index + (action === 'up' ? -1 : 1);
+        if (target < 0 || target >= campaignEditor.products.length) return;
+        [campaignEditor.products[index], campaignEditor.products[target]] = [campaignEditor.products[target], campaignEditor.products[index]];
+      }
+      renderCampaignSelectedProducts();
+      renderCampaignSearchResults();
+    });
+    $('#saveCampaignSettings')?.addEventListener('click', async event => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      try {
+        const campaign = {
+          name: $('#campaignName').value.trim(),
+          rotation_seconds: Number($('#campaignRotation').value) || 7,
+          is_active: $('#campaignActive').checked
+        };
+        await api('admin-store-campaigns', {
+          method: 'POST',
+          body: JSON.stringify({ campaign, slides: campaignEditor.slides, product_ids: campaignEditor.products.map(product => product.id) })
+        });
+        showMessage($('#campaignSettingsMessage'), 'Campañas guardadas. Los cambios se reflejarán en la tienda en menos de un minuto.');
+      } catch (error) {
+        showMessage($('#campaignSettingsMessage'), error.message, true);
+      } finally {
+        button.disabled = false;
+      }
+    });
+
     // DEV-20261006-001: saveForm nunca estaba definida en admin.html (bug preexistente heredado
     // de la fusión original); los botones "Guardar apariencia"/"Guardar visibilidad" y sus resets
     // lanzaban un ReferenceError silencioso capturado por el catch. Se define aquí tal como el
@@ -1027,6 +1250,7 @@
       $('#adminIdentity').textContent = `${user.name} ${user.surname || ''} - ${user.email}`;
       initLogoCustomizerEvents();
       await loadContent();
+      await loadCampaignEditor();
     };
 
     $('#loginForm').addEventListener('submit', async event => {

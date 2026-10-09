@@ -22,8 +22,8 @@ $pdo = new PDO($dsn, getenv('MYSQL_USER') ?: '', getenv('MYSQL_PASSWORD') ?: '',
 $assert = static function (bool $condition, string $message): void {
     if (!$condition) throw new RuntimeException($message);
 };
-$applied = (int)$pdo->query('SELECT COUNT(*) FROM schema_migrations')->fetchColumn();
-$assert($applied === 6, "Se esperaban 6 migraciones registradas; hay $applied.");
+$campaignMigration = (int)$pdo->query("SELECT COUNT(*) FROM schema_migrations WHERE migration = '008_storefront_campaigns.sql'")->fetchColumn();
+$assert($campaignMigration === 1, 'No quedó registrada la migración de campañas del storefront.');
 
 $primaryKeys = (int)$pdo->query("SELECT COUNT(DISTINCT TABLE_NAME) FROM information_schema.STATISTICS
     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('products_rows', 'orders_rows', 'users_rows')
@@ -59,4 +59,16 @@ $eventTable = $pdo->query("SELECT COUNT(*) FROM information_schema.TABLES
     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'order_events'")->fetchColumn();
 $assert((int)$eventTable === 1, 'No se creó order_events.');
 
-echo "Migraciones verificadas: 6 aplicadas; claves, tipos, fecha, historial y traspaso de correo correctos.\n";
+$campaignTables = (int)$pdo->query("SELECT COUNT(DISTINCT TABLE_NAME) FROM information_schema.TABLES
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN (
+      'storefront_campaigns', 'storefront_campaign_slides', 'storefront_campaign_products'
+    )")->fetchColumn();
+$assert($campaignTables === 3, 'Falta alguna tabla dedicada a campañas del storefront.');
+$homeCampaign = $pdo->query("SELECT code, name, is_active, rotation_seconds FROM storefront_campaigns WHERE code = 'store-home'")->fetch();
+$assert($homeCampaign && $homeCampaign['name'] === 'Portada de la tienda' && (int)$homeCampaign['is_active'] === 1 && (int)$homeCampaign['rotation_seconds'] === 7, 'No se creó correctamente la campaña inicial de tienda.');
+$campaignFk = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'storefront_campaign_products'
+      AND CONSTRAINT_NAME = 'fk_storefront_campaign_products_product'")->fetchColumn();
+$assert($campaignFk === 1, 'La relación de productos destacados no tiene su clave foránea.');
+
+echo "Migraciones verificadas: claves, tipos, fecha, correo, historial y esquema de campañas correctos.\n";

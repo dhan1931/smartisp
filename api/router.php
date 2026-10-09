@@ -912,6 +912,10 @@ if ($action === 'categories-reset' || $action === 'categories/reset') {
     exit;
 }
 
+if (in_array($action, ['store-campaigns', 'admin-store-campaigns', 'upload-campaign-image'], true)) {
+    require __DIR__ . '/handlers/campaigns.php';
+}
+
 require __DIR__ . '/handlers/diagnostics.php';
 require __DIR__ . '/handlers/products.php';
 require __DIR__ . '/handlers/content.php';

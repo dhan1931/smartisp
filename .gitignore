@@ -27,6 +27,7 @@ uploads/cache/
 # Uploads reales de productos subidos por el admin (contenido de usuario, no versionar)
 uploads/products/*
 !uploads/products/.gitkeep
+uploads/campaigns/*
 CLAUDE.md
 .npm-cache/
 .playwright-cli/
