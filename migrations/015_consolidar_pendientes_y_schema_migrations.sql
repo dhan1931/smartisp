@@ -120,7 +120,8 @@ INSERT IGNORE INTO schema_migrations (migration) VALUES
   ('014_campaign_image_layout.sql'),
   ('015_consolidar_pendientes_y_schema_migrations.sql');
 
--- ============================================================================
--- Verificación: debe devolver 15 filas.
--- ============================================================================
-SELECT COUNT(*) AS migraciones_registradas FROM schema_migrations;
+-- Sin SELECT de verificacion al final a proposito (ver nota en migrations/005): un SELECT
+-- ejecutado por PDO::exec() bajo prepares nativos deja un resultado sin leer que rompe el
+-- siguiente prepare()->execute() del runner (el INSERT que marca este archivo como
+-- aplicado en schema_migrations). Para verificar, correr aparte:
+--   SELECT COUNT(*) AS migraciones_registradas FROM schema_migrations;

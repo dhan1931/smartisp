@@ -1,49 +1,18 @@
 -- SmartISP: expansion aditiva y gradual de la base.
--- Compatible con MariaDB 11.x / MySQL 8. Ejecutar por fases, no todo de una vez.
--- No elimina ni transforma datos existentes. Hacer backup y probar restauracion antes.
+-- Compatible con MariaDB 11.x / MySQL 8. No elimina ni transforma datos existentes.
 -- La aplicacion actual sigue usando products_rows, categories_rows, orders_rows.items
 -- y orders_rows.shipping; las tablas nuevas requieren cambios coordinados en el backend.
-
--- ============================================================================
--- FASE 0: DIAGNOSTICO. Solo lectura; ejecutar primero y guardar resultados.
--- ============================================================================
-SELECT VERSION() AS server_version, DATABASE() AS current_database;
-
-SELECT TABLE_NAME, ENGINE, TABLE_COLLATION, TABLE_ROWS
-FROM information_schema.TABLES
-WHERE TABLE_SCHEMA = DATABASE()
-ORDER BY TABLE_NAME;
-
-SELECT TABLE_NAME, INDEX_NAME, NON_UNIQUE, GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) AS columns_in_index
-FROM information_schema.STATISTICS
-WHERE TABLE_SCHEMA = DATABASE()
-  AND TABLE_NAME IN ('products_rows', 'orders_rows', 'users_rows', 'order_events')
-GROUP BY TABLE_NAME, INDEX_NAME, NON_UNIQUE
-ORDER BY TABLE_NAME, INDEX_NAME;
-
-SELECT 'products_rows' AS table_name, COUNT(*) AS row_count FROM products_rows
-UNION ALL SELECT 'orders_rows', COUNT(*) FROM orders_rows
-UNION ALL SELECT 'users_rows', COUNT(*) FROM users_rows
-UNION ALL SELECT 'categories_rows', COUNT(*) FROM categories_rows;
-
--- Verifica que las columnas usadas por las nuevas FK tengan charset/collation compatibles.
-SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, CHARACTER_SET_NAME, COLLATION_NAME
-FROM information_schema.COLUMNS
-WHERE TABLE_SCHEMA = DATABASE()
-  AND ((TABLE_NAME = 'products_rows' AND COLUMN_NAME = 'id')
-    OR (TABLE_NAME = 'orders_rows' AND COLUMN_NAME = 'id')
-    OR (TABLE_NAME = 'users_rows' AND COLUMN_NAME = 'id'))
-ORDER BY TABLE_NAME;
-
--- Inspeccion manual antes de normalizar articulos, envio o categorias.
-SELECT id, LEFT(items, 600) AS items_sample, LEFT(shipping, 400) AS shipping_sample
-FROM orders_rows
-ORDER BY created_at DESC
-LIMIT 10;
+--
+-- La "FASE 0: DIAGNOSTICO" y la "FASE 7: VERIFICACION" originales (solo SELECTs, para
+-- revisar a mano antes/despues de cada fase) se retiraron de este archivo: son consultas
+-- de solo lectura pensadas para ejecutarse una por una y leer el resultado, no para el
+-- runner automatico (scripts/migrate.php). Con PDO::ATTR_EMULATE_PREPARES=false (prepares
+-- nativos), un SELECT ejecutado via PDO::exec() deja un resultado sin leer que rompe la
+-- siguiente sentencia del runner (SQLSTATE[HY000] 2014 "unbuffered queries"). El DDL de
+-- abajo (creacion de tablas/indices) ya esta verificado y aplicado en produccion.
 
 -- ============================================================================
 -- FASE 1: INDICES PARA CONSULTAS ACTUALES.
--- Ejecutar solo despues de revisar la salida de indices de FASE 0.
 -- MariaDB 11 permite IF NOT EXISTS; estos indices no imponen unicidad.
 -- ============================================================================
 CREATE INDEX IF NOT EXISTS idx_orders_user_created
@@ -216,26 +185,6 @@ CREATE TABLE IF NOT EXISTS auth_role_permissions (
   CONSTRAINT fk_auth_role_permissions_permission FOREIGN KEY (permission_id) REFERENCES auth_permissions (id)
     ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ============================================================================
--- FASE 7: VERIFICACION. Ejecutar despues de cada fase DDL aplicada.
--- ============================================================================
-SELECT TABLE_NAME, ENGINE, TABLE_COLLATION
-FROM information_schema.TABLES
-WHERE TABLE_SCHEMA = DATABASE()
-  AND TABLE_NAME IN (
-    'categories_v2', 'product_categories', 'product_images', 'product_inventory',
-    'order_items', 'order_shipping_addresses', 'order_payments',
-    'auth_roles', 'auth_permissions', 'auth_user_roles', 'auth_role_permissions'
-  )
-ORDER BY TABLE_NAME;
-
-SELECT TABLE_NAME, INDEX_NAME, GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) AS columns_in_index
-FROM information_schema.STATISTICS
-WHERE TABLE_SCHEMA = DATABASE()
-  AND TABLE_NAME IN ('products_rows', 'orders_rows', 'order_items', 'product_images')
-GROUP BY TABLE_NAME, INDEX_NAME
-ORDER BY TABLE_NAME, INDEX_NAME;
 
 -- No hay backfill incluido a proposito. Despues de crear y verificar tablas:
 -- 1) adaptar backend para escribir en el esquema nuevo;
