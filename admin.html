@@ -127,17 +127,13 @@
         </div>
       </div>
     </section>
-    <section id="loginPanel" class="login hidden">
-      <h2>Acceso de administrador</h2>
-      <p>Ingresa con tu cuenta autorizada para gestionar la tienda.</p>
-      <form id="loginForm" method="POST" action="javascript:void(0);">
-        <label>Correo electrónico<input name="email" type="email" placeholder="admin@smart-isp.com.ec" required autocomplete="email"></label>
-        <label>Contraseña<input name="password" type="password" placeholder="••••••••" required autocomplete="current-password"></label>
-        <label class="remember-option"><input name="remember" type="checkbox" checked> Recordarme en este dispositivo</label>
-        <button class="button" type="submit">Entrar al Panel</button>
-        <div id="loginMessage" class="message"></div>
-      </form>
-      <p class="admin-store-return"><a href="/tienda.html">Ir a la tienda</a></p>
+    <section id="sessionErrorPanel" class="login hidden" role="alert">
+      <h2>No se pudo validar tu sesión</h2>
+      <p id="sessionErrorMessage">Ocurrió un problema temporal al conectar con el servidor.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button id="retrySessionBtn" class="button" type="button">Reintentar</button>
+        <a class="button secondary" href="/tienda.html" style="text-decoration:none;">Ir a la tienda</a>
+      </div>
     </section>
     <section id="adminPanel" class="hidden">
       <div class="dashboard-hero">
@@ -515,7 +511,7 @@
     };
 
     const openPanel = async user => {
-      $('#loginPanel').classList.add('hidden');
+      $('#sessionErrorPanel')?.classList.add('hidden');
       $('#adminPanel').classList.remove('hidden');
       hydrateDashboardHeader(user);
       $('#adminIdentity').textContent = `${user.name || 'Administrador'}${user.email ? ' · ' + user.email : ''}`;
@@ -527,28 +523,6 @@
       return ['admin', 'administrator', 'administrador'].includes(String(u.role || '').trim().toLowerCase());
     };
 
-    $('#loginForm').addEventListener('submit', async event => {
-      event.preventDefault();
-      try {
-        const values = Object.fromEntries(new FormData(event.currentTarget));
-        const remember = values.remember === 'on';
-        const result = await api('login', { method: 'POST', body: JSON.stringify(values) });
-        if (!isUserAdmin(result.user)) {
-          showDenied(result.user?.email);
-          return;
-        }
-        if (result.token) {
-          (remember ? localStorage : sessionStorage).setItem('smartisp.adminToken', result.token);
-        }
-        const displayUser = { id: result.user?.id, name: result.user?.name, email: result.user?.email };
-        (remember ? localStorage : sessionStorage).setItem('smartisp.accountUser', JSON.stringify(displayUser));
-        if (remember) localStorage.setItem('smartisp.accountRemembered', 'true');
-        else localStorage.removeItem('smartisp.accountRemembered');
-        await openPanel(result.user);
-      } catch (error) {
-        showMessage($('#loginMessage'), error.message, true);
-      }
-    });
     $('#contentForm')?.addEventListener('submit', async event => { event.preventDefault(); try { await saveForm(event.currentTarget, $('#contentMessage'), 'Apariencia guardada correctamente.'); } catch (error) { showMessage($('#contentMessage'), error.message, true); } });
     $('#contentForm')?.addEventListener('input', updateDesignPreview);
     $('#contentForm')?.addEventListener('change', updateDesignPreview);
@@ -1656,13 +1630,12 @@
       localStorage.removeItem('smartisp.adminToken');
       sessionStorage.removeItem('smartisp.accountUser');
       sessionStorage.removeItem('smartisp.adminToken');
-      $('#accessDeniedPanel').classList.add('hidden');
-      $('#loginPanel').classList.remove('hidden');
+      window.location.assign('/login.html?admin=1&redirect=%2Fadmin.html');
     });
 
     const showDenied = (email) => {
       $('#deniedUserEmail').textContent = email || 'cliente';
-      $('#loginPanel').classList.add('hidden');
+      $('#sessionErrorPanel')?.classList.add('hidden');
       const ap = $('#adminPanel');
       if (ap) ap.remove(); // Elimina el dashboard del DOM para evitar exposición por manipulación de CSS (QA-027)
       $('#accessDeniedPanel').classList.remove('hidden');
@@ -1737,13 +1710,18 @@
       } catch (e) {
         const ap = $('#adminPanel');
         if (ap) ap.classList.add('hidden');
-        $('#loginPanel').classList.remove('hidden');
-        if (e.status && e.status !== 401) showMessage($('#loginMessage'), e.message, true);
+        if (e.status === 401) {
+          window.location.replace('/login.html?admin=1&redirect=%2Fadmin.html');
+          return;
+        }
+        $('#sessionErrorMessage').textContent = e.message || 'Ocurrió un problema temporal al conectar con el servidor.';
+        $('#sessionErrorPanel').classList.remove('hidden');
       }
     };
 
     if (window.lucide) window.lucide.createIcons();
     document.getElementById('refreshDashboardBtn')?.addEventListener('click', refreshDashboardData);
+    document.getElementById('retrySessionBtn')?.addEventListener('click', checkAuthAndInit);
     checkAuthAndInit();
   </script>
 </body>
