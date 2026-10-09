@@ -289,9 +289,10 @@ $waUrl = "https://wa.me/593983576667?text={$waMessage}";
         }
 
         /* Galería e Imagen */
-        .product-image-box { position: relative; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: grid; place-items: center; aspect-ratio: 1; overflow: hidden; }
-        .product-image-box img { max-width: 100%; max-height: 100%; object-fit: contain; transition: transform .3s ease; }
+        .product-image-box { position: relative; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 18px; display: grid; place-items: center; aspect-ratio: 1; overflow: hidden; }
+        .product-image-box img { display: block; width: 100%; height: 100%; max-width: 100%; max-height: 100%; padding: 8px; object-fit: contain; transition: transform .3s ease; }
         .product-image-box:hover img { transform: scale(1.04); }
+        @media (max-width: 860px) { .product-image-box { min-height: clamp(280px, 78vw, 420px); aspect-ratio: 1.08; padding: 12px; } .product-image-box img { padding: 4px; } }
         .tag-category { position: absolute; top: 16px; left: 16px; background: #e0f2fe; color: #0369a1; font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 4px 10px; border-radius: 6px; letter-spacing: 0.5px; }
 
         /* Columna de detalles */
