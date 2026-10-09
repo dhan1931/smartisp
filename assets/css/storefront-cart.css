@@ -1,0 +1,30 @@
+/* Carrito compartido para las paginas publicas que NO son tienda.html (nosotros, productos-
+   destacados, categoria, categorias-destacadas...). tienda.html tiene su propio carrito mas
+   integrado (wishlist, toast, etc.) y no carga este archivo -- aqui es deliberadamente mas
+   simple: ver items, cambiar cantidad, quitar, ir a checkout.html. Mismos datos (localStorage
+   'smartisp.cart') que ya escribe assets/js/storefront-product-card.js en los botones
+   "Agregar", asi que el conteo y el contenido quedan sincronizados entre todas las paginas. */
+.storefront-cart-drawer{position:fixed;inset:0;z-index:10000;background:rgba(16,42,67,.35);visibility:hidden;opacity:0;transition:.2s}
+.storefront-cart-drawer.open{visibility:visible;opacity:1}
+.storefront-cart-panel{width:min(420px,100%);height:100%;background:#fff;margin-left:auto;padding:22px;transform:translateX(100%);transition:.25s;display:flex;flex-direction:column;box-sizing:border-box}
+.storefront-cart-drawer.open .storefront-cart-panel{transform:translateX(0)}
+.storefront-cart-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--sd-line);padding-bottom:16px;flex-shrink:0}
+.storefront-cart-head h2{margin:0;font-size:21px;color:var(--sd-navy)}
+.storefront-cart-close{border:0;background:transparent;color:var(--sd-muted);padding:4px;cursor:pointer}
+.storefront-cart-items{flex:1;overflow-y:auto;padding:14px 0;min-height:0;color:var(--sd-muted);font-size:13px}
+.storefront-cart-item{display:flex;gap:12px;border-bottom:1px solid var(--sd-line);padding:12px 0;color:var(--sd-ink);align-items:center}
+.storefront-cart-item img{width:55px;height:55px;object-fit:cover;background:var(--sd-pale);border-radius:6px;flex-shrink:0}
+.storefront-cart-item strong{display:block;font-size:13px;line-height:1.25;margin-bottom:4px}
+.storefront-cart-item small{color:var(--sd-muted);font-size:12px}
+.storefront-cart-item-copy{flex:1;min-width:0}
+.storefront-cart-qty{display:inline-flex;align-items:center;gap:6px;margin-top:6px;background:#f1f5f9;padding:2px 6px;border-radius:6px;border:1px solid #e2e8f0}
+.storefront-cart-qty button{border:none;background:#fff;color:var(--sd-navy);font-weight:bold;width:22px;height:22px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;line-height:1;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.storefront-cart-qty button:hover{background:var(--sd-blue);color:#fff}
+.storefront-cart-qty span{font-size:12.5px;font-weight:700;color:var(--sd-navy);min-width:18px;text-align:center}
+.storefront-cart-remove{border:0;background:transparent;color:#c25b5b;padding:6px;cursor:pointer;border-radius:4px;display:flex;align-items:center;justify-content:center}
+.storefront-cart-remove:hover{color:#9b3030;background:#fee2e2}
+.storefront-cart-footer{flex-shrink:0;border-top:1px solid var(--sd-line);padding-top:16px;margin-top:auto;background:#fff}
+.storefront-cart-total{display:flex;justify-content:space-between;font-weight:700;font-size:15px;color:var(--sd-navy)}
+.storefront-cart-checkout{width:100%;margin-top:14px;justify-content:center;background:var(--sd-blue);color:#fff;border:0;padding:13px 19px;border-radius:6px;font-weight:700;display:inline-flex;align-items:center;gap:9px;cursor:pointer}
+.storefront-cart-checkout:hover{background:#066a87}
+@media(max-width:480px){.storefront-cart-panel{width:100%;padding:16px 16px env(safe-area-inset-bottom,16px)}}

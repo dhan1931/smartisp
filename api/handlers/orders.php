@@ -282,6 +282,7 @@ if ($action === 'admin-orders-stats') {
         FROM orders_rows GROUP BY status")->fetchAll(PDO::FETCH_ASSOC);
     $totals = $pdo->query("SELECT COUNT(*) AS total,
         SUM(CASE WHEN $eligibleSale THEN total ELSE 0 END) AS revenue,
+        SUM(CASE WHEN $eligibleSale THEN 1 ELSE 0 END) AS paid_count,
         SUM(CASE WHEN LOWER(status) IN ('delivered', 'completed') THEN 1 ELSE 0 END) AS completed_count,
         SUM(CASE WHEN LOWER(status) = 'pending' THEN 1 ELSE 0 END) AS pending_count,
         SUM(CASE WHEN DATE(created_at) = CURDATE() THEN 1 ELSE 0 END) AS today_count
@@ -299,6 +300,7 @@ if ($action === 'admin-orders-stats') {
         ], $byStatus),
         'total'       => (int)($totals['total'] ?? 0),
         'revenue'     => (float)($totals['revenue'] ?? 0),
+        'paid_count'  => (int)($totals['paid_count'] ?? 0),
         'completed_count' => (int)($totals['completed_count'] ?? 0),
         'pending_count' => (int)($totals['pending_count'] ?? 0),
         'today_count' => (int)($totals['today_count'] ?? 0),

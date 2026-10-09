@@ -17,11 +17,11 @@
   <link rel="manifest" href="/assets/site.webmanifest">
   <meta name="theme-color" content="#102c3d">
   <style>
-    :root { --ink: #163342; --muted: #6b7f88; --line: #d8e5e7; --pale: #eef5f6; --blue: #087ea4; --blue-dark: #075d7d; --danger: #a53b3b; --success: #11815d; }
-    * { box-sizing: border-box; } body { margin: 0; color: var(--ink); background: radial-gradient(circle at 90% 0, #d6f1ee 0, transparent 34%), var(--pale); font: 15px Arial, sans-serif; }
+    :root { --ink: #163342; --muted: #6b7f88; --line: #d8e5e7; --pale: #f4f7f9; --blue: #087ea4; --blue-dark: #075d7d; --danger: #a53b3b; --success: #11815d; }
+    * { box-sizing: border-box; } body { margin: 0; color: var(--ink); background: var(--pale); font: 15px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
     button, input, textarea, select { font: inherit; } button { cursor: pointer; }
-    .top { padding: 28px 5vw; color: white; background: linear-gradient(120deg, #102c3d, #075d7d); display: flex; align-items: center; justify-content: space-between; gap: 20px; box-shadow: 0 12px 28px rgba(16,44,61,.18); }
-    .top h1 { margin: 0; font-size: 27px; letter-spacing: .2px; } .top span { color: #b7d4dc; font-size: 13px; }
+    .top { padding: 14px 28px; color: var(--ink); background: #fff; display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--line); }
+    .top h1 { margin: 0; font-size: 17px; font-weight: 800; letter-spacing: -.01em; } .top span { color: var(--muted); font-size: 12px; }
     .shell { width: min(1180px, 90vw); margin: 32px auto; } .login, .panel { background: rgba(255,255,255,.94); border: 1px solid var(--line); border-radius: 14px; padding: 28px; box-shadow: 0 12px 30px rgba(16,44,61,.08); }
     .login { width: min(430px, 100%); margin: 80px auto; } h2 { margin-top: 0; } h3 { margin: 0 0 17px; } label { display: block; margin: 14px 0; color: var(--muted); font-size: 13px; font-weight: 700; }
     .admin-store-return { margin: 16px 0 0; text-align: center; font-size: 14px; }
@@ -33,72 +33,87 @@
     .form-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; } .section-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; } .section-heading h3 { margin-bottom: 0; }
     .hidden { display: none !important; } .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; } .wide { grid-column: 1 / -1; }
     .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 24px; } .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .dashboard-hero { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin-bottom:18px; }
-    .dashboard-hero h2 { margin:0; color:#0f172a; font-size:28px; letter-spacing:-.02em; }
-    .dashboard-hero p { margin:5px 0 0; color:#64748b; }
-    .dashboard-date { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:9px 12px; color:#0f172a; font-weight:700; font-size:13px; box-shadow:0 2px 8px rgba(15,23,42,.03); }
+    .dashboard-hero { display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin-bottom:22px; }
+    .dashboard-hero h2 { margin:0; color:#0f172a; font-size:25px; font-weight:800; letter-spacing:-.02em; }
+    .dashboard-hero p { margin:4px 0 0; color:var(--muted); font-size:13.5px; }
+    .dashboard-date { background:#fff; border:1px solid var(--line); border-radius:10px; padding:9px 13px; color:#0f172a; font-weight:700; font-size:12.5px; display:inline-flex; align-items:center; gap:6px; }
     .dashboard-tools { display:flex; align-items:center; gap:8px; }
-    .dashboard-refresh { width:38px; height:38px; display:grid; place-items:center; border:1px solid #d8e5e7; border-radius:8px; background:#fff; color:#075d7d; }
+    .dashboard-refresh { width:36px; height:36px; display:grid; place-items:center; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--blue-dark); transition:background .15s, border-color .15s; }
+    .dashboard-refresh:hover { background:#f0f9ff; border-color:#bae6fd; }
     .dashboard-refresh:disabled { opacity:.55; cursor:wait; }
-    .dashboard-grid { display:grid; grid-template-columns:minmax(0, 1.8fr) minmax(300px, .9fr); gap:14px; margin-bottom:14px; }
-    .dashboard-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 2px 10px rgba(15,23,42,.04); }
-    .kpi-row { display:grid; grid-template-columns:repeat(auto-fit, minmax(165px, 1fr)); gap:14px; margin-bottom:14px; }
-    .kpi-card { min-height:112px; padding:16px; color:inherit; text-decoration:none; }
-    .kpi-card:hover { border-color:#bfdbfe; }
-    .kpi-head { display:flex; align-items:center; gap:10px; color:#0f172a; font-size:13px; font-weight:800; margin-bottom:12px; }
-    .kpi-icon { width:32px; height:32px; border-radius:9px; display:grid; place-items:center; background:#e0f2fe; color:#0369a1; }
-    .kpi-value { color:#020617; font-size:27px; font-weight:800; letter-spacing:-.03em; }
-    .kpi-foot { margin-top:5px; color:#64748b; font-size:12px; }
+    .dashboard-grid { display:grid; grid-template-columns:minmax(0, 1.7fr) minmax(300px, 1fr); gap:16px; margin-bottom:16px; }
+    .dashboard-card { background:#fff; border:1px solid var(--line); border-radius:16px; box-shadow:0 1px 2px rgba(15,23,42,.04); transition:box-shadow .15s; }
+    .kpi-row { display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:14px; margin-bottom:16px; }
+    .kpi-card { min-height:118px; padding:18px; color:inherit; text-decoration:none; position:relative; overflow:hidden; }
+    .kpi-card:hover { box-shadow:0 8px 20px rgba(15,23,42,.08); transform:translateY(-1px); }
+    .kpi-head { display:flex; align-items:center; gap:10px; color:#475569; font-size:12.5px; font-weight:700; margin-bottom:16px; }
+    .kpi-icon { width:38px; height:38px; border-radius:50%; display:grid; place-items:center; background:#e0f2fe; color:#0369a1; flex-shrink:0; }
+    .kpi-value { color:#020617; font-size:25px; font-weight:800; letter-spacing:-.03em; line-height:1.15; }
+    .kpi-foot { margin-top:6px; color:var(--muted); font-size:11.5px; }
     .kpi-card.is-green .kpi-icon { background:#dcfce7; color:#15803d; }
     .kpi-card.is-red .kpi-icon { background:#fee2e2; color:#dc2626; }
     .kpi-card.is-violet .kpi-icon { background:#ede9fe; color:#6d28d9; }
-    .chart-panel { padding:18px; min-height:250px; }
-    .panel-title-row { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }
-    .panel-title-row h3 { margin:0; color:#0f172a; font-size:17px; }
-    .panel-title-row a { color:#0369a1; text-decoration:none; font-size:12.5px; font-weight:800; }
+    .kpi-card.is-blue .kpi-icon { background:#dbeafe; color:#1d4ed8; }
+    .chart-panel { padding:20px; min-height:260px; display:flex; flex-direction:column; }
+    .panel-title-row { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; }
+    .panel-title-row h3 { margin:0; color:#0f172a; font-size:15.5px; font-weight:800; }
+    .panel-title-row a { color:var(--blue-dark); text-decoration:none; font-size:12px; font-weight:800; }
+    .panel-title-row a:hover { text-decoration:underline; }
+    .sales-chart-wrap { position:relative; flex:1; min-height:200px; }
+    .sales-chart-legend { display:flex; gap:16px; margin-top:12px; padding-top:12px; border-top:1px solid #eef2f7; }
+    .sales-chart-legend span { display:inline-flex; align-items:center; gap:6px; color:var(--muted); font-size:11.5px; font-weight:700; }
+    .sales-chart-legend i { width:9px; height:9px; border-radius:50%; display:inline-block; }
     .status-chart-list { min-height:165px; display:grid; align-content:center; gap:13px; padding:10px 4px; }
     .status-chart-row { display:grid; grid-template-columns:minmax(88px, 124px) minmax(0, 1fr) 36px; align-items:center; gap:10px; }
     .status-chart-name { overflow:hidden; color:#475569; font-size:12px; text-overflow:ellipsis; white-space:nowrap; }
     .status-chart-track { height:10px; overflow:hidden; border-radius:999px; background:#e8eef2; }
     .status-chart-track span { display:block; height:100%; min-width:0; border-radius:inherit; background:#0784a5; }
     .status-chart-count { color:#0f172a; font-size:12px; text-align:right; }
-    .attention-panel { padding:18px; }
-    .attention-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px; }
-    .attention-head h3 { margin:0 0 4px; font-size:16px; color:#0f172a; }
-    .attention-head p { margin:0; color:#64748b; font-size:12.5px; }
-    .attention-list { display:grid; gap:10px; }
-    .attention-item { display:flex; align-items:flex-start; gap:10px; padding:12px; border:1px solid #e2e8f0; border-radius:10px; color:inherit; text-decoration:none; background:#f8fafc; }
+    .attention-panel { padding:20px; }
+    .attention-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:14px; }
+    .attention-head h3 { margin:0 0 4px; font-size:15.5px; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:7px; }
+    .attention-head p { margin:0; color:var(--muted); font-size:12px; }
+    .attention-list { display:grid; gap:9px; }
+    .attention-item { display:flex; align-items:flex-start; gap:10px; padding:12px; border:1px solid var(--line); border-radius:12px; color:inherit; text-decoration:none; background:#fbfdfe; transition:border-color .15s, background .15s; }
     .attention-item:hover { border-color:#bae6fd; background:#f0f9ff; }
-    .attention-icon { width:30px; height:30px; border-radius:8px; display:grid; place-items:center; flex-shrink:0; background:#e0f2fe; color:#0369a1; }
-    .attention-item strong { display:block; color:#0f172a; font-size:13.5px; margin-bottom:2px; }
-    .attention-item span { display:block; color:#64748b; font-size:12px; line-height:1.35; }
+    .attention-icon { width:32px; height:32px; border-radius:50%; display:grid; place-items:center; flex-shrink:0; background:#e0f2fe; color:#0369a1; }
+    .attention-item strong { display:block; color:#0f172a; font-size:13px; font-weight:700; margin-bottom:2px; }
+    .attention-item span { display:block; color:var(--muted); font-size:11.5px; line-height:1.35; }
     .attention-item.is-warning .attention-icon { background:#fef3c7; color:#b45309; }
     .attention-item.is-danger .attention-icon { background:#fee2e2; color:#b91c1c; }
-    .dashboard-lower { display:grid; grid-template-columns:minmax(0, 1fr) minmax(280px, .65fr); gap:14px; }
-    .recent-panel, .health-panel { padding:18px; }
+    .dashboard-lower { display:grid; grid-template-columns:minmax(0, 1fr) minmax(280px, .65fr); gap:16px; }
+    .recent-panel, .health-panel { padding:20px; }
     .recent-table-wrap { max-width:100%; overflow-x:auto; overscroll-behavior-x:contain; }
     .recent-table { width:100%; min-width:420px; border-collapse:collapse; font-size:12.5px; }
-    .recent-table th { text-align:left; color:#64748b; font-size:11.5px; padding:9px 8px; border-bottom:1px solid #e2e8f0; }
-    .recent-table td { padding:10px 8px; border-bottom:1px solid #eef2f7; color:#0f172a; }
-    .status-pill { display:inline-flex; align-items:center; padding:3px 8px; border-radius:999px; background:#e0f2fe; color:#0369a1; font-weight:800; font-size:11px; }
-    .health-meter { height:12px; background:#e2e8f0; border-radius:999px; overflow:hidden; margin:12px 0; }
-    .health-meter span { display:block; height:100%; width:0%; background:linear-gradient(90deg, #22c55e, #0ea5e9); border-radius:999px; transition:width .3s; }
-    .health-summary { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-top:14px; }
-    .health-summary strong { display:block; color:#0f172a; font-size:21px; }
-    .health-summary span { color:#64748b; font-size:11.5px; }
-    .dashboard-insights { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:14px; margin-top:14px; }
-    .insight-panel { padding:18px; min-width:0; }
-    .insight-list { display:grid; gap:9px; }
-    .insight-row { display:grid; grid-template-columns:minmax(0, 1fr) auto; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid #eef2f7; }
+    .recent-table th { text-align:left; color:var(--muted); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; padding:0 8px 10px; border-bottom:1px solid var(--line); }
+    .recent-table td { padding:12px 8px; border-bottom:1px solid #f1f5f9; color:#0f172a; }
+    .recent-table tr:last-child td { border-bottom:0; }
+    .recent-table tr:hover td { background:#fbfdfe; }
+    .status-pill { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; background:#e0f2fe; color:#0369a1; font-weight:800; font-size:11px; }
+    .status-pill::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; }
+    .health-ring-wrap { display:flex; align-items:center; gap:18px; margin:4px 0 16px; }
+    .health-ring { position:relative; width:92px; height:92px; border-radius:50%; display:grid; place-items:center; background:conic-gradient(#0ea5e9 calc(var(--pct,0) * 1%), #e8eef2 0); flex-shrink:0; }
+    .health-ring::after { content:''; width:70px; height:70px; border-radius:50%; background:#fff; position:absolute; }
+    .health-ring strong { position:relative; z-index:1; font-size:19px; font-weight:800; color:#0f172a; }
+    .health-ring-copy strong { display:block; font-size:13px; color:#0f172a; }
+    .health-ring-copy span { color:var(--muted); font-size:12px; }
+    .health-summary { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; }
+    .health-summary strong { display:block; color:#0f172a; font-size:19px; font-weight:800; }
+    .health-summary span { color:var(--muted); font-size:11px; }
+    .dashboard-insights { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:16px; margin-top:16px; }
+    .insight-panel { padding:20px; min-width:0; }
+    .insight-list { display:grid; gap:4px; }
+    .insight-row { display:grid; grid-template-columns:22px minmax(0, 1fr) auto; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid #f1f5f9; }
     .insight-row:last-child { border-bottom:0; }
-    .insight-row strong { display:block; overflow:hidden; color:#0f172a; font-size:13px; text-overflow:ellipsis; white-space:nowrap; }
-    .insight-row small { display:block; margin-top:3px; color:#64748b; font-size:11.5px; }
-    .insight-value { color:#075d7d; font-size:13px; font-weight:800; white-space:nowrap; }
-    .insight-empty { margin:0; padding:14px 0; color:#64748b; font-size:13px; line-height:1.5; }
+    .insight-rank { color:#94a3b8; font-size:12px; font-weight:800; }
+    .insight-row strong { display:block; overflow:hidden; color:#0f172a; font-size:13px; font-weight:700; text-overflow:ellipsis; white-space:nowrap; }
+    .insight-row small { display:block; margin-top:3px; color:var(--muted); font-size:11.5px; }
+    .insight-value { color:var(--blue-dark); font-size:12.5px; font-weight:800; white-space:nowrap; background:#eef7fa; padding:3px 9px; border-radius:999px; }
+    .insight-empty { margin:0; padding:14px 0; color:var(--muted); font-size:13px; line-height:1.5; }
     .inventory-metrics { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; margin-top:14px; }
-    .inventory-metric { padding:12px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; }
-    .inventory-metric strong { display:block; color:#0f172a; font-size:20px; }
-    .inventory-metric span { color:#64748b; font-size:11px; }
+    .inventory-metric { padding:12px; border:1px solid var(--line); border-radius:10px; background:#fbfdfe; }
+    .inventory-metric strong { display:block; color:#0f172a; font-size:19px; font-weight:800; }
+    .inventory-metric span { color:var(--muted); font-size:11px; }
     .inventory-warning { color:#9a5800; }
     @keyframes save-confirm { 0% { opacity: 0; transform: translateY(-8px) scale(.98); } 55% { transform: translateY(0) scale(1.02); } 100% { opacity: 1; transform: translateY(0) scale(1); } } @keyframes rise-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .panel { animation: rise-in .45s ease both; } @media (max-width: 980px) { .dashboard-grid, .dashboard-lower, .dashboard-insights { grid-template-columns:1fr; } } @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } .top, .toolbar, .section-heading, .dashboard-hero { align-items: flex-start; flex-direction: column; } .health-summary { grid-template-columns:1fr; } } @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
@@ -106,6 +121,7 @@
     svg.lucide { width: 1em; height: 1em; vertical-align: -0.125em; stroke-width: 2; flex-shrink: 0; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <link rel="stylesheet" href="/assets/css/admin-nav.css?v=admin-campaign-link-20261009">
@@ -159,6 +175,11 @@
           <div class="kpi-value" id="dashPendingCount">—</div>
           <div class="kpi-foot">Requieren seguimiento</div>
         </a>
+        <div class="dashboard-card kpi-card">
+          <div class="kpi-head"><span class="kpi-icon"><i data-lucide="receipt"></i></span>Ticket promedio</div>
+          <div class="kpi-value" id="dashAvgTicket">—</div>
+          <div class="kpi-foot"><span id="dashPaidCount">—</span> pedidos con pago confirmado</div>
+        </div>
         <a class="dashboard-card kpi-card is-violet" href="editor-catalogo.html">
           <div class="kpi-head"><span class="kpi-icon"><i data-lucide="package"></i></span>Catálogo</div>
           <div class="kpi-value" id="adminCatalogProdCount">—</div>
@@ -173,10 +194,12 @@
       <div class="dashboard-grid">
         <section class="dashboard-card chart-panel">
           <div class="panel-title-row">
-            <h3 id="ordersStatusTitle">Pedidos por estado actual</h3>
+            <h3>Ventas y pedidos · 7 días</h3>
             <a href="pedidos.html">Ver pedidos</a>
           </div>
-          <div id="ordersStatusChart" class="status-chart-list" aria-live="polite"></div>
+          <div class="sales-chart-wrap"><canvas id="salesChart" role="img" aria-label="Ventas y pedidos de los últimos 7 días"></canvas></div>
+          <div class="sales-chart-legend"><span><i style="background:#0ea5e9"></i> Ventas</span><span><i style="background:#86efac"></i> Pedidos</span></div>
+          <div id="ordersStatusChart" class="status-chart-list hidden" aria-live="polite"></div>
         </section>
         <section class="dashboard-card attention-panel" aria-labelledby="attentionTitle">
           <div class="attention-head">
@@ -209,11 +232,10 @@
             <h3>Salud del catálogo</h3>
             <a href="editor-catalogo.html">Revisar catálogo</a>
           </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
-            <span style="color:#64748b; font-size:12.5px;">Completitud básica</span>
-            <strong id="catalogHealthPct" style="font-size:24px; color:#16a34a;">—</strong>
+          <div class="health-ring-wrap">
+            <div class="health-ring" id="catalogHealthRing"><strong id="catalogHealthPct">—</strong></div>
+            <div class="health-ring-copy"><strong>Completitud básica</strong><span>Productos con foto, sobre el total del catálogo</span></div>
           </div>
-          <div class="health-meter"><span id="catalogHealthBar"></span></div>
           <div class="health-summary">
             <div><strong id="healthProducts">—</strong><span>Productos</span></div>
             <div><strong id="healthWithImage">—</strong><span>Con imagen</span></div>
@@ -380,6 +402,54 @@
 
     const formatMoney = value => '$' + Number(value || 0).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+    let salesChartInstance = null;
+    const renderSalesChart = stats => {
+      const canvas = document.getElementById('salesChart');
+      if (!canvas || typeof Chart === 'undefined') return;
+      const daily = Array.isArray(stats.daily) ? stats.daily : [];
+      const byDay = Object.fromEntries(daily.map(d => [d.day, d]));
+      const labels = [];
+      const revenueData = [];
+      const ordersData = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = d.toISOString().slice(0, 10);
+        const row = byDay[key];
+        labels.push(d.toLocaleDateString('es-EC', { weekday: 'short', day: 'numeric' }));
+        revenueData.push(row ? Number(row.revenue || 0) : 0);
+        ordersData.push(row ? Number(row.orders || 0) : 0);
+      }
+      if (salesChartInstance) salesChartInstance.destroy();
+      salesChartInstance = new Chart(canvas, {
+        data: {
+          labels,
+          datasets: [
+            { type: 'bar', label: 'Pedidos', data: ordersData, backgroundColor: '#bbf7d0', borderRadius: 6, yAxisID: 'y1', order: 2, barThickness: 22 },
+            { type: 'line', label: 'Ventas', data: revenueData, borderColor: '#0ea5e9', backgroundColor: 'rgba(14,165,233,.12)', fill: true, tension: .35, pointRadius: 3, pointBackgroundColor: '#0ea5e9', yAxisID: 'y', order: 1 },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => ctx.dataset.label === 'Ventas' ? ` Ventas: ${formatMoney(ctx.parsed.y)}` : ` Pedidos: ${ctx.parsed.y}`,
+              },
+            },
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+            y: { position: 'left', beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8', font: { size: 10 }, maxTicksLimit: 5, callback: v => '$' + v } },
+            y1: { position: 'right', beginAtZero: true, grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 }, precision: 0, maxTicksLimit: 5 } },
+          },
+        },
+      });
+    };
+
     const renderStatusChart = stats => {
       const chart = document.getElementById('ordersStatusChart');
       if (!chart) return;
@@ -412,7 +482,7 @@
       const withoutImage = Number(stats.without_photo || 0);
       const pct = total > 0 ? Math.round((withImage / total) * 100) : 0;
       document.getElementById('catalogHealthPct').textContent = pct + '%';
-      document.getElementById('catalogHealthBar').style.width = pct + '%';
+      document.getElementById('catalogHealthRing').style.setProperty('--pct', String(pct));
       document.getElementById('healthProducts').textContent = total.toLocaleString('es-EC');
       document.getElementById('healthWithImage').textContent = withImage.toLocaleString('es-EC');
       document.getElementById('healthWithoutImage').textContent = withoutImage.toLocaleString('es-EC');
@@ -494,6 +564,10 @@
         document.getElementById('dashTodayCount').textContent = stats.today_count || 0;
         document.getElementById('dashTotalCount').textContent = stats.total || 0;
         document.getElementById('dashRevenue').textContent = formatMoney(stats.revenue);
+        const paidCount = Number(stats.paid_count || 0);
+        document.getElementById('dashPaidCount').textContent = paidCount;
+        document.getElementById('dashAvgTicket').textContent = paidCount > 0 ? formatMoney(Number(stats.revenue || 0) / paidCount) : '—';
+        renderSalesChart(stats);
         renderStatusChart(stats);
         renderAttention();
       } catch (e) {
@@ -1660,7 +1734,8 @@
       topProducts.innerHTML = products.length
         ? products.map((product, index) => `
           <div class="insight-row">
-            <div><strong>${index + 1}. ${escapeHtml(product.name || 'Producto')}</strong><small>${Number(product.orders || 0).toLocaleString('es-EC')} pedidos</small></div>
+            <span class="insight-rank">${index + 1}</span>
+            <div><strong>${escapeHtml(product.name || 'Producto')}</strong><small>${Number(product.orders || 0).toLocaleString('es-EC')} pedidos</small></div>
             <span class="insight-value">${Number(product.units || 0).toLocaleString('es-EC')} ud.</span>
           </div>`).join('')
         : '<p class="insight-empty">Aún no hay artículos detallados en pedidos de los últimos 30 días.</p>';

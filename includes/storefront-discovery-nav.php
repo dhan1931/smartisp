@@ -43,11 +43,13 @@ $storefrontNavLinks = [
     </div>
   </div>
 </nav>
+<link rel="stylesheet" href="/assets/css/storefront-cart.css?v=shared-cart-drawer-20261009">
 <script src="/assets/js/public-admin-link.js?v=public-admin-access-20261009" defer></script>
+<script src="/assets/js/storefront-cart.js?v=shared-cart-drawer-20261009" defer></script>
 <nav class="storefront-mobile-bar" aria-label="Accesos rápidos">
   <a href="/tienda.html"><i data-lucide="store" width="19"></i><span>Tienda</span></a>
   <a href="/categorias-destacadas"><i data-lucide="layout-grid" width="19"></i><span>Categorías</span></a>
   <a href="/tienda.html#catalogo"><i data-lucide="search" width="19"></i><span>Buscar</span></a>
-  <a href="/tienda.html?openCart=1"><i data-lucide="shopping-cart" width="19"></i><span>Carrito</span></a>
+  <a href="/tienda.html?openCart=1" data-open-cart><i data-lucide="shopping-cart" width="19"></i><span>Carrito</span></a>
   <a href="/tienda.html?openAccount=1"><i data-lucide="user" width="19"></i><span>Cuenta</span></a>
 </nav>
