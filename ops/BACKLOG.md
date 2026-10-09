@@ -48,6 +48,16 @@ de datos reales es su propia tarea porque varios requieren backend nuevo, no sol
 
 - [ ] **DEV-20261006-016** `low` `feature` — Clientes, Clasificación IA, Inventario/Stock, Analítica/Reportes: el mockup los muestra, pero ninguno existe en el backend; cada uno necesita su propio diseño de alcance antes de empezar.
 
+## Épica: Tienda pública y campañas — referencia visual 2026-10-09
+
+Prioridad inmediata: cerrar la vista pública de productos, categorías y campañas. La referencia nueva del
+panel queda registrada para después: dashboard claro tipo SaaS, menú lateral por módulos, tarjetas y gráficas
+con límites legibles; estadísticas y reportes deben mostrar datos reales y se construirán por separado.
+
+- [ ] **DEV-20261009-043** `high` `feature` — Categorías públicas: imágenes solo en familias destacadas; dentro de una categoría permitir icono o miniatura por subcategoría
+- [ ] **DEV-20261009-044** `high` `feature` — Fichas públicas de cuatro columnas con imagen completa, precio, disponibilidad y agregar al carrito; filtros de subcategoría, precio y stock
+- [ ] **DEV-20261009-045** `high` `feature` — Editor de campañas: proporción texto/imagen ajustable, preview fiel, transparencia sin recortes y acordeones estables
+
 ## Now
 
 - [ ] **DEV-20261005-001** `critical` `security` — Rotar credenciales de MySQL y eliminar fallbacks con secretos (SEC-004, SEC-014)

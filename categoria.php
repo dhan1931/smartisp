@@ -37,6 +37,10 @@ $products = [];
 $allCategoryNames = [];
 $audioVideoSubcategories = [];
 $selectedSubcategory = '';
+$selectedPriceMin = trim((string)($_GET['precio_min'] ?? ''));
+$selectedPriceMax = trim((string)($_GET['precio_max'] ?? ''));
+$filterInStock = ($_GET['stock'] ?? '') === '1';
+$hasInventoryTable = false;
 $totalProducts = 0;
 $allProductCount = 0;
 $categoryBannerUrl = '';
@@ -51,6 +55,7 @@ if ($pdo && $slug !== '') {
     try {
         $pTable = getProductsTableName($pdo);
         ensureProductTableColumns($pdo, $pTable);
+        $hasInventoryTable = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'product_inventory'")->fetchColumn() > 0;
         $stmt = $pdo->query("
             SELECT TRIM(category) AS category, TRIM(subcategory) AS subcategory, COUNT(*) AS product_count
             FROM `$pTable`
@@ -92,23 +97,14 @@ if ($pdo && $slug !== '') {
         }
 
         if ($categoryName !== '') {
-            $isAudioVideoCategory = slugifyCategoryPage($categoryName) === slugifyCategoryPage('Audio y Video') && $categoryParentName === '';
-            if ($isAudioVideoCategory) {
-                $facetStmt = $pdo->prepare("
-                    SELECT TRIM(subcategory) AS name, COUNT(*) AS product_count
-                    FROM `$pTable`
-                    WHERE visible = 1 AND TRIM(category) = :category_name AND TRIM(subcategory) <> ''
-                    GROUP BY TRIM(subcategory)
-                    ORDER BY TRIM(subcategory) ASC
-                ");
-                $facetStmt->execute([':category_name' => $categoryName]);
-                $audioVideoSubcategories = $facetStmt->fetchAll(PDO::FETCH_ASSOC);
-                $requestedSubcategory = trim((string)($_GET['subcategoria'] ?? ''));
-                foreach ($audioVideoSubcategories as $facet) {
-                    if ((string)$facet['name'] === $requestedSubcategory) {
-                        $selectedSubcategory = $requestedSubcategory;
-                        break;
-                    }
+            $facetStmt = $pdo->prepare("SELECT TRIM(subcategory) AS name, COUNT(*) AS product_count FROM `$pTable` WHERE visible = 1 AND (TRIM(category) = :category_name OR TRIM(subcategory) = :subcategory_name) AND TRIM(subcategory) <> '' GROUP BY TRIM(subcategory) ORDER BY TRIM(subcategory) ASC");
+            $facetStmt->execute([':category_name' => $categoryName, ':subcategory_name' => $categoryName]);
+            $audioVideoSubcategories = $facetStmt->fetchAll(PDO::FETCH_ASSOC);
+            $requestedSubcategory = trim((string)($_GET['subcategoria'] ?? ''));
+            foreach ($audioVideoSubcategories as $facet) {
+                if ((string)$facet['name'] === $requestedSubcategory) {
+                    $selectedSubcategory = $requestedSubcategory;
+                    break;
                 }
             }
 
@@ -121,6 +117,15 @@ if ($pdo && $slug !== '') {
                 $where .= ' AND TRIM(subcategory) = :filter_subcategory';
                 $params[':filter_subcategory'] = $selectedSubcategory;
             }
+            if ($selectedPriceMin !== '' && is_numeric($selectedPriceMin) && (float)$selectedPriceMin >= 0) {
+                $where .= ' AND price >= :price_min';
+                $params[':price_min'] = (float)$selectedPriceMin;
+            }
+            if ($selectedPriceMax !== '' && is_numeric($selectedPriceMax) && (float)$selectedPriceMax >= 0) {
+                $where .= ' AND price <= :price_max';
+                $params[':price_max'] = (float)$selectedPriceMax;
+            }
+            if ($filterInStock && $hasInventoryTable) $where .= ' AND EXISTS (SELECT 1 FROM product_inventory pi WHERE pi.product_id = id AND pi.quantity_available > pi.quantity_reserved)';
             $countStmt = $pdo->prepare("SELECT COUNT(*) FROM `$pTable` WHERE $where");
             $countStmt->execute($params);
             $totalProducts = (int)$countStmt->fetchColumn();
@@ -129,15 +134,17 @@ if ($pdo && $slug !== '') {
             $offset = ($currentPage - 1) * $pageSize;
 
             $stmtProducts = $pdo->prepare("
-                SELECT *
-                FROM `$pTable`
+                SELECT p.*" . ($hasInventoryTable ? ", (SELECT GREATEST(quantity_available - quantity_reserved, 0) FROM product_inventory WHERE product_id = p.id LIMIT 1) AS available_qty" : ", NULL AS available_qty") . "
+                FROM `$pTable` p
                 WHERE $where
                 ORDER BY updated_at DESC, name ASC
                 LIMIT $pageSize OFFSET $offset
             ");
             $stmtProducts->execute($params);
             while ($row = $stmtProducts->fetch(PDO::FETCH_ASSOC)) {
-                $products[] = normalizeProductRow($row);
+                $product = normalizeProductRow($row);
+                $product['available_qty'] = $row['available_qty'] === null ? null : (int)$row['available_qty'];
+                $products[] = $product;
             }
 
             $configName = $categoryParentName !== '' ? $categoryParentName : $categoryName;
@@ -237,16 +244,32 @@ foreach ($products as $idx => $product) {
     .category-breadcrumb a{color:#087ea4}.category-breadcrumb a:hover{text-decoration:underline}
     .category-breadcrumb [aria-current=page]{overflow-wrap:anywhere;color:#17324d;font-weight:700}
     .category-breadcrumb-separator{color:#91a6b5}
-    .category-hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(240px,.95fr);align-items:center;gap:clamp(20px,4vw,48px);min-height:270px;margin:0 0 22px;padding:clamp(22px,4vw,42px);border:1px solid #cfe3ed;border-left:4px solid #087ea4;border-radius:10px;background:linear-gradient(115deg,#edf8fd 0%,#dff2fb 54%,#c9e9f8 100%);overflow:hidden}
+    .category-hero{display:grid;grid-template-columns:minmax(0,1fr);align-items:center;gap:clamp(20px,4vw,48px);min-height:0;margin:0 0 22px;padding:clamp(22px,4vw,42px);border:1px solid #c5d7e0;border-left:4px solid #087ea4;border-radius:8px;background:linear-gradient(115deg,#edf8fd 0%,#dff2fb 54%,#c9e9f8 100%);overflow:hidden}
+    .category-hero.has-banner{grid-template-columns:minmax(0,1.05fr) minmax(240px,.95fr);min-height:270px}
     .category-hero-copy{flex:1;min-width:0}
     .category-banner{display:block;width:100%;min-width:0;aspect-ratio:1.92;object-fit:cover;border:1px solid rgba(255,255,255,.8);border-radius:8px;background:#fff;box-shadow:0 14px 30px rgba(16,44,61,.12)}
-    .category-banner-fallback{display:grid;place-items:center;min-height:190px;aspect-ratio:1.92;border:1px solid #c5e4f2;border-radius:8px;background:radial-gradient(ellipse at 72% 35%,#bce6f8,transparent 44%),linear-gradient(135deg,#eaf7fc,#d4edf9);color:#087ea4}
-    .category-banner-fallback svg{width:62px;height:62px;stroke-width:1.5}
     .category-eyebrow{color:#087ea4;font-size:11px;font-weight:850;text-transform:uppercase}
     .category-hero h1{margin:5px 0 7px;color:#102c3d;font-size:38px;line-height:1.1;letter-spacing:0}
     .category-hero p{max-width:760px;margin:0;color:#60798f;font-size:15px}
     .category-total{display:inline-flex;width:max-content;margin-top:14px;padding:9px 13px;border:1px solid #d8e5e7;border-radius:99px;background:#fff;color:#17324d;font-size:13px;font-weight:800;white-space:nowrap}
-    .category-list-heading{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-top:18px}
+    .category-results-layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:18px;align-items:start}
+    .category-sidebar{position:sticky;top:16px;padding:16px;border:1px solid #c5d7e0;border-radius:8px;background:#fff}
+    .category-sidebar h3{margin:0 0 10px;color:#102c3d;font-size:15px}
+    .category-subcategory-list{display:grid;max-height:320px;overflow:auto;margin-bottom:14px;border-top:1px solid #d8e5e7}
+    .category-subcategory-list a{display:flex;justify-content:space-between;gap:8px;padding:9px 2px;border-bottom:1px solid #d8e5e7;color:#17324d;font-size:12px;font-weight:700}
+    .category-subcategory-list a[aria-current=true]{color:#087ea4}
+    .category-subcategory-list small{color:#60798f}
+    .category-filter-form{display:grid;gap:10px;padding-top:13px;border-top:1px solid #d8e5e7}
+    .category-filter-form label{display:grid;gap:4px;color:#17324d;font-size:12px;font-weight:750}
+    .category-filter-form input[type=number]{width:100%;min-width:0;padding:9px;border:1px solid #bdced8;border-radius:5px}
+    .category-price-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .category-filter-form .category-stock{display:flex;align-items:center;gap:8px;font-weight:650}
+    .category-filter-form .category-stock input{width:auto;margin:0}
+    .category-filter-actions{display:flex;gap:8px;align-items:center}
+    .category-filter-actions button,.category-filter-actions a{min-height:36px;padding:8px 10px;border:1px solid #b7cbd6;border-radius:5px;background:#fff;color:#123247;font-size:12px;font-weight:800}
+    .category-filter-actions button{border-color:#087ea4;background:#087ea4;color:white}
+    .category-results-main{min-width:0}
+    .category-list-heading{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-top:0}
     .category-list-heading h2{margin:0;color:#102c3d;font-size:22px}
     .category-list-heading p{margin:3px 0 0;color:#60798f;font-size:13px}
     .category-filters{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0 4px}
@@ -262,7 +285,8 @@ foreach ($products as $idx => $product) {
     .category-chips{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 34px}
     .category-chips a{padding:7px 11px;border:1px solid #d8e5e7;border-radius:6px;background:#fff;color:#102c3d;font-size:12px;font-weight:750}
     .category-chips a:hover{border-color:#087ea4;color:#087ea4}
-    @media(max-width:760px){.category-breadcrumb{margin-top:16px;font-size:12px}.category-hero{grid-template-columns:1fr;gap:18px;min-height:0;padding:20px}.category-hero h1{font-size:30px}.category-banner,.category-banner-fallback{aspect-ratio:1.8}.category-list-heading{align-items:flex-start;flex-direction:column}.category-pagination{gap:8px}.category-pagination a{padding:8px}}
+    @media(max-width:900px){.category-results-layout{grid-template-columns:220px minmax(0,1fr);gap:12px}}
+    @media(max-width:760px){.category-breadcrumb{margin-top:16px;font-size:12px}.category-hero,.category-hero.has-banner{grid-template-columns:1fr;gap:18px;min-height:0;padding:20px}.category-hero h1{font-size:30px}.category-banner{aspect-ratio:1.8}.category-results-layout{grid-template-columns:1fr}.category-sidebar{position:static}.category-subcategory-list{max-height:210px}.category-list-heading{align-items:flex-start;flex-direction:column}.category-pagination{gap:8px}.category-pagination a{padding:8px}}
   </style>
 </head>
 <body>
@@ -274,35 +298,46 @@ foreach ($products as $idx => $product) {
       <?php if ($categoryParentName !== ''): ?><span class="category-breadcrumb-separator" aria-hidden="true">›</span><a href="/categoria/<?= rawurlencode(slugifyCategoryPage($categoryParentName)) ?>/"><?= escapeCategoryPage($categoryParentName) ?></a><?php endif; ?>
       <span class="category-breadcrumb-separator" aria-hidden="true">›</span><span aria-current="page"><?= escapeCategoryPage($categoryName !== '' ? $categoryName : 'Categoría no encontrada') ?></span>
     </nav>
-    <section class="category-hero">
+    <section class="category-hero<?= $categoryBannerUrl !== '' ? ' has-banner' : '' ?>">
       <div class="category-hero-copy"><div class="category-eyebrow"><?= $categoryParentName !== '' ? escapeCategoryPage($categoryParentName) : 'Catálogo de productos' ?></div>
       <h1><?= escapeCategoryPage($categoryName !== '' ? $categoryName : 'Categoría no encontrada') ?></h1>
       <p><?= escapeCategoryPage($categoryName !== '' ? $metaDesc : 'Vuelve al catálogo para explorar los productos disponibles.') ?></p>
       <?php if ($categoryName !== ''): ?><div class="category-total"><?= number_format($totalProducts, 0, ',', '.') ?> productos</div><?php endif; ?></div>
-      <?php if ($categoryName !== '' && $categoryBannerUrl !== ''): ?><img class="category-banner" src="<?= escapeCategoryPage($categoryBannerUrl) ?>" alt="<?= escapeCategoryPage($categoryBannerAlt !== '' ? $categoryBannerAlt : $categoryName) ?>" width="900" height="440" fetchpriority="high" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><div class="category-banner-fallback" hidden aria-hidden="true"><i data-lucide="<?= escapeCategoryPage($categoryIcon) ?>"></i></div><?php elseif ($categoryName !== ''): ?><div class="category-banner-fallback" aria-hidden="true"><i data-lucide="<?= escapeCategoryPage($categoryIcon) ?>"></i></div><?php endif; ?>
+      <?php if ($categoryName !== '' && $categoryBannerUrl !== ''): ?><img class="category-banner" src="<?= escapeCategoryPage($categoryBannerUrl) ?>" alt="<?= escapeCategoryPage($categoryBannerAlt !== '' ? $categoryBannerAlt : $categoryName) ?>" width="900" height="440" fetchpriority="high" onerror="this.hidden=true;this.parentElement.classList.remove('has-banner')"><?php endif; ?>
     </section>
 
     <?php if ($categoryName !== '' && $totalProducts > 0): ?>
-      <div class="category-list-heading"><div><h2>Productos de <?= escapeCategoryPage($categoryName) ?></h2><p><?= number_format($totalProducts, 0, ',', '.') ?> resultados<?= $selectedSubcategory !== '' ? ' en ' . escapeCategoryPage($selectedSubcategory) : '' ?></p></div></div>
-      <?php if (!empty($audioVideoSubcategories)): ?>
-        <nav class="category-filters" aria-label="Filtrar Audio y Video por tipo">
-          <?php $allFilterUrl = '/categoria/' . rawurlencode(slugifyCategoryPage($categoryName)) . '/'; ?>
-          <a href="<?= $allFilterUrl ?>"<?= $selectedSubcategory === '' ? ' aria-current="true"' : '' ?>>Todos <small><?= number_format($allProductCount, 0, ',', '.') ?></small></a>
-          <?php foreach ($audioVideoSubcategories as $facet): ?>
-            <a href="<?= $allFilterUrl . '?' . http_build_query(['subcategoria' => (string)$facet['name']]) ?>"<?= $selectedSubcategory === (string)$facet['name'] ? ' aria-current="true"' : '' ?>><?= escapeCategoryPage((string)$facet['name']) ?> <small><?= number_format((int)$facet['product_count'], 0, ',', '.') ?></small></a>
-          <?php endforeach; ?>
-        </nav>
-      <?php endif; ?>
-      <section class="store-product-grid" aria-label="Productos de <?= escapeCategoryPage($categoryName) ?>">
-        <?php foreach ($products as $index => $product): ?>
-          <?php $storeProduct = $product; $storeProductUrl = '/producto/' . productSlugForCategoryPage($product); $storeProductIndex = $index; require __DIR__ . '/includes/storefront-product-card.php'; ?>
-        <?php endforeach; ?>
-      </section>
+      <?php $categoryPath = '/categoria/' . rawurlencode(slugifyCategoryPage($categoryName)) . '/'; ?>
+      <div class="category-results-layout">
+        <aside class="category-sidebar" aria-label="Filtros de productos">
+          <h3>Subcategorías</h3>
+          <nav class="category-subcategory-list" aria-label="Subcategorías">
+            <a href="<?= $categoryPath ?>"<?= $selectedSubcategory === '' ? ' aria-current="true"' : '' ?>><span>Todos los productos</span><small><?= number_format($allProductCount, 0, ',', '.') ?></small></a>
+            <?php foreach ($audioVideoSubcategories as $facet): ?>
+              <a href="<?= $categoryPath . '?' . http_build_query(['subcategoria' => (string)$facet['name']]) ?>"<?= $selectedSubcategory === (string)$facet['name'] ? ' aria-current="true"' : '' ?>><span><?= escapeCategoryPage((string)$facet['name']) ?></span><small><?= number_format((int)$facet['product_count'], 0, ',', '.') ?></small></a>
+            <?php endforeach; ?>
+          </nav>
+          <form class="category-filter-form" method="get" action="<?= $categoryPath ?>">
+            <?php if ($selectedSubcategory !== ''): ?><input type="hidden" name="subcategoria" value="<?= escapeCategoryPage($selectedSubcategory) ?>"><?php endif; ?>
+            <h3>Precio (USD)</h3>
+            <div class="category-price-row"><label>Desde<input type="number" min="0" step="0.01" name="precio_min" value="<?= escapeCategoryPage($selectedPriceMin) ?>" placeholder="0"></label><label>Hasta<input type="number" min="0" step="0.01" name="precio_max" value="<?= escapeCategoryPage($selectedPriceMax) ?>" placeholder="Sin límite"></label></div>
+            <?php if ($hasInventoryTable): ?><label class="category-stock"><input type="checkbox" name="stock" value="1" <?= $filterInStock ? 'checked' : '' ?>> Solo disponibles</label><?php endif; ?>
+            <div class="category-filter-actions"><button type="submit">Aplicar</button><a href="<?= $categoryPath ?>">Limpiar</a></div>
+          </form>
+        </aside>
+        <div class="category-results-main">
+          <div class="category-list-heading"><div><h2>Productos de <?= escapeCategoryPage($categoryName) ?></h2><p><?= number_format($totalProducts, 0, ',', '.') ?> resultados<?= $selectedSubcategory !== '' ? ' · ' . escapeCategoryPage($selectedSubcategory) : '' ?></p></div></div>
+          <section class="store-product-grid" aria-label="Productos de <?= escapeCategoryPage($categoryName) ?>">
+            <?php foreach ($products as $index => $product): ?>
+              <?php $storeProduct = $product; $storeProductUrl = '/producto/' . productSlugForCategoryPage($product); $storeProductIndex = $index; require __DIR__ . '/includes/storefront-product-card.php'; ?>
+            <?php endforeach; ?>
+          </section>
+        </div>
+      </div>
       <?php if ($totalPages > 1): ?>
         <?php
-          $previousQuery = array_filter(['subcategoria' => $selectedSubcategory, 'page' => $currentPage > 2 ? $currentPage - 1 : null], fn($value) => $value !== null && $value !== '');
-          $nextQuery = array_filter(['subcategoria' => $selectedSubcategory, 'page' => $currentPage + 1], fn($value) => $value !== null && $value !== '');
-          $categoryPath = '/categoria/' . rawurlencode(slugifyCategoryPage($categoryName)) . '/';
+          $previousQuery = array_filter(['subcategoria' => $selectedSubcategory, 'precio_min' => $selectedPriceMin, 'precio_max' => $selectedPriceMax, 'stock' => $filterInStock ? '1' : '', 'page' => $currentPage > 2 ? $currentPage - 1 : null], fn($value) => $value !== null && $value !== '');
+          $nextQuery = array_filter(['subcategoria' => $selectedSubcategory, 'precio_min' => $selectedPriceMin, 'precio_max' => $selectedPriceMax, 'stock' => $filterInStock ? '1' : '', 'page' => $currentPage + 1], fn($value) => $value !== null && $value !== '');
         ?>
         <nav class="category-pagination" aria-label="Paginación de productos">
           <?php if ($currentPage > 1): ?><a href="<?= $categoryPath . ($previousQuery ? '?' . http_build_query($previousQuery) : '') ?>">Anterior</a><?php endif; ?>
@@ -327,5 +362,6 @@ foreach ($products as $idx => $product) {
   </main>
   <footer class="storefront-footer">SmartISP Ecuador · Equipamiento tecnologico, redes e infraestructura TI.</footer>
   <script src="/assets/js/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
+  <script src="/assets/js/storefront-product-card.js" defer></script>
 </body>
 </html>
