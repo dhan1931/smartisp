@@ -829,13 +829,12 @@
   <header class="top-header">
     <div class="brand-wrap">
       <div class="brand-title">
-        <span>smart<b style="color:#38bdf8;">isp</b><span style="color:#f5a524;">.</span></span>
         <span class="brand-badge">CATÁLOGO & CATEGORÍAS</span>
       </div>
     </div>
     <div class="top-actions">
       <button type="button" class="btn btn-sm" onclick="document.getElementById('btnNewProduct').click()" style="background:#0284c7; color:#fff; font-weight:700; border:none; box-shadow:0 2px 6px rgba(2,132,199,0.4);">
-        <i data-lucide="plus" width="14"></i> + Agregar Producto Manual
+        <i data-lucide="plus" width="14"></i> Agregar Producto Manual
       </button>
       <a href="/admin.html" class="btn btn-dark btn-sm">
         <i data-lucide="arrow-left" width="15"></i> Volver a Admin General
@@ -858,16 +857,16 @@
         <span>1. Catálogo de Productos</span>
         <span class="tab-count" id="countProdTab">0</span>
       </button>
-      <button type="button" class="tab-btn" data-tab="tab-categories">
-        <i data-lucide="folder-tree" width="18"></i>
-        <span>2. Categorías y Subcategorías</span>
-        <span class="tab-count" id="countCatTab">0</span>
-      </button>
       <button type="button" class="tab-btn" data-tab="tab-importer">
         <i data-lucide="file-spreadsheet" width="18"></i>
-        <span>3. Importador Inteligente Excel</span>
+        <span>2. Importador Inteligente Excel</span>
         <span class="tab-count" style="background:#dcfce7; color:#15803d;">Afinidad AI</span>
       </button>
+      <a href="/categorias.html" class="tab-btn" style="text-decoration:none; margin-left:auto;">
+        <i data-lucide="folder-tree" width="18"></i>
+        <span>Categorías y Subcategorías</span>
+        <i data-lucide="external-link" width="13"></i>
+      </a>
     </nav>
 
     <!-- TAB 1: CATÁLOGO DE PRODUCTOS (VISTA PRINCIPAL) -->
@@ -918,7 +917,7 @@
               <i data-lucide="file-up" width="16"></i> Importar Excel
             </button>
             <button type="button" id="btnNewProduct" class="btn btn-primary" style="background:#0284c7; font-weight:700; padding:8px 16px; box-shadow:0 3px 10px rgba(2,132,199,0.35);">
-              <i data-lucide="plus-circle" width="16"></i> ➕ Agregar Producto Manual
+              <i data-lucide="plus-circle" width="16"></i> Agregar Producto Manual
             </button>
           </div>
         </div>
@@ -975,71 +974,6 @@
       </div>
     </section>
 
-    <!-- TAB 2: GESTIÓN DE CATEGORÍAS Y SUBCATEGORÍAS -->
-    <section id="tab-categories" class="tab-pane">
-      <!-- Stats Row -->
-      <div class="stats-row">
-        <div class="stat-box">
-          <div class="stat-icon-wrap"><i data-lucide="folder" width="24"></i></div>
-          <div>
-            <div class="stat-num" id="statCategoriesTotal">0</div>
-            <div class="stat-label">Macro-Categorías</div>
-          </div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-icon-wrap" style="background:#fef3c7; color:#d97706;"><i data-lucide="git-branch" width="24"></i></div>
-          <div>
-            <div class="stat-num" id="statSubcategoriesTotal">0</div>
-            <div class="stat-label">Subcategorías Activas</div>
-          </div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-icon-wrap" style="background:#ecfdf5; color:#059669;"><i data-lucide="sparkles" width="24"></i></div>
-          <div>
-            <div class="stat-num" id="statKeywordsTotal">0</div>
-            <div class="stat-label">Palabras de Afinidad</div>
-          </div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-icon-wrap" style="background:#f3e8ff; color:#7e22ce;"><i data-lucide="boxes" width="24"></i></div>
-          <div>
-            <div class="stat-num" id="statAssignedProducts">0</div>
-            <div class="stat-label">Productos Organizados</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Categories Action Header -->
-      <div class="content-card">
-        <div class="card-header">
-          <div>
-            <h2 class="card-title"><i data-lucide="layout-grid" width="20"></i> Macro-Categorías y Taxonomía</h2>
-            <p class="card-desc">Crea, edita o renombra categorías y subcategorías. Configura palabras clave de afinidad para que las subidas de Excel se enlacen automáticamente a su categoría correcta.</p>
-          </div>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button type="button" id="btnNewCategory" class="btn btn-primary">
-              <i data-lucide="plus" width="16"></i> Nueva Categoría
-            </button>
-            <button type="button" id="btnReassignModal" class="btn btn-secondary">
-              <i data-lucide="arrow-left-right" width="16"></i> Reasignar Productos
-            </button>
-            <button type="button" id="btnResetCategories" class="btn btn-secondary" style="color:var(--muted);" title="Restablecer categorías recomendadas">
-              <i data-lucide="rotate-ccw" width="15"></i> Predeterminadas
-            </button>
-          </div>
-        </div>
-
-        <label for="categorySearchInput" style="display:block;max-width:460px;margin:16px 0 4px;font-weight:700;">Buscar categoría
-          <input type="search" id="categorySearchInput" class="form-control" placeholder="Nombre o identificador" autocomplete="off">
-        </label>
-        <p id="categorySearchCount" class="card-desc" aria-live="polite"></p>
-        <!-- Categories Grid -->
-        <div class="categories-grid" id="categoriesContainer">
-          <!-- Dynamically populated -->
-        </div>
-      </div>
-    </section>
-
     <!-- TAB 3: IMPORTADOR INTELIGENTE DE EXCEL -->
     <section id="tab-importer" class="tab-pane">
       
@@ -1081,7 +1015,7 @@
           </div>
           <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
             <div style="display:flex; align-items:center; gap:6px; background:#e8f4f8; padding:5px 12px; border-radius:8px; border:1px solid #cde5eb;">
-              <label for="importPriceMargin" style="font-size:12px; font-weight:700; color:var(--blue); margin:0;">📈 Margen de Ganancia:</label>
+              <label for="importPriceMargin" style="font-size:12px; font-weight:700; color:var(--blue); margin:0; display:inline-flex; align-items:center; gap:5px;"><i data-lucide="trending-up" width="14"></i> Margen de Ganancia:</label>
               <input type="number" id="importPriceMargin" value="30" min="0" max="500" step="1" style="width:52px; padding:3px 6px; font-size:12px; font-weight:700; text-align:center; border:1px solid #90caf9; border-radius:4px; color:var(--blue);">
               <span style="font-size:12px; font-weight:700; color:var(--blue);">%</span>
               <span style="font-size:11px; color:var(--muted);">(Y + 30%)</span>
@@ -1098,7 +1032,7 @@
         <!-- Multi-file Chips / Selector Bar -->
         <div style="margin-bottom:16px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <span style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px;">📁 Archivos en esta sesión (haz clic para ajustar columnas):</span>
+            <span style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:5px;"><i data-lucide="folder" width="13"></i> Archivos en esta sesión (haz clic para ajustar columnas):</span>
           </div>
           <div id="importFilesChipsContainer" style="display:flex; gap:8px; flex-wrap:wrap; padding:10px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; min-height:46px; align-items:center;">
             <!-- Rendered dynamically -->
@@ -1109,7 +1043,7 @@
         <div style="background:#f1f7f9; border:1px solid #cbe0e7; border-radius:10px; padding:16px; margin-bottom:18px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
             <div>
-              <strong style="font-size:13.5px; color:var(--navy);">⚙️ Asignación Inteligente de Columnas: <span id="activeFileNameLabel" style="color:var(--blue);"></span></strong>
+              <strong style="font-size:13.5px; color:var(--navy); display:inline-flex; align-items:center; gap:6px;"><i data-lucide="settings-2" width="15"></i> Asignación Inteligente de Columnas: <span id="activeFileNameLabel" style="color:var(--blue);"></span></strong>
               <div style="font-size:11.5px; color:var(--muted);">Ajusta los encabezados de este archivo si es necesario:</div>
             </div>
             <div style="display:flex; align-items:center; gap:6px;">
@@ -1177,7 +1111,7 @@
         <div style="background:#eef8f8; border:1px solid #c9e8e3; border-radius:8px; padding:12px 16px; margin-bottom:16px;">
           <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; cursor:pointer; margin:0;">
             <input type="checkbox" id="chkAutoFetchImages" style="width:17px; height:17px; accent-color:var(--blue);">
-            <span>🌐 Buscar fotografías nítidas automáticamente en internet para artículos sin imagen (opcional)</span>
+            <span style="display:inline-flex; align-items:center; gap:6px;"><i data-lucide="globe" width="14"></i> Buscar fotografías nítidas automáticamente en internet para artículos sin imagen (opcional)</span>
           </label>
         </div>
 
@@ -1203,129 +1137,6 @@
     </section>
 
   </main>
-
-  <!-- MODAL: CREAR / EDITAR CATEGORÍA -->
-  <div class="modal-overlay" id="categoryModal">
-    <div class="modal-dialog">
-      <div class="modal-head">
-        <h3 class="modal-title" id="catModalTitle">Nueva Categoría</h3>
-        <button type="button" class="modal-close-btn" onclick="closeModal('categoryModal')">✕</button>
-      </div>
-      <form id="categoryForm">
-        <input type="hidden" id="catOriginalId">
-        <div class="form-group">
-          <label class="form-label" for="catNameInput">* Nombre de la Categoría General:</label>
-          <input type="text" id="catNameInput" class="form-control" placeholder="Ej. Computadoras y Portátiles" required>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="catIdInput">Identificador (Slug):</label>
-            <input type="text" id="catIdInput" class="form-control" placeholder="computacion" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="catIconInput">Icono Lucide:</label>
-            <div style="display:flex; gap:8px; align-items:center;">
-              <select id="catIconInput" class="form-control" style="flex:1;">
-                <option value="laptop">laptop (Portátiles / PC)</option>
-                <option value="network">network (Redes)</option>
-                <option value="cable">cable (Fibra / Cableado)</option>
-                <option value="server">server (Servidores)</option>
-                <option value="shield-check">shield-check (Seguridad)</option>
-                <option value="zap">zap (Energía / UPS)</option>
-                <option value="monitor">monitor (Pantallas)</option>
-                <option value="hard-drive">hard-drive (Discos / Componentes)</option>
-                <option value="headphones">headphones (Periféricos)</option>
-                <option value="printer">printer (Impresión)</option>
-                <option value="phone-call">phone-call (Telefonía)</option>
-                <option value="file-code">file-code (Software)</option>
-                <option value="package">package (Otros / General)</option>
-                <option value="cpu">cpu (Procesadores)</option>
-                <option value="wifi">wifi (Conectividad)</option>
-                <option value="camera">camera (Cámaras)</option>
-              </select>
-              <div id="catIconPreview" class="cat-icon-badge" style="width:38px; height:38px;"><i data-lucide="laptop" width="18"></i></div>
-            </div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="catSubcategoriesInput">
-            Subcategorías (separadas por coma o saltos de línea):
-          </label>
-          <textarea id="catSubcategoriesInput" class="form-control" rows="3" placeholder="Ej: Portátiles y Laptops, Computadoras de Escritorio (PC), Equipos All-In-One"></textarea>
-          <small style="color:var(--muted); font-size:11px;">Estas subcategorías aparecerán en el menú y filtros de la tienda.</small>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="catBannerUrlInput">Banner de esta categoría (opcional):</label>
-          <input type="text" id="catBannerUrlInput" class="form-control" inputmode="url" placeholder="https://... o /uploads/products/imagen.webp">
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:9px;">
-            <label class="btn btn-secondary btn-sm" for="catBannerFileInput" style="margin:0;cursor:pointer;"><i data-lucide="image-up" width="15"></i> Subir imagen</label>
-            <input type="file" id="catBannerFileInput" accept="image/jpeg,image/png,image/webp" hidden>
-            <button type="button" id="catBannerClearBtn" class="btn btn-secondary btn-sm">Quitar imagen</button>
-            <span id="catBannerUploadStatus" style="font-size:12px;color:var(--muted);"></span>
-          </div>
-          <div id="catBannerPreview" style="display:grid;place-items:center;min-height:90px;margin-top:10px;border:1px dashed var(--line);border-radius:8px;background:#f8fbfc;color:var(--muted);font-size:12px;overflow:hidden;">Sin banner seleccionado</div>
-          <small style="color:var(--muted);font-size:11px;">Se muestra en la portada pública de la categoría. Recomendado: imagen horizontal 1600 × 700 px, JPG o WebP. Las subcategorías usarán el banner de su categoría principal.</small>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="catBannerAltInput">Texto alternativo de la imagen:</label>
-            <input type="text" id="catBannerAltInput" class="form-control" maxlength="200" placeholder="Equipos de audio y video">
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="catDescriptionInput">Descripción corta para la portada:</label>
-            <textarea id="catDescriptionInput" class="form-control" rows="2" maxlength="500" placeholder="Descripción breve de esta categoría"></textarea>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="catKeywordsInput">
-            Palabras Clave de Afinidad para Excel (separadas por coma):
-          </label>
-          <textarea id="catKeywordsInput" class="form-control" rows="3" placeholder="Ej: computo, computadoras, laptops, portatiles, notebooks, pc, desktop, all-in-one"></textarea>
-          <small style="color:var(--muted); font-size:11px;">Cuando un archivo Excel contenga alguna de estas palabras en la columna o título, se enlazará automáticamente a esta categoría.</small>
-        </div>
-        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px;">
-          <button type="button" class="btn btn-secondary" onclick="closeModal('categoryModal')">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar Categoría</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL: REASIGNAR PRODUCTOS ENTRE CATEGORÍAS -->
-  <div class="modal-overlay" id="reassignModal">
-    <div class="modal-dialog">
-      <div class="modal-head">
-        <h3 class="modal-title"><i data-lucide="arrow-left-right" width="20"></i> Reasignar Productos Masivamente</h3>
-        <button type="button" class="modal-close-btn" onclick="closeModal('reassignModal')">✕</button>
-      </div>
-      <form id="reassignForm">
-        <p style="font-size:13px; color:var(--muted); margin-bottom:16px;">
-          Mueve todos los artículos de una categoría existente hacia otra categoría o subcategoría con un solo clic.
-        </p>
-        <div class="form-group">
-          <label class="form-label">Categoría Origen (actual):</label>
-          <select id="reassignFromCategory" class="form-control" required></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Subcategoría Origen (Opcional - dejar en blanco para mover toda la categoría):</label>
-          <input type="text" id="reassignFromSubcategory" class="form-control" placeholder="Dejar vacío para mover todo">
-        </div>
-        <hr style="border:0; border-top:1px solid var(--line); margin:18px 0;">
-        <div class="form-group">
-          <label class="form-label">Categoría Destino (nueva):</label>
-          <select id="reassignToCategory" class="form-control" required></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Subcategoría Destino (Opcional):</label>
-          <input type="text" id="reassignToSubcategory" class="form-control" placeholder="Ej: Portátiles y Laptops">
-        </div>
-        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:20px;">
-          <button type="button" class="btn btn-secondary" onclick="closeModal('reassignModal')">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Reasignar Productos Ahora</button>
-        </div>
-      </form>
-    </div>
-  </div>
 
   <!-- MODAL: CREAR / EDITAR PRODUCTO -->
   <div class="modal-overlay" id="productModal">
@@ -1443,8 +1254,8 @@
             <i data-lucide="copy" width="15"></i> Copiar
           </button>
         </div>
-        <small style="font-size:11px; color:#64748b; margin-top:6px; display:block;">
-          ✨ Este enlace cuenta con microdatos Schema.org Product y etiquetas Open Graph listas para ser rastreadas por Google.
+        <small style="font-size:11px; color:#64748b; margin-top:6px; display:flex; align-items:center; gap:5px;">
+          <i data-lucide="sparkles" width="12"></i> Este enlace cuenta con microdatos Schema.org Product y etiquetas Open Graph listas para ser rastreadas por Google.
         </small>
       </div>
 
@@ -1471,7 +1282,7 @@
       </p>
       <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:12px; margin-bottom:20px; text-align:left;">
         <div style="color:#991b1b; font-size:12.5px; font-weight:600; display:flex; gap:6px; align-items:flex-start;">
-          <span style="font-size:15px; line-height:1;">⚠️</span>
+          <i data-lucide="triangle-alert" width="16" style="flex-shrink:0;"></i>
           <span>Esta acción vaciará el catálogo de productos por completo en un solo momento. No se puede deshacer. Las categorías y subcategorías configuradas se mantendrán.</span>
         </div>
       </div>
@@ -1489,7 +1300,7 @@
     <div class="modal-dialog" style="max-width:780px;">
       <div class="modal-head">
         <div>
-          <h3 class="modal-title">🔍 Buscar Foto en Amazon e Internet</h3>
+          <h3 class="modal-title" style="display:flex; align-items:center; gap:7px;"><i data-lucide="search" width="17"></i> Buscar Foto en Amazon e Internet</h3>
           <small id="searchModalProductTitle" style="color:var(--muted); font-size:12px;"></small>
         </div>
         <button type="button" class="modal-close-btn" onclick="closeModal('imageSearchModal')">✕</button>
@@ -1499,9 +1310,9 @@
         <button type="submit" class="btn btn-primary">Buscar</button>
       </form>
       <div style="display:flex; gap:8px; margin-bottom:14px;">
-        <button type="button" class="btn btn-sm btn-secondary active-store" data-store="all">🌐 Todos</button>
-        <button type="button" class="btn btn-sm btn-secondary" data-store="amazon">🛒 Solo Amazon</button>
-        <button type="button" class="btn btn-sm btn-secondary" data-store="web">🔍 Google & Web</button>
+        <button type="button" class="btn btn-sm btn-secondary active-store" data-store="all"><i data-lucide="globe" width="13"></i> Todos</button>
+        <button type="button" class="btn btn-sm btn-secondary" data-store="amazon"><i data-lucide="shopping-cart" width="13"></i> Solo Amazon</button>
+        <button type="button" class="btn btn-sm btn-secondary" data-store="web"><i data-lucide="search" width="13"></i> Google & Web</button>
       </div>
       <div id="imageResultsGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:10px; max-height:360px; overflow-y:auto; padding:4px;">
         <!-- Image cards dynamically populated -->
@@ -1904,7 +1715,6 @@
 
     const loadProductsStats = async () => {
       productsStats = await api('admin-products-stats');
-      renderCategoriesTab();
     };
 
     // Llamar después de cualquier alta/edición/borrado: refresca la página visible y las
@@ -1924,367 +1734,6 @@
         showToast(err.message, 'error');
       }
     };
-
-    // --- RENDER TAB 1: CATEGORÍAS ---
-    const renderCategoriesTab = () => {
-      const container = document.getElementById('categoriesContainer');
-      const countTab = document.getElementById('countCatTab');
-      const statCats = document.getElementById('statCategoriesTotal');
-      const statSubs = document.getElementById('statSubcategoriesTotal');
-      const statKws = document.getElementById('statKeywordsTotal');
-      const statProds = document.getElementById('statAssignedProducts');
-
-      if (countTab) countTab.textContent = categoriesList.length;
-      if (statCats) statCats.textContent = categoriesList.length;
-
-      let totalSubs = 0;
-      let totalKws = 0;
-      // Conteo por categoría via admin-products-stats (agregado en SQL sobre TODO el catálogo),
-      // no sobre productsList: desde que se paginó (DEV-20261005-022), productsList solo trae
-      // la página visible y contar ahí daría números falsos (solo de esa página).
-      const catCountMap = new Map((productsStats.by_category || []).map(c => [c.category, c.total]));
-
-      categoriesList.forEach(c => {
-        if (Array.isArray(c.subcategories)) totalSubs += c.subcategories.length;
-        if (Array.isArray(c.keywords)) totalKws += c.keywords.length;
-      });
-
-      if (statSubs) statSubs.textContent = totalSubs;
-      if (statKws) statKws.textContent = totalKws;
-      if (statProds) statProds.textContent = productsStats.total || 0;
-
-      const query = (document.getElementById('categorySearchInput')?.value || '').trim().toLocaleLowerCase();
-      const visibleCategories = categoriesList.filter(cat => `${cat.name || ''} ${cat.id || ''}`.toLocaleLowerCase().includes(query));
-      const searchCount = document.getElementById('categorySearchCount');
-      if (searchCount) searchCount.textContent = query ? `${visibleCategories.length} de ${categoriesList.length} categorías` : `${categoriesList.length} categorías`;
-      container.innerHTML = visibleCategories.map((cat, idx) => {
-        const pCount = catCountMap.get(cat.name) || 0;
-        const subs = Array.isArray(cat.subcategories) ? cat.subcategories : [];
-        const kws = Array.isArray(cat.keywords) ? cat.keywords : [];
-
-        return `
-          <div class="category-card" data-cat-id="${cat.id}">
-            <div class="cat-head">
-              <div class="cat-identity">
-                <div class="cat-icon-badge">
-                  <i data-lucide="${cat.icon || 'package'}" width="20"></i>
-                </div>
-                <div class="cat-name-wrap">
-                  <h3>${cat.name}</h3>
-                  <span class="cat-slug">id: ${cat.id}</span>
-                </div>
-              </div>
-              <span class="cat-prod-count" style="cursor:pointer;" onclick="filterByCatAndSwitch('${encodeURIComponent(cat.name)}')" title="Ver productos de esta categoría">📦 ${pCount} prod. ↗</span>
-            </div>
-
-            <div class="chips-section">
-              <div class="chips-title">
-                <span>Subcategorías (${subs.length})</span>
-                <button type="button" class="chip-add-btn" onclick="quickAddSubcategory('${cat.id}')">
-                  <i data-lucide="plus" width="12"></i> Agregar
-                </button>
-              </div>
-              <div class="chips-container">
-                ${subs.length ? subs.map((sub, sIdx) => `
-                  <span class="chip">
-                    ${sub}
-                    <button type="button" class="chip-remove" onclick="removeSubcategory('${cat.id}', ${sIdx})" title="Eliminar subcategoría">×</button>
-                  </span>
-                `).join('') : '<span style="font-size:11.5px; color:var(--muted);">Sin subcategorías creadas</span>'}
-              </div>
-            </div>
-
-            <div class="chips-section" style="margin-bottom:18px;">
-              <div class="chips-title">
-                <span>Palabras de Afinidad Excel (${kws.length})</span>
-                <button type="button" class="chip-add-btn" onclick="quickAddKeyword('${cat.id}')">
-                  <i data-lucide="plus" width="12"></i> Agregar
-                </button>
-              </div>
-              <div class="chips-container">
-                ${kws.slice(0, 8).map((kw, kIdx) => `
-                  <span class="chip keyword-chip">
-                    ${kw}
-                    <button type="button" class="chip-remove" onclick="removeKeyword('${cat.id}', ${kIdx})" title="Eliminar palabra clave">×</button>
-                  </span>
-                `).join('')}
-                ${kws.length > 8 ? `<span class="chip keyword-chip" style="background:#fff; color:var(--muted); font-weight:700;">+${kws.length - 8} más</span>` : ''}
-                ${!kws.length ? '<span style="font-size:11.5px; color:var(--muted);">Sin palabras clave</span>' : ''}
-              </div>
-            </div>
-
-            <div class="cat-actions">
-              <button type="button" class="btn btn-secondary btn-sm" onclick="filterByCatAndSwitch('${encodeURIComponent(cat.name)}')" title="Ver productos de esta categoría">
-                <i data-lucide="package" width="14"></i> Productos (${pCount})
-              </button>
-              <button type="button" class="btn btn-secondary btn-sm" onclick="openEditCategoryModal('${cat.id}')">
-                <i data-lucide="edit" width="14"></i> Editar
-              </button>
-              <button type="button" class="btn btn-secondary btn-sm" onclick="openReassignForCat('${cat.name}')" title="Reasignar productos de esta categoría">
-                <i data-lucide="arrow-left-right" width="14"></i> Mover
-              </button>
-              <button type="button" class="btn btn-danger btn-sm" onclick="deleteCategory('${cat.id}')" title="Eliminar categoría">
-                <i data-lucide="trash-2" width="14"></i>
-              </button>
-            </div>
-          </div>
-        `;
-      }).join('') || '<p class="card-desc">No hay categorías que coincidan con la búsqueda.</p>';
-
-      lucide.createIcons();
-    };
-
-    document.getElementById('categorySearchInput')?.addEventListener('input', renderCategoriesTab);
-
-    window.filterByCatAndSwitch = encodedCatName => {
-      const catName = decodeURIComponent(encodedCatName);
-      switchTab('tab-products');
-      const filterMacro = document.getElementById('filterMacroCat');
-      if (filterMacro) {
-        filterMacro.value = catName;
-        updateSubcategoryOptions();
-        loadProductsPage(1);
-      }
-    };
-
-    // --- ACCIONES RÁPIDAS DE SUBCATEGORÍAS Y KEYWORDS ---
-    window.quickAddSubcategory = async catId => {
-      const cat = categoriesList.find(c => c.id === catId);
-      if (!cat) return;
-      const subName = prompt(`Nueva subcategoría para "${cat.name}":`);
-      if (!subName || !subName.trim()) return;
-      if (!Array.isArray(cat.subcategories)) cat.subcategories = [];
-      if (!cat.subcategories.includes(subName.trim())) {
-        cat.subcategories.push(subName.trim());
-        await saveCategoriesToServer();
-      }
-    };
-
-    window.removeSubcategory = async (catId, index) => {
-      const cat = categoriesList.find(c => c.id === catId);
-      if (!cat || !cat.subcategories) return;
-      cat.subcategories.splice(index, 1);
-      await saveCategoriesToServer();
-    };
-
-    window.quickAddKeyword = async catId => {
-      const cat = categoriesList.find(c => c.id === catId);
-      if (!cat) return;
-      const kw = prompt(`Nueva palabra clave de afinidad para "${cat.name}":\n(Ej. "portatiles", "laptops", "switch")`);
-      if (!kw || !kw.trim()) return;
-      if (!Array.isArray(cat.keywords)) cat.keywords = [];
-      const clean = kw.trim().toLowerCase();
-      if (!cat.keywords.includes(clean)) {
-        cat.keywords.push(clean);
-        await saveCategoriesToServer();
-      }
-    };
-
-    window.removeKeyword = async (catId, index) => {
-      const cat = categoriesList.find(c => c.id === catId);
-      if (!cat || !cat.keywords) return;
-      cat.keywords.splice(index, 1);
-      await saveCategoriesToServer();
-    };
-
-    const saveCategoriesToServer = async () => {
-      try {
-        await api('categories', {
-          method: 'POST',
-          body: JSON.stringify({ categories: categoriesList })
-        });
-        showToast('Categorías guardadas correctamente.');
-        renderCategoriesTab();
-        renderCategorySelects();
-      } catch (err) {
-        showToast(err.message, 'error');
-      }
-    };
-
-    const updateCategoryBannerPreview = rawUrl => {
-      const preview = document.getElementById('catBannerPreview');
-      if (!preview) return;
-      const url = String(rawUrl || '').trim();
-      preview.replaceChildren();
-      if (!url || (!url.startsWith('/') && !/^https:\/\//i.test(url)) || url.startsWith('//') || url.includes('..')) {
-        preview.textContent = 'Sin banner seleccionado';
-        return;
-      }
-      const image = document.createElement('img');
-      image.src = url;
-      image.alt = '';
-      image.style.cssText = 'display:block;width:100%;max-height:190px;object-fit:cover';
-      image.onerror = () => { preview.textContent = 'No se pudo cargar esta imagen'; };
-      preview.append(image);
-    };
-
-    document.getElementById('catBannerUrlInput').addEventListener('input', e => updateCategoryBannerPreview(e.target.value));
-    document.getElementById('catBannerClearBtn').addEventListener('click', () => {
-      document.getElementById('catBannerUrlInput').value = '';
-      updateCategoryBannerPreview('');
-    });
-    document.getElementById('catBannerFileInput').addEventListener('change', async e => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const status = document.getElementById('catBannerUploadStatus');
-      status.textContent = 'Subiendo imagen…';
-      try {
-        const form = new FormData();
-        form.append('image', file);
-        const result = await api('upload-image', { method: 'POST', body: form });
-        document.getElementById('catBannerUrlInput').value = result.url;
-        updateCategoryBannerPreview(result.url);
-        status.textContent = 'Imagen lista';
-      } catch (err) {
-        status.textContent = err.message || 'No se pudo subir la imagen';
-      } finally {
-        e.target.value = '';
-      }
-    });
-
-    // --- CREAR / EDITAR CATEGORÍA COMPLETA ---
-    document.getElementById('btnNewCategory').addEventListener('click', () => {
-      document.getElementById('catModalTitle').textContent = 'Nueva Categoría';
-      document.getElementById('catOriginalId').value = '';
-      document.getElementById('catNameInput').value = '';
-      document.getElementById('catIdInput').value = '';
-      document.getElementById('catIconInput').value = 'package';
-      document.getElementById('catSubcategoriesInput').value = '';
-      document.getElementById('catKeywordsInput').value = '';
-      document.getElementById('catBannerUrlInput').value = '';
-      document.getElementById('catBannerAltInput').value = '';
-      document.getElementById('catDescriptionInput').value = '';
-      document.getElementById('catBannerUploadStatus').textContent = '';
-      updateCategoryBannerPreview('');
-      openModal('categoryModal');
-    });
-
-    window.openEditCategoryModal = catId => {
-      const cat = categoriesList.find(c => c.id === catId);
-      if (!cat) return;
-      document.getElementById('catModalTitle').textContent = `Editar: ${cat.name}`;
-      document.getElementById('catOriginalId').value = cat.id;
-      document.getElementById('catNameInput').value = cat.name;
-      document.getElementById('catIdInput').value = cat.id;
-      document.getElementById('catIconInput').value = cat.icon || 'package';
-      document.getElementById('catSubcategoriesInput').value = (cat.subcategories || []).join('\n');
-      document.getElementById('catKeywordsInput').value = (cat.keywords || []).join(', ');
-      document.getElementById('catBannerUrlInput').value = cat.bannerImageUrl || '';
-      document.getElementById('catBannerAltInput').value = cat.bannerAlt || '';
-      document.getElementById('catDescriptionInput').value = cat.description || '';
-      document.getElementById('catBannerUploadStatus').textContent = '';
-      updateCategoryBannerPreview(cat.bannerImageUrl || '');
-      document.getElementById('catIconPreview').innerHTML = `<i data-lucide="${cat.icon || 'package'}" width="18"></i>`;
-      openModal('categoryModal');
-      lucide.createIcons();
-    };
-
-    document.getElementById('catIconInput').addEventListener('change', e => {
-      document.getElementById('catIconPreview').innerHTML = `<i data-lucide="${e.target.value}" width="18"></i>`;
-      lucide.createIcons();
-    });
-
-    document.getElementById('catNameInput').addEventListener('input', e => {
-      const origId = document.getElementById('catOriginalId').value;
-      if (!origId) {
-        document.getElementById('catIdInput').value = e.target.value
-          .toLowerCase()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)/g, '');
-      }
-    });
-
-    document.getElementById('categoryForm').addEventListener('submit', async e => {
-      e.preventDefault();
-      const origId = document.getElementById('catOriginalId').value;
-      const name = document.getElementById('catNameInput').value.trim();
-      const id = (document.getElementById('catIdInput').value.trim() || name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
-      const icon = document.getElementById('catIconInput').value.trim() || 'package';
-
-      const rawSubs = document.getElementById('catSubcategoriesInput').value;
-      const subcategories = rawSubs
-        .split(/[\n,]+/)
-        .map(s => s.trim())
-        .filter(Boolean);
-
-      const rawKws = document.getElementById('catKeywordsInput').value;
-      const keywords = rawKws
-        .split(/[\n,]+/)
-        .map(k => k.trim().toLowerCase())
-        .filter(Boolean);
-      const bannerImageUrl = document.getElementById('catBannerUrlInput').value.trim();
-      const bannerAlt = document.getElementById('catBannerAltInput').value.trim();
-      const description = document.getElementById('catDescriptionInput').value.trim();
-
-      if (origId) {
-        const idx = categoriesList.findIndex(c => c.id === origId);
-        if (idx !== -1) {
-          categoriesList[idx] = { ...categoriesList[idx], id, name, icon, subcategories, keywords, bannerImageUrl, bannerAlt, description };
-        }
-      } else {
-        categoriesList.push({ id, name, icon, subcategories, keywords, bannerImageUrl, bannerAlt, description });
-      }
-
-      closeModal('categoryModal');
-      await saveCategoriesToServer();
-    });
-
-    window.deleteCategory = async catId => {
-      const cat = categoriesList.find(c => c.id === catId);
-      if (!cat) return;
-      if (!confirm(`¿Eliminar la categoría "${cat.name}"?\nLos productos de esta categoría se mantendrán en el catálogo.`)) return;
-      categoriesList = categoriesList.filter(c => c.id !== catId);
-      await saveCategoriesToServer();
-    };
-
-    document.getElementById('btnResetCategories').addEventListener('click', async () => {
-      if (!confirm('¿Restablecer las categorías y subcategorías predeterminadas de fábrica?\nEsta acción actualizará la lista a los valores recomendados por SmartISP.')) return;
-      try {
-        const res = await api('categories/reset', { method: 'POST' });
-        categoriesList = res.categories || [];
-        showToast('Categorías restablecidas correctamente.');
-        renderCategoriesTab();
-        renderCategorySelects();
-      } catch (err) {
-        showToast(err.message, 'error');
-      }
-    });
-
-    // --- REASIGNAR PRODUCTOS ---
-    window.openReassignForCat = catName => {
-      document.getElementById('reassignFromCategory').value = catName;
-      document.getElementById('reassignFromSubcategory').value = '';
-      document.getElementById('reassignToSubcategory').value = '';
-      openModal('reassignModal');
-    };
-
-    document.getElementById('btnReassignModal').addEventListener('click', () => {
-      document.getElementById('reassignFromSubcategory').value = '';
-      document.getElementById('reassignToSubcategory').value = '';
-      openModal('reassignModal');
-    });
-
-    document.getElementById('reassignForm').addEventListener('submit', async e => {
-      e.preventDefault();
-      const fromCategory = document.getElementById('reassignFromCategory').value;
-      const toCategory = document.getElementById('reassignToCategory').value;
-      const fromSubcategory = document.getElementById('reassignFromSubcategory').value.trim();
-      const toSubcategory = document.getElementById('reassignToSubcategory').value.trim();
-
-      try {
-        const res = await api('categories/reassign', {
-          method: 'POST',
-          body: JSON.stringify({ fromCategory, toCategory, fromSubcategory, toSubcategory })
-        });
-        showToast(`¡Listo! Se actualizaron ${res.updatedCount || 0} producto(s).`);
-        closeModal('reassignModal');
-        await loadAllData();
-      } catch (err) {
-        showToast(err.message, 'error');
-      }
-    });
 
     // --- HELPERS SEO Y ENLACES PÚBLICOS ---
     const slugifyJs = text => {
@@ -2426,7 +1875,7 @@
           <tr>
             <td colspan="7" style="text-align:center; padding:50px 20px;">
               <div style="max-width:440px; margin:0 auto;">
-                <div style="font-size:44px; margin-bottom:12px;">📦</div>
+                <div style="margin-bottom:12px; color:var(--muted);"><i data-lucide="package" width="44"></i></div>
                 <h3 style="font-size:17px; font-weight:700; color:var(--navy); margin-bottom:6px;">No hay productos en el catálogo</h3>
                 <p style="font-size:13px; color:var(--muted); margin-bottom:20px; line-height:1.5;">
                   Tu catálogo está vacío en este momento. Puedes subir un archivo Excel con productos o registrar uno manualmente ahora mismo.
@@ -2466,7 +1915,7 @@
         const hasImg = Boolean(p.imageUrl);
         const imgEl = hasImg
           ? `<img src="${p.imageUrl}" alt="" loading="lazy" class="prod-thumb-img" onclick="openQuickImageSearch('${p.id}')" title="Clic para buscar otra foto">`
-          : `<div class="prod-thumb-placeholder" onclick="openQuickImageSearch('${p.id}')" title="Buscar foto en Amazon o Google"><span>📷</span><span>Buscar</span></div>`;
+          : `<div class="prod-thumb-placeholder" onclick="openQuickImageSearch('${p.id}')" title="Buscar foto en Amazon o Google"><i data-lucide="camera" width="16"></i><span>Buscar</span></div>`;
 
         const isVisible = p.visible !== false;
 
@@ -2480,7 +1929,7 @@
                 <a href="${getProductPublicUrl(p)}" target="_blank" style="font-size:11.5px; color:var(--blue); font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:3px;" title="Ver enlace único indexable en Google">
                   <i data-lucide="external-link" width="12"></i> Enlace Google
                 </a>
-                ${p.externalUrl ? `<a href="${p.externalUrl}" target="_blank" style="font-size:11px; color:var(--muted); text-decoration:none; display:inline-flex; align-items:center; gap:2px;">🔗 Ficha fabricante</a>` : ''}
+                ${p.externalUrl ? `<a href="${p.externalUrl}" target="_blank" style="font-size:11px; color:var(--muted); text-decoration:none; display:inline-flex; align-items:center; gap:3px;"><i data-lucide="link" width="11"></i> Ficha fabricante</a>` : ''}
               </div>
             </td>
             <td>
@@ -2762,7 +2211,7 @@
     }
 
     document.getElementById('btnNewProduct').addEventListener('click', () => {
-      document.getElementById('prodModalTitle').textContent = '➕ Agregar Producto Manual';
+      document.getElementById('prodModalTitle').textContent = 'Agregar Producto Manual';
       const cleanNewId = 'prod_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
       document.getElementById('prodId').value = cleanNewId;
       document.getElementById('prodNameInput').value = '';
@@ -3479,7 +2928,7 @@
             <td>
               ${p.imageUrl
                 ? `<img src="${p.imageUrl}" loading="lazy" class="prod-thumb-img" style="width:34px; height:34px;">`
-                : '<div class="prod-thumb-placeholder" style="width:34px; height:34px;"><span>📷</span></div>'
+                : '<div class="prod-thumb-placeholder" style="width:34px; height:34px;"><i data-lucide="camera" width="14"></i></div>'
               }
             </td>
             <td>
@@ -3493,7 +2942,7 @@
               }
             </td>
             <td>
-              <span class="file-count-badge" style="font-size:10px; margin-bottom:2px; display:inline-block; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${p.fileName}">📁 ${p.fileName}</span>
+              <span class="file-count-badge" style="font-size:10px; margin-bottom:2px; display:inline-flex; align-items:center; gap:3px; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${p.fileName}"><i data-lucide="file" width="10"></i> ${p.fileName}</span>
               <div style="font-size:11px; color:var(--muted);">${p.rawCategory || '<em>(Vacío)</em>'}</div>
             </td>
             <td>
@@ -3687,7 +3136,17 @@
       }
       currentAdminUser = user;
       const badge = document.getElementById('userBadge');
-      if (badge) badge.textContent = `👤 ${user.email || user.name || 'Admin'}`;
+      if (badge) {
+        badge.style.display = 'inline-flex';
+        badge.style.alignItems = 'center';
+        badge.style.gap = '5px';
+        badge.replaceChildren();
+        const icon = document.createElement('i');
+        icon.dataset.lucide = 'user';
+        icon.setAttribute('width', '13');
+        badge.append(icon, document.createTextNode(user.email || user.name || 'Admin'));
+        window.lucide?.createIcons();
+      }
       await loadAllData();
 
       const urlParams = new URLSearchParams(window.location.search);
