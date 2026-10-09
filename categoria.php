@@ -330,7 +330,7 @@ foreach ($products as $idx => $product) {
     .category-chips a{padding:7px 11px;border:1px solid #d8e5e7;border-radius:6px;background:#fff;color:#102c3d;font-size:12px;font-weight:750}
     .category-chips a:hover{border-color:#087ea4;color:#087ea4}
     @media(max-width:900px){.category-results-layout{grid-template-columns:220px minmax(0,1fr);gap:12px}}
-    @media(max-width:760px){.category-breadcrumb{margin-top:16px;font-size:12px}.category-hero,.category-hero.has-banner{grid-template-columns:1fr;gap:14px;min-height:0;padding:16px}.category-hero h1{font-size:26px}.category-banner{aspect-ratio:1.8;max-height:none}.category-results-layout{grid-template-columns:1fr}.category-sidebar{position:static}.category-subcategory-list{max-height:210px}.category-list-heading{align-items:flex-start;flex-direction:column}.category-pagination{gap:8px}.category-pagination a{padding:8px}}
+    @media(max-width:760px){.category-breadcrumb{margin-top:16px;font-size:12px}.category-hero,.category-hero.has-banner{grid-template-columns:1fr;gap:14px;min-height:0;padding:16px}.category-hero h1{font-size:26px}.category-banner{aspect-ratio:2.4;max-height:260px;object-fit:contain;background:#fff}.category-results-layout{grid-template-columns:1fr}.category-sidebar{position:static}.category-subcategory-list{max-height:210px}.category-list-heading{align-items:flex-start;flex-direction:column}.category-pagination{gap:8px}.category-pagination a{padding:8px}}
   </style>
 </head>
 <body>

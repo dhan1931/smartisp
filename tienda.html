@@ -1877,6 +1877,26 @@
         .store-campaign-card.is-layout-side .store-campaign-card-badge,.store-campaign-card.is-layout-side .store-campaign-card-promo{z-index:4}
         @media(max-width:800px){.store-campaign-card.is-layout-side,.store-campaign.is-triple .store-campaign-card.is-layout-side{min-height:210px;aspect-ratio:2.15}.store-campaign-card.is-layout-side .store-campaign-card-main{width:61%}.store-campaign-card.is-layout-side .store-campaign-card-copy{padding:16px}.store-campaign-card.is-layout-side .store-campaign-card-copy .store-campaign-title{font-size:20px}}
         @media(max-width:520px){.store-campaign-card.is-layout-side,.store-campaign.is-triple .store-campaign-card.is-layout-side{min-height:190px;aspect-ratio:1.8}.store-campaign-card.is-layout-side .store-campaign-card-main{width:66%}.store-campaign-card.is-layout-side .store-campaign-card-copy{padding:13px}.store-campaign-card.is-layout-side .store-campaign-card-copy .store-campaign-title{font-size:18px}.store-campaign-card.is-layout-side .store-campaign-card-copy .store-campaign-subtitle{-webkit-line-clamp:2}.store-campaign-card.is-layout-side .store-campaign-card-promo{max-width:43%;font-size:10px}}
+        @media(max-width:800px){
+          .store-campaign.is-triple,.store-campaign.is-grid,.store-campaign.is-split,.store-campaign.is-cards{display:flex;align-items:stretch;gap:10px;overflow-x:auto;overscroll-behavior-inline:contain;padding:0 0 8px;scroll-snap-type:x mandatory;scrollbar-color:#9bb9c8 #e8f0f4;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+          .store-campaign.is-triple .store-campaign-card,.store-campaign.is-grid .store-campaign-card,.store-campaign.is-split .store-campaign-card,.store-campaign.is-cards .store-campaign-card{flex:0 0 min(82vw,420px);width:min(82vw,420px);min-width:0;min-height:190px;aspect-ratio:1.7;scroll-snap-align:start}
+          .store-campaign-card-copy{width:80%;padding:16px}
+          .store-campaign-card-copy .store-campaign-title{font-size:20px;line-height:1.15}
+          .store-campaign-card-copy .store-campaign-subtitle{display:-webkit-box;overflow:hidden;line-height:1.35;-webkit-box-orient:vertical;-webkit-line-clamp:3}
+          .store-campaign-card.is-layout-side .store-campaign-card-media{width:48%!important}
+          .store-campaign-card.is-layout-side .store-campaign-card-main{width:58%!important}
+          .store-campaign-card.is-layout-side .store-campaign-card-copy{padding:14px 10px 14px 14px}
+          .store-campaign-card.is-layout-side .store-campaign-card-copy .store-campaign-title{font-size:19px}
+          .store-campaign-card.is-layout-side .store-campaign-card-promo{max-width:46%;font-size:10px}
+        }
+        @media(max-width:420px){
+          .store-campaign.is-triple .store-campaign-card,.store-campaign.is-grid .store-campaign-card,.store-campaign.is-split .store-campaign-card,.store-campaign.is-cards .store-campaign-card{flex-basis:82vw;width:82vw;min-height:185px;aspect-ratio:1.72}
+          .store-campaign-card-copy .store-campaign-title{font-size:18px}
+          .store-campaign-card-copy .store-campaign-subtitle{-webkit-line-clamp:2}
+          .store-campaign-card-badge{top:9px;right:9px;padding:6px 8px;font-size:10px}
+          .store-campaign-card.is-layout-side .store-campaign-card-copy{padding:12px 8px 12px 12px}
+          .store-campaign-card.is-layout-side .store-campaign-card-copy .store-campaign-title{font-size:17px}
+        }
     </style>
 </head>
 <body>

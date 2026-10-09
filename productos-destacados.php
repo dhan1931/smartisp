@@ -17,6 +17,18 @@ function escFeatured(string $value): string {
 
 $siteUrl = 'https://smart-isp.com.ec';
 $products = [];
+$featuredProducts = [];
+$hasInventory = false;
+$filterQuery = trim((string)($_GET['q'] ?? ''));
+$filterCategory = trim((string)($_GET['categoria'] ?? ''));
+$filterSubcategory = trim((string)($_GET['subcategoria'] ?? ''));
+$filterPriceMin = trim((string)($_GET['precio_min'] ?? ''));
+$filterPriceMax = trim((string)($_GET['precio_max'] ?? ''));
+$filterInStock = ($_GET['stock'] ?? '') === '1';
+$allowedSorts = ['relevancia', 'precio_asc', 'precio_desc', 'nombre'];
+$sortOrder = in_array((string)($_GET['orden'] ?? ''), $allowedSorts, true) ? (string)$_GET['orden'] : 'relevancia';
+$categoryOptions = [];
+$subcategoryOptions = [];
 $featuredPage = [
     'eyebrow' => 'Selección comercial',
     'title' => 'Productos destacados para redes, empresas y tecnología',
@@ -42,12 +54,56 @@ if ($pdo) {
         foreach ($selectedRows as $row) {
             $product = normalizeProductRow($row);
             $product['available_qty'] = $row['available_qty'] === null ? null : (int)$row['available_qty'];
-            $products[] = $product;
+            $product['_featured_order'] = count($featuredProducts);
+            $featuredProducts[] = $product;
         }
     } catch (Throwable $e) {
         error_log('Error cargando productos-destacados.php: ' . $e->getMessage());
     }
 }
+
+if (!is_numeric($filterPriceMin) || (float)$filterPriceMin < 0) $filterPriceMin = '';
+if (!is_numeric($filterPriceMax) || (float)$filterPriceMax < 0) $filterPriceMax = '';
+if (!$hasInventory) $filterInStock = false;
+
+foreach ($featuredProducts as $product) {
+    $category = trim((string)($product['category'] ?? ''));
+    $subcategory = trim((string)($product['subcategory'] ?? ''));
+    if ($category !== '') $categoryOptions[$category] = ($categoryOptions[$category] ?? 0) + 1;
+    if ($subcategory !== '') $subcategoryOptions[$subcategory] = ($subcategoryOptions[$subcategory] ?? 0) + 1;
+}
+uksort($categoryOptions, 'strcasecmp');
+uksort($subcategoryOptions, 'strcasecmp');
+
+$products = array_values(array_filter($featuredProducts, static function (array $product) use ($filterQuery, $filterCategory, $filterSubcategory, $filterPriceMin, $filterPriceMax, $filterInStock): bool {
+    if ($filterCategory !== '' && (string)($product['category'] ?? '') !== $filterCategory) return false;
+    if ($filterSubcategory !== '' && (string)($product['subcategory'] ?? '') !== $filterSubcategory) return false;
+    $price = (float)($product['price'] ?? 0);
+    if ($filterPriceMin !== '' && $price < (float)$filterPriceMin) return false;
+    if ($filterPriceMax !== '' && $price > (float)$filterPriceMax) return false;
+    if ($filterInStock && (!array_key_exists('available_qty', $product) || $product['available_qty'] === null || (int)$product['available_qty'] <= 0)) return false;
+    if ($filterQuery !== '') {
+        $haystack = implode(' ', [(string)($product['name'] ?? ''), (string)($product['sku'] ?? ''), (string)($product['category'] ?? ''), (string)($product['subcategory'] ?? '')]);
+        $needle = function_exists('mb_strtolower') ? mb_strtolower($filterQuery, 'UTF-8') : strtolower($filterQuery);
+        $haystack = function_exists('mb_strtolower') ? mb_strtolower($haystack, 'UTF-8') : strtolower($haystack);
+        if (!str_contains($haystack, $needle)) return false;
+    }
+    return true;
+}));
+
+if ($sortOrder !== 'relevancia') {
+    usort($products, static function (array $a, array $b) use ($sortOrder): int {
+        if ($sortOrder === 'precio_asc') $cmp = (float)$a['price'] <=> (float)$b['price'];
+        elseif ($sortOrder === 'precio_desc') $cmp = (float)$b['price'] <=> (float)$a['price'];
+        else $cmp = strcasecmp((string)$a['name'], (string)$b['name']);
+        return $cmp !== 0 ? $cmp : ((int)$a['_featured_order'] <=> (int)$b['_featured_order']);
+    });
+}
+
+$featuredTotal = count($featuredProducts);
+$filteredTotal = count($products);
+$activeFilterCount = (int)($filterQuery !== '') + (int)($filterCategory !== '') + (int)($filterSubcategory !== '') + (int)($filterPriceMin !== '') + (int)($filterPriceMax !== '') + (int)$filterInStock;
+$clearFiltersUrl = '/productos-destacados';
 $productItemList = [];
 foreach ($products as $idx => $product) {
     $url = $siteUrl . '/producto/' . rawurlencode($product['id']) . '-' . seoSlugFeatured($product['name']);
@@ -101,6 +157,10 @@ foreach ($products as $idx => $product) {
     .mobile-bottom-nav{display:none;position:fixed;left:0;right:0;bottom:0;height:calc(58px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);background:rgba(255,255,255,.96);border-top:1px solid var(--line);box-shadow:0 -8px 22px rgba(16,44,61,.09);z-index:1200;align-items:center;justify-content:space-around}.mobile-nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;border:0;background:transparent;color:#587084;font-size:11px;font-weight:800;text-decoration:none}.mobile-nav-item.is-active{color:var(--blue)}.mobile-nav-cart{position:relative}.mobile-nav-cart b{position:absolute;top:-5px;right:12px;min-width:16px;height:16px;border-radius:99px;background:var(--gold);display:grid;place-items:center;font-size:10px;color:#172b3a}
     @media(max-width:800px){body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}.topbar{display:none}.mobile-bottom-nav{display:flex}.public-menu-btn{display:inline-flex}.public-nav{display:none;flex-direction:column;align-items:stretch;gap:0;padding:6px 16px;box-shadow:0 10px 20px rgba(16,44,61,.14)}.public-nav.is-open{display:flex}.public-nav a{padding:12px 4px;border-bottom:1px solid rgba(255,255,255,.12)}.public-nav a:last-child{border-bottom:0}.nav{padding:12px 4vw;gap:10px;overflow:hidden}.logo img{max-width:140px}.nav-actions{gap:8px}.nav-action span{display:none}.hero{grid-template-columns:1fr;padding:24px}.section-head{align-items:flex-start;flex-direction:column}.grid{grid-template-columns:1fr 1fr;gap:10px}.card{padding:10px}footer{flex-direction:column;padding-bottom:96px}}@media(max-width:460px){.grid{grid-template-columns:1fr}}
     @media(max-width:800px){.public-menu-btn{display:none!important}.public-nav{display:flex!important;position:sticky;top:var(--sticky-nav-height,70px);flex-direction:row;align-items:center;justify-content:flex-start;gap:18px;padding:10px 16px;overflow-x:auto;white-space:nowrap}.public-nav a{flex:0 0 auto;padding:3px 0;border:0}}
+    .featured-layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:18px;align-items:start;margin:18px 0 36px}.featured-sidebar{position:sticky;top:16px;min-width:0;padding:14px;border:1px solid #bdced8;border-radius:8px;background:#fff;box-shadow:0 4px 14px rgba(16,44,61,.04)}.featured-filter-panel>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--navy);font-size:15px;font-weight:850;cursor:pointer;list-style:none}.featured-filter-panel>summary::-webkit-details-marker{display:none}.featured-filter-panel>summary:after{width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);content:"";transform:rotate(45deg)}.featured-filter-panel[open]>summary:after{transform:rotate(225deg)}.featured-filter-count{margin-left:auto;padding:3px 8px;border-radius:99px;background:#e8f5fa;color:var(--blue);font-size:11px}.featured-filter-fields{display:grid;gap:12px;margin-top:12px}.featured-filter-fields label{display:grid;gap:5px;color:#17324d;font-size:12px;font-weight:750}.featured-filter-fields input[type=search],.featured-filter-fields input[type=number],.featured-filter-fields select{width:100%;min-width:0;min-height:38px;margin:0;padding:8px 9px;border:1px solid #bdced8;border-radius:5px;background:#fff;color:#17324d;font-size:13px}.featured-filter-price{display:grid;grid-template-columns:1fr 1fr;gap:8px}.featured-filter-stock{display:flex!important;align-items:center;gap:8px}.featured-filter-stock input{width:auto;margin:0}.featured-filter-actions{display:flex;align-items:center;gap:8px}.featured-filter-actions button,.featured-filter-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:8px 10px;border:1px solid #bdced8;border-radius:5px;background:#fff;color:var(--navy);font-size:12px;font-weight:800}.featured-filter-actions button{border-color:var(--blue);background:var(--blue);color:#fff}.featured-results{min-width:0}.featured-results .section-head{margin-top:0}.featured-results .store-product-grid{margin-top:16px}.featured-results-empty{padding:22px;border:1px solid #bdced8;border-radius:8px;background:#fff;color:var(--muted)}.featured-results-empty a{color:var(--blue);font-weight:800}
+    @media(max-width:900px){.featured-layout{grid-template-columns:220px minmax(0,1fr);gap:12px}.featured-sidebar{padding:12px}}
+    @media(max-width:760px){.featured-layout{grid-template-columns:1fr;gap:12px;margin-top:14px}.featured-sidebar{position:static;padding:12px}.featured-filter-panel:not([open]) .featured-filter-fields{display:none}.featured-results .section-head{margin:8px 0 12px}.featured-results .section-head h2{font-size:21px}.featured-results .count-pill{white-space:normal}}
+    @media(max-width:460px){.featured-layout{gap:10px}.featured-filter-actions button,.featured-filter-actions a{flex:1}.featured-filter-price{grid-template-columns:1fr 1fr}}
   </style>
   <style>.nav, .public-nav { position: relative !important; top: auto !important; }</style>
 </head>
@@ -119,19 +179,39 @@ foreach ($products as $idx => $product) {
       </div>
       <div class="hero-panel"><?= escFeatured($featuredPage['note']) ?></div>
     </section>
-    <?php if (!empty($products)): ?>
-      <div class="section-head">
-        <div>
-          <h2><?= escFeatured($featuredPage['products_title']) ?></h2>
-          <p><?= escFeatured($featuredPage['products_description']) ?></p>
-        </div>
-        <span class="count-pill"><?= count($products) ?> productos</span>
-      </div>
-      <section class="store-product-grid" aria-label="Productos destacados">
-        <?php foreach ($products as $index => $product): ?>
-          <?php $storeProduct = $product; $storeProductUrl = '/producto/' . rawurlencode($product['id']) . '-' . seoSlugFeatured($product['name']); $storeProductIndex = $index; require __DIR__ . '/includes/storefront-product-card.php'; ?>
-        <?php endforeach; ?>
-      </section>
+    <?php if ($featuredTotal > 0): ?>
+      <form class="featured-layout" method="get" action="/productos-destacados">
+        <aside class="featured-sidebar" aria-label="Filtros de productos destacados">
+          <details class="featured-filter-panel" id="featuredFilterPanel" open>
+            <summary><span>Filtrar destacados</span><span class="featured-filter-count"><?= $activeFilterCount > 0 ? $activeFilterCount . ' activos' : $featuredTotal . ' productos' ?></span></summary>
+            <div class="featured-filter-fields">
+              <label>Buscar producto<input type="search" name="q" value="<?= escFeatured($filterQuery) ?>" placeholder="Nombre o SKU" aria-label="Buscar en productos destacados"></label>
+              <?php if (count($categoryOptions) > 1): ?>
+                <label>Categoría<select name="categoria"><option value="">Todas las categorías</option><?php foreach ($categoryOptions as $name => $count): ?><option value="<?= escFeatured((string)$name) ?>"<?= $filterCategory === (string)$name ? ' selected' : '' ?>><?= escFeatured((string)$name) ?> (<?= (int)$count ?>)</option><?php endforeach; ?></select></label>
+              <?php endif; ?>
+              <?php if ($subcategoryOptions): ?>
+                <label>Subcategoría<select name="subcategoria"><option value="">Todas las subcategorías</option><?php foreach ($subcategoryOptions as $name => $count): ?><option value="<?= escFeatured((string)$name) ?>"<?= $filterSubcategory === (string)$name ? ' selected' : '' ?>><?= escFeatured((string)$name) ?> (<?= (int)$count ?>)</option><?php endforeach; ?></select></label>
+              <?php endif; ?>
+              <div class="featured-filter-price"><label>Precio desde<input type="number" name="precio_min" min="0" step="0.01" value="<?= escFeatured($filterPriceMin) ?>" placeholder="$0"></label><label>Precio hasta<input type="number" name="precio_max" min="0" step="0.01" value="<?= escFeatured($filterPriceMax) ?>" placeholder="Sin límite"></label></div>
+              <?php if ($hasInventory): ?><label class="featured-filter-stock"><input type="checkbox" name="stock" value="1"<?= $filterInStock ? ' checked' : '' ?>> Solo disponibles</label><?php endif; ?>
+              <label>Ordenar por<select name="orden"><option value="relevancia"<?= $sortOrder === 'relevancia' ? ' selected' : '' ?>>Más relevantes</option><option value="precio_asc"<?= $sortOrder === 'precio_asc' ? ' selected' : '' ?>>Menor precio</option><option value="precio_desc"<?= $sortOrder === 'precio_desc' ? ' selected' : '' ?>>Mayor precio</option><option value="nombre"<?= $sortOrder === 'nombre' ? ' selected' : '' ?>>Nombre</option></select></label>
+              <div class="featured-filter-actions"><button type="submit"><i data-lucide="sliders-horizontal" width="14"></i> Aplicar</button><a href="/productos-destacados">Limpiar</a></div>
+            </div>
+          </details>
+        </aside>
+        <section class="featured-results" aria-label="Resultados destacados">
+          <div class="section-head"><div><h2><?= escFeatured($featuredPage['products_title']) ?></h2><p><?= $filteredTotal ?> de <?= $featuredTotal ?> productos destacados</p></div><span class="count-pill"><?= $filteredTotal ?> productos</span></div>
+          <?php if ($products): ?>
+            <div class="store-product-grid" aria-label="Productos destacados">
+              <?php foreach ($products as $index => $product): ?>
+                <?php $storeProduct = $product; $storeProductUrl = '/producto/' . rawurlencode($product['id']) . '-' . seoSlugFeatured($product['name']); $storeProductIndex = $index; require __DIR__ . '/includes/storefront-product-card.php'; ?>
+              <?php endforeach; ?>
+            </div>
+          <?php else: ?>
+            <div class="featured-results-empty">No hay productos destacados que coincidan con esos filtros. <a href="/productos-destacados">Limpiar filtros</a>.</div>
+          <?php endif; ?>
+        </section>
+      </form>
     <?php else: ?>
       <section class="empty">No hay productos destacados disponibles. <a href="/tienda.html">Ir al catalogo completo</a>.</section>
     <?php endif; ?>
@@ -140,5 +220,9 @@ foreach ($products as $idx => $product) {
   <script src="/assets/js/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
   <script src="/assets/js/public-account.js" defer></script>
   <script src="/assets/js/storefront-product-card.js" defer></script>
+  <script>
+    const featuredFilterPanel = document.getElementById('featuredFilterPanel');
+    if (featuredFilterPanel && window.matchMedia('(max-width: 760px)').matches) featuredFilterPanel.open = false;
+  </script>
 </body>
 </html>

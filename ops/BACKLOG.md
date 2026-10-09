@@ -57,6 +57,7 @@ con límites legibles; estadísticas y reportes deben mostrar datos reales y se 
 - [ ] **DEV-20261009-043** `high` `feature` — Categorías públicas: imágenes solo en familias destacadas; dentro de una categoría permitir icono o miniatura por subcategoría
 - [ ] **DEV-20261009-044** `high` `feature` — Fichas públicas de cuatro columnas con imagen completa, precio, disponibilidad y agregar al carrito; filtros de subcategoría, precio y stock
 - [ ] **DEV-20261009-045** `high` `feature` — Editor de campañas: proporción texto/imagen ajustable, preview fiel, transparencia sin recortes y acordeones estables
+- [ ] **DEV-20261009-046** `medium` `feature` — Productos destacados: filtros laterales reales por categoría, subcategoría, precio y stock disponible
 
 ## Now
 
