@@ -204,6 +204,33 @@ if (strpos($action, '?') !== false) {
 }
 $method = $_SERVER['REQUEST_METHOD'];
 
+// -------------------------------------------------------------
+// Sirve archivos subidos en tiempo real (banners de campañas, fotos de producto) que viven
+// fuera de public_html (ver getSmartispUploadsDir en db.php) y por lo tanto no tienen un
+// archivo estático real que Apache pueda servir directo tras un deploy. No requiere sesión:
+// son imágenes públicas de la tienda. No usa $pdo, por eso va antes de ese chequeo.
+if ($action === 'serve-upload' && $method === 'GET') {
+    $category = (string)($_GET['category'] ?? '');
+    $file = (string)($_GET['file'] ?? '');
+    if (!in_array($category, ['campaigns', 'products'], true) || !preg_match('/^[A-Za-z0-9._-]+$/', $file)) {
+        http_response_code(404);
+        echo json_encode(['error' => 'Imagen no encontrada.']);
+        exit;
+    }
+    $path = getSmartispUploadsDir($category) . '/' . $file;
+    if (!is_file($path)) {
+        http_response_code(404);
+        echo json_encode(['error' => 'Imagen no encontrada.']);
+        exit;
+    }
+    $ext = strtolower((string)pathinfo($path, PATHINFO_EXTENSION));
+    $mime = ['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp', 'gif' => 'image/gif'][$ext] ?? 'application/octet-stream';
+    header('Content-Type: ' . $mime);
+    header('Content-Length: ' . (string)filesize($path));
+    header('Cache-Control: public, max-age=604800');
+    readfile($path);
+    exit;
+}
 
 // -------------------------------------------------------------
 // Handlers por dominio (DEV-20261005-015). Cada require comprueba $action internamente y

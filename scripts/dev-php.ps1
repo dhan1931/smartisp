@@ -35,6 +35,7 @@ $dbPort = if ($env:MYSQL_PORT) { [int]$env:MYSQL_PORT } else { 3306 }
 
 if ($Target -eq 'local') {
     $env:SMARTISP_READONLY = '0'
+    $env:SMARTISP_UPLOADS_DIR = Join-Path $root 'uploads'
     $mode = 'copia local (escritura permitida)'
 } elseif ($Write) {
     Write-Host "ATENCIÓN: las escrituras estarán PERMITIDAS contra $($env:MYSQL_HOST)/$($env:MYSQL_DATABASE)." -ForegroundColor Red

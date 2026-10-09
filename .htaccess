@@ -26,6 +26,12 @@ DirectoryIndex tienda.html index.html index.htm index.php
     RewriteRule ^productos/?$ tienda.html [QSA,L]
     RewriteRule ^producto/?$ tienda.html [QSA,L]
 
+    # Imagenes subidas en tiempo real (banners/productos) con la URL vieja /uploads/<carpeta>/<archivo>:
+    # ya no viven en public_html (cada deploy reconstruye dist/ desde cero y las borraba), asi que si
+    # Apache no encuentra el archivo estatico aqui, se sirven via PHP desde el almacen persistente.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^uploads/(campaigns|products)/([A-Za-z0-9._-]+)$ api/router.php?action=serve-upload&category=$1&file=$2 [QSA,L]
+
     # Enrutamiento universal de API hacia router.php (evita bucle interno)
     RewriteCond %{REQUEST_URI} !/api/router\.php
     RewriteRule ^api/auth/(.*)$ api/router.php?action=$1 [QSA,L]
