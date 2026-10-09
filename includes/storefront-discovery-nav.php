@@ -43,6 +43,7 @@ $storefrontNavLinks = [
     </div>
   </div>
 </nav>
+<script src="/assets/js/public-admin-link.js?v=public-admin-access-20261009" defer></script>
 <nav class="storefront-mobile-bar" aria-label="Accesos rápidos">
   <a href="/tienda.html"><i data-lucide="store" width="19"></i><span>Tienda</span></a>
   <a href="/categorias-destacadas"><i data-lucide="layout-grid" width="19"></i><span>Categorías</span></a>

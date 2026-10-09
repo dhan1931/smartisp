@@ -41,6 +41,7 @@ $totalProducts = 0;
 $allProductCount = 0;
 $categoryBannerUrl = '';
 $categoryBannerAlt = '';
+$categoryIcon = 'package';
 $customCategoryDescription = '';
 $pageSize = 24;
 $currentPage = max(1, (int)($_GET['page'] ?? 1));
@@ -140,12 +141,15 @@ if ($pdo && $slug !== '') {
             }
 
             $configName = $categoryParentName !== '' ? $categoryParentName : $categoryName;
-            $configStmt = $pdo->prepare('SELECT banner_image_url, banner_alt, description FROM categories_rows WHERE LOWER(name) = LOWER(:name) LIMIT 1');
+            $configStmt = $pdo->prepare('SELECT banner_image_url, banner_alt, description, icon FROM categories_rows WHERE LOWER(name) = LOWER(:name) LIMIT 1');
             $configStmt->execute([':name' => $configName]);
             $categoryConfig = $configStmt->fetch(PDO::FETCH_ASSOC) ?: [];
             $categoryBannerUrl = trim((string)($categoryConfig['banner_image_url'] ?? ''));
             $categoryBannerAlt = trim((string)($categoryConfig['banner_alt'] ?? ''));
             $customCategoryDescription = trim((string)($categoryConfig['description'] ?? ''));
+            $configuredIcon = trim((string)($categoryConfig['icon'] ?? ''));
+            $knownCategoryIcons = ['laptop','network','cable','server','shield-check','zap','monitor','hard-drive','headphones','printer','phone-call','file-code','package','cpu','wifi','camera'];
+            if (in_array($configuredIcon, $knownCategoryIcons, true)) $categoryIcon = $configuredIcon;
             $safeLocalBanner = str_starts_with($categoryBannerUrl, '/') && !str_starts_with($categoryBannerUrl, '//') && !str_contains($categoryBannerUrl, '..') && !str_contains($categoryBannerUrl, '\\');
             $safeRemoteBanner = filter_var($categoryBannerUrl, FILTER_VALIDATE_URL) !== false && strtolower((string)parse_url($categoryBannerUrl, PHP_URL_SCHEME)) === 'https';
             if ((!$safeLocalBanner && !$safeRemoteBanner) || preg_match('/[\\x00-\\x1F\\x7F]/', $categoryBannerUrl)) $categoryBannerUrl = '';
@@ -195,7 +199,7 @@ foreach ($products as $idx => $product) {
   <link rel="icon" type="image/svg+xml" href="/assets/favicons/favicon.svg">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
   <script src="/assets/js/public-brand.js?v=store-grid-density-20261009" defer></script>
-  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=store-grid-density-20261009">
+  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=public-admin-access-20261009">
   <script src="https://unpkg.com/lucide@latest"></script>
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="SmartISP Ecuador">
@@ -233,9 +237,11 @@ foreach ($products as $idx => $product) {
     .category-breadcrumb a{color:#087ea4}.category-breadcrumb a:hover{text-decoration:underline}
     .category-breadcrumb [aria-current=page]{overflow-wrap:anywhere;color:#17324d;font-weight:700}
     .category-breadcrumb-separator{color:#91a6b5}
-    .category-hero{display:flex;align-items:center;justify-content:space-between;gap:24px;margin:0 0 22px;padding:26px 28px;border:1px solid #cfe3ed;border-left:4px solid #087ea4;border-radius:8px;background:linear-gradient(105deg,#fff 0%,#f1f8fc 100%)}
+    .category-hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(240px,.95fr);align-items:center;gap:clamp(20px,4vw,48px);min-height:270px;margin:0 0 22px;padding:clamp(22px,4vw,42px);border:1px solid #cfe3ed;border-left:4px solid #087ea4;border-radius:10px;background:linear-gradient(115deg,#edf8fd 0%,#dff2fb 54%,#c9e9f8 100%);overflow:hidden}
     .category-hero-copy{flex:1;min-width:0}
-    .category-banner{display:block;flex:0 1 42%;width:42%;max-width:520px;aspect-ratio:2.05;object-fit:cover;border:1px solid #d8e5e7;border-radius:6px;background:#fff}
+    .category-banner{display:block;width:100%;min-width:0;aspect-ratio:1.92;object-fit:cover;border:1px solid rgba(255,255,255,.8);border-radius:8px;background:#fff;box-shadow:0 14px 30px rgba(16,44,61,.12)}
+    .category-banner-fallback{display:grid;place-items:center;min-height:190px;aspect-ratio:1.92;border:1px solid #c5e4f2;border-radius:8px;background:radial-gradient(ellipse at 72% 35%,#bce6f8,transparent 44%),linear-gradient(135deg,#eaf7fc,#d4edf9);color:#087ea4}
+    .category-banner-fallback svg{width:62px;height:62px;stroke-width:1.5}
     .category-eyebrow{color:#087ea4;font-size:11px;font-weight:850;text-transform:uppercase}
     .category-hero h1{margin:5px 0 7px;color:#102c3d;font-size:38px;line-height:1.1;letter-spacing:0}
     .category-hero p{max-width:760px;margin:0;color:#60798f;font-size:15px}
@@ -256,7 +262,7 @@ foreach ($products as $idx => $product) {
     .category-chips{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 34px}
     .category-chips a{padding:7px 11px;border:1px solid #d8e5e7;border-radius:6px;background:#fff;color:#102c3d;font-size:12px;font-weight:750}
     .category-chips a:hover{border-color:#087ea4;color:#087ea4}
-    @media(max-width:760px){.category-breadcrumb{margin-top:16px;font-size:12px}.category-hero{align-items:flex-start;flex-direction:column;gap:14px;padding:20px}.category-hero h1{font-size:30px}.category-banner{flex:none;width:100%;max-width:none;aspect-ratio:2.1}.category-list-heading{align-items:flex-start;flex-direction:column}.category-pagination{gap:8px}.category-pagination a{padding:8px}}
+    @media(max-width:760px){.category-breadcrumb{margin-top:16px;font-size:12px}.category-hero{grid-template-columns:1fr;gap:18px;min-height:0;padding:20px}.category-hero h1{font-size:30px}.category-banner,.category-banner-fallback{aspect-ratio:1.8}.category-list-heading{align-items:flex-start;flex-direction:column}.category-pagination{gap:8px}.category-pagination a{padding:8px}}
   </style>
 </head>
 <body>
@@ -273,7 +279,7 @@ foreach ($products as $idx => $product) {
       <h1><?= escapeCategoryPage($categoryName !== '' ? $categoryName : 'Categoría no encontrada') ?></h1>
       <p><?= escapeCategoryPage($categoryName !== '' ? $metaDesc : 'Vuelve al catálogo para explorar los productos disponibles.') ?></p>
       <?php if ($categoryName !== ''): ?><div class="category-total"><?= number_format($totalProducts, 0, ',', '.') ?> productos</div><?php endif; ?></div>
-      <?php if ($categoryName !== '' && $categoryBannerUrl !== ''): ?><img class="category-banner" src="<?= escapeCategoryPage($categoryBannerUrl) ?>" alt="<?= escapeCategoryPage($categoryBannerAlt !== '' ? $categoryBannerAlt : $categoryName) ?>" width="900" height="440" fetchpriority="high"><?php endif; ?>
+      <?php if ($categoryName !== '' && $categoryBannerUrl !== ''): ?><img class="category-banner" src="<?= escapeCategoryPage($categoryBannerUrl) ?>" alt="<?= escapeCategoryPage($categoryBannerAlt !== '' ? $categoryBannerAlt : $categoryName) ?>" width="900" height="440" fetchpriority="high" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><div class="category-banner-fallback" hidden aria-hidden="true"><i data-lucide="<?= escapeCategoryPage($categoryIcon) ?>"></i></div><?php elseif ($categoryName !== ''): ?><div class="category-banner-fallback" aria-hidden="true"><i data-lucide="<?= escapeCategoryPage($categoryIcon) ?>"></i></div><?php endif; ?>
     </section>
 
     <?php if ($categoryName !== '' && $totalProducts > 0): ?>

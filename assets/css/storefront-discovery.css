@@ -16,6 +16,9 @@ html:not(.public-brand-ready) .storefront-logo{opacity:0}.public-brand-ready .st
 .storefront-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px}
 .storefront-actions>a,.storefront-menu-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:6px 8px;border:0;border-radius:6px;background:transparent;color:var(--sd-navy);font-size:13px;font-weight:750;white-space:nowrap}
 .storefront-actions>a:hover,.storefront-menu-button:hover{background:#edf7f8;color:var(--sd-blue)}
+.storefront-actions>.storefront-admin-link{border:1px solid #a9d8d0;background:#eaf7f5;color:var(--sd-blue)}
+.storefront-actions>.storefront-admin-link:hover{background:#dff2ef}
+.storefront-admin-link[hidden]{display:none}
 .storefront-cart{position:relative}.storefront-cart:after{position:absolute;top:0;right:1px;width:8px;height:8px;border:2px solid #fff;border-radius:50%;background:var(--sd-gold);content:""}
 .storefront-menu-button,.storefront-menu-close{display:none}
 .storefront-navigation{position:relative;z-index:1000;display:flex;align-items:center;justify-content:center;gap:clamp(18px,3.5vw,50px);min-height:48px;padding:0 20px;background:var(--sd-navy);color:#fff;font-size:13px;font-weight:800}

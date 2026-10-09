@@ -32,7 +32,8 @@
 	<link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
 	<link rel="manifest" href="/assets/site.webmanifest">
 	<meta name="theme-color" content="#102a43">
-	<script src="/assets/js/public-brand.js?v=store-grid-density-20261009" defer></script>
+		<script src="/assets/js/public-brand.js?v=store-grid-density-20261009" defer></script>
+		<script src="/assets/js/public-admin-link.js?v=public-admin-access-20261009" defer></script>
 	<script type="application/ld+json">
 	{
 		"@context": "https://schema.org",
@@ -1820,6 +1821,42 @@
           }
           .store-sidebar .sidebar-card { background: #fff !important; }
         }
+        .store-campaign-media { z-index:0; overflow:hidden; }
+        .store-campaign-media img { display:block; object-fit:cover; transition:opacity .35s ease; }
+        .store-campaign::after { z-index:1; background:linear-gradient(90deg,rgba(248,252,254,.94),rgba(248,252,254,.52) 48%,rgba(248,252,254,0)); opacity:var(--campaign-overlay-opacity,.18); }
+        .store-campaign-copy { position:relative; z-index:2; }
+        .store-campaign-controls { z-index:4; }
+        .store-campaign-badge,.store-campaign-promo { display:inline-flex; align-items:center; gap:7px; width:max-content; max-width:100%; padding:8px 12px; border:0; border-radius:5px; color:#fff; font-size:12px; font-weight:850; text-decoration:none; }
+        .store-campaign-badge { position:absolute; z-index:3; top:16px; right:18px; background:#dc2626; box-shadow:0 3px 12px #102c3d33; }
+        .store-campaign-badge.new { background:#059669; }
+        .store-campaign-badge.featured { background:#087ea4; }
+        .store-campaign-badge.dark { background:#102c3d; }
+        .store-campaign-badge[hidden],.store-campaign-promo[hidden]{display:none}
+        .store-campaign-promo { margin:10px 0 0 8px; background:#102c3d; vertical-align:middle; }
+        .store-campaign-promo:hover { color:#fff; filter:brightness(1.15); }
+        .store-campaign.is-layout { display:grid; min-height:0; gap:12px; overflow:visible; border:0; background:transparent; }
+        .store-campaign.is-layout::after,.store-campaign.is-layout>.store-campaign-media,.store-campaign.is-layout>.store-campaign-copy,.store-campaign.is-layout>.store-campaign-badge,.store-campaign.is-layout>.store-campaign-controls { display:none!important; }
+        .store-campaign.is-layout .store-campaign-card::before { display:none; }
+        .store-campaign.is-split { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        .store-campaign.is-triple { grid-template-columns:repeat(3,minmax(0,1fr)); }
+        .store-campaign.is-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        .store-campaign.is-cards { display:flex; align-items:stretch; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:thin; }
+        .store-campaign-card { position:relative; display:flex; flex:1 1 0; min-width:0; min-height:250px; aspect-ratio:1.8; overflow:hidden; align-items:center; border:1px solid var(--line); border-radius:8px; background:#e7f3f8; isolation:isolate; }
+        .store-campaign.is-cards .store-campaign-card { flex:0 0 min(390px,82vw); scroll-snap-align:start; }
+        .store-campaign-card-media { position:absolute; z-index:-2; inset:0; width:100%; height:100%; object-fit:cover; }
+        .store-campaign-card-overlay { position:absolute; z-index:-1; inset:0; background:linear-gradient(90deg,#f8fcfee8,#f8fcfe80 52%,transparent); }
+        .store-campaign-card-main { position:relative; z-index:2; display:flex; width:100%; height:100%; align-items:center; color:inherit; text-decoration:none; }
+        .store-campaign-card-copy { position:relative; width:75%; padding:22px; }
+        .store-campaign-card-copy .store-campaign-eyebrow,.store-campaign-card-copy .store-campaign-title,.store-campaign-card-copy .store-campaign-subtitle { display:block; }
+        .store-campaign-card-copy .store-campaign-title { margin:8px 0; font-size:25px; }
+        .store-campaign-card-copy .store-campaign-subtitle { margin-bottom:13px; font-size:13px; }
+        .store-campaign-card-copy .store-campaign-cta { padding:9px 12px; }
+        .store-campaign-card-badge { position:absolute; z-index:2; top:12px; right:12px; }
+        .store-campaign-card-promo { position:absolute; z-index:2; bottom:12px; right:12px; display:inline-flex; align-items:center; gap:6px; padding:7px 10px; border:1px solid #ffffffb8; border-radius:5px; background:#102c3de8; color:#fff; font-size:11px; font-weight:800; }
+        .store-campaign.is-triple .store-campaign-card { min-height:245px; aspect-ratio:1.55; }
+        .store-campaign.is-grid .store-campaign-card { min-height:225px; aspect-ratio:1.7; }
+        @media(max-width:800px){.store-campaign.is-split,.store-campaign.is-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.store-campaign.is-triple{grid-template-columns:1fr}.store-campaign-card{min-height:210px}.store-campaign-card-copy{width:82%;padding:17px}.store-campaign-card-copy .store-campaign-title{font-size:21px}}
+        @media(max-width:520px){.store-campaign.is-split,.store-campaign.is-grid{grid-template-columns:1fr}.store-campaign.is-cards .store-campaign-card{flex-basis:88vw}.store-campaign-card{min-height:185px;aspect-ratio:1.55}.store-campaign-card-copy{width:78%;padding:14px}.store-campaign-card-copy .store-campaign-title{font-size:19px}.store-campaign-badge{top:10px;right:10px}}
     </style>
 </head>
 <body>
@@ -1863,7 +1900,8 @@
 	<section class="store-campaign-area" aria-label="Promociones SmartISP" hidden>
 		<div class="store-campaign" id="storeCampaign" aria-roledescription="carrusel" aria-label="Campañas de la tienda" aria-live="polite">
 			<div class="store-campaign-media"><img id="storeCampaignImage" width="1600" height="560" alt="" fetchpriority="high"></div>
-			<div class="store-campaign-copy"><div class="store-campaign-eyebrow" id="storeCampaignEyebrow"></div><h1 class="store-campaign-title" id="storeCampaignTitle"></h1><p class="store-campaign-subtitle" id="storeCampaignSubtitle"></p><a class="store-campaign-cta" id="storeCampaignLink" href="/tienda.html#catalogo"><span id="storeCampaignButton"></span><i data-lucide="arrow-right" width="16"></i></a></div>
+			<span class="store-campaign-badge" id="storeCampaignBadge" hidden></span>
+			<div class="store-campaign-copy"><div class="store-campaign-eyebrow" id="storeCampaignEyebrow"></div><h1 class="store-campaign-title" id="storeCampaignTitle"></h1><p class="store-campaign-subtitle" id="storeCampaignSubtitle"></p><a class="store-campaign-cta" id="storeCampaignLink" href="/tienda.html#catalogo"><span id="storeCampaignButton"></span><i data-lucide="arrow-right" width="16"></i></a><a class="store-campaign-promo" id="storeCampaignPromo" hidden></a></div>
 			<div class="store-campaign-controls" id="storeCampaignControls" hidden><button class="store-campaign-control" id="storeCampaignPrev" type="button" aria-label="Banner anterior"><i data-lucide="chevron-left"></i></button><div class="store-campaign-dots" id="storeCampaignDots"></div><button class="store-campaign-control" id="storeCampaignNext" type="button" aria-label="Banner siguiente"><i data-lucide="chevron-right"></i></button></div>
 		</div>
 	</section>
@@ -3579,29 +3617,71 @@
 		let storefrontDisplayMode = 'carousel';
 		let storefrontSlideIndex = 0;
 		let storefrontRotationTimer = 0;
+		let storefrontImageTimers = [];
+		const campaignSlideImages = slide => {
+			const images = Array.isArray(slide.images) ? [...slide.images].sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0)) : [];
+			if (!images.length && slide.image_url) images.push({ image_url: slide.image_url, image_alt: slide.image_alt || slide.title });
+			const primaryIndex = images.findIndex(image => image.is_primary === true || String(image.is_primary) === '1');
+			return primaryIndex > 0 ? [images[primaryIndex], ...images.slice(0, primaryIndex), ...images.slice(primaryIndex + 1)] : images;
+		};
+		const campaignExternal = target => /^https:\/\//i.test(String(target || ''));
+		const setCampaignLink = (link, target) => {
+			link.href = target || '/tienda.html#catalogo';
+			if (campaignExternal(link.href)) { link.target = '_blank'; link.rel = 'noopener noreferrer'; }
+			else { link.removeAttribute('target'); link.removeAttribute('rel'); }
+		};
+		const clearStorefrontImageTimers = () => { storefrontImageTimers.forEach(clearInterval); storefrontImageTimers = []; };
+		const startStorefrontImageRotation = (image, slide) => {
+			const images = campaignSlideImages(slide);
+			if (images.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+			let index = 0;
+			const timer = setInterval(() => {
+				index = (index + 1) % images.length;
+				image.src = images[index].image_url;
+				image.alt = images[index].image_alt || slide.title || '';
+			}, Math.max(2, Math.min(20, Number(slide.image_interval_seconds) || 5)) * 1000);
+			storefrontImageTimers.push(timer);
+		};
 		const renderStorefrontSlide = index => {
 			if (!storefrontSlides.length) return;
-			if (storefrontDisplayMode === 'triple') return;
+			if (!['carousel', 'single'].includes(storefrontDisplayMode)) return;
 			storefrontSlideIndex = (index + storefrontSlides.length) % storefrontSlides.length;
 			const slide = storefrontSlides[storefrontSlideIndex];
 			const banner = document.querySelector('#storeCampaign');
 			banner.classList.toggle('is-contain', slide.image_fit === 'contain');
 			const image = document.querySelector('#storeCampaignImage');
-			image.src = slide.image_url;
-			image.alt = slide.image_alt || slide.title || '';
+			clearStorefrontImageTimers();
+			const images = campaignSlideImages(slide);
+			image.src = images[0]?.image_url || slide.image_url || '';
+			image.alt = images[0]?.image_alt || slide.image_alt || slide.title || '';
+			image.style.objectFit = slide.image_fit === 'contain' ? 'contain' : 'cover';
+			image.style.opacity = String(Math.max(0, Math.min(100, Number(slide.image_opacity ?? 100))) / 100);
+			banner.style.setProperty('--campaign-overlay-opacity', String(Math.max(0, Math.min(100, Number(slide.overlay_opacity ?? 18))) / 100));
+			startStorefrontImageRotation(image, slide);
 			document.querySelector('#storeCampaignEyebrow').textContent = slide.eyebrow || '';
 			document.querySelector('#storeCampaignEyebrow').hidden = !slide.eyebrow;
 			document.querySelector('#storeCampaignTitle').textContent = slide.title || '';
 			document.querySelector('#storeCampaignSubtitle').textContent = slide.subtitle || '';
 			document.querySelector('#storeCampaignSubtitle').hidden = !slide.subtitle;
 			document.querySelector('#storeCampaignButton').textContent = slide.button_text || 'Explorar';
-			const link = document.querySelector('#storeCampaignLink');
-			link.href = slide.target_url;
-			const external = /^https:\/\//i.test(slide.target_url || '');
-			if (external) { link.target = '_blank'; link.rel = 'noopener noreferrer'; }
-			else { link.removeAttribute('target'); link.removeAttribute('rel'); }
+			setCampaignLink(document.querySelector('#storeCampaignLink'), slide.target_url);
+			const badge = document.querySelector('#storeCampaignBadge');
+			badge.textContent = slide.badge_label || '';
+			badge.className = `store-campaign-badge ${['new','featured','dark'].includes(slide.badge_tone) ? slide.badge_tone : ''}`;
+			badge.hidden = !slide.badge_label;
+			const promo = document.querySelector('#storeCampaignPromo');
+			promo.hidden = !slide.promo_chip_label;
+			if (slide.promo_chip_label) {
+				setCampaignLink(promo, slide.promo_chip_target_url || slide.target_url);
+				const icon = document.createElement('i');
+				icon.dataset.lucide = ['sparkles','star','truck'].includes(slide.promo_chip_icon) ? slide.promo_chip_icon : 'tag';
+				icon.setAttribute('aria-hidden', 'true');
+				const label = document.createElement('span'); label.textContent = slide.promo_chip_label;
+				promo.replaceChildren(icon, label);
+			}
 			banner.classList.add('is-visible');
 			document.querySelectorAll('.store-campaign-dot').forEach((dot, dotIndex) => dot.setAttribute('aria-current', dotIndex === storefrontSlideIndex ? 'true' : 'false'));
+			window.lucide?.createIcons();
 		};
 		const renderStorefrontFeatured = () => {
 			const section = document.querySelector('#campaignFeatured');
@@ -3620,11 +3700,28 @@
 			section.classList.add('is-visible');
 			window.lucide?.createIcons();
 		};
-		const stopStorefrontRotation = () => { if (storefrontRotationTimer) clearInterval(storefrontRotationTimer); storefrontRotationTimer = 0; };
+		const stopStorefrontRotation = () => { if (storefrontRotationTimer) clearInterval(storefrontRotationTimer); storefrontRotationTimer = 0; clearStorefrontImageTimers(); };
 		const startStorefrontRotation = seconds => {
-			stopStorefrontRotation();
+			if (storefrontRotationTimer) clearInterval(storefrontRotationTimer);
+			storefrontRotationTimer = 0;
 			if (storefrontDisplayMode !== 'carousel' || storefrontSlides.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 			storefrontRotationTimer = setInterval(() => renderStorefrontSlide(storefrontSlideIndex + 1), Math.max(4, Math.min(20, Number(seconds) || 7)) * 1000);
+		};
+		const renderCampaignCard = (slide, index) => {
+			const images = campaignSlideImages(slide);
+			const image = images[0] || {};
+			const target = slide.target_url || '/tienda.html#catalogo';
+			const promoTarget = slide.promo_chip_target_url || target;
+			const tone = ['new','featured','dark'].includes(slide.badge_tone) ? slide.badge_tone : '';
+			const icon = ['sparkles','star','truck'].includes(slide.promo_chip_icon) ? slide.promo_chip_icon : 'tag';
+			return `<article class="store-campaign-card" data-campaign-card="${index}"><img class="store-campaign-card-media" data-campaign-image data-slide-index="${index}" src="${escapeHtml(image.image_url || '')}" alt="${escapeHtml(image.image_alt || slide.title || '')}" style="object-fit:${slide.image_fit === 'contain' ? 'contain' : 'cover'};opacity:${Math.max(0,Math.min(100,Number(slide.image_opacity ?? 100)))/100}"><span class="store-campaign-card-overlay" style="opacity:${Math.max(0,Math.min(100,Number(slide.overlay_opacity ?? 18)))/100}"></span><a class="store-campaign-card-main" href="${escapeHtml(target)}" ${campaignExternal(target) ? 'target="_blank" rel="noopener noreferrer"' : ''}><span class="store-campaign-card-copy"><span class="store-campaign-eyebrow" ${slide.eyebrow?'':'hidden'}>${escapeHtml(slide.eyebrow||'')}</span><span class="store-campaign-title">${escapeHtml(slide.title||'')}</span><span class="store-campaign-subtitle" ${slide.subtitle?'':'hidden'}>${escapeHtml(slide.subtitle||'')}</span><span class="store-campaign-cta">${escapeHtml(slide.button_text||'Explorar')} →</span></span></a>${slide.badge_label?`<span class="store-campaign-badge store-campaign-card-badge ${tone}">${escapeHtml(slide.badge_label)}</span>`:''}${slide.promo_chip_label?`<a class="store-campaign-card-promo" href="${escapeHtml(promoTarget)}" ${campaignExternal(promoTarget) ? 'target="_blank" rel="noopener noreferrer"' : ''}><i data-lucide="${icon}" width="14"></i>${escapeHtml(slide.promo_chip_label)}</a>`:''}</article>`;
+		};
+		const startLayoutImageRotations = () => {
+			clearStorefrontImageTimers();
+			document.querySelectorAll('.store-campaign-card [data-campaign-image]').forEach(image => {
+				const slide = storefrontSlides[Number(image.dataset.slideIndex)];
+				if (slide) startStorefrontImageRotation(image, slide);
+			});
 		};
 		const loadStorefrontCampaigns = async () => {
 			try {
@@ -3632,7 +3729,7 @@
 				if (!response.ok) return;
 				const data = await response.json();
 				storefrontSlides = Array.isArray(data.slides) ? data.slides : [];
-				storefrontDisplayMode = ['carousel', 'single', 'triple'].includes(data.display_mode) ? data.display_mode : 'carousel';
+				storefrontDisplayMode = ['carousel', 'single', 'split', 'triple', 'grid', 'cards'].includes(data.display_mode) ? data.display_mode : 'carousel';
 				storefrontPromoChips = Array.isArray(data.chips) ? data.chips : [];
 				storefrontFeaturedProducts = Array.isArray(data.products) ? data.products.map(product => ({
 					...product,
@@ -3645,34 +3742,37 @@
 				if (storefrontSlides.length) {
 					document.querySelector('.store-campaign-area').hidden = false;
 					const banner = document.querySelector('#storeCampaign');
-					banner.classList.toggle('is-single', storefrontDisplayMode === 'single');
-					banner.classList.toggle('is-triple', storefrontDisplayMode === 'triple');
-					if (storefrontDisplayMode === 'triple') {
-						const chosen = storefrontSlides.slice(0, 3);
-						banner.innerHTML = chosen.map(slide => `<a class="store-campaign-card" href="${escapeHtml(slide.target_url)}" style="background-image:url('${escapeHtml(slide.image_url)}');background-size:${slide.image_fit === 'contain' ? 'contain' : 'cover'}"><span class="store-campaign-copy"><span class="store-campaign-eyebrow">${escapeHtml(slide.eyebrow || '')}</span><span class="store-campaign-title">${escapeHtml(slide.title || '')}</span><span class="store-campaign-subtitle">${escapeHtml(slide.subtitle || '')}</span><span class="store-campaign-cta">${escapeHtml(slide.button_text || 'Explorar')} →</span></span></a>`).join('') + '<div class="store-campaign-controls" id="storeCampaignControls" hidden><div class="store-campaign-dots" id="storeCampaignDots"></div></div>';
-					} else if (storefrontDisplayMode === 'single') {
-						storefrontSlides = storefrontSlides.slice(0, 1);
-					}
-					const dots = document.querySelector('#storeCampaignDots');
-					dots.innerHTML = storefrontDisplayMode === 'triple' ? '' : storefrontSlides.map((slide, index) => `<button class="store-campaign-dot" type="button" aria-label="Mostrar banner ${index + 1}: ${escapeHtml(slide.title)}" aria-current="${index === 0 ? 'true' : 'false'}" data-campaign-slide="${index}"></button>`).join('');
-					const controls = document.querySelector('#storeCampaignControls');
-					if (controls) controls.hidden = storefrontDisplayMode !== 'carousel' || storefrontSlides.length < 2;
-					if (storefrontDisplayMode === 'triple') banner.classList.add('is-visible');
-					if (storefrontDisplayMode !== 'triple') {
-						document.querySelector('#storeCampaignPrev')?.addEventListener('click', () => { renderStorefrontSlide(storefrontSlideIndex - 1); startStorefrontRotation(data.rotation_seconds); });
-						document.querySelector('#storeCampaignNext')?.addEventListener('click', () => { renderStorefrontSlide(storefrontSlideIndex + 1); startStorefrontRotation(data.rotation_seconds); });
-						dots.addEventListener('click', event => {
-						const dot = event.target.closest('[data-campaign-slide]');
-						if (dot) { renderStorefrontSlide(Number(dot.dataset.campaignSlide)); startStorefrontRotation(data.rotation_seconds); }
-						});
+					banner.classList.remove('is-single','is-contain','is-triple','is-layout','is-split','is-grid','is-cards');
+					if (['split','triple','grid','cards'].includes(storefrontDisplayMode)) {
+						banner.classList.add('is-layout', `is-${storefrontDisplayMode}`);
+						const limit = { split:2, triple:3, grid:4 }[storefrontDisplayMode] || storefrontSlides.length;
+						banner.innerHTML = storefrontSlides.slice(0,limit).map((slide,index)=>renderCampaignCard(slide,index)).join('');
+						banner.classList.add('is-visible');
+						startLayoutImageRotations();
+						window.lucide?.createIcons();
+					} else {
+						banner.classList.toggle('is-single', storefrontDisplayMode === 'single');
+						const dots = document.querySelector('#storeCampaignDots');
+						dots.innerHTML = storefrontDisplayMode === 'carousel' ? storefrontSlides.map((slide,index)=>`<button class="store-campaign-dot" type="button" aria-label="Mostrar banner ${index+1}: ${escapeHtml(slide.title)}" aria-current="${index===0?'true':'false'}" data-campaign-slide="${index}"></button>`).join('') : '';
+						const controls = document.querySelector('#storeCampaignControls');
+						if (controls) controls.hidden = storefrontDisplayMode !== 'carousel' || storefrontSlides.length < 2;
+						document.querySelector('#storeCampaignPrev')?.addEventListener('click',()=>{renderStorefrontSlide(storefrontSlideIndex-1);startStorefrontRotation(data.rotation_seconds);});
+						document.querySelector('#storeCampaignNext')?.addEventListener('click',()=>{renderStorefrontSlide(storefrontSlideIndex+1);startStorefrontRotation(data.rotation_seconds);});
+						dots.addEventListener('click',event=>{const dot=event.target.closest('[data-campaign-slide]');if(dot){renderStorefrontSlide(Number(dot.dataset.campaignSlide));startStorefrontRotation(data.rotation_seconds);}});
 						renderStorefrontSlide(0);
 						startStorefrontRotation(data.rotation_seconds);
-						banner.addEventListener('mouseenter', stopStorefrontRotation);
-						banner.addEventListener('mouseleave', () => startStorefrontRotation(data.rotation_seconds));
-						banner.addEventListener('focusin', stopStorefrontRotation);
-						banner.addEventListener('focusout', () => startStorefrontRotation(data.rotation_seconds));
-						document.addEventListener('visibilitychange', () => document.hidden ? stopStorefrontRotation() : startStorefrontRotation(data.rotation_seconds));
 					}
+					const resumeStorefrontAnimations = () => {
+						if (['carousel','single'].includes(storefrontDisplayMode)) {
+							startStorefrontImageRotation(document.querySelector('#storeCampaignImage'),storefrontSlides[storefrontSlideIndex]);
+							startStorefrontRotation(data.rotation_seconds);
+						} else startLayoutImageRotations();
+					};
+					banner.addEventListener('mouseenter',stopStorefrontRotation);
+					banner.addEventListener('mouseleave',resumeStorefrontAnimations);
+					banner.addEventListener('focusin',stopStorefrontRotation);
+					banner.addEventListener('focusout',resumeStorefrontAnimations);
+					document.addEventListener('visibilitychange',()=>document.hidden?stopStorefrontRotation():resumeStorefrontAnimations());
 				}
 				const chipsHost = document.querySelector('#storePromoChips');
 				if (chipsHost && storefrontPromoChips.length) {
