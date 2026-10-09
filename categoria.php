@@ -250,12 +250,12 @@ foreach ($products as $idx => $product) {
     .category-breadcrumb a{color:#087ea4}.category-breadcrumb a:hover{text-decoration:underline}
     .category-breadcrumb [aria-current=page]{overflow-wrap:anywhere;color:#17324d;font-weight:700}
     .category-breadcrumb-separator{color:#91a6b5}
-    .category-hero{display:grid;grid-template-columns:minmax(0,1fr);align-items:center;gap:clamp(20px,4vw,48px);min-height:0;margin:0 0 22px;padding:clamp(22px,4vw,42px);border:1px solid #c5d7e0;border-left:4px solid #087ea4;border-radius:8px;background:linear-gradient(115deg,#edf8fd 0%,#dff2fb 54%,#c9e9f8 100%);overflow:hidden}
-    .category-hero.has-banner{grid-template-columns:minmax(0,1.05fr) minmax(240px,.95fr);min-height:270px}
+    .category-hero{display:grid;grid-template-columns:minmax(0,1fr);align-items:center;gap:clamp(18px,3vw,36px);min-height:0;margin:0 0 18px;padding:clamp(16px,2.2vw,26px);border:1px solid #c5d7e0;border-left:4px solid #087ea4;border-radius:8px;background:linear-gradient(115deg,#edf8fd 0%,#dff2fb 54%,#c9e9f8 100%);overflow:hidden}
+    .category-hero.has-banner{grid-template-columns:minmax(0,1.15fr) minmax(220px,.85fr)}
     .category-hero-copy{flex:1;min-width:0}
-    .category-banner{display:block;width:100%;min-width:0;aspect-ratio:1.92;object-fit:cover;border:1px solid rgba(255,255,255,.8);border-radius:8px;background:#fff;box-shadow:0 14px 30px rgba(16,44,61,.12)}
+    .category-banner{display:block;width:100%;min-width:0;max-height:200px;aspect-ratio:2.6;object-fit:cover;object-position:center;border:1px solid rgba(255,255,255,.8);border-radius:8px;background:#fff;box-shadow:0 14px 30px rgba(16,44,61,.12)}
     .category-eyebrow{color:#087ea4;font-size:11px;font-weight:850;text-transform:uppercase}
-    .category-hero h1{margin:5px 0 7px;color:#102c3d;font-size:38px;line-height:1.1;letter-spacing:0}
+    .category-hero h1{margin:5px 0 7px;color:#102c3d;font-size:clamp(24px,2.6vw,32px);line-height:1.1;letter-spacing:0}
     .category-hero p{max-width:760px;margin:0;color:#60798f;font-size:15px}
     .category-total{display:inline-flex;width:max-content;margin-top:14px;padding:9px 13px;border:1px solid #d8e5e7;border-radius:99px;background:#fff;color:#17324d;font-size:13px;font-weight:800;white-space:nowrap}
     .category-chips-row{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 22px}
@@ -309,7 +309,7 @@ foreach ($products as $idx => $product) {
     .category-chips a{padding:7px 11px;border:1px solid #d8e5e7;border-radius:6px;background:#fff;color:#102c3d;font-size:12px;font-weight:750}
     .category-chips a:hover{border-color:#087ea4;color:#087ea4}
     @media(max-width:900px){.category-results-layout{grid-template-columns:220px minmax(0,1fr);gap:12px}}
-    @media(max-width:760px){.category-breadcrumb{margin-top:16px;font-size:12px}.category-hero,.category-hero.has-banner{grid-template-columns:1fr;gap:18px;min-height:0;padding:20px}.category-hero h1{font-size:30px}.category-banner{aspect-ratio:1.8}.category-results-layout{grid-template-columns:1fr}.category-sidebar{position:static}.category-subcategory-list{max-height:210px}.category-list-heading{align-items:flex-start;flex-direction:column}.category-pagination{gap:8px}.category-pagination a{padding:8px}}
+    @media(max-width:760px){.category-breadcrumb{margin-top:16px;font-size:12px}.category-hero,.category-hero.has-banner{grid-template-columns:1fr;gap:14px;min-height:0;padding:16px}.category-hero h1{font-size:26px}.category-banner{aspect-ratio:1.8;max-height:none}.category-results-layout{grid-template-columns:1fr}.category-sidebar{position:static}.category-subcategory-list{max-height:210px}.category-list-heading{align-items:flex-start;flex-direction:column}.category-pagination{gap:8px}.category-pagination a{padding:8px}}
   </style>
 </head>
 <body>
