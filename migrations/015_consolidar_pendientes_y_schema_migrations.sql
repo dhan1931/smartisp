@@ -94,8 +94,8 @@ ALTER TABLE storefront_campaign_slides
 
 -- ============================================================================
 -- Registro de migraciones: crea schema_migrations (misma estructura que usa
--- scripts/migrate.php) y marca 001-015 como aplicadas, para que el runner no
--- vuelva a intentarlas.
+-- scripts/migrate.php) y marca 001-014 como aplicadas, para que el runner no
+-- vuelva a intentarlas. Este mismo archivo (015) lo marca el propio runner.
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS schema_migrations (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -103,6 +103,10 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
   applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- No incluye el propio '015_...sql': el runner (scripts/migrate.php) hace su propia
+-- INSERT (sin IGNORE) para marcar este archivo como aplicado justo despues de correrlo;
+-- insertarlo aqui tambien chocaba con esa llave unica (MySQL 1062) y rompia el runner
+-- con un error sin detalle (ese INSERT vive fuera del try/catch por sentencia).
 INSERT IGNORE INTO schema_migrations (migration) VALUES
   ('001_products_rows_tipos_reales.sql'),
   ('002_orders_rows_tipos_reales.sql'),
@@ -117,8 +121,7 @@ INSERT IGNORE INTO schema_migrations (migration) VALUES
   ('011_category_metadata.sql'),
   ('012_storefront_campaign_gallery.sql'),
   ('013_campaign_slide_promotions.sql'),
-  ('014_campaign_image_layout.sql'),
-  ('015_consolidar_pendientes_y_schema_migrations.sql');
+  ('014_campaign_image_layout.sql');
 
 -- Sin SELECT de verificacion al final a proposito (ver nota en migrations/005): un SELECT
 -- ejecutado por PDO::exec() bajo prepares nativos deja un resultado sin leer que rompe el
