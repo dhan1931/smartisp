@@ -102,6 +102,27 @@ if ($pdo && $slug !== '') {
             $facetStmt = $pdo->prepare("SELECT TRIM(subcategory) AS name, COUNT(*) AS product_count FROM `$pTable` WHERE visible = 1 AND (TRIM(category) = :category_name OR TRIM(subcategory) = :subcategory_name) AND TRIM(subcategory) <> '' GROUP BY TRIM(subcategory) ORDER BY TRIM(subcategory) ASC");
             $facetStmt->execute([':category_name' => $categoryName, ':subcategory_name' => $categoryName]);
             $audioVideoSubcategories = $facetStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Unificar con las subcategorias curadas en admin (categories_rows): tienda y
+            // admin deben mostrar la misma lista. getDynamicCategoriesList() ya fusiona las
+            // subcategorias reales de productos con las agregadas a mano en el panel.
+            $knownSubNames = [];
+            foreach ($audioVideoSubcategories as $facet) {
+                $knownSubNames[mb_strtolower((string)$facet['name'])] = true;
+            }
+            $catalogCategories = getDynamicCategoriesList($pdo, true);
+            foreach ($catalogCategories as $catEntry) {
+                if (strcasecmp((string)($catEntry['name'] ?? ''), $categoryName) !== 0) continue;
+                foreach ((array)($catEntry['subcategories'] ?? []) as $curatedSub) {
+                    $curatedSub = trim((string)$curatedSub);
+                    if ($curatedSub === '' || isset($knownSubNames[mb_strtolower($curatedSub)])) continue;
+                    $audioVideoSubcategories[] = ['name' => $curatedSub, 'product_count' => 0];
+                    $knownSubNames[mb_strtolower($curatedSub)] = true;
+                }
+                break;
+            }
+            usort($audioVideoSubcategories, fn($a, $b) => strcasecmp((string)$a['name'], (string)$b['name']));
+
             $requestedSubcategory = trim((string)($_GET['subcategoria'] ?? ''));
             foreach ($audioVideoSubcategories as $facet) {
                 if ((string)$facet['name'] === $requestedSubcategory) {
