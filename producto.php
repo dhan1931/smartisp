@@ -181,6 +181,7 @@ $waUrl = "https://wa.me/593983576667?text={$waMessage}";
     <link rel="icon" type="image/png" sizes="192x192" href="<?= $siteUrl ?>/assets/favicons/favicon-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="<?= $siteUrl ?>/assets/favicons/apple-touch-icon.png">
     <meta name="theme-color" content="#102a43">
+    <script src="/assets/js/public-brand.js?v=landing-logo" defer></script>
 
     <!-- Open Graph / Redes Sociales (Facebook, WhatsApp, LinkedIn) -->
     <meta property="og:type" content="product">
@@ -269,10 +270,6 @@ $waUrl = "https://wa.me/593983576667?text={$waMessage}";
         /* Header */
         header { background: var(--card); border-bottom: 1px solid var(--border); padding: 14px 20px; position: sticky; top: 0; z-index: 50; }
         .header-wrap { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--navy); font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; }
-        .logo img { width: 38px; height: 38px; border-radius: 50%; }
-        .logo span { color: var(--blue); }
-        .header-nav { display: flex; align-items: center; gap: 14px; }
         .btn-nav { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; color: var(--navy); border: 1px solid var(--border); transition: all .2s; }
         .btn-nav:hover { background: #f1f5f9; border-color: #cbd5e1; }
         .btn-nav.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
@@ -345,33 +342,11 @@ $waUrl = "https://wa.me/593983576667?text={$waMessage}";
         .toast { position: fixed; bottom: 24px; right: 24px; background: #0f172a; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); display: none; align-items: center; gap: 8px; z-index: 100; animation: slideUp .3s ease; }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
-    <style>header { position: relative !important; top: auto !important; }</style>
+    <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=20261009">
+    <style>header { position: relative !important; top: auto !important; }.storefront-logo img { height: auto; max-height: 140px; border-radius: 0; }</style>
 </head>
 <body>
-
-    <!-- Barra de contacto -->
-    <div class="topbar">
-        <div>SmartISP Ecuador · Distribuidor Oficial de Equipamiento Tecnológico</div>
-        <div>WhatsApp Comercial: <a href="https://wa.me/593983576667" target="_blank">+593 983 576 667</a></div>
-    </div>
-
-    <!-- Encabezado -->
-    <header>
-        <div class="header-wrap">
-            <a href="/" class="logo">
-                <img src="/assets/favicons/favicon-48x48.png" alt="SmartISP Logo">
-                Smart<span>ISP</span>
-            </a>
-            <div class="header-nav">
-                <a href="/tienda.html" class="btn-nav">
-                    <i data-lucide="layout-grid" width="16"></i> Catálogo Completo
-                </a>
-                <a href="/tienda.html?openCart=1" class="btn-nav primary">
-                    <i data-lucide="shopping-cart" width="16"></i> Ir al Carrito
-                </a>
-            </div>
-        </div>
-    </header>
+    <?php $storefrontActivePage = 'catalog'; require __DIR__ . '/includes/storefront-discovery-nav.php'; ?>
 
     <main class="container">
         <?php if ($product): ?>
@@ -460,23 +435,9 @@ $waUrl = "https://wa.me/593983576667?text={$waMessage}";
             <?php if (!empty($relatedProducts)): ?>
                 <section class="related-section">
                     <h2 class="related-title">Otros productos en <?= $productCategory ?></h2>
-                    <div class="related-grid">
-                        <?php foreach ($relatedProducts as $rel): 
-                            $relSlug = $rel['id'] . '-' . slugify($rel['name']);
-                            $relPrice = (float)$rel['price'];
-                        ?>
-                            <a href="/producto/<?= $relSlug ?>" class="rel-card">
-                                <div class="rel-img-box">
-                                    <img src="<?= htmlspecialchars($rel['imageUrl'], ENT_QUOTES, 'UTF-8') ?>" 
-                                         alt="<?= htmlspecialchars($rel['name'], ENT_QUOTES, 'UTF-8') ?>" 
-                                         loading="lazy" 
-                                         onerror="this.src='/assets/favicons/favicon-512x512.png'">
-                                </div>
-                                <div class="rel-name"><?= htmlspecialchars($rel['name'], ENT_QUOTES, 'UTF-8') ?></div>
-                                <div class="rel-price">
-                                    <?= $relPrice > 0 ? ('$' . number_format($relPrice, 2, '.', ',')) : 'Cotizar' ?>
-                                </div>
-                            </a>
+                    <div class="store-product-grid">
+                        <?php foreach ($relatedProducts as $index => $rel): ?>
+                            <?php $storeProduct = $rel; $storeProductUrl = '/producto/' . $rel['id'] . '-' . slugify($rel['name']); $storeProductIndex = $index; require __DIR__ . '/includes/storefront-product-card.php'; ?>
                         <?php endforeach; ?>
                     </div>
                 </section>
@@ -577,5 +538,6 @@ $waUrl = "https://wa.me/593983576667?text={$waMessage}";
             });
         }
     </script>
+    <script src="/assets/js/storefront-discovery.js?v=20261009" defer></script>
 </body>
 </html>
