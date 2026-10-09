@@ -19,6 +19,7 @@ export default defineConfig({
         checkout: 'checkout.html',
         admin: 'admin.html',
         configuracion: 'configuracion.html',
+        campanas: 'campanas.html',
         pedidos: 'pedidos.html',
         categorias: 'categorias.html',
         editorCatalogo: 'editor-catalogo.html',

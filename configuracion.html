@@ -443,28 +443,6 @@
           </form>
         </section>
       </div>
-      <section class="panel campaign-settings" aria-labelledby="campaignSettingsTitle">
-        <div class="section-heading"><div><h3 id="campaignSettingsTitle">Campañas y productos destacados</h3><p class="campaign-description">Crea diapositivas con portada, textos y enlace. La tienda las rota automáticamente y muestra los productos elegidos en esta sección.</p></div></div>
-        <div class="campaign-options">
-          <label>Nombre de la campaña<input id="campaignName" maxlength="150" value="Portada de la tienda"></label>
-          <label>Rotación (segundos)<input id="campaignRotation" type="number" min="4" max="20" value="7"></label>
-        </div>
-        <label>Presentación de portada<select id="campaignDisplayMode"><option value="carousel">Carrusel de banners</option><option value="single">Una portada</option><option value="triple">Tres anuncios horizontales</option></select></label>
-        <div id="campaignPreview" class="campaign-live-preview" aria-label="Vista previa de campaña"></div>
-        <label style="display:flex;align-items:center;gap:9px;margin-top:14px;"><input id="campaignActive" type="checkbox" checked style="width:auto;margin:0;">Campaña activa</label>
-        <div id="campaignSlides" class="campaign-slides"></div>
-        <button id="addCampaignSlide" class="button secondary" type="button"><i data-lucide="plus" style="width:15px;height:15px;"></i> Añadir diapositiva</button>
-        <hr style="border:0;border-top:1px solid var(--line);margin:24px 0;">
-        <div><h3 style="margin-bottom:4px;">Accesos promocionales</h3><p class="campaign-description" style="margin:0;">Chips como Ofertas, Nuevos o Más vendidos. Cada uno puede enlazar a una categoría, producto o URL.</p></div>
-        <div id="campaignChips" class="campaign-chips"></div>
-        <button id="addCampaignChip" class="button secondary" type="button"><i data-lucide="plus" style="width:15px;height:15px;"></i> Añadir chip</button>
-        <hr style="border:0;border-top:1px solid var(--line);margin:24px 0;">
-        <div><h3 style="margin-bottom:4px;">Productos destacados</h3><p class="campaign-description" style="margin:0;">Busca productos existentes y agrega hasta 12. El orden de esta lista será el orden de la vitrina.</p></div>
-        <div class="campaign-product-search"><label>Buscar por nombre, SKU o categoría<input id="campaignProductSearch" type="search" placeholder="Ej. router, cámara, impresora"></label><button id="campaignProductSearchBtn" class="button secondary" type="button"><i data-lucide="search" style="width:15px;height:15px;"></i> Buscar</button></div>
-        <div id="campaignProductResults" class="campaign-product-results" aria-live="polite"></div>
-        <div id="campaignSelectedProducts" class="campaign-product-selected"></div>
-        <div class="form-actions" style="margin-top:20px;"><button id="saveCampaignSettings" class="button" type="button"><i data-lucide="save" style="width:15px;height:15px;"></i> Guardar campañas</button><div id="campaignSettingsMessage" class="message" style="flex-basis:100%;"></div></div>
-      </section>
     </section>
   </main>
   <div id="cropModal" class="crop-modal" hidden>
@@ -1311,7 +1289,6 @@
       $('#adminIdentity').textContent = `${user.name} ${user.surname || ''} - ${user.email}`;
       initLogoCustomizerEvents();
       await loadContent();
-      await loadCampaignEditor();
     };
 
     $('#loginForm').addEventListener('submit', async event => {
