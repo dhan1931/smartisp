@@ -34,11 +34,15 @@ if ($pdo) {
         }
         $pTable = getProductsTableName($pdo);
         ensureProductTableColumns($pdo, $pTable);
-        $selectedStmt = $pdo->query("SELECT p.* FROM storefront_campaign_products cp JOIN storefront_campaigns c ON c.id = cp.campaign_id JOIN `$pTable` p ON p.id = cp.product_id WHERE c.code = 'store-home' AND p.visible = 1 ORDER BY cp.sort_order, p.name LIMIT 12");
+        $hasInventory = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'product_inventory'")->fetchColumn() > 0;
+        $stockSelect = $hasInventory ? ', (SELECT GREATEST(quantity_available - quantity_reserved, 0) FROM product_inventory WHERE product_id = p.id LIMIT 1) AS available_qty' : ', NULL AS available_qty';
+        $selectedStmt = $pdo->query("SELECT p.*$stockSelect FROM storefront_campaign_products cp JOIN storefront_campaigns c ON c.id = cp.campaign_id JOIN `$pTable` p ON p.id = cp.product_id WHERE c.code = 'store-home' AND p.visible = 1 ORDER BY cp.sort_order, p.name LIMIT 12");
         $selectedRows = $selectedStmt->fetchAll(PDO::FETCH_ASSOC);
-        if (!$selectedRows) $selectedRows = $pdo->query("SELECT * FROM `$pTable` WHERE visible = 1 ORDER BY updated_at DESC, created_at DESC, name ASC LIMIT 24")->fetchAll(PDO::FETCH_ASSOC);
+        if (!$selectedRows) $selectedRows = $pdo->query("SELECT p.*$stockSelect FROM `$pTable` p WHERE visible = 1 ORDER BY updated_at DESC, created_at DESC, name ASC LIMIT 24")->fetchAll(PDO::FETCH_ASSOC);
         foreach ($selectedRows as $row) {
-            $products[] = normalizeProductRow($row);
+            $product = normalizeProductRow($row);
+            $product['available_qty'] = $row['available_qty'] === null ? null : (int)$row['available_qty'];
+            $products[] = $product;
         }
     } catch (Throwable $e) {
         error_log('Error cargando productos-destacados.php: ' . $e->getMessage());
@@ -135,5 +139,6 @@ foreach ($products as $idx => $product) {
   <footer class="storefront-footer">SmartISP Ecuador · Catalogo tecnologico amplio para empresas, hogares e ISP.</footer>
   <script src="/assets/js/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
   <script src="/assets/js/public-account.js" defer></script>
+  <script src="/assets/js/storefront-product-card.js" defer></script>
 </body>
 </html>
