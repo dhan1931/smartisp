@@ -6,7 +6,7 @@
  * un único origen de verdad para la sesión: /api/auth/me (cookie de sesión del backend), no el
  * token en localStorage.
  *
- * Uso: <div id="smartisp-admin-nav" class="is-loading" data-active="catalogo"></div>
+ * Uso: <div id="smartisp-admin-nav" class="is-loading" data-active="productos"></div>
  *      <link rel="stylesheet" href="/assets/css/admin-nav.css">
  *      <script src="/assets/js/admin-nav.js" defer></script>
  *
@@ -17,19 +17,31 @@
   'use strict';
 
   // Grupos en el orden en que se muestran. 'key' no se renderiza; agrupa LINKS por su campo 'group'.
+  // Estructura alineada a la epica "Dashboard tipo SaaS" (mockup de referencia): Productos,
+  // Categorias e Inventario son conceptos separados, no una sola pantalla de "Catalogo".
   var GROUPS = [
     { key: 'general', label: null },
     { key: 'operacion', label: 'Operación' },
     { key: 'catalogo', label: 'Catálogo' },
+    { key: 'tienda', label: 'Tienda' },
+    { key: 'analisis', label: 'Análisis' },
     { key: 'sistema', label: 'Sistema' }
   ];
 
+  // Los 'disabled: true' son pantallas del mockup que todavia no existen (sin pagina real
+  // detras): se muestran para comunicar la estructura objetivo, pero no son un link muerto --
+  // admin-nav.css les quita el click (pointer-events: none) y las atenua visualmente.
   var LINKS = [
     { key: 'inicio', group: 'general', href: '/admin.html', label: 'Inicio', icon: 'home' },
     { key: 'pedidos', group: 'operacion', href: '/pedidos.html', label: 'Pedidos', icon: 'receipt' },
-    { key: 'catalogo', group: 'catalogo', href: '/editor-catalogo.html', label: 'Catálogo', icon: 'package' },
+    { key: 'clientes', group: 'operacion', href: '#', label: 'Clientes', icon: 'users', disabled: true, title: 'Próximamente' },
+    { key: 'productos', group: 'catalogo', href: '/editor-catalogo.html', label: 'Productos', icon: 'package' },
     { key: 'categorias', group: 'catalogo', href: '/categorias.html', label: 'Categorías', icon: 'folder' },
-    { key: 'campanas', group: 'catalogo', href: '/campanas.html', label: 'Campañas y banners', icon: 'megaphone' },
+    { key: 'inventario', group: 'catalogo', href: '#', label: 'Inventario', icon: 'boxes', disabled: true, title: 'Próximamente' },
+    { key: 'contenido', group: 'tienda', href: '/editor-landing.html', label: 'Contenido', icon: 'layout-template' },
+    { key: 'campanas', group: 'tienda', href: '/campanas.html', label: 'Campañas y banners', icon: 'megaphone' },
+    { key: 'estadisticas', group: 'analisis', href: '#', label: 'Estadísticas', icon: 'bar-chart-3', disabled: true, title: 'Próximamente' },
+    { key: 'reportes', group: 'analisis', href: '#', label: 'Reportes', icon: 'file-text', disabled: true, title: 'Próximamente' },
     { key: 'config', group: 'sistema', href: '/configuracion.html', label: 'Configuración', icon: 'settings' }
   ];
 
