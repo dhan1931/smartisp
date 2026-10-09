@@ -159,6 +159,11 @@
           <div class="kpi-value" id="dashPendingCount">—</div>
           <div class="kpi-foot">Requieren seguimiento</div>
         </a>
+        <div class="dashboard-card kpi-card">
+          <div class="kpi-head"><span class="kpi-icon"><i data-lucide="receipt"></i></span>Ticket promedio</div>
+          <div class="kpi-value" id="dashAvgTicket">—</div>
+          <div class="kpi-foot"><span id="dashPaidCount">—</span> pedidos con pago confirmado</div>
+        </div>
         <a class="dashboard-card kpi-card is-violet" href="editor-catalogo.html">
           <div class="kpi-head"><span class="kpi-icon"><i data-lucide="package"></i></span>Catálogo</div>
           <div class="kpi-value" id="adminCatalogProdCount">—</div>
@@ -494,6 +499,9 @@
         document.getElementById('dashTodayCount').textContent = stats.today_count || 0;
         document.getElementById('dashTotalCount').textContent = stats.total || 0;
         document.getElementById('dashRevenue').textContent = formatMoney(stats.revenue);
+        const paidCount = Number(stats.paid_count || 0);
+        document.getElementById('dashPaidCount').textContent = paidCount;
+        document.getElementById('dashAvgTicket').textContent = paidCount > 0 ? formatMoney(Number(stats.revenue || 0) / paidCount) : '—';
         renderStatusChart(stats);
         renderAttention();
       } catch (e) {
