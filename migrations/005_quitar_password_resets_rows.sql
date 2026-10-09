@@ -1,6 +1,10 @@
--- password_resets_rows es una tabla muerta: columnas genericas 'COL 1'..'COL 4' de una
--- importacion vieja (hasta la fila de encabezados quedo insertada como dato), sin ninguna
--- referencia en el codigo (api/*.php). La tabla real y en uso es password_resets, que ya
--- tiene PRIMARY KEY, UNIQUE en token e indices propios.
-
-DROP TABLE IF EXISTS password_resets_rows;
+-- Retirada (2026-10-09): esta migracion originalmente borraba password_resets_rows
+-- (columnas genericas 'COL 1'..'COL 4' de una importacion vieja, sin referencia en
+-- api/*.php). Se decidio conservar la tabla; este archivo queda sin accion a proposito
+-- para que scripts/migrate.php no la elimine si vuelve a correr.
+--
+-- Sin sentencia SQL real a proposito (ni siquiera un SELECT): migrate.php quita las
+-- lineas de comentario y ejecuta cada statement con PDO::exec() bajo prepares nativos
+-- (ATTR_EMULATE_PREPARES=false); un SELECT ahi deja un resultado sin leer que rompe el
+-- siguiente prepare()->execute() del runner (INSERT en schema_migrations). Dejar el
+-- archivo sin ninguna sentencia hace que el runner no ejecute nada y siga de largo.

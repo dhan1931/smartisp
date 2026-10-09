@@ -132,11 +132,30 @@ if ($product) {
         'brand' => ['@type' => 'Brand', 'name' => 'SmartISP'],
     ];
     if ($productPrice > 0) {
+        // Search Console (Datos estructurados de Fichas de comerciantes) marcó 'availability'
+        // como campo faltante en 'offers'. Se calcula igual que en categoria.php/productos-
+        // destacados.php: si existe product_inventory y tiene fila para este producto, se usa el
+        // stock real; si no hay tabla o no hay fila, se asume InStock (mismo criterio que ya usa
+        // el resto del sitio para productos sin inventario registrado: visible = a la venta).
+        $availability = 'https://schema.org/InStock';
+        try {
+            $hasInventoryTable = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'product_inventory'")->fetchColumn() > 0;
+            if ($hasInventoryTable) {
+                $invStmt = $pdo->prepare('SELECT GREATEST(quantity_available - quantity_reserved, 0) AS available_qty FROM product_inventory WHERE product_id = :id LIMIT 1');
+                $invStmt->execute([':id' => $product['id']]);
+                $availableQty = $invStmt->fetchColumn();
+                if ($availableQty !== false && (int)$availableQty <= 0) {
+                    $availability = 'https://schema.org/OutOfStock';
+                }
+            }
+        } catch (Throwable $e) {}
+
         $productSchema['offers'] = [
             '@type' => 'Offer',
             'url' => $canonicalUrl,
             'priceCurrency' => 'USD',
             'price' => number_format($productPrice, 2, '.', ''),
+            'availability' => $availability,
             'itemCondition' => 'https://schema.org/NewCondition',
             'seller' => [
                 '@type' => 'Organization',

@@ -55,9 +55,11 @@ $oldMailSettings = (int)$pdo->query("SELECT COUNT(*) FROM settings_rows
     WHERE setting_key IN ('admin_email', 'smtp_host')")->fetchColumn();
 $assert($oldMailSettings === 0, 'Los ajustes de correo antiguos no se retiraron de settings_rows.');
 
+// Decision reversed (2026-10-09): migrations/005 ya no elimina password_resets_rows;
+// se decidio conservar la tabla, asi que debe seguir existiendo tras migrar.
 $legacyTable = $pdo->query("SELECT COUNT(*) FROM information_schema.TABLES
     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'password_resets_rows'")->fetchColumn();
-$assert((int)$legacyTable === 0, 'password_resets_rows debía eliminarse en el fixture aislado.');
+$assert((int)$legacyTable === 1, 'password_resets_rows no debería haberse eliminado (se decidió conservarla).');
 
 $eventTable = $pdo->query("SELECT COUNT(*) FROM information_schema.TABLES
     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'order_events'")->fetchColumn();
