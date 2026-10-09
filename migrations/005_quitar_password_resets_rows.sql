@@ -2,5 +2,9 @@
 -- (columnas genericas 'COL 1'..'COL 4' de una importacion vieja, sin referencia en
 -- api/*.php). Se decidio conservar la tabla; este archivo queda sin accion a proposito
 -- para que scripts/migrate.php no la elimine si vuelve a correr.
-
-SELECT 1;
+--
+-- Sin sentencia SQL real a proposito (ni siquiera un SELECT): migrate.php quita las
+-- lineas de comentario y ejecuta cada statement con PDO::exec() bajo prepares nativos
+-- (ATTR_EMULATE_PREPARES=false); un SELECT ahi deja un resultado sin leer que rompe el
+-- siguiente prepare()->execute() del runner (INSERT en schema_migrations). Dejar el
+-- archivo sin ninguna sentencia hace que el runner no ejecute nada y siga de largo.
