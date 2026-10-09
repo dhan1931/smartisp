@@ -61,6 +61,19 @@ function categoryDescriptionHub(string $name): string {
     return 'Encuentra equipos y soluciones seleccionados para esta categoría.';
 }
 
+function categoryHubImageUrl(array $category): string {
+    $image = trim((string)($category['image_url'] ?? ''));
+    if ($image === '') return '';
+    if (str_starts_with($image, 'uploads/')) $image = '/' . $image;
+    if (!preg_match('~^(https?://|/)~i', $image)) return '';
+
+    if (!empty($category['image_product_id']) && isExternalSupplierImageUrl($image)) {
+        $image = buildProductProxyImageUrl((string)$category['image_product_id'], $image);
+        $image .= '&imgrev=3';
+    }
+    return $image;
+}
+
 $siteUrl = 'https://smart-isp.com.ec';
 $categories = [];
 $pdo = getDbConnection();
@@ -70,16 +83,18 @@ if ($pdo) {
         ensureProductTableColumns($pdo, $pTable);
         $stmt = $pdo->query("
             SELECT p.category AS name, COUNT(*) AS total, MAX(p.updated_at) AS updated_at,
-              (
-                SELECT NULLIF(TRIM(p2.image_url), '')
+              image_product.image_url AS image_url,
+              image_product.id AS image_product_id
+            FROM `$pTable` p
+            LEFT JOIN `$pTable` image_product ON image_product.id = (
+                SELECT p2.id
                 FROM `$pTable` p2
                 WHERE p2.visible = 1 AND p2.category = p.category AND TRIM(p2.image_url) <> ''
-                ORDER BY p2.updated_at DESC
+                ORDER BY p2.updated_at DESC, p2.id ASC
                 LIMIT 1
-              ) AS image_url
-            FROM `$pTable` p
+              )
             WHERE p.visible = 1 AND TRIM(p.category) <> ''
-            GROUP BY p.category
+            GROUP BY p.category, image_product.id, image_product.image_url
             ORDER BY total DESC, p.category ASC
             LIMIT 36
         ");
@@ -217,9 +232,9 @@ foreach ($categories as $idx => $category) {
       </div>
       <div class="category-hero-mosaic" aria-label="Productos de las principales categorías">
         <?php foreach ($featuredCategories as $index => $category): ?>
-          <?php $image = trim((string)($category['image_url'] ?? '')); if (str_starts_with($image, 'uploads/')) $image = '/' . $image; $image = preg_match('~^(https?://|/)~i', $image) ? $image : ''; ?>
+          <?php $image = categoryHubImageUrl($category); ?>
           <div class="hero-product-tile">
-            <?php if ($image !== ''): ?><img src="<?= escCategoryHub($image) ?>" alt="Producto de <?= escCategoryHub((string)$category['name']) ?>" width="320" height="180" loading="<?= $index < 2 ? 'eager' : 'lazy' ?>" <?= $index === 0 ? 'fetchpriority="high"' : '' ?>><?php else: ?><i class="tile-fallback" data-lucide="<?= escCategoryHub(categoryIconHub((string)$category['name'])) ?>"></i><?php endif; ?>
+            <?php if ($image !== ''): ?><img src="<?= escCategoryHub($image) ?>" alt="Producto de <?= escCategoryHub((string)$category['name']) ?>" width="320" height="180" loading="<?= $index < 2 ? 'eager' : 'lazy' ?>" <?= $index === 0 ? 'fetchpriority="high"' : '' ?> onerror="this.hidden=true;this.nextElementSibling.hidden=false"><i class="tile-fallback" data-lucide="<?= escCategoryHub(categoryIconHub((string)$category['name'])) ?>" hidden></i><?php else: ?><i class="tile-fallback" data-lucide="<?= escCategoryHub(categoryIconHub((string)$category['name'])) ?>"></i><?php endif; ?>
           </div>
         <?php endforeach; ?>
         <?php $fallbackIcons = ['router', 'printer', 'shield-check', 'monitor']; for ($index = count($featuredCategories); $index < 4; $index++): ?>
@@ -240,9 +255,7 @@ foreach ($categories as $idx => $category) {
         <?php foreach ($featuredCategories as $index => $category): ?>
           <?php
             $name = (string)$category['name'];
-            $image = trim((string)($category['image_url'] ?? ''));
-            if (str_starts_with($image, 'uploads/')) $image = '/' . $image;
-            $image = preg_match('~^(https?://|/)~i', $image) ? $image : '';
+            $image = categoryHubImageUrl($category);
           ?>
           <a class="featured-category" href="/categoria/<?= rawurlencode(seoSlugCategoryHub($name)) ?>/">
             <div class="featured-copy">
@@ -253,7 +266,7 @@ foreach ($categories as $idx => $category) {
               <p class="featured-description"><?= escCategoryHub(categoryDescriptionHub($name)) ?></p>
               <span class="featured-count"><?= number_format((int)$category['total'], 0, ',', '.') ?> productos <i data-lucide="chevron-right"></i></span>
             </div>
-            <?php if ($image !== ''): ?><span class="featured-image"><img src="<?= escCategoryHub($image) ?>" alt="" width="180" height="150" loading="lazy"></span><?php else: ?><span class="featured-image"><i data-lucide="<?= escCategoryHub(categoryIconHub($name)) ?>"></i></span><?php endif; ?>
+            <?php if ($image !== ''): ?><span class="featured-image"><img src="<?= escCategoryHub($image) ?>" alt="" width="180" height="150" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><i data-lucide="<?= escCategoryHub(categoryIconHub($name)) ?>" hidden></i></span><?php else: ?><span class="featured-image"><i data-lucide="<?= escCategoryHub(categoryIconHub($name)) ?>"></i></span><?php endif; ?>
           </a>
         <?php endforeach; ?>
       </section>
