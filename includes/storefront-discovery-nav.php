@@ -1,11 +1,11 @@
 <?php
 $storefrontActivePage = $storefrontActivePage ?? '';
 $storefrontNavLinks = [
-    ['categories', '/categorias-destacadas', 'Categorías destacadas'],
-    ['products', '/productos-destacados', 'Productos destacados'],
-    ['services', '/servicios', 'Servicios'],
-    ['about', '/nosotros', 'Nosotros'],
-    ['catalog', '/tienda.html#catalogo', 'Catálogo'],
+    ['categories', '/categorias-destacadas', 'Categorías destacadas', 'layout-grid'],
+    ['products', '/productos-destacados', 'Productos destacados', 'sparkles'],
+    ['services', '/servicios', 'Servicios', 'settings'],
+    ['about', '/nosotros', 'Nosotros', 'users'],
+    ['catalog', '/tienda.html#catalogo', 'Catálogo', 'store'],
 ];
 ?>
 <div class="storefront-topbar"><span><i data-lucide="truck" width="14"></i> Envío gratis en Guayas</span><span><i data-lucide="headphones" width="14"></i> Atención experta · Lun a Vie 9:00 a 18:00</span></div>
@@ -24,8 +24,8 @@ $storefrontNavLinks = [
 <button class="storefront-menu-backdrop" type="button" aria-label="Cerrar categorías" hidden></button>
 <nav class="storefront-navigation" id="storefrontNavigation" aria-label="Secciones principales">
   <div class="storefront-drawer-head"><a class="storefront-drawer-logo logo" href="/" aria-label="SmartISP inicio">SmartISP</a><button class="storefront-menu-close" type="button" aria-label="Cerrar categorías"><i data-lucide="x" width="25"></i></button></div>
-  <?php foreach ($storefrontNavLinks as [$key, $href, $label]): ?>
-    <a href="<?= htmlspecialchars($href, ENT_QUOTES, 'UTF-8') ?>"<?= $storefrontActivePage === $key ? ' aria-current="page"' : '' ?>><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></a>
+  <?php foreach ($storefrontNavLinks as [$key, $href, $label, $icon]): ?>
+    <a href="<?= htmlspecialchars($href, ENT_QUOTES, 'UTF-8') ?>"<?= $storefrontActivePage === $key ? ' aria-current="page"' : '' ?>><i data-lucide="<?= htmlspecialchars($icon, ENT_QUOTES, 'UTF-8') ?>" width="16"></i><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></a>
   <?php endforeach; ?>
   <div class="storefront-category-menu" id="storefrontCategoryMenu">
     <button class="storefront-category-trigger" type="button" aria-expanded="false" aria-controls="storefrontCategoryPanel"><span>Categorías</span><i data-lucide="chevron-down" width="16"></i></button>
