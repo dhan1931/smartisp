@@ -9,8 +9,13 @@
 require_once __DIR__ . '/api/db.php';
 
 function slugifyCategoryPage(string $text): string {
-    $clean = @iconv('UTF-8', 'ASCII//TRANSLIT', $text);
-    if (!$clean) $clean = $text;
+    // iconv('UTF-8','ASCII//TRANSLIT', ...) es inconsistente entre builds/locales de PHP (en el
+    // hosting real deja apostrofes en vez de quitar el acento limpio, p. ej. "inform-aticos" en
+    // vez de "informaticos"), asi que los acentos del espanol se reemplazan primero a mano.
+    $accentMap = ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','ñ'=>'n','ü'=>'u','Á'=>'A','É'=>'E','Í'=>'I','Ó'=>'O','Ú'=>'U','Ñ'=>'N','Ü'=>'U'];
+    $clean = strtr($text, $accentMap);
+    $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT', $clean);
+    if ($ascii !== false) $clean = $ascii;
     $clean = preg_replace('~[^\\pL\\d]+~u', '-', $clean);
     $clean = trim($clean, '-');
     $clean = preg_replace('~-+~', '-', $clean);

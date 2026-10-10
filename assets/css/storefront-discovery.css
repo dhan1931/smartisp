@@ -105,3 +105,9 @@ main.storefront-page,footer.storefront-footer{width:min(1680px,calc(100% - 48px)
  .storefront-menu-open .storefront-mobile-bar{z-index:1199}
 }
 @media(prefers-reduced-motion:reduce){.storefront-navigation{transition:none}}
+/* El drawer de "Categorias" (lista plana, sin agrupar por familias) y la barra inferior de
+   accesos rapidos de estas paginas quedan peor que lo que ya resuelve tienda.html -- se ocultan
+   del todo en vez de arreglarlas aqui. tienda.html no usa este archivo, no se ve afectado. */
+.storefront-category-menu{display:none !important}
+.storefront-mobile-bar{display:none !important}
+@media(max-width:760px){body{padding-bottom:0 !important}}

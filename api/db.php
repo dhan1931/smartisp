@@ -340,6 +340,28 @@ function getSmartispUploadsDir(string $category): string {
     return $dir;
 }
 
+// Familias visuales del sidebar de tienda (antes un array hardcodeado en tienda.html,
+// ver migracion 017). Se usa tanto desde getDynamicCategoriesList() (para anotar cada
+// categoria con su familia) como desde el admin (para gestionarlas directamente).
+function getCategoryMacroGroups(PDO $pdo): array {
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `category_macro_groups` (
+            `id` VARCHAR(100) NOT NULL PRIMARY KEY,
+            `name` VARCHAR(255) NOT NULL,
+            `icon` VARCHAR(64) NOT NULL DEFAULT 'package',
+            `sort_order` INT NOT NULL DEFAULT 0,
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (Throwable $e) {}
+    $stmt = $pdo->query("SELECT id, name, icon FROM category_macro_groups ORDER BY sort_order, name");
+    $groups = [];
+    foreach (($stmt ? $stmt->fetchAll() : []) as $g) {
+        $groups[] = ['id' => (string)$g['id'], 'name' => (string)$g['name'], 'icon' => (string)($g['icon'] ?: 'package')];
+    }
+    return $groups;
+}
+
 // getDynamicCategoriesList() unifica datos reales de products_rows con lo curado en
 // categories_rows (banners/iconos/keywords). Vive aqui (no en router.php) porque tanto
 // router.php (accion 'categories' del admin) como categoria.php (pagina publica) la
@@ -378,10 +400,20 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
             `description` VARCHAR(500) NULL,
             `icon` VARCHAR(64) NOT NULL DEFAULT 'package',
             `keywords` LONGTEXT NULL,
+            `macro_group_id` VARCHAR(100) NULL,
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
     } catch (Throwable $e) {}
+
+    $macroGroups = [];
+    foreach (getCategoryMacroGroups($pdo) as $g) {
+        $macroGroups[$g['id']] = $g;
+    }
+    $resolveMacroGroup = function (?string $groupId) use ($macroGroups): array {
+        $groupId = (string)($groupId ?? '');
+        return $macroGroups[$groupId] ?? ['id' => '', 'name' => '', 'icon' => ''];
+    };
 
     $stmt = $pdo->query("SELECT * FROM categories_rows");
     $dbCats = $stmt ? $stmt->fetchAll() : [];
@@ -408,6 +440,7 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
                 }
             }
         }
+        $macro = $resolveMacroGroup($row['macro_group_id'] ?? null);
         $cats[] = [
             'id'            => (string)($row['id'] ?? uniqid('cat_')),
             'name'          => $name,
@@ -420,6 +453,9 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
                 ? $decodedKeywords
                 : array_values(array_filter(array_map('trim', explode(',', (string)($row['keywords'] ?? ''))))),
             'productCount'  => $catMap[$name]['count'] ?? 0,
+            'macroGroupId'   => $macro['id'],
+            'macroGroupName' => $macro['name'],
+            'macroGroupIcon' => $macro['icon'],
             'updated_at'    => $row['updated_at'] ?? null
         ];
     }
@@ -440,6 +476,9 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
                 'icon' => 'package',
                 'keywords' => [],
                 'productCount'  => $info['count'],
+                'macroGroupId'   => '',
+                'macroGroupName' => '',
+                'macroGroupIcon' => '',
                 'updated_at'    => date('Y-m-d H:i:s')
             ];
             $cats[] = $newCat;
