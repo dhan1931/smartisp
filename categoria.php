@@ -239,7 +239,7 @@ foreach ($products as $idx => $product) {
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
   <script src="/assets/js/public-brand.js?v=canonical-logo-layout-20261009" defer></script>
   <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=public-admin-access-20261009">
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/assets/vendor/lucide.min.js?v=1.55.0"></script>
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="SmartISP Ecuador">
   <meta property="og:title" content="<?= escapeCategoryPage($pageTitle) ?>">

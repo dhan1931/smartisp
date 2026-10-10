@@ -310,7 +310,7 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="/assets/vendor/lucide.min.js?v=1.55.0"></script>
 
     <style>
         :root {
