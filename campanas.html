@@ -46,9 +46,17 @@
   </style>
   <style>
     .gallery-item>img{clip-path:inset(0 round 4px);cursor:crosshair}
-    .image-crop{margin-top:8px;border-top:1px solid var(--line);padding-top:6px}
-    .image-crop summary{cursor:pointer;color:var(--blue);font-size:12px;font-weight:700}
+    .image-crop{margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
+    .image-crop summary{cursor:pointer;color:var(--blue);font-size:12.5px;font-weight:800}
     .image-crop label{margin:7px 0;font-size:11px}
+    .image-crop[open] summary{margin-bottom:8px}
+    .crop-canvas{position:relative;width:100%;aspect-ratio:1.9;overflow:hidden;border:1px solid var(--line);border-radius:6px;background:#eef3f6;cursor:crosshair;touch-action:none}
+    .crop-canvas img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;user-select:none}
+    .crop-crosshair{position:absolute;width:26px;height:26px;margin-left:-13px;margin-top:-13px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1.5px #087ea4,0 2px 6px rgba(0,0,0,.4);pointer-events:none}
+    .crop-crosshair::before,.crop-crosshair::after{content:"";position:absolute;background:#fff}
+    .crop-crosshair::before{top:50%;left:3px;right:3px;height:1.5px;margin-top:-.75px}
+    .crop-crosshair::after{left:50%;top:3px;bottom:3px;width:1.5px;margin-left:-.75px}
+    .crop-help{margin:6px 0 2px;color:var(--muted);font-size:11px}
     @media(max-width:760px){.campaign-preview.preview-triple{display:flex;overflow-x:auto;scroll-snap-type:x mandatory}.campaign-preview.preview-triple .preview-card{flex:0 0 min(82vw,420px);scroll-snap-align:start}}
   </style>
 </head>
@@ -188,7 +196,10 @@
         if(!Array.isArray(slide.images)) slide.images=slide.image_url?[{image_url:slide.image_url,image_alt:slide.image_alt||slide.title||'',is_primary:true}]:[];
         const primary=slide.images.find(image=>image.is_primary)||slide.images[0];
         slide.image_url=primary?.image_url||'';
-        const images=slide.images.map((image,imageIndex)=>`<div class="gallery-item ${image.is_primary?'is-primary':''}" data-image="${imageIndex}"><img data-focal-preview src="${escapeHtml(image.image_url)}" alt="${escapeHtml(image.image_alt||'') }" width="240" height="140" loading="lazy" title="Haz clic para elegir el punto de enfoque" style="object-position:${Number(image.focal_x??50)}% ${Number(image.focal_y??50)}%;transform:scale(${Number(image.zoom_pct??100)/100});transform-origin:${Number(image.focal_x??50)}% ${Number(image.focal_y??50)}%"><strong>${escapeHtml(image.image_url.split('/').pop())}</strong><div class="gallery-actions"><button type="button" data-primary-image ${image.is_primary?'disabled':''}>${image.is_primary?'Portada':'Usar portada'}</button><button type="button" data-image-up ${imageIndex===0?'disabled':''} aria-label="Subir orden">↑</button><button type="button" data-image-down ${imageIndex===slide.images.length-1?'disabled':''} aria-label="Bajar orden">↓</button><button type="button" data-remove-image aria-label="Quitar imagen">×</button></div><details class="image-crop"><summary>Ajustar encuadre</summary><label>Foco horizontal<div class="opacity-row"><input data-image-field="focal_x" type="range" min="0" max="100" value="${Number(image.focal_x??50)}"><output>${Number(image.focal_x??50)}%</output></div></label><label>Foco vertical<div class="opacity-row"><input data-image-field="focal_y" type="range" min="0" max="100" value="${Number(image.focal_y??50)}"><output>${Number(image.focal_y??50)}%</output></div></label><label>Zoom<div class="opacity-row"><input data-image-field="zoom_pct" type="range" min="100" max="180" value="${Number(image.zoom_pct??100)}"><output>${Number(image.zoom_pct??100)}%</output></div></label></details></div>`).join('');
+        const images=slide.images.map((image,imageIndex)=>{
+          const fx=Number(image.focal_x??50),fy=Number(image.focal_y??50),zoom=Number(image.zoom_pct??100);
+          return `<div class="gallery-item ${image.is_primary?'is-primary':''}" data-image="${imageIndex}"><img src="${escapeHtml(image.image_url)}" alt="${escapeHtml(image.image_alt||'') }" width="240" height="140" loading="lazy" style="object-position:${fx}% ${fy}%;transform:scale(${zoom/100});transform-origin:${fx}% ${fy}%"><strong>${escapeHtml(image.image_url.split('/').pop())}</strong><div class="gallery-actions"><button type="button" data-primary-image ${image.is_primary?'disabled':''}>${image.is_primary?'Portada':'Usar portada'}</button><button type="button" data-image-up ${imageIndex===0?'disabled':''} aria-label="Subir orden">↑</button><button type="button" data-image-down ${imageIndex===slide.images.length-1?'disabled':''} aria-label="Bajar orden">↓</button><button type="button" data-remove-image aria-label="Quitar imagen">×</button></div><details class="image-crop" open><summary>✂️ Ajustar encuadre (recorte)</summary><p class="crop-help">Arrastra sobre la imagen para elegir qué parte se ve siempre, o usa los controles de abajo.</p><div class="crop-canvas" data-crop-canvas><img data-focal-preview src="${escapeHtml(image.image_url)}" alt="" style="object-position:${fx}% ${fy}%;transform:scale(${zoom/100});transform-origin:${fx}% ${fy}%"><div class="crop-crosshair" data-crop-crosshair style="left:${fx}%;top:${fy}%"></div></div><label>Foco horizontal<div class="opacity-row"><input data-image-field="focal_x" type="range" min="0" max="100" value="${fx}"><output>${fx}%</output></div></label><label>Foco vertical<div class="opacity-row"><input data-image-field="focal_y" type="range" min="0" max="100" value="${fy}"><output>${fy}%</output></div></label><label>Zoom<div class="opacity-row"><input data-image-field="zoom_pct" type="range" min="100" max="180" value="${zoom}"><output>${zoom}%</output></div></label></details></div>`;
+        }).join('');
         return `<article class="slide" data-index="${index}" data-editor-key="${escapeHtml(slide._editorKey)}"><details ${expandedKeys.has(slide._editorKey)?'open':''}><summary><span class="slide-number">${index+1}</span><span class="slide-summary-copy">${escapeHtml(slide.title||'Banner sin título')}<small>${slide.images.length} imagen${slide.images.length===1?'':'es'} · ${slide.is_active===false?'Borrador oculto':'Visible en tienda'}</small></span><span class="slide-summary-actions"><button class="icon-button" type="button" data-move="-1" aria-label="Mover banner arriba" ${index===0?'disabled':''}>↑</button><button class="icon-button" type="button" data-move="1" aria-label="Mover banner abajo" ${index===state.slides.length-1?'disabled':''}>↓</button><button class="icon-button" type="button" data-remove aria-label="Eliminar banner">×</button></span></summary><div class="slide-body"><div class="slide-fields">
           <label>Etiqueta<input data-field="eyebrow" maxlength="100" value="${escapeHtml(slide.eyebrow||'')}" placeholder="Conectividad y redes"></label><label>Título<input data-field="title" maxlength="180" value="${escapeHtml(slide.title||'')}" placeholder="Redes más rápidas y estables"></label>
           <label class="full">Subtítulo<textarea data-field="subtitle" maxlength="500" rows="2" placeholder="Una línea de contexto que complemente el título.">${escapeHtml(slide.subtitle||'')}</textarea></label><label>Texto del botón<input data-field="button_text" maxlength="60" value="${escapeHtml(slide.button_text||'Explorar')}"></label><label>Destino del banner<input data-field="target_url" maxlength="500" value="${escapeHtml(slide.target_url||'/tienda.html#catalogo')}" placeholder="/categoria/slug o /producto/id"></label>
@@ -319,14 +330,46 @@
     $('#app').addEventListener('change',event=>{
       if(event.target.closest('.campaign-settings')||event.target.matches('#featuredEyebrow,#featuredTitle,#featuredDescription,#featuredNote,#featuredProductsTitle,#featuredProductsDescription')) { collectForm(); renderFeaturedCopyPreview(); markDirty(); }
     });
+    function updateCropVisuals(imageCard,image){
+      const x=Number(image.focal_x??50),y=Number(image.focal_y??50),zoom=Number(image.zoom_pct??100);
+      imageCard.querySelectorAll('img').forEach(img=>{img.style.objectPosition=`${x}% ${y}%`;img.style.transform=`scale(${zoom/100})`;img.style.transformOrigin=`${x}% ${y}%`;});
+      const crosshair=imageCard.querySelector('[data-crop-crosshair]');
+      if(crosshair){crosshair.style.left=`${x}%`;crosshair.style.top=`${y}%`;}
+      const xRange=imageCard.querySelector('[data-image-field="focal_x"]'),yRange=imageCard.querySelector('[data-image-field="focal_y"]'),zRange=imageCard.querySelector('[data-image-field="zoom_pct"]');
+      if(xRange){xRange.value=x;xRange.nextElementSibling.value=`${x}%`;}
+      if(yRange){yRange.value=y;yRange.nextElementSibling.value=`${y}%`;}
+      if(zRange){zRange.value=zoom;zRange.nextElementSibling.value=`${zoom}%`;}
+    }
+    let cropDrag=null;
+    const cropPointFromEvent=(canvas,event)=>{
+      const rect=canvas.getBoundingClientRect();
+      const px=event.touches?event.touches[0].clientX:event.clientX, py=event.touches?event.touches[0].clientY:event.clientY;
+      return {x:Math.round(Math.max(0,Math.min(100,(px-rect.left)/rect.width*100))),y:Math.round(Math.max(0,Math.min(100,(py-rect.top)/rect.height*100)))};
+    };
+    $('#slides').addEventListener('pointerdown',event=>{
+      const canvas=event.target.closest('[data-crop-canvas]');
+      if(!canvas)return;
+      const imageCard=canvas.closest('[data-image]'),slide=state.slides[Number(imageCard.closest('[data-index]').dataset.index)],image=slide.images[Number(imageCard.dataset.image)];
+      cropDrag={canvas,imageCard,image};
+      canvas.setPointerCapture?.(event.pointerId);
+      const point=cropPointFromEvent(canvas,event);
+      image.focal_x=point.x;image.focal_y=point.y;
+      updateCropVisuals(imageCard,image);markDirty();
+    });
+    $('#slides').addEventListener('pointermove',event=>{
+      if(!cropDrag||event.buttons===0){if(cropDrag&&event.buttons===0)cropDrag=null;return;}
+      const point=cropPointFromEvent(cropDrag.canvas,event);
+      cropDrag.image.focal_x=point.x;cropDrag.image.focal_y=point.y;
+      updateCropVisuals(cropDrag.imageCard,cropDrag.image);
+    });
+    ['pointerup','pointerleave','pointercancel'].forEach(evt=>$('#slides').addEventListener(evt,()=>{if(cropDrag){renderPreview();markDirty();cropDrag=null;}}));
     $('#slides').addEventListener('input',event=>{
       const imageCard=event.target.closest('[data-image]'),imageField=event.target.dataset.imageField;
       if(imageCard&&imageField){
         const slide=state.slides[Number(imageCard.closest('[data-index]').dataset.index)],image=slide.images[Number(imageCard.dataset.image)];
         image[imageField]=Number(event.target.value);
         event.target.nextElementSibling.value=`${event.target.value}%`;
-        const thumb=imageCard.querySelector('img'),x=Number(image.focal_x??50),y=Number(image.focal_y??50);
-        thumb.style.objectPosition=`${x}% ${y}%`;thumb.style.transform=`scale(${Number(image.zoom_pct??100)/100})`;thumb.style.transformOrigin=`${x}% ${y}%`;
+        updateCropVisuals(imageCard,image);
         renderPreview();markDirty();return;
       }
       const card=event.target.closest('[data-index]'),field=event.target.dataset.field;if(!card||!field)return;
@@ -347,8 +390,7 @@
       const card=input.closest('[data-index]'),field=input.dataset.field;if(card&&field){state.slides[Number(card.dataset.index)][field]=input.type==='checkbox'?input.checked:input.value;markDirty();}
     });
     $('#slides').addEventListener('click',event=>{
-      const focalPreview=event.target.closest('[data-focal-preview]');
-      if(focalPreview){const item=focalPreview.closest('[data-image]'),slide=state.slides[Number(item.closest('[data-index]').dataset.index)],image=slide.images[Number(item.dataset.image)];image.focal_x=Math.round(Math.max(0,Math.min(100,event.offsetX/focalPreview.clientWidth*100)));image.focal_y=Math.round(Math.max(0,Math.min(100,event.offsetY/focalPreview.clientHeight*100)));renderSlides();markDirty();return;}
+      if(event.target.closest('[data-crop-canvas]'))return;
       const button=event.target.closest('button'),card=button?.closest('[data-index]');if(!button||!card)return;
       const index=Number(card.dataset.index),images=state.slides[index].images;
       if(button.closest('summary'))event.preventDefault();
