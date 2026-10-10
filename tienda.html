@@ -3770,7 +3770,12 @@
 				let lastError = null;
 				for (let attempt = 0; attempt < 3 && !remote; attempt++) {
 					try {
-						const response = await fetch('/api/auth/catalog?page=1&limit=36&_t=' + Date.now(), { cache: 'no-store' });
+						// En la portada curada (no modo catalogo) nadie ve la grilla de productos --
+						// pedir 36 productos completos (con sus imagenes) solo para tenerlos ocultos
+						// era trafico/tiempo de API desperdiciado en cada carga de /tienda.html. Solo
+						// se pide el catalogo completo cuando sí se va a mostrar (/categorias-destacadas).
+						const catalogLimit = window.isCategoriasView ? 36 : 1;
+						const response = await fetch(`/api/auth/catalog?page=1&limit=${catalogLimit}&_t=` + Date.now(), { cache: 'no-store' });
 						if (!response.ok) throw new Error(`catalog request failed (${response.status})`);
 						const data = await response.json();
 						if (!Array.isArray(data.products) || (Number(data.total) > 0 && data.products.length === 0)) {
@@ -4260,8 +4265,10 @@
 		render();
 		window.lucide && window.lucide.createIcons();
 		applyRemoteSite();
-		loadStorefrontCampaigns().then(applyCategoriasViewMode);
-		if (window.isCategoriasView) setTimeout(applyCategoriasViewMode, 1200);
+		// En modo catalogo (/categorias-destacadas) el hero, los banners secundarios, las
+		// mini-categorias y los destacados de portada estan ocultos (ver applyCategoriasViewMode) --
+		// pedir esos dos endpoints de campañas ahi no sirve de nada, solo trafico/tiempo perdido.
+		if (!window.isCategoriasView) loadStorefrontCampaigns().then(applyCategoriasViewMode);
 
 		// =============================================================
 		// CONTROLADORES DE LA BARRA INFERIOR MÓVIL (BOTTOM NAV)
