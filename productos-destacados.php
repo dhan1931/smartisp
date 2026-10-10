@@ -127,7 +127,7 @@ foreach ($products as $idx => $product) {
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
   <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=public-admin-access-20261009">
   <script src="/assets/js/public-brand.js?v=canonical-logo-layout-20261009" defer></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/assets/vendor/lucide.min.js?v=1.55.0"></script>
   <script type="application/ld+json">
   <?= json_encode([
       '@context' => 'https://schema.org',
