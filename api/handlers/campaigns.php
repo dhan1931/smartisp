@@ -146,16 +146,25 @@ if ($action === 'admin-store-campaigns') {
     }
 
     if ($method === 'POST') {
+        // Portada (productos/categorias destacadas) y Banners son pantallas de admin distintas
+        // que guardan por separado -- cada una manda solo lo suyo. Sin esta lectura previa, guardar
+        // una pantalla pisaba con valores por defecto (rotacion, activo, etc.) lo que la otra ya
+        // tenia guardado.
+        $existingCampaignRow = $pdo->prepare('SELECT * FROM storefront_campaigns WHERE code = :code');
+        $existingCampaignRow->execute([':code' => $code]);
+        $existingCampaign = $existingCampaignRow->fetch(PDO::FETCH_ASSOC) ?: [];
+        $touchesCampaignSettings = array_key_exists('campaign', $body);
         $settings = is_array($body['campaign'] ?? null) ? $body['campaign'] : [];
         $slides = is_array($body['slides'] ?? null) ? array_slice($body['slides'], 0, 12) : [];
         $productIds = ($isPrimaryZone && is_array($body['product_ids'] ?? null)) ? array_values(array_unique(array_slice(array_filter(array_map(static fn($id) => trim((string)$id), $body['product_ids']), static fn($id) => $id !== ''), 0, 12))) : [];
         $categoryIds = ($isPrimaryZone && is_array($body['category_ids'] ?? null)) ? array_values(array_unique(array_slice(array_filter(array_map(static fn($id) => trim((string)$id), $body['category_ids']), static fn($id) => $id !== ''), 0, 7))) : [];
-        $name = trim((string)($settings['name'] ?? 'Portada de la tienda'));
-        $rotation = max(4, min(20, (int)($settings['rotation_seconds'] ?? 7)));
-        $displayMode = in_array(($settings['display_mode'] ?? 'carousel'), ['carousel', 'single', 'split', 'triple', 'grid', 'cards'], true) ? $settings['display_mode'] : 'carousel';
+        $name = trim((string)($settings['name'] ?? ($existingCampaign['name'] ?? 'Portada de la tienda')));
+        $rotation = max(4, min(20, (int)($settings['rotation_seconds'] ?? ($existingCampaign['rotation_seconds'] ?? 7))));
+        $displayMode = in_array(($settings['display_mode'] ?? ($existingCampaign['display_mode'] ?? 'carousel')), ['carousel', 'single', 'split', 'triple', 'grid', 'cards'], true) ? ($settings['display_mode'] ?? $existingCampaign['display_mode'] ?? 'carousel') : 'carousel';
+        $isActive = $touchesCampaignSettings ? !empty($settings['is_active']) : !empty($existingCampaign['is_active']);
         try {
-            $campaignStarts = storefrontCampaignDate($settings['starts_at'] ?? null);
-            $campaignEnds = storefrontCampaignDate($settings['ends_at'] ?? null);
+            $campaignStarts = array_key_exists('starts_at', $settings) ? storefrontCampaignDate($settings['starts_at']) : ($existingCampaign['starts_at'] ?? null);
+            $campaignEnds = array_key_exists('ends_at', $settings) ? storefrontCampaignDate($settings['ends_at']) : ($existingCampaign['ends_at'] ?? null);
         } catch (RuntimeException $error) {
             http_response_code(400);
             echo json_encode(['error' => $error->getMessage()]);
@@ -195,29 +204,50 @@ if ($action === 'admin-store-campaigns') {
             echo json_encode(['error' => 'El nombre de la campaña es obligatorio (máximo 150 caracteres).']);
             exit;
         }
-        foreach ($slides as $slide) {
+        foreach ($slides as $slideIndex => $slide) {
             $title = trim((string)($slide['title'] ?? ''));
             $images = is_array($slide['images'] ?? null) ? array_slice($slide['images'], 0, 12) : [];
             if (!$images && trim((string)($slide['image_url'] ?? '')) !== '') $images[] = ['image_url' => $slide['image_url']];
             $target = trim((string)($slide['target_url'] ?? ''));
             $promoTarget = trim((string)($slide['promo_chip_target_url'] ?? $target));
             $active = !array_key_exists('is_active', $slide) || !empty($slide['is_active']);
+            $label = 'Banner #' . ($slideIndex + 1) . ($title !== '' ? " (\"{$title}\")" : '');
             try {
                 $starts = storefrontCampaignDate($slide['starts_at'] ?? null);
                 $ends = storefrontCampaignDate($slide['ends_at'] ?? null);
             } catch (RuntimeException $error) {
                 http_response_code(400);
-                echo json_encode(['error' => $error->getMessage()]);
+                echo json_encode(['error' => "{$label}: " . $error->getMessage()]);
                 exit;
             }
-            if (($active && ($title === '' || !$images)) || strlen($title) > 180 || ($target !== '' && !storefrontCampaignSafeUrl($target)) || (trim((string)($slide['promo_chip_label'] ?? '')) !== '' && !storefrontCampaignSafeUrl($promoTarget)) || ($starts && $ends && $ends <= $starts)) {
+            if ($active && !$images) {
                 http_response_code(400);
-                echo json_encode(['error' => 'Cada banner visible necesita título, imagen, enlace y fechas válidas.']);
+                echo json_encode(['error' => "{$label}: falta subir al menos una imagen para que sea visible en la tienda."]);
+                exit;
+            }
+            if (strlen($title) > 180) {
+                http_response_code(400);
+                echo json_encode(['error' => "{$label}: el título supera los 180 caracteres."]);
+                exit;
+            }
+            if ($target !== '' && !storefrontCampaignSafeUrl($target)) {
+                http_response_code(400);
+                echo json_encode(['error' => "{$label}: el enlace de destino no es válido."]);
+                exit;
+            }
+            if (trim((string)($slide['promo_chip_label'] ?? '')) !== '' && !storefrontCampaignSafeUrl($promoTarget)) {
+                http_response_code(400);
+                echo json_encode(['error' => "{$label}: el enlace del acceso promocional no es válido."]);
+                exit;
+            }
+            if ($starts && $ends && $ends <= $starts) {
+                http_response_code(400);
+                echo json_encode(['error' => "{$label}: la fecha final debe ser posterior a la inicial."]);
                 exit;
             }
             foreach ($images as $image) if (!storefrontCampaignSafeUrl(trim((string)($image['image_url'] ?? '')), true)) {
                 http_response_code(400);
-                echo json_encode(['error' => 'Una imagen del banner no tiene una ruta válida.']);
+                echo json_encode(['error' => "{$label}: una imagen no tiene una ruta válida."]);
                 exit;
             }
         }
@@ -230,7 +260,7 @@ if ($action === 'admin-store-campaigns') {
         }
         $activeSlides = array_filter($slides, static fn($slide) => !array_key_exists('is_active', $slide) || !empty($slide['is_active']));
         $requiredSlides = ['split' => 2, 'triple' => 3, 'grid' => 4][$displayMode] ?? 1;
-        if (!empty($settings['is_active']) && count($activeSlides) < $requiredSlides) {
+        if ($isActive && count($activeSlides) < $requiredSlides) {
             http_response_code(400);
             echo json_encode(['error' => 'Este formato necesita al menos ' . $requiredSlides . ' banners visibles.']);
             exit;
@@ -239,7 +269,7 @@ if ($action === 'admin-store-campaigns') {
         $pdo->beginTransaction();
         try {
             $pdo->prepare("INSERT INTO storefront_campaigns (code, name, placement, is_active, rotation_seconds, display_mode, starts_at, ends_at) VALUES (:code, :name, :placement, :active, :rotation, :mode, :starts, :ends) ON DUPLICATE KEY UPDATE name = VALUES(name), placement = VALUES(placement), is_active = VALUES(is_active), rotation_seconds = VALUES(rotation_seconds), display_mode = VALUES(display_mode), starts_at = VALUES(starts_at), ends_at = VALUES(ends_at)")
-                ->execute([':code' => $code, ':name' => $name, ':placement' => $isPrimaryZone ? 'home' : 'home-secondary', ':active' => !empty($settings['is_active']) ? 1 : 0, ':rotation' => $rotation, ':mode' => $displayMode, ':starts' => $campaignStarts, ':ends' => $campaignEnds]);
+                ->execute([':code' => $code, ':name' => $name, ':placement' => $isPrimaryZone ? 'home' : 'home-secondary', ':active' => $isActive ? 1 : 0, ':rotation' => $rotation, ':mode' => $displayMode, ':starts' => $campaignStarts, ':ends' => $campaignEnds]);
             if ($isPrimaryZone) {
                 $saveFeaturedSetting = $pdo->prepare('INSERT INTO settings_rows (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = CURRENT_TIMESTAMP');
                 foreach ($featuredPage as $field => $value) $saveFeaturedSetting->execute(['store_featured_' . $field, $value]);
@@ -262,8 +292,14 @@ if ($action === 'admin-store-campaigns') {
                 $checkCategories->execute($categoryIds);
                 if (count($checkCategories->fetchAll(PDO::FETCH_COLUMN)) !== count($categoryIds)) throw new RuntimeException('Una o más categorías seleccionadas ya no existen.');
             }
-            $pdo->prepare('DELETE FROM storefront_campaign_slides WHERE campaign_id = ?')->execute([$campaignId]);
-            if ($isPrimaryZone) $pdo->prepare('DELETE FROM storefront_campaign_products WHERE campaign_id = ?')->execute([$campaignId]);
+            // Cada seccion (banners, productos destacados, categorias de portada, chips) se guarda
+            // desde una pantalla de admin distinta y puede mandar un payload parcial -- sin esta
+            // guarda por clave presente, guardar una seccion borraba en silencio las demas (ya paso
+            // una vez con chips/productos al separar banners principales de secundarios).
+            $touchesSlides = array_key_exists('slides', $body);
+            $touchesProducts = $isPrimaryZone && array_key_exists('product_ids', $body);
+            if ($touchesSlides) $pdo->prepare('DELETE FROM storefront_campaign_slides WHERE campaign_id = ?')->execute([$campaignId]);
+            if ($touchesProducts) $pdo->prepare('DELETE FROM storefront_campaign_products WHERE campaign_id = ?')->execute([$campaignId]);
             if ($isPrimaryZone && array_key_exists('chips', $body)) $pdo->prepare('DELETE FROM storefront_promo_chips')->execute();
             $slideInsert = $pdo->prepare('INSERT INTO storefront_campaign_slides (campaign_id, eyebrow, title, subtitle, button_text, target_url, image_url, image_alt, image_fit, image_width_pct, card_layout, copy_background_color, sort_order, is_active, starts_at, ends_at, badge_label, badge_tone, image_opacity, overlay_opacity, image_interval_seconds, promo_chip_label, promo_chip_icon, promo_chip_target_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
             $galleryInsert = $pdo->prepare('INSERT INTO storefront_campaign_slide_images (slide_id, image_url, image_alt, sort_order, is_primary, focal_x, focal_y, zoom_pct) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
