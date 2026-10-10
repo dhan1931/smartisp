@@ -325,8 +325,8 @@
 		.benefit span { color: #a8c0d0; font-size: 11px; }
 		.site-footer { background: #0b2032; color: #a9c2d4; font-size: 13px; }
 		.site-footer-top { display: grid; grid-template-columns: 1.6fr repeat(3, 1fr) 1fr 1.1fr; gap: 28px; padding: 44px 5vw 30px; }
-		.site-footer-logo { font-family: 'Space Grotesk', sans-serif; font-size: 23px; font-weight: 800; color: #fff; letter-spacing: -.02em; }
-		.site-footer-logo small { display: block; font-family: system-ui, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .12em; color: #6f93ad; margin-top: 3px; }
+		.site-footer-logo { display: inline-block; font-family: 'Space Grotesk', sans-serif; font-size: 23px; font-weight: 800; color: #fff; letter-spacing: -.02em; }
+		.site-footer-logo-tag { display: block; font-family: system-ui, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .12em; color: #6f93ad; margin-top: 3px; }
 		.site-footer-brand h3 { margin: 16px 0 8px; color: #fff; font-size: 16px; line-height: 1.3; }
 		.site-footer-brand p { margin: 0; color: #8aa6ba; font-size: 12.5px; line-height: 1.5; }
 		.site-footer-social { display: flex; gap: 10px; margin-top: 16px; }
@@ -1651,6 +1651,22 @@
         .store-promo-chips { display:flex; gap:10px; overflow-x:auto; padding:12px 1.7vw 0; }
         .store-promo-chip { display:inline-flex; flex:0 0 auto; align-items:center; gap:8px; padding:10px 15px; border:1px solid #d8e7ed; border-radius:7px; background:#fff; color:var(--navy); font-weight:700; }
         .store-promo-chip:hover { border-color:#64b9db; color:var(--blue); }
+        .mini-categories { display: none; padding: 22px 1.7vw 0; }
+        .mini-categories.is-visible { display: block; }
+        .mini-categories-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px; }
+        .mini-category-card { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 8px; border: 1px solid var(--line); border-radius: 10px; background: #fff; text-align: center; transition: all .15s ease; }
+        .mini-category-card:hover { border-color: var(--blue); box-shadow: 0 6px 16px rgba(16,44,61,.08); transform: translateY(-2px); }
+        .mini-category-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: var(--sky); color: var(--blue); }
+        .mini-category-name { font-size: 12px; font-weight: 700; color: var(--navy); line-height: 1.25; }
+        @media(max-width: 1100px) { .mini-categories-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+        @media(max-width: 600px) { .mini-categories-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; } .mini-category-card { padding: 12px 6px; } }
+        .store-trust-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; padding: 25px 1.7vw; }
+        .store-trust-item { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+        .store-trust-item i { color: var(--blue); flex-shrink: 0; }
+        .store-trust-item strong { display: block; color: var(--navy); font-size: 13.5px; font-weight: 800; }
+        .store-trust-item span { color: var(--muted); font-size: 11.5px; }
+        @media(max-width: 900px) { .store-trust-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media(max-width: 520px) { .store-trust-row { grid-template-columns: 1fr; padding: 18px 20px; } }
         .campaign-featured { display: none; padding: 25px 1.7vw 0; }
         .campaign-featured.is-visible { display: block; }
         .campaign-featured-heading { display: flex; justify-content: space-between; align-items: end; gap: 12px; margin-bottom: 13px; }
@@ -1957,11 +1973,24 @@
 		</div>
 	</section>
 	<nav class="store-promo-chips" id="storePromoChips" aria-label="Accesos promocionales" hidden></nav>
+	<section class="mini-categories" id="miniCategories" aria-label="Familias de categorías" hidden>
+		<div class="mini-categories-grid" id="miniCategoriesGrid"></div>
+	</section>
 	<section class="campaign-featured" id="campaignFeatured" aria-labelledby="campaignFeaturedTitle">
 		<div class="campaign-featured-heading"><h2 id="campaignFeaturedTitle">Productos destacados</h2><span>Selección SmartISP</span></div>
 		<div class="campaign-products-grid" id="campaignProductsGrid"></div>
 	</section>
-	<main>
+	<section class="store-trust-row">
+		<div class="store-trust-item"><i data-lucide="shield-check" width="22"></i><div><strong>Compra segura</strong><span>Tus datos protegidos en cada transacción</span></div></div>
+		<div class="store-trust-item"><i data-lucide="headphones" width="22"></i><div><strong>Asesoría especializada</strong><span>Personas reales, respuestas claras</span></div></div>
+		<div class="store-trust-item"><i data-lucide="truck" width="22"></i><div><strong>Despacho a todo Ecuador</strong><span>Recibe donde estés</span></div></div>
+		<div class="store-trust-item"><i data-lucide="award" width="22"></i><div><strong>Garantía y respaldo</strong><span>Productos originales con soporte técnico</span></div></div>
+	</section>
+	<main hidden>
+		<!-- El catalogo completo (grid paginado, sidebar de categorias, busqueda/filtros) se quita
+		     de la portada de tienda.html -- se movera a otra pagina. El markup y el JS que lo
+		     maneja se dejan intactos (ocultos) para no romper nada mientras se decide el destino
+		     final; nada de esto es visible para el usuario mientras "hidden" siga aqui. -->
 		<section class="content" id="catalogo">
 			<div class="store-layout">
 				<button type="button" class="category-drawer-backdrop" id="categoryDrawerBackdrop" aria-label="Cerrar categorías" hidden></button>
@@ -2030,14 +2059,15 @@
 	<footer class="site-footer">
 		<div class="site-footer-top">
 			<div class="site-footer-brand">
-				<div class="site-footer-logo">SMART-ISP<small>Infraestructura y Soluciones TI</small></div>
+				<a class="logo site-footer-logo" href="/" title="SmartISP Tienda Online">SMART-ISP</a>
+				<small class="site-footer-logo-tag">Infraestructura y Soluciones TI</small>
 				<h3>Tecnología que impulsa tus proyectos.</h3>
 				<p>Equipamiento tecnológico, infraestructura y soluciones TI para hogares y empresas.</p>
 				<div class="site-footer-social" id="footerSocial">
-					<a href="#" id="footerSocialInstagram" aria-label="Instagram" hidden><i data-lucide="instagram" width="18"></i></a>
-					<a href="#" id="footerSocialFacebook" aria-label="Facebook" hidden><i data-lucide="facebook" width="18"></i></a>
-					<a href="#" id="footerSocialYoutube" aria-label="YouTube" hidden><i data-lucide="youtube" width="18"></i></a>
-					<a href="#" id="footerSocialLinkedin" aria-label="LinkedIn" hidden><i data-lucide="linkedin" width="18"></i></a>
+					<a href="#" id="footerSocialInstagram" aria-label="Instagram" hidden><svg viewBox="0 0 24 24" width="16" fill="currentColor"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41-.56-.22-.96-.48-1.38-.9-.42-.42-.68-.82-.9-1.38-.16-.42-.36-1.06-.41-2.23-.06-1.27-.07-1.65-.07-4.85s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41 1.27-.06 1.65-.07 4.85-.07M12 0C8.74 0 8.33.01 7.05.07 5.78.13 4.9.33 4.14.63c-.79.31-1.46.72-2.13 1.39C1.35 2.68.94 3.35.63 4.14.33 4.9.13 5.78.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.06 1.27.26 2.15.56 2.91.31.79.72 1.46 1.39 2.13.67.67 1.34 1.08 2.13 1.39.76.3 1.64.5 2.91.56C8.33 23.99 8.74 24 12 24s3.67-.01 4.95-.07c1.27-.06 2.15-.26 2.91-.56.79-.31 1.46-.72 2.13-1.39.67-.67 1.08-1.34 1.39-2.13.3-.76.5-1.64.56-2.91.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.27-.26-2.15-.56-2.91-.31-.79-.72-1.46-1.39-2.13C20.32 1.35 19.65.94 18.86.63c-.76-.3-1.64-.5-2.91-.56C14.67.01 14.26 0 12 0zm0 5.84A6.16 6.16 0 1018.16 12 6.16 6.16 0 0012 5.84zM12 16a4 4 0 114-4 4 4 0 01-4 4zm6.41-10.84a1.44 1.44 0 11-1.44-1.44 1.44 1.44 0 011.44 1.44z"/></svg></a>
+					<a href="#" id="footerSocialFacebook" aria-label="Facebook" hidden><svg viewBox="0 0 24 24" width="16" fill="currentColor"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z"/></svg></a>
+					<a href="#" id="footerSocialYoutube" aria-label="YouTube" hidden><svg viewBox="0 0 24 24" width="16" fill="currentColor"><path d="M23.5 6.2a3.02 3.02 0 00-2.12-2.13C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.38.57A3.02 3.02 0 00.5 6.2 31.6 31.6 0 000 12a31.6 31.6 0 00.5 5.8 3.02 3.02 0 002.12 2.13C4.5 20.5 12 20.5 12 20.5s7.5 0 9.38-.57a3.02 3.02 0 002.12-2.13A31.6 31.6 0 0024 12a31.6 31.6 0 00-.5-5.8zM9.75 15.5v-7l6.5 3.5z"/></svg></a>
+					<a href="#" id="footerSocialLinkedin" aria-label="LinkedIn" hidden><svg viewBox="0 0 24 24" width="16" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45zM5.34 7.43a2.07 2.07 0 110-4.13 2.07 2.07 0 010 4.13zM7.12 20.45H3.56V9h3.56zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg></a>
 				</div>
 			</div>
 			<div class="site-footer-col">
@@ -2066,16 +2096,16 @@
 			</div>
 			<div class="site-footer-col site-footer-contact">
 				<h4>Contáctanos</h4>
-				<a href="#" id="footerWhatsappLink" hidden><i data-lucide="message-circle" width="17"></i><span><strong id="footerWhatsappText"></strong><small>Escríbenos por WhatsApp</small></span></a>
+				<a href="#" id="footerWhatsappLink" hidden><svg viewBox="0 0 24 24" width="17" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm0 18.15c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.26 8.26 0 01-1.27-4.38c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 012.41 5.83c.01 4.54-3.7 8.23-8.21 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.13-.17.25-.64.81-.78.97-.14.17-.29.19-.54.06-.25-.12-1.04-.38-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.41-.42-.56-.42-.14-.01-.31-.01-.48-.01-.17 0-.43.06-.66.31-.23.25-.86.84-.86 2.05s.88 2.38 1 2.55c.12.17 1.74 2.65 4.21 3.72.59.25 1.05.4 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.14-1.18-.06-.1-.23-.16-.48-.28z"/></svg><span><strong id="footerWhatsappText"></strong><small>Escríbenos por WhatsApp</small></span></a>
 				<a href="#" id="footerEmailLink" hidden><i data-lucide="mail" width="17"></i><span><strong id="footerEmailText"></strong><small>Respuesta rápida</small></span></a>
 				<div class="site-footer-contact-item" id="footerAddressItem" hidden><i data-lucide="map-pin" width="17"></i><span><strong id="footerAddressText"></strong></span></div>
 			</div>
 			<div class="site-footer-whatsapp-card" id="footerWhatsappCard" hidden>
-				<i data-lucide="message-circle" width="26"></i>
+				<svg viewBox="0 0 24 24" width="26" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm0 18.15c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.26 8.26 0 01-1.27-4.38c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 012.41 5.83c.01 4.54-3.7 8.23-8.21 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.13-.17.25-.64.81-.78.97-.14.17-.29.19-.54.06-.25-.12-1.04-.38-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.41-.42-.56-.42-.14-.01-.31-.01-.48-.01-.17 0-.43.06-.66.31-.23.25-.86.84-.86 2.05s.88 2.38 1 2.55c.12.17 1.74 2.65 4.21 3.72.59.25 1.05.4 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.14-1.18-.06-.1-.23-.16-.48-.28z"/></svg>
 				<strong>¿Tienes dudas?</strong>
 				<h4>Escríbenos por WhatsApp</h4>
 				<p>Te asesoramos en productos y soluciones para tu hogar o empresa.</p>
-				<a href="#" id="footerWhatsappCta" class="site-footer-whatsapp-btn"><i data-lucide="message-circle" width="16"></i> Abrir WhatsApp <i data-lucide="arrow-right" width="15"></i></a>
+				<a href="#" id="footerWhatsappCta" class="site-footer-whatsapp-btn"><svg viewBox="0 0 24 24" width="16" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm0 18.15c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.26 8.26 0 01-1.27-4.38c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 012.41 5.83c.01 4.54-3.7 8.23-8.21 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.13-.17.25-.64.81-.78.97-.14.17-.29.19-.54.06-.25-.12-1.04-.38-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.41-.42-.56-.42-.14-.01-.31-.01-.48-.01-.17 0-.43.06-.66.31-.23.25-.86.84-.86 2.05s.88 2.38 1 2.55c.12.17 1.74 2.65 4.21 3.72.59.25 1.05.4 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.14-1.18-.06-.1-.23-.16-.48-.28z"/></svg> Abrir WhatsApp <i data-lucide="arrow-right" width="15"></i></a>
 			</div>
 		</div>
 		<div class="site-footer-badges">
@@ -3733,6 +3763,7 @@
 					isCatalogLoading = false;
 					render();
 					if (typeof renderSidebarCategories === 'function') renderSidebarCategories();
+					renderMiniCategories();
 					checkDirectProductLanding();
 
 					// La primera vista usa solo esta página; el resto se solicita ante una acción del usuario.
@@ -3879,6 +3910,39 @@
 					<div class="campaign-product-bottom"><strong class="campaign-product-price">${money(product.price)}</strong><button type="button" class="campaign-product-add" data-campaign-add="${index}" aria-label="Agregar ${escapeHtml(product.name)} al carrito"><i data-lucide="shopping-cart" width="15"></i> Agregar</button></div>
 				</article>`;
 			}).join('');
+			section.classList.add('is-visible');
+			window.lucide?.createIcons();
+		};
+		const renderMiniCategories = () => {
+			const section = document.querySelector('#miniCategories');
+			const grid = document.querySelector('#miniCategoriesGrid');
+			if (!section || !grid || !catalogCategoryRows.length) return;
+			const groups = new Map();
+			catalogCategoryRows.forEach(cat => {
+				const count = Number(cat.productCount || 0);
+				if (!count) return;
+				const groupId = cat.macroGroupId || 'otros';
+				if (!groups.has(groupId)) {
+					groups.set(groupId, { id: groupId, name: cat.macroGroupName || 'Otras Soluciones IT', icon: cat.macroGroupIcon || 'package', count: 0, topCategory: null, topCount: 0 });
+				}
+				const g = groups.get(groupId);
+				g.count += count;
+				if (count > g.topCount) { g.topCount = count; g.topCategory = cat.name; }
+			});
+			const sorted = [...groups.values()].sort((a, b) => b.count - a.count);
+			const top7 = sorted.slice(0, 7);
+			const cardsHtml = top7.map(g => {
+				const href = g.topCategory ? `/categoria/${encodeURIComponent(slugifyText(g.topCategory))}/` : '/categorias-destacadas';
+				return `<a class="mini-category-card" href="${escapeHtml(href)}">
+					<span class="mini-category-icon"><i data-lucide="${escapeHtml(g.icon)}" width="20"></i></span>
+					<span class="mini-category-name">${escapeHtml(g.name)}</span>
+				</a>`;
+			}).join('');
+			const moreHtml = `<a class="mini-category-card" href="/categorias-destacadas">
+				<span class="mini-category-icon"><i data-lucide="more-horizontal" width="20"></i></span>
+				<span class="mini-category-name">Más Categorías</span>
+			</a>`;
+			grid.innerHTML = cardsHtml + moreHtml;
 			section.classList.add('is-visible');
 			window.lucide?.createIcons();
 		};
