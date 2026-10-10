@@ -143,8 +143,9 @@
 		.public-menu-close { display: none; }
 		.public-menu-btn:hover { border-color: #9acfe9; color: var(--blue); }
 		.public-nav { position: sticky; top: var(--sticky-nav-height, 70px); z-index: 999; background: var(--navy); color: #fff; display: flex; justify-content: center; gap: clamp(22px, 5vw, 80px); padding: 11px 5vw; font-weight: 800; font-size: 15px; box-shadow: inset 0 1px rgba(255,255,255,.08); }
-		.public-nav a { color: #fff; text-decoration: none; white-space: nowrap; opacity: .96; }
-		.public-nav a:hover { color: #ffd166; }
+		.public-nav a { display: inline-flex; align-items: center; gap: 6px; color: #fff; text-decoration: none; white-space: nowrap; opacity: .96; }
+		.public-nav a i { width: 16px; height: 16px; }
+		.public-nav a:hover, .public-nav a[aria-current="page"] { color: #7dd3fc; }
 		.public-nav-cats { position: relative; display: inline-flex; align-items: center; }
 		.public-cat-trigger { display: inline-flex; align-items: center; gap: 8px; border: 0; background: transparent; color: #fff; font: inherit; font-weight: 900; padding: 0; cursor: pointer; }
 		.public-cat-trigger:hover { color: #ffd166; }
@@ -1621,7 +1622,7 @@
             .store-sidebar { width: min(80vw, 440px) !important; max-width: 440px !important; background: #fff !important; }
         }
         .store-campaign-area { padding: 14px 1.7vw 0; }
-        .store-campaign { position: relative; display: none; min-height: 270px; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: #e8f3f7; isolation: isolate; }
+        .store-campaign { position: relative; display: none; min-height: 270px; aspect-ratio: 2.9; max-height: 440px; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: #e8f3f7; isolation: isolate; }
         .store-campaign.is-visible { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; }
         .store-campaign-media { position: absolute; inset: 0; z-index: -2; }
         .store-campaign-media img { width: 100%; height: 100%; object-fit: cover; }
@@ -1645,7 +1646,7 @@
         .store-campaign-dot[aria-current="true"] { width: 22px; background: var(--blue); }
         .store-campaign.is-single { min-height: 300px; }
         .store-campaign.is-contain .store-campaign-media img { object-fit: contain; }
-        .store-campaign.is-triple { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; min-height:0; overflow:visible; background:transparent; border:0; }
+        .store-campaign.is-triple { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; min-height:0; aspect-ratio:auto; max-height:none; overflow:visible; background:transparent; border:0; }
         .store-campaign.is-triple::after, .store-campaign.is-triple .store-campaign-controls { display:none; }
         .store-campaign.is-triple .store-campaign-media { position:absolute; inset:0; z-index:0; border-radius:8px; overflow:hidden; }
         .store-campaign.is-triple .store-campaign-media img { display:none; }
@@ -1710,7 +1711,7 @@
           .campaign-products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
         .secondary-campaign-area { padding-top:8px; }
-        .secondary-campaign-area .store-campaign { min-height:0; }
+        .secondary-campaign-area .store-campaign { min-height:0; aspect-ratio:auto; max-height:none; }
         .secondary-campaign-area .store-campaign-card { min-height:220px; }
         @media(max-width:520px){.secondary-campaign-area .store-campaign-card{min-height:190px}}
         @media (max-width: 420px) {
@@ -1905,7 +1906,7 @@
         .store-campaign-badge[hidden],.store-campaign-promo[hidden]{display:none}
         .store-campaign-promo { margin:10px 0 0 8px; background:#102c3d; vertical-align:middle; }
         .store-campaign-promo:hover { color:#fff; filter:brightness(1.15); }
-        .store-campaign.is-layout { display:grid; min-height:0; gap:12px; overflow:visible; border:0; background:transparent; }
+        .store-campaign.is-layout { display:grid; min-height:0; aspect-ratio:auto; max-height:none; gap:12px; overflow:visible; border:0; background:transparent; }
         .store-campaign.is-layout::after,.store-campaign.is-layout>.store-campaign-media,.store-campaign.is-layout>.store-campaign-copy,.store-campaign.is-layout>.store-campaign-badge,.store-campaign.is-layout>.store-campaign-controls { display:none!important; }
         .store-campaign.is-layout .store-campaign-card::before { display:none; }
         .store-campaign.is-split { grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -1989,11 +1990,11 @@
 	</header>
 	<nav class="public-nav" id="publicNav" aria-label="Secciones principales">
 		<button class="public-menu-close" id="publicMenuClose" type="button"><span>Secciones</span><i data-lucide="x" width="20"></i></button>
-		<a href="/categorias-destacadas">Categorías Destacadas</a>
-		<a href="/productos-destacados">Productos Destacados</a>
-		<a href="/servicios">Servicios</a>
-		<a href="/nosotros">Nosotros</a>
-		<a href="#catalogo">Catálogo</a>
+		<a href="/tienda.html" aria-current="page"><i data-lucide="house" width="16"></i>Tienda</a>
+		<a href="/categorias-destacadas"><i data-lucide="layout-grid" width="16"></i>Categorías</a>
+		<a href="/nosotros"><i data-lucide="users" width="16"></i>Nosotros</a>
+		<a href="/servicios"><i data-lucide="settings" width="16"></i>Servicios</a>
+		<a href="/productos-destacados"><i data-lucide="sparkles" width="16"></i>Productos</a>
 	</nav>
 	<section class="store-campaign-area" aria-label="Promociones SmartISP" hidden>
 		<div class="store-campaign" id="storeCampaign" aria-roledescription="carrusel" aria-label="Campañas de la tienda" aria-live="polite">
