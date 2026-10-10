@@ -1215,6 +1215,28 @@
           <textarea id="prodDescInput" class="form-control" rows="3" placeholder="Detalla procesador, puertos, compatibilidad o especificaciones..."></textarea>
         </div>
         <div class="form-group">
+          <label class="form-label">Galería de imágenes (opcional, además de la foto principal):</label>
+          <div id="prodGalleryList" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;"></div>
+          <input type="file" id="prodGalleryFileInput" accept="image/*" multiple style="display:none;">
+          <button type="button" class="btn btn-secondary btn-sm" id="btnAddGalleryImage"><i data-lucide="image-plus" width="14"></i> Añadir imágenes a la galería</button>
+          <small style="color:var(--muted); font-size:11px; display:block; margin-top:4px;">Se usan en el carrusel de la ficha de producto. Solo se guardan al crear/guardar el producto primero.</small>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Especificaciones técnicas (opcional, se muestran como tabla en la ficha):</label>
+          <div id="prodSpecsList" style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;"></div>
+          <button type="button" class="btn btn-secondary btn-sm" id="btnAddSpecRow"><i data-lucide="plus" width="14"></i> Añadir fila de especificación</button>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="prodContentInput">Contenido del paquete (opcional):</label>
+            <textarea id="prodContentInput" class="form-control" rows="2" placeholder="Ej: 1x fuente de poder, 1x cable de poder, manual"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="prodWarrantyInput">Garantía (opcional):</label>
+            <textarea id="prodWarrantyInput" class="form-control" rows="2" placeholder="Ej: 24 meses de garantía oficial del fabricante"></textarea>
+          </div>
+        </div>
+        <div class="form-group">
           <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; font-weight:600;">
             <input type="checkbox" id="prodVisibleInput" checked style="width:18px; height:18px; accent-color:var(--blue);">
             <span>Visible en la tienda pública (desmarca para ocultar temporalmente sin borrar)</span>
@@ -1331,6 +1353,105 @@
     // --- ESTADO GLOBAL ---
     let categoriesList = [];
     let productsList = []; // solo la página actual (DEV-20261005-022: paginado real, ya no el catálogo completo)
+    let currentProductSpecs = [];
+    let currentProductGallery = [];
+
+    const escapeHtmlEditor = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+
+    const renderSpecsEditor = () => {
+      const list = document.getElementById('prodSpecsList');
+      if (!list) return;
+      list.innerHTML = currentProductSpecs.map((spec, index) => `
+        <div style="display:flex; gap:6px;" data-spec-row="${index}">
+          <input type="text" class="form-control" style="flex:1;" placeholder="Ej: Potencia" value="${escapeHtmlEditor(spec.label)}" data-spec-field="label">
+          <input type="text" class="form-control" style="flex:1;" placeholder="Ej: 650W" value="${escapeHtmlEditor(spec.value)}" data-spec-field="value">
+          <button type="button" class="btn btn-secondary btn-sm" data-remove-spec="${index}" title="Quitar"><i data-lucide="x" width="14"></i></button>
+        </div>
+      `).join('');
+      window.lucide?.createIcons();
+    };
+
+    document.getElementById('prodSpecsList')?.addEventListener('input', e => {
+      const row = e.target.closest('[data-spec-row]');
+      if (!row) return;
+      const index = Number(row.dataset.specRow);
+      const field = e.target.dataset.specField;
+      if (currentProductSpecs[index] && field) currentProductSpecs[index][field] = e.target.value;
+    });
+    document.getElementById('prodSpecsList')?.addEventListener('click', e => {
+      const btn = e.target.closest('[data-remove-spec]');
+      if (!btn) return;
+      currentProductSpecs.splice(Number(btn.dataset.removeSpec), 1);
+      renderSpecsEditor();
+    });
+    document.getElementById('btnAddSpecRow')?.addEventListener('click', () => {
+      currentProductSpecs.push({ label: '', value: '' });
+      renderSpecsEditor();
+    });
+
+    const renderGalleryEditor = () => {
+      const list = document.getElementById('prodGalleryList');
+      const addBtn = document.getElementById('btnAddGalleryImage');
+      if (!list) return;
+      const prodId = document.getElementById('prodId')?.value || '';
+      const hasRealId = prodId && !prodId.startsWith('prod_') || productsList.some(p => String(p.id) === String(prodId));
+      list.innerHTML = currentProductGallery.map(img => `
+        <div style="position:relative;">
+          <img src="${escapeHtmlEditor(img.image_url)}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--line);">
+          <button type="button" data-remove-gallery-image="${img.id}" style="position:absolute;top:-6px;right:-6px;background:#dc2626;color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;">✕</button>
+        </div>
+      `).join('') || '<small style="color:var(--muted);">Sin imágenes adicionales todavía.</small>';
+      if (addBtn) {
+        const canUpload = productsList.some(p => String(p.id) === String(prodId));
+        addBtn.disabled = !canUpload;
+        addBtn.title = canUpload ? '' : 'Guarda el producto primero para poder añadir imágenes a la galería.';
+      }
+    };
+
+    const loadGalleryForProduct = async productId => {
+      currentProductGallery = [];
+      if (!productId) { renderGalleryEditor(); return; }
+      try {
+        const res = await api(`product-images?product_id=${encodeURIComponent(productId)}`);
+        currentProductGallery = res.images || [];
+      } catch (e) { console.warn('No se pudo cargar la galería:', e); }
+      renderGalleryEditor();
+    };
+
+    document.getElementById('prodGalleryList')?.addEventListener('click', async e => {
+      const btn = e.target.closest('[data-remove-gallery-image]');
+      if (!btn) return;
+      try {
+        await api(`product-images?id=${btn.dataset.removeGalleryImage}`, { method: 'DELETE' });
+        currentProductGallery = currentProductGallery.filter(img => String(img.id) !== btn.dataset.removeGalleryImage);
+        renderGalleryEditor();
+      } catch (err) { showToast(err.message, 'error'); }
+    });
+
+    document.getElementById('btnAddGalleryImage')?.addEventListener('click', () => {
+      document.getElementById('prodGalleryFileInput')?.click();
+    });
+    document.getElementById('prodGalleryFileInput')?.addEventListener('change', async e => {
+      const files = [...(e.target.files || [])];
+      if (!files.length) return;
+      const productId = document.getElementById('prodId')?.value || '';
+      try {
+        for (const file of files) {
+          const fd = new FormData();
+          fd.append('image', file);
+          const upRes = await api('upload-image', { method: 'POST', body: fd });
+          if (upRes?.url) {
+            await api('product-images', { method: 'POST', body: JSON.stringify({ product_id: productId, image_url: upRes.url }) });
+          }
+        }
+        await loadGalleryForProduct(productId);
+        showToast('Imágenes añadidas a la galería.');
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        e.target.value = '';
+      }
+    });
     let productsPage = 1;
     let productsPageSize = 50; // feedback: 100 por página se sentía pesado para revisar en la tabla
     let productsTotal = 0;
@@ -2226,6 +2347,12 @@
       document.getElementById('prodExternalUrlInput').value = '';
       document.getElementById('prodDescInput').value = '';
       document.getElementById('prodVisibleInput').checked = true;
+      document.getElementById('prodContentInput').value = '';
+      document.getElementById('prodWarrantyInput').value = '';
+      currentProductSpecs = [];
+      currentProductGallery = [];
+      renderSpecsEditor();
+      renderGalleryEditor();
       document.getElementById('prodImagePreview').style.display = 'none';
       if (document.getElementById('btnRemoveProdImage')) document.getElementById('btnRemoveProdImage').style.display = 'none';
       if (document.getElementById('btnModalDeleteProduct')) document.getElementById('btnModalDeleteProduct').style.display = 'none';
@@ -2265,6 +2392,11 @@
       document.getElementById('prodExternalUrlInput').value = p.externalUrl || '';
       document.getElementById('prodDescInput').value = p.description || '';
       document.getElementById('prodVisibleInput').checked = p.visible !== false;
+      document.getElementById('prodContentInput').value = p.contentText || '';
+      document.getElementById('prodWarrantyInput').value = p.warrantyText || '';
+      currentProductSpecs = Array.isArray(p.specs) ? p.specs.map(s => ({ label: s.label || '', value: s.value || '' })) : [];
+      renderSpecsEditor();
+      loadGalleryForProduct(p.id);
 
       const preview = document.getElementById('prodImagePreview');
       const removeBtn = document.getElementById('btnRemoveProdImage');
@@ -2411,6 +2543,9 @@
         fd.append('externalUrl', product.externalUrl);
         fd.append('description', product.description);
         fd.append('visible', product.visible ? '1' : '0');
+        fd.append('specs', JSON.stringify(currentProductSpecs.filter(s => s.label.trim() && s.value.trim())));
+        fd.append('content_text', document.getElementById('prodContentInput').value.trim());
+        fd.append('warranty_text', document.getElementById('prodWarrantyInput').value.trim());
 
         const res = await api('admin-products', {
           method: 'POST',

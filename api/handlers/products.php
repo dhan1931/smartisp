@@ -398,11 +398,10 @@ if ($action === 'admin-products') {
             $ext = strtolower($m[1]) === 'png' ? 'png' : (strtolower($m[1]) === 'webp' ? 'webp' : 'jpg');
             $bData = base64_decode($m[2]);
             if ($bData && strlen($bData) < 15 * 1024 * 1024) {
-                $uploadDir = __DIR__ . '/../../uploads/products/';
-                if (!is_dir($uploadDir)) @mkdir($uploadDir, 0755, true);
+                $uploadDir = getSmartispUploadsDir('products');
                 $fn = 'prod_' . bin2hex(random_bytes(8)) . '.' . $ext;
-                if (@file_put_contents($uploadDir . $fn, $bData) !== false) {
-                    $imageUrl = '/uploads/products/' . $fn;
+                if (@file_put_contents($uploadDir . '/' . $fn, $bData) !== false) {
+                    $imageUrl = '/api/auth/serve-upload?category=products&file=' . rawurlencode($fn);
                 }
             }
         }
@@ -551,10 +550,7 @@ if ($action === 'admin-products') {
 if ($action === 'upload-image' && $method === 'POST') {
     requireAdminAuth();
 
-    $uploadDir = __DIR__ . '/../../uploads/products/';
-    if (!is_dir($uploadDir)) {
-        @mkdir($uploadDir, 0755, true);
-    }
+    $uploadDir = getSmartispUploadsDir('products');
 
     $fileData = null;
     $ext = 'jpg';
