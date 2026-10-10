@@ -227,188 +227,66 @@ foreach ($categories as $idx => $category) {
     @media(max-width:800px){.public-menu-btn{display:none!important}.public-nav{display:flex!important;position:sticky;top:var(--sticky-nav-height,70px);flex-direction:row;align-items:center;justify-content:flex-start;gap:18px;padding:10px 16px;overflow-x:auto;white-space:nowrap}.public-nav a{flex:0 0 auto;padding:3px 0;border:0}}
   </style>
   <style>.nav, .public-nav { position: relative !important; top: auto !important; }</style>
+  <link rel="stylesheet" href="/assets/css/category-catalog.css?v=category-catalog-20261010">
 </head>
 <body>
   <?php $storefrontActivePage = 'categories'; require __DIR__ . '/includes/storefront-discovery-nav.php'; ?>
   <main class="storefront-page">
-    <section class="category-hero">
-      <div class="category-hero-copy">
-        <div class="category-eyebrow">Compra por necesidad</div>
-        <h1>Categorías destacadas para encontrar rápido lo que necesitas</h1>
-        <p>Explora equipos, componentes, redes, seguridad, accesorios y soluciones TI para tu hogar o empresa.</p>
-        <div class="category-hero-actions">
-          <a class="btn primary" href="#familias"><i data-lucide="layout-grid" width="17"></i> Ver todas las categorías</a>
-          <a class="btn secondary" href="/productos-destacados"><i data-lucide="tag" width="17"></i> Ver productos destacados</a>
-        </div>
-        <div class="hero-audiences" aria-label="Soluciones para distintos espacios">
-          <span><i data-lucide="house" width="16"></i> Hogar</span>
-          <span><i data-lucide="building-2" width="16"></i> Empresas</span>
-          <span><i data-lucide="users-round" width="16"></i> Instituciones</span>
+    <section class="category-catalog-hero" aria-labelledby="categoryHeroTitle">
+      <div class="category-catalog-hero-copy">
+        <span class="catalog-kicker">Catálogo SmartISP</span>
+        <h1 id="categoryHeroTitle">Categorías de <span>productos</span></h1>
+        <p>Encuentra tecnología, conectividad y soluciones para tu hogar o empresa.</p>
+        <div class="catalog-trust-row">
+          <span><i data-lucide="shield-check"></i> Productos originales</span>
+          <span><i data-lucide="truck"></i> Envíos a todo Ecuador</span>
+          <span><i data-lucide="headphones"></i> Asesoría especializada</span>
         </div>
       </div>
-      <div class="category-hero-mosaic" aria-label="Productos de las principales categorías">
-        <?php foreach ($featuredCategories as $index => $category): ?>
-          <?php $image = categoryHubImageUrl($category); ?>
-          <div class="hero-product-tile">
-            <?php if ($image !== ''): ?><img src="<?= escCategoryHub($image) ?>" alt="<?= escCategoryHub((string)($category['category_banner_alt'] ?? 'Producto de ' . $category['name'])) ?>" width="320" height="180" loading="<?= $index < 2 ? 'eager' : 'lazy' ?>" <?= $index === 0 ? 'fetchpriority="high"' : '' ?> onerror="this.hidden=true;this.nextElementSibling.hidden=false"><i class="tile-fallback" data-lucide="<?= escCategoryHub(configuredCategoryIconHub($category)) ?>" hidden></i><?php else: ?><i class="tile-fallback" data-lucide="<?= escCategoryHub(configuredCategoryIconHub($category)) ?>"></i><?php endif; ?>
-          </div>
+      <div class="category-hero-products" id="categoryHeroProducts" aria-label="Productos del catálogo">
+        <?php foreach (array_slice($featuredCategories, 0, 3) as $category): ?>
+          <?php $heroImage = categoryHubImageUrl($category); if ($heroImage !== ''): ?>
+            <div class="hero-category-product"><img src="<?= escCategoryHub($heroImage) ?>" alt="<?= escCategoryHub((string)($category['category_banner_alt'] ?? 'Producto de ' . $category['name'])) ?>" width="420" height="260" loading="lazy"></div>
+          <?php endif; ?>
         <?php endforeach; ?>
-        <?php $fallbackIcons = ['router', 'printer', 'shield-check', 'monitor']; for ($index = count($featuredCategories); $index < 4; $index++): ?>
-          <div class="hero-product-tile"><i class="tile-fallback" data-lucide="<?= $fallbackIcons[$index] ?>"></i></div>
-        <?php endfor; ?>
       </div>
     </section>
-    <?php if (!empty($categories)): ?>
-      <div class="category-section-head" id="familias">
-        <div>
-          <span class="section-eyebrow">Nuestras categorías</span>
-          <h2>Familias principales</h2>
-          <p>Empieza por las más exploradas o recorre todas las familias del catálogo.</p>
+
+    <section class="category-family-section" aria-label="Explorar familias">
+      <div id="categoryFamilyRail" class="category-family-rail" tabindex="0"></div>
+    </section>
+
+    <section class="category-catalog-layout" id="catalogo">
+      <aside class="catalog-sidebar" aria-label="Filtros del catálogo">
+        <div class="catalog-sidebar-head"><strong><i data-lucide="layout-grid"></i> Categorías</strong><button type="button" id="clearCategoryFilters">Ver todas</button></div>
+        <label class="catalog-category-search"><i data-lucide="search"></i><input id="categorySearch" type="search" placeholder="Buscar categoría..." autocomplete="off"></label>
+        <button class="catalog-all-categories is-active" id="showAllCategories" type="button"><i data-lucide="layers"></i><span>Todo el catálogo</span><b id="catalogProductTotal">—</b></button>
+        <div id="categoryFilterList" class="catalog-category-list"><div class="catalog-loading">Cargando categorías…</div></div>
+        <div class="catalog-price-filter">
+          <h2>Precio</h2>
+          <div class="price-inputs"><label>Desde<input id="minPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="$0"></label><label>Hasta<input id="maxPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Sin límite"></label></div>
+          <button id="applyPriceFilter" class="price-apply" type="button">Aplicar precio</button>
         </div>
-        <span class="category-total"><i data-lucide="layers" width="17"></i> <?= count($categories) ?> categorías</span>
+      </aside>
+
+      <div class="category-products-main">
+        <div class="category-products-toolbar">
+          <div><p id="categoryResultCount" aria-live="polite">Cargando productos…</p><span id="activeCategoryLabel" hidden></span></div>
+          <div class="category-products-controls">
+            <label class="product-search-control"><i data-lucide="search"></i><input id="productSearch" type="search" placeholder="Buscar producto..." aria-label="Buscar producto"></label>
+            <div class="view-switch" role="group" aria-label="Presentación de productos"><button id="gridViewButton" class="is-active" type="button" aria-label="Vista de cuadrícula" aria-pressed="true"><i data-lucide="layout-grid"></i></button><button id="listViewButton" type="button" aria-label="Vista de lista" aria-pressed="false"><i data-lucide="list"></i></button></div>
+            <label class="sort-control"><span>Ordenar</span><select id="categorySort"><option value="relevance">Más relevantes</option><option value="low">Menor precio</option><option value="high">Mayor precio</option></select></label>
+          </div>
+        </div>
+        <div id="categoryProductsGrid" class="category-products-grid" aria-live="polite"><div class="catalog-loading">Cargando productos del catálogo…</div></div>
+        <nav id="categoryPagination" class="category-pagination" aria-label="Paginación de productos"></nav>
       </div>
-      <section class="featured-category-grid" aria-label="Familias con más productos">
-        <?php foreach ($featuredCategories as $index => $category): ?>
-          <?php
-            $name = (string)$category['name'];
-            $image = categoryHubImageUrl($category);
-          ?>
-          <a class="featured-category" href="/categoria/<?= rawurlencode(seoSlugCategoryHub($name)) ?>/">
-            <div class="featured-copy">
-              <div class="featured-title-row">
-                <span class="featured-icon"><i data-lucide="<?= escCategoryHub(configuredCategoryIconHub($category)) ?>"></i></span>
-                <h3><?= escCategoryHub($name) ?></h3>
-              </div>
-              <p class="featured-description"><?= escCategoryHub(trim((string)($category['category_description'] ?? '')) ?: categoryDescriptionHub($name)) ?></p>
-              <span class="featured-count"><?= number_format((int)$category['total'], 0, ',', '.') ?> productos <i data-lucide="chevron-right"></i></span>
-            </div>
-            <?php if ($image !== ''): ?><span class="featured-image"><img src="<?= escCategoryHub($image) ?>" alt="<?= escCategoryHub((string)($category['category_banner_alt'] ?? '')) ?>" width="180" height="150" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><i data-lucide="<?= escCategoryHub(configuredCategoryIconHub($category)) ?>" hidden></i></span><?php else: ?><span class="featured-image"><i data-lucide="<?= escCategoryHub(configuredCategoryIconHub($category)) ?>"></i></span><?php endif; ?>
-          </a>
-        <?php endforeach; ?>
-      </section>
-      <?php if (!empty($otherCategories)): ?>
-        <section class="category-grid" aria-label="Más categorías del catálogo">
-          <?php foreach ($otherCategories as $category): ?>
-            <?php $name = (string)$category['name']; ?>
-            <a class="category-link" href="/categoria/<?= rawurlencode(seoSlugCategoryHub($name)) ?>/">
-              <span class="category-link-icon"><i data-lucide="<?= escCategoryHub(configuredCategoryIconHub($category)) ?>"></i></span>
-              <span class="category-link-copy"><strong><?= escCategoryHub($name) ?></strong><small><?= number_format((int)$category['total'], 0, ',', '.') ?> productos</small></span>
-              <i class="category-link-arrow" data-lucide="chevron-right" width="17"></i>
-            </a>
-          <?php endforeach; ?>
-        </section>
-      <?php endif; ?>
-    <?php else: ?>
-      <section class="category-empty">No hay categorías visibles todavía. <a href="/tienda.html">Ir al catálogo completo</a>.</section>
-    <?php endif; ?>
+    </section>
   </main>
-  <footer class="storefront-footer">SmartISP Ecuador · Categorías comerciales para descubrir productos y soluciones.</footer>
+  <footer class="storefront-footer category-catalog-footer"><span>SmartISP Ecuador · Tecnología, conectividad e infraestructura TI.</span><a href="/tienda.html">Ir a la tienda <i data-lucide="arrow-up-right"></i></a></footer>
   <script src="/assets/js/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
   <script src="/assets/js/public-account.js" defer></script>
-  <script>
-    (() => {
-      const emptyState = document.querySelector('.category-empty');
-      if (!emptyState) return;
-
-      const safeIcon = value => /^[a-z0-9-]+$/i.test(String(value || '')) ? String(value) : 'package';
-      const slug = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 90) || 'categoria';
-      const makeIcon = (name, className) => {
-        const icon = document.createElement('i');
-        icon.dataset.lucide = safeIcon(name);
-        if (className) icon.className = className;
-        return icon;
-      };
-      const categoryLink = category => `/categoria/${encodeURIComponent(slug(category.name))}/`;
-      const countText = category => `${Number(category.productCount || 0).toLocaleString('es-EC')} productos`;
-
-      fetch('/api/auth/catalog?page=1&limit=1', { cache: 'no-store' })
-        .then(response => response.ok ? response.json() : null)
-        .then(data => {
-          if (!Array.isArray(data?.categories)) return;
-          const categories = data.categories
-            .filter(category => String(category.name || '').trim() && Number(category.productCount || 0) > 0)
-            .sort((a, b) => Number(b.productCount) - Number(a.productCount))
-            .slice(0, 36);
-          if (!categories.length) return;
-
-          const head = document.createElement('div');
-          head.className = 'category-section-head';
-          head.id = 'familias';
-          head.innerHTML = '<div><span class="section-eyebrow">Nuestras categorías</span><h2>Familias principales</h2><p>Empieza por las más exploradas o recorre todas las familias del catálogo.</p></div>';
-          const total = document.createElement('span');
-          total.className = 'category-total';
-          total.append(makeIcon('layers'), document.createTextNode(` ${categories.length} categorías`));
-          head.append(total);
-
-          const featured = document.createElement('section');
-          featured.className = 'featured-category-grid';
-          featured.setAttribute('aria-label', 'Familias con más productos');
-          categories.slice(0, 4).forEach(category => {
-            const card = document.createElement('a');
-            card.className = 'featured-category';
-            card.href = categoryLink(category);
-            const copy = document.createElement('div');
-            copy.className = 'featured-copy';
-            const row = document.createElement('div');
-            row.className = 'featured-title-row';
-            const iconBox = document.createElement('span');
-            iconBox.className = 'featured-icon';
-            iconBox.append(makeIcon(category.icon));
-            const title = document.createElement('h3');
-            title.textContent = category.name;
-            row.append(iconBox, title);
-            const description = document.createElement('p');
-            description.className = 'featured-description';
-            description.textContent = category.description || 'Explora equipos y soluciones disponibles en esta categoría.';
-            const count = document.createElement('span');
-            count.className = 'featured-count';
-            count.append(document.createTextNode(countText(category) + ' '), makeIcon('chevron-right'));
-            copy.append(row, description, count);
-            card.append(copy);
-
-            const banner = String(category.bannerImageUrl || '').trim();
-            if (banner.startsWith('/') && !banner.startsWith('//') && !banner.includes('..') || /^https:\/\//i.test(banner)) {
-              const media = document.createElement('span');
-              media.className = 'featured-image';
-              const image = document.createElement('img');
-              image.src = banner;
-              image.alt = category.bannerAlt || category.name;
-              image.loading = 'lazy';
-              image.width = 180;
-              image.height = 150;
-              image.addEventListener('error', () => media.remove(), { once: true });
-              media.append(image);
-              card.append(media);
-            }
-            featured.append(card);
-          });
-
-          const others = categories.slice(4);
-          const list = document.createElement('section');
-          list.className = 'category-grid';
-          list.setAttribute('aria-label', 'Más categorías del catálogo');
-          others.forEach(category => {
-            const link = document.createElement('a');
-            link.className = 'category-link';
-            link.href = categoryLink(category);
-            const iconBox = document.createElement('span');
-            iconBox.className = 'category-link-icon';
-            iconBox.append(makeIcon(category.icon));
-            const copy = document.createElement('span');
-            copy.className = 'category-link-copy';
-            const name = document.createElement('strong');
-            name.textContent = category.name;
-            const count = document.createElement('small');
-            count.textContent = countText(category);
-            copy.append(name, count);
-            link.append(iconBox, copy, makeIcon('chevron-right', 'category-link-arrow'));
-            list.append(link);
-          });
-          emptyState.replaceWith(head, featured, ...(others.length ? [list] : []));
-          window.lucide?.createIcons();
-        })
-        .catch(() => {});
-    })();
-  </script>
+  <script src="/assets/js/storefront-product-card.js" defer></script>
+  <script src="/assets/js/category-catalog.js?v=category-catalog-20261010" defer></script>
 </body>
 </html>

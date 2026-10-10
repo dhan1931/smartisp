@@ -1988,8 +1988,35 @@ app.get('/api/auth/catalog', async (req, res) => {
     contentRows = [...inMemoryContent.entries()].map(([key, value]) => ({ key, value }));
   }
 
-  const total = allProducts.length;
-  const returnProducts = page !== null ? allProducts.slice((page - 1) * limit, page * limit) : allProducts;
+  const query = String(req.query?.q || '').trim().toLocaleLowerCase();
+  const category = String(req.query?.category || '').trim();
+  const subcategory = String(req.query?.subcategory || '').trim();
+  const categoryListRaw = String(req.query?.category_list || '');
+  let categoryList = null;
+  if (categoryListRaw) {
+    try {
+      const parsed = JSON.parse(categoryListRaw);
+      categoryList = Array.isArray(parsed) ? new Set(parsed.map(value => String(value).trim()).filter(Boolean)) : new Set();
+    } catch { categoryList = new Set(); }
+  }
+  const minPrice = req.query?.min_price !== undefined && req.query.min_price !== '' && Number.isFinite(Number(req.query.min_price)) ? Number(req.query.min_price) : null;
+  const maxPrice = req.query?.max_price !== undefined && req.query.max_price !== '' && Number.isFinite(Number(req.query.max_price)) ? Number(req.query.max_price) : null;
+  let filteredProducts = allProducts.filter(product => {
+    if (query && ![product.id, product.sku].some(value => String(value || '').toLocaleLowerCase() === query)
+      && !String(product.name || '').toLocaleLowerCase().includes(query)) return false;
+    if (category && String(product.category || '') !== category) return false;
+    if (subcategory && String(product.subcategory || '') !== subcategory) return false;
+    if (categoryList && !categoryList.has(String(product.category || ''))) return false;
+    const price = Number(product.price || 0);
+    if (minPrice !== null && minPrice >= 0 && price < minPrice) return false;
+    if (maxPrice !== null && maxPrice >= 0 && price > maxPrice) return false;
+    return true;
+  });
+  if (req.query?.sort === 'low') filteredProducts.sort((a, b) => (Number(a.price || 0) <= 0) - (Number(b.price || 0) <= 0) || Number(a.price || 0) - Number(b.price || 0) || String(a.id).localeCompare(String(b.id)));
+  else if (req.query?.sort === 'high') filteredProducts.sort((a, b) => (Number(a.price || 0) <= 0) - (Number(b.price || 0) <= 0) || Number(b.price || 0) - Number(a.price || 0) || String(a.id).localeCompare(String(b.id)));
+
+  const total = filteredProducts.length;
+  const returnProducts = page !== null ? filteredProducts.slice((page - 1) * limit, page * limit) : filteredProducts;
 
   return res.json({
     products: returnProducts,
