@@ -313,7 +313,10 @@ function normalizeProductRow(array $row): array {
         'rawImageUrl' => $img,
         'externalUrl' => $ext,
         'sku'         => $sku,
-        'visible'     => $visible
+        'visible'     => $visible,
+        'specs'       => is_array($decodedSpecs = json_decode((string)($row['specs_json'] ?? ''), true)) ? $decodedSpecs : [],
+        'contentText' => (string)($row['content_text'] ?? ''),
+        'warrantyText' => (string)($row['warranty_text'] ?? '')
     ];
 }
 

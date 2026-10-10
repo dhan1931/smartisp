@@ -178,9 +178,57 @@ if ($product && $pdo) {
     } catch (Throwable $e) {}
 }
 
-// Enlace de WhatsApp preconfigurado con el producto actual
-$waMessage = rawurlencode("Hola SmartISP, estoy interesado en comprar el producto:\n*{$productName}*\nPrecio: \${$formattedPrice}\nEnlace: {$canonicalUrl}");
-$waUrl = "https://wa.me/593983576667?text={$waMessage}";
+// Numero de WhatsApp real configurado en admin (configuracion.html -> footer_whatsapp); sin eso
+// configurado, el boton "Pedir por WhatsApp" simplemente no se muestra (nada de numero inventado).
+$waNumber = '';
+if ($pdo) {
+    try {
+        $waStmt = $pdo->query("SELECT setting_value FROM settings_rows WHERE setting_key = 'footer_whatsapp' LIMIT 1");
+        $waNumber = trim((string)($waStmt ? $waStmt->fetchColumn() : ''));
+    } catch (Throwable $e) {}
+}
+$waUrl = '';
+if ($product && $waNumber !== '') {
+    $waDigits = preg_replace('/\D+/', '', $waNumber);
+    $waMessage = rawurlencode("Hola SmartISP, estoy interesado en comprar el producto:\n*{$productName}*\nPrecio: \${$formattedPrice}\nEnlace: {$canonicalUrl}");
+    $waUrl = "https://wa.me/{$waDigits}?text={$waMessage}";
+}
+
+// Disponibilidad real (product_inventory): solo se muestra una insignia de stock si existe una
+// fila real para este producto. Sin fila, no se afirma nada sobre existencias.
+$stockStatus = null; // null = sin dato real; 'in' = disponible; 'out' = agotado
+if ($product && $pdo) {
+    try {
+        $hasInventoryTable = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'product_inventory'")->fetchColumn() > 0;
+        if ($hasInventoryTable) {
+            $invStmt = $pdo->prepare('SELECT GREATEST(quantity_available - quantity_reserved, 0) AS available_qty FROM product_inventory WHERE product_id = :id LIMIT 1');
+            $invStmt->execute([':id' => $product['id']]);
+            $availableQty = $invStmt->fetchColumn();
+            if ($availableQty !== false) {
+                $stockStatus = (int)$availableQty > 0 ? 'in' : 'out';
+            }
+        }
+    } catch (Throwable $e) {}
+}
+
+// Galeria real de imagenes (product_images); si no hay ninguna, se usa solo la foto principal.
+$galleryImages = [];
+if ($product && $pdo) {
+    try {
+        $galStmt = $pdo->prepare('SELECT image_url, image_alt, is_primary FROM product_images WHERE product_id = :id ORDER BY sort_order, id');
+        $galStmt->execute([':id' => $product['id']]);
+        $galleryImages = $galStmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) {}
+}
+if (!$galleryImages && $product) {
+    $galleryImages = [['image_url' => $product['imageUrl'], 'image_alt' => $productName, 'is_primary' => 1]];
+}
+
+// Pestanas de la ficha: Caracteristicas siempre (es la descripcion real); Especificaciones,
+// Contenido y Garantia solo aparecen si el admin cargo ese dato para este producto especifico.
+$productSpecs = $product ? ($product['specs'] ?? []) : [];
+$productContentText = $product ? trim((string)($product['contentText'] ?? '')) : '';
+$productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? '')) : '';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -313,11 +361,32 @@ $waUrl = "https://wa.me/593983576667?text={$waMessage}";
         .product-image-box:hover img { transform: scale(1.04); }
         @media (max-width: 860px) { .product-image-box { min-height: clamp(280px, 78vw, 420px); aspect-ratio: 1.08; padding: 12px; } .product-image-box img { padding: 4px; } }
         .tag-category { position: absolute; top: 16px; left: 16px; background: #e0f2fe; color: #0369a1; font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 4px 10px; border-radius: 6px; letter-spacing: 0.5px; }
+        .product-gallery { display: flex; flex-direction: column; gap: 10px; }
+        .product-thumbs { display: flex; gap: 8px; flex-wrap: wrap; }
+        .product-thumb { width: 60px; height: 60px; padding: 0; border: 2px solid var(--border); border-radius: 8px; overflow: hidden; background: #fff; cursor: pointer; display: grid; place-items: center; }
+        .product-thumb img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
+        .product-thumb.is-active, .product-thumb:hover { border-color: var(--blue); }
 
         /* Columna de detalles */
         .product-info h1 { font-family: 'Space Grotesk', sans-serif; font-size: 26px; line-height: 1.25; color: var(--navy); margin-bottom: 12px; }
         .sku-row { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--muted); margin-bottom: 16px; }
         .stock-badge { background: #dcfce7; color: #15803d; font-weight: 700; padding: 2px 8px; border-radius: 4px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
+        .stock-badge-out { background: #fee2e2; color: #b91c1c; }
+
+        /* Pestañas de detalles */
+        .product-tabs { margin-top: 24px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+        .product-tabs-nav { display: flex; flex-wrap: wrap; gap: 4px; padding: 10px 16px 0; border-bottom: 1px solid var(--border); }
+        .product-tab-btn { padding: 10px 16px; border: 0; background: transparent; color: var(--muted); font-size: 14px; font-weight: 700; cursor: pointer; border-bottom: 2px solid transparent; }
+        .product-tab-btn.is-active { color: var(--blue); border-bottom-color: var(--blue); }
+        .product-tab-btn:hover { color: var(--navy); }
+        .product-tab-panel { display: none; padding: 20px 24px 24px; }
+        .product-tab-panel.is-active { display: block; }
+        .product-specs-table { width: 100%; border-collapse: collapse; }
+        .product-specs-table tr { border-bottom: 1px solid var(--border); }
+        .product-specs-table tr:last-child { border-bottom: 0; }
+        .product-specs-table th { text-align: left; padding: 10px 12px 10px 0; width: 40%; color: var(--muted); font-size: 13px; font-weight: 700; }
+        .product-specs-table td { padding: 10px 0; color: var(--text); font-size: 13.5px; font-weight: 600; }
+        @media (max-width: 600px) { .product-specs-table th, .product-specs-table td { display: block; padding: 2px 0; width: auto; } .product-specs-table tr { padding: 8px 0; } }
         
         .price-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 18px 22px; margin: 18px 0 24px; }
         .price-value { font-family: 'Space Grotesk', sans-serif; font-size: 34px; font-weight: 700; color: var(--navy); line-height: 1; }
@@ -383,14 +452,25 @@ $waUrl = "https://wa.me/593983576667?text={$waMessage}";
 
             <!-- Ficha de Producto Principal -->
             <article class="product-card">
-                <!-- Imagen -->
-                <div class="product-image-box">
-                    <span class="tag-category"><?= $productCategory ?></span>
-                    <img src="<?= htmlspecialchars($product['imageUrl'], ENT_QUOTES, 'UTF-8') ?>" 
-                         alt="<?= $productName ?>" 
-                         loading="eager"
-                         fetchpriority="high"
-                         onerror="this.src='/assets/favicons/favicon-512x512.png'">
+                <!-- Imagen / Galería -->
+                <div class="product-gallery">
+                    <div class="product-image-box" id="mainImageBox">
+                        <span class="tag-category"><?= $productCategory ?></span>
+                        <img id="mainProductImage" src="<?= htmlspecialchars($galleryImages[0]['image_url'], ENT_QUOTES, 'UTF-8') ?>"
+                             alt="<?= htmlspecialchars($galleryImages[0]['image_alt'] ?: $productName, ENT_QUOTES, 'UTF-8') ?>"
+                             loading="eager"
+                             fetchpriority="high"
+                             onerror="this.src='/assets/favicons/favicon-512x512.png'">
+                    </div>
+                    <?php if (count($galleryImages) > 1): ?>
+                    <div class="product-thumbs">
+                        <?php foreach ($galleryImages as $index => $gImg): ?>
+                            <button type="button" class="product-thumb<?= $index === 0 ? ' is-active' : '' ?>" data-thumb-src="<?= htmlspecialchars($gImg['image_url'], ENT_QUOTES, 'UTF-8') ?>" data-thumb-alt="<?= htmlspecialchars($gImg['image_alt'] ?: $productName, ENT_QUOTES, 'UTF-8') ?>" aria-label="Ver imagen <?= $index + 1 ?>">
+                                <img src="<?= htmlspecialchars($gImg['image_url'], ENT_QUOTES, 'UTF-8') ?>" alt="" loading="lazy">
+                            </button>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Información y Compra -->
@@ -399,7 +479,11 @@ $waUrl = "https://wa.me/593983576667?text={$waMessage}";
                         <?php if ($productSku): ?>
                             <span>SKU: <strong><?= $productSku ?></strong></span>
                         <?php endif; ?>
-                        <span class="stock-badge"><i data-lucide="check" width="13"></i> Disponible en inventario</span>
+                        <?php if ($stockStatus === 'in'): ?>
+                            <span class="stock-badge"><i data-lucide="check" width="13"></i> Disponible en inventario</span>
+                        <?php elseif ($stockStatus === 'out'): ?>
+                            <span class="stock-badge stock-badge-out"><i data-lucide="x" width="13"></i> Agotado</span>
+                        <?php endif; ?>
                     </div>
 
                     <h1><?= $productName ?></h1>
@@ -414,17 +498,16 @@ $waUrl = "https://wa.me/593983576667?text={$waMessage}";
                         <?php endif; ?>
                     </div>
 
-                    <div class="desc-title">Detalles del Producto</div>
-                    <div class="desc-text"><?= nl2br(htmlspecialchars($rawDesc, ENT_QUOTES, 'UTF-8')) ?></div>
-
                     <!-- Botones de Acción -->
                     <div class="actions-grid">
                         <button class="btn-action btn-cart" id="btnAddToCart">
                             <i data-lucide="shopping-cart" width="18"></i> Agregar al Carrito
                         </button>
-                        <a href="<?= $waUrl ?>" target="_blank" rel="noopener noreferrer" class="btn-action btn-wa">
+                        <?php if ($waUrl !== ''): ?>
+                        <a href="<?= htmlspecialchars($waUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" class="btn-action btn-wa">
                             <i data-lucide="message-circle" width="18"></i> Pedir por WhatsApp
                         </a>
+                        <?php endif; ?>
                         <button class="btn-action btn-share" id="btnShareProduct">
                             <i data-lucide="share-2" width="16"></i> Copiar enlace único
                         </button>
@@ -450,6 +533,43 @@ $waUrl = "https://wa.me/593983576667?text={$waMessage}";
                     </div>
                 </div>
             </article>
+
+            <!-- Pestañas: Características / Especificaciones / Contenido / Garantía -->
+            <?php
+                $tabs = ['caracteristicas' => 'Características'];
+                if (!empty($productSpecs)) $tabs['especificaciones'] = 'Especificaciones';
+                if ($productContentText !== '') $tabs['contenido'] = 'Contenido';
+                if ($productWarrantyText !== '') $tabs['garantia'] = 'Garantía';
+            ?>
+            <section class="product-tabs" aria-label="Detalles del producto">
+                <div class="product-tabs-nav" role="tablist">
+                    <?php foreach ($tabs as $tabKey => $tabLabel): ?>
+                        <button type="button" class="product-tab-btn<?= $tabKey === 'caracteristicas' ? ' is-active' : '' ?>" data-tab-target="tab-<?= $tabKey ?>" role="tab"><?= $tabLabel ?></button>
+                    <?php endforeach; ?>
+                </div>
+                <div class="product-tab-panel is-active" id="tab-caracteristicas" role="tabpanel">
+                    <div class="desc-text"><?= nl2br(htmlspecialchars($rawDesc, ENT_QUOTES, 'UTF-8')) ?></div>
+                </div>
+                <?php if (!empty($productSpecs)): ?>
+                <div class="product-tab-panel" id="tab-especificaciones" role="tabpanel" hidden>
+                    <table class="product-specs-table">
+                        <?php foreach ($productSpecs as $spec): ?>
+                            <tr><th><?= htmlspecialchars((string)($spec['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?></th><td><?= htmlspecialchars((string)($spec['value'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td></tr>
+                        <?php endforeach; ?>
+                    </table>
+                </div>
+                <?php endif; ?>
+                <?php if ($productContentText !== ''): ?>
+                <div class="product-tab-panel" id="tab-contenido" role="tabpanel" hidden>
+                    <div class="desc-text"><?= nl2br(htmlspecialchars($productContentText, ENT_QUOTES, 'UTF-8')) ?></div>
+                </div>
+                <?php endif; ?>
+                <?php if ($productWarrantyText !== ''): ?>
+                <div class="product-tab-panel" id="tab-garantia" role="tabpanel" hidden>
+                    <div class="desc-text"><?= nl2br(htmlspecialchars($productWarrantyText, ENT_QUOTES, 'UTF-8')) ?></div>
+                </div>
+                <?php endif; ?>
+            </section>
 
             <!-- Productos Relacionados -->
             <?php if (!empty($relatedProducts)): ?>
@@ -484,6 +604,30 @@ $waUrl = "https://wa.me/593983576667?text={$waMessage}";
 
     <script>
         lucide.createIcons();
+
+        // Galería: clic en una miniatura cambia la imagen principal
+        document.querySelectorAll('.product-thumb').forEach(thumb => {
+            thumb.addEventListener('click', () => {
+                const mainImg = document.querySelector('#mainProductImage');
+                if (mainImg) {
+                    mainImg.src = thumb.dataset.thumbSrc;
+                    mainImg.alt = thumb.dataset.thumbAlt || '';
+                }
+                document.querySelectorAll('.product-thumb').forEach(t => t.classList.remove('is-active'));
+                thumb.classList.add('is-active');
+            });
+        });
+
+        // Pestañas de detalles del producto
+        document.querySelectorAll('.product-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.product-tab-btn').forEach(b => b.classList.remove('is-active'));
+                document.querySelectorAll('.product-tab-panel').forEach(p => { p.classList.remove('is-active'); p.hidden = true; });
+                btn.classList.add('is-active');
+                const panel = document.querySelector('#' + btn.dataset.tabTarget);
+                if (panel) { panel.classList.add('is-active'); panel.hidden = false; }
+            });
+        });
 
         const showToast = (msg) => {
             const toast = document.querySelector('#toastMessage');
