@@ -3793,6 +3793,9 @@
 				mediaStyle = `inset:0 0 0 auto;width:${imageWidth}%;object-position:center;${mediaStyle}`;
 				overlayStyle = `inset:0 auto 0 ${overlayStart}%;width:${overlayBandWidth}%;${overlayStyle}`;
 				mainStyle = `width:${textWidth}%`;
+			} else {
+				const imageWidth = Math.max(35, Math.min(75, Number(slide.image_width_pct ?? 68)));
+				mediaStyle = `inset:0 0 0 auto;width:${imageWidth}%;object-position:right center;${mediaStyle}`;
 			}
 			return `<article class="store-campaign-card${isSide ? ' is-layout-side' : ' is-layout-full'}" data-campaign-card="${index}"><img class="store-campaign-card-media" data-campaign-image data-slide-index="${index}" src="${escapeHtml(image.image_url || '')}" alt="${escapeHtml(image.image_alt || slide.title || '')}" style="${mediaStyle}"><span class="store-campaign-card-overlay" style="${overlayStyle}"></span><a class="store-campaign-card-main" href="${escapeHtml(target)}" style="${mainStyle}" ${campaignExternal(target) ? 'target="_blank" rel="noopener noreferrer"' : ''}><span class="store-campaign-card-copy"><span class="store-campaign-eyebrow" ${slide.eyebrow?'':'hidden'}>${escapeHtml(slide.eyebrow||'')}</span><span class="store-campaign-title">${escapeHtml(slide.title||'')}</span><span class="store-campaign-subtitle" ${slide.subtitle?'':'hidden'}>${escapeHtml(slide.subtitle||'')}</span><span class="store-campaign-cta">${escapeHtml(slide.button_text||'Explorar')} →</span></span></a>${slide.badge_label?`<span class="store-campaign-badge store-campaign-card-badge ${tone}">${escapeHtml(slide.badge_label)}</span>`:''}${slide.promo_chip_label?`<a class="store-campaign-card-promo" href="${escapeHtml(promoTarget)}" ${campaignExternal(promoTarget) ? 'target="_blank" rel="noopener noreferrer"' : ''}><i data-lucide="${icon}" width="14"></i>${escapeHtml(slide.promo_chip_label)}</a>`:''}</article>`;
 		};
