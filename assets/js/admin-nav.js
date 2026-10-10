@@ -39,6 +39,7 @@
     { key: 'categorias', group: 'catalogo', href: '/categorias.html', label: 'Categorías', icon: 'folder' },
     { key: 'inventario', group: 'catalogo', href: '#', label: 'Inventario', icon: 'boxes', disabled: true, title: 'Próximamente' },
     { key: 'contenido', group: 'tienda', href: '/editor-landing.html', label: 'Contenido', icon: 'layout-template' },
+    { key: 'portada', group: 'tienda', href: '/portada.html', label: 'Portada', icon: 'layout-dashboard' },
     { key: 'campanas', group: 'tienda', href: '/campanas.html', label: 'Campañas y banners', icon: 'megaphone' },
     { key: 'estadisticas', group: 'analisis', href: '#', label: 'Estadísticas', icon: 'bar-chart-3', disabled: true, title: 'Próximamente' },
     { key: 'reportes', group: 'analisis', href: '#', label: 'Reportes', icon: 'file-text', disabled: true, title: 'Próximamente' },

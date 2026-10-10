@@ -68,20 +68,13 @@
     <section id="login" class="auth hidden"><h2>Acceso de administrador</h2><p class="muted">Ingresa con una cuenta autorizada.</p><form id="loginForm"><label>Correo<input name="email" type="email" autocomplete="username" required></label><label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label><button class="button" type="submit">Entrar al panel</button><div id="loginMessage" class="message"></div></form></section>
     <section id="app" class="hidden">
       <div class="toolbar" style="margin-bottom:14px"><div class="format-options" id="zoneToggle" style="display:flex;gap:8px;">
-        <label class="format-option"><input type="radio" name="campaignZone" value="store-home" checked><span><strong>Banner principal</strong><small>Hero de la portada + productos destacados</small></span></label>
+        <label class="format-option"><input type="radio" name="campaignZone" value="store-home" checked><span><strong>Banner principal</strong><small>Hero de la portada (carrusel/formato arriba de todo)</small></span></label>
         <label class="format-option"><input type="radio" name="campaignZone" value="store-secondary"><span><strong>Banners secundarios</strong><small>Debajo de productos destacados (ej. Starlink, Soluciones)</small></span></label>
       </div></div>
       <div class="toolbar sticky-actions"><div><h2 id="zoneTitle">Portada de la tienda</h2><p id="identity" class="muted"></p></div><div class="right-actions"><button id="cancelEditor" class="button secondary" type="button">Cancelar</button><button id="saveDraft" class="button secondary" type="button"><i data-lucide="file-clock"></i> Guardar borrador</button><button id="saveTop" class="button" type="button"><i data-lucide="save"></i> Publicar cambios</button></div></div>
+      <div id="saveMessageTop" class="message" role="status"></div>
       <div class="toolbar-actions" style="margin-bottom:14px"><a class="button secondary" href="/productos-destacados" target="_blank" rel="noopener"><i data-lucide="sparkles"></i> Ver selección comercial</a><a class="button secondary" href="/categorias-destacadas" target="_blank" rel="noopener"><i data-lucide="panels-top-left"></i> Ver categorías y banners</a><a class="button secondary" href="/tienda.html" target="_blank" rel="noopener"><i data-lucide="external-link"></i> Ver tienda</a></div>
-      <section class="panel"><div class="section-heading"><div><h3>Presentación de portada</h3><p class="muted">Elige el formato, programa su vigencia y revisa la composición.</p></div></div>
-        <div id="featuredTextsSection">
-        <h4>Textos de la página Selección comercial</h4>
-        <div class="grid2"><label>Etiqueta<input id="featuredEyebrow" maxlength="80"></label><label>Título<input id="featuredTitle" maxlength="180"></label></div>
-        <label>Descripción<textarea id="featuredDescription" maxlength="500" rows="2"></textarea></label>
-        <label>Texto auxiliar<textarea id="featuredNote" maxlength="300" rows="2"></textarea></label>
-        <div class="grid2"><label>Título de productos<input id="featuredProductsTitle" maxlength="120"></label><label>Descripción de productos<input id="featuredProductsDescription" maxlength="300"></label></div>
-        <div id="featuredCopyPreview" class="help" aria-live="polite" style="padding:16px;border:1px solid var(--line);border-radius:7px;background:#f8fbfd;"></div>
-        </div>
+      <section class="panel"><div class="section-heading"><div><h3>Presentación de portada</h3><p class="muted">Elige el formato, programa su vigencia y revisa la composición. Los textos de "Selección comercial", productos y categorías destacadas se administran en <a href="/portada.html">Portada</a>.</p></div></div>
         <div class="campaign-settings"><label>Nombre de campaña<input id="campaignName" maxlength="150"></label><label>Rotación entre banners (s)<input id="rotation" type="number" min="4" max="20"></label><label class="check compact"><input id="active" type="checkbox"> Visible en tienda</label><label>Activar desde<input id="campaignStarts" type="datetime-local"></label><label>Desactivar desde<input id="campaignEnds" type="datetime-local"></label></div>
         <label>Presentación</label><div class="format-options" id="formatOptions">
           <label class="format-option"><input type="radio" name="displayMode" value="carousel"><span><strong>Carrusel panorámico</strong><small>Un banner ancho, rota entre banners activos.</small></span></label>
@@ -96,21 +89,17 @@
       </section>
       <section class="panel" id="campaignSlidesPanel"><div class="section-heading"><div><h3>Banners de portada</h3><p class="muted">Cada banner puede tener galería, chip promocional, destino, fechas y ajuste visual independientes.</p></div><button id="addSlide" class="button secondary" type="button"><i data-lucide="plus"></i> Añadir banner</button></div><div id="slides" class="slides"></div></section>
       <section class="panel"><div class="section-heading"><div><h3>Accesos promocionales</h3><p class="muted">Chips como Ofertas, Nuevos o Más vendidos, con enlaces directos.</p></div><button id="addChip" class="button secondary" type="button"><i data-lucide="plus"></i> Añadir acceso</button></div><div id="chips" class="chip-list"></div></section>
-      <section class="panel" id="featuredCategoriesPanel"><div class="section-heading"><div><h3>Categorías destacadas</h3><p class="muted">Escoge hasta siete categorías existentes. Se usarán su nombre, descripción, imagen y enlace actuales; la octava tarjeta lleva a todas las categorías.</p></div></div><div id="categoryChoices" class="category-choices" aria-live="polite"></div></section>
-      <section class="panel"><div class="section-heading"><div><h3>Productos destacados</h3><p class="muted">Busca productos visibles y define el orden de la vitrina (máximo 12).</p></div></div><div class="search-row"><label>Buscar por nombre, SKU o categoría<input id="productSearch" type="search" placeholder="Ej. router, cámara, impresora"></label><button id="searchButton" class="button secondary" type="button"><i data-lucide="search"></i> Buscar</button></div><div id="results" class="product-list" aria-live="polite"></div><div id="selected" class="product-list"></div></section>
       <div class="actions"><button id="save" class="button" type="button"><i data-lucide="save"></i> Publicar cambios</button><div id="saveMessage" class="message" role="status"></div></div>
     </section>
   </main>
   <script>
   (() => {
     const $ = selector => document.querySelector(selector);
-    const state = { campaign: { name:'Portada de la tienda',rotation_seconds:7,is_active:true,display_mode:'carousel',starts_at:'',ends_at:'' }, featuredPage:{eyebrow:'Selección comercial',title:'Productos destacados para redes, empresas y tecnología',description:'Una vitrina rápida de artículos del catálogo SmartISP: conectividad, cómputo, energía, seguridad, periféricos y equipamiento TI.',note:'Selección pensada para partir rápido: revisa precio, categoría y ficha antes de cotizar o comprar.',products_title:'Selección destacada',products_description:'Productos elegidos para mostrar novedades y alta rotación.'}, slides:[], products:[], chips:[], categoryIds:[] };
+    const state = { campaign: { name:'Portada de la tienda',rotation_seconds:7,is_active:true,display_mode:'carousel',starts_at:'',ends_at:'' }, slides:[], chips:[] };
     let activeZone = 'store-home';
     let previewSlideIndex = 0;
     let slideKeyCounter = 0;
     let preferredExpandedKey = '';
-    let productResults = [];
-    let availableCategories = [];
     let lastPublished = null;
     let isDirty = false;
     let draftTimer = 0;
@@ -140,15 +129,14 @@
       if (result.token) localStorage.setItem('smartisp.adminToken',result.token);
       return result;
     }
-    function message(text,error=false,target=$('#saveMessage')) { target.textContent=text; target.classList.toggle('error',error); target.classList.add('show'); }
+    function message(text,error=false,target=null) {
+      const targets=target?[target]:[$('#saveMessageTop'),$('#saveMessage')].filter(Boolean);
+      targets.forEach(el=>{el.textContent=text;el.classList.toggle('error',error);el.classList.add('show');});
+      if(error&&targets[0])targets[0].scrollIntoView({behavior:'smooth',block:'center'});
+    }
     function showLogin() { $('#denied').classList.add('hidden'); $('#login').classList.remove('hidden'); }
     function showDenied() { $('#login').classList.add('hidden'); $('#denied').classList.remove('hidden'); }
     function showApp(user) { $('#login').classList.add('hidden'); $('#denied').classList.add('hidden'); $('#identity').textContent=`${user.name || ''} ${user.surname || ''} · ${user.email || ''}`; $('#app').classList.remove('hidden'); load(); }
-    const imageOf = product => product?.imageUrl || product?.image_url || '/assets/favicons/favicon-96x96.png';
-    function renderFeaturedCopyPreview() {
-      const values={eyebrow:$('#featuredEyebrow').value,title:$('#featuredTitle').value,description:$('#featuredDescription').value,note:$('#featuredNote').value,products_title:$('#featuredProductsTitle').value,products_description:$('#featuredProductsDescription').value};
-      $('#featuredCopyPreview').innerHTML=`<strong>${escapeHtml(values.eyebrow||'Etiqueta')}</strong><h3 style="margin:8px 0;color:var(--ink)">${escapeHtml(values.title||'Título de Selección comercial')}</h3><p style="margin:0 0 8px">${escapeHtml(values.description||'Descripción de la página')}</p><p style="margin:0 0 16px">${escapeHtml(values.note||'Texto auxiliar')}</p><strong>${escapeHtml(values.products_title||'Título de productos')}</strong><br>${escapeHtml(values.products_description||'Descripción de los productos')}`;
-    }
     function renderPreview() {
       const mode=modeValue(), active=state.slides.filter(slide=>slide.is_active!==false), count={single:1,split:2,triple:3,grid:4}[mode]||active.length;
       const host=$('#preview');
@@ -201,7 +189,7 @@
           return `<div class="gallery-item ${image.is_primary?'is-primary':''}" data-image="${imageIndex}"><img src="${escapeHtml(image.image_url)}" alt="${escapeHtml(image.image_alt||'') }" width="240" height="140" loading="lazy" style="object-position:${fx}% ${fy}%;transform:scale(${zoom/100});transform-origin:${fx}% ${fy}%"><strong>${escapeHtml(image.image_url.split('/').pop())}</strong><div class="gallery-actions"><button type="button" data-primary-image ${image.is_primary?'disabled':''}>${image.is_primary?'Portada':'Usar portada'}</button><button type="button" data-image-up ${imageIndex===0?'disabled':''} aria-label="Subir orden">↑</button><button type="button" data-image-down ${imageIndex===slide.images.length-1?'disabled':''} aria-label="Bajar orden">↓</button><button type="button" data-remove-image aria-label="Quitar imagen">×</button></div><details class="image-crop" open><summary>✂️ Ajustar encuadre (recorte)</summary><p class="crop-help">Arrastra sobre la imagen para elegir qué parte se ve siempre, o usa los controles de abajo.</p><div class="crop-canvas" data-crop-canvas><img data-focal-preview src="${escapeHtml(image.image_url)}" alt="" style="object-position:${fx}% ${fy}%;transform:scale(${zoom/100});transform-origin:${fx}% ${fy}%"><div class="crop-crosshair" data-crop-crosshair style="left:${fx}%;top:${fy}%"></div></div><label>Foco horizontal<div class="opacity-row"><input data-image-field="focal_x" type="range" min="0" max="100" value="${fx}"><output>${fx}%</output></div></label><label>Foco vertical<div class="opacity-row"><input data-image-field="focal_y" type="range" min="0" max="100" value="${fy}"><output>${fy}%</output></div></label><label>Zoom<div class="opacity-row"><input data-image-field="zoom_pct" type="range" min="100" max="180" value="${zoom}"><output>${zoom}%</output></div></label></details></div>`;
         }).join('');
         return `<article class="slide" data-index="${index}" data-editor-key="${escapeHtml(slide._editorKey)}"><details ${expandedKeys.has(slide._editorKey)?'open':''}><summary><span class="slide-number">${index+1}</span><span class="slide-summary-copy">${escapeHtml(slide.title||'Banner sin título')}<small>${slide.images.length} imagen${slide.images.length===1?'':'es'} · ${slide.is_active===false?'Borrador oculto':'Visible en tienda'}</small></span><span class="slide-summary-actions"><button class="icon-button" type="button" data-move="-1" aria-label="Mover banner arriba" ${index===0?'disabled':''}>↑</button><button class="icon-button" type="button" data-move="1" aria-label="Mover banner abajo" ${index===state.slides.length-1?'disabled':''}>↓</button><button class="icon-button" type="button" data-remove aria-label="Eliminar banner">×</button></span></summary><div class="slide-body"><div class="slide-fields">
-          <label>Etiqueta<input data-field="eyebrow" maxlength="100" value="${escapeHtml(slide.eyebrow||'')}" placeholder="Conectividad y redes"></label><label>Título<input data-field="title" maxlength="180" value="${escapeHtml(slide.title||'')}" placeholder="Redes más rápidas y estables"></label>
+          <label>Etiqueta<input data-field="eyebrow" maxlength="100" value="${escapeHtml(slide.eyebrow||'')}" placeholder="Conectividad y redes"></label><label>Título (opcional)<input data-field="title" maxlength="180" value="${escapeHtml(slide.title||'')}" placeholder="Déjalo vacío para mostrar solo la foto"></label>
           <label class="full">Subtítulo<textarea data-field="subtitle" maxlength="500" rows="2" placeholder="Una línea de contexto que complemente el título.">${escapeHtml(slide.subtitle||'')}</textarea></label><label>Texto del botón<input data-field="button_text" maxlength="60" value="${escapeHtml(slide.button_text||'Explorar')}"></label><label>Destino del banner<input data-field="target_url" maxlength="500" value="${escapeHtml(slide.target_url||'/tienda.html#catalogo')}" placeholder="/categoria/slug o /producto/id"></label>
           <div class="gallery"><div class="gallery-head"><strong>Galería del banner · imagen de portada marcada</strong><label class="button secondary">Añadir imágenes<input data-upload type="file" accept="image/jpeg,image/png,image/webp" multiple hidden></label></div><p class="help">JPG, PNG o WebP; hasta 8 MB y 40 megapíxeles por imagen. Puedes ordenar y elegir la inicial.</p><div class="gallery-list">${images||'<p class="gallery-empty">Sin imágenes todavía. Sube una o más para completar el banner.</p>'}</div></div>
           <label>Estilo de tarjeta<select data-field="card_layout"><option value="full" ${slide.card_layout!=='side'?'selected':''}>Imagen de fondo + texto encima</option><option value="side" ${slide.card_layout==='side'?'selected':''}>Imagen lateral + panel de texto</option></select></label><label>Color de fondo del texto<input data-field="copy_background_color" type="color" value="${/^#[0-9a-fA-F]{6}$/.test(slide.copy_background_color||'')?slide.copy_background_color:'#ffffff'}"><small class="help">Se aplica al panel de texto en el modo “Imagen lateral”.</small></label><label>Ajuste de imagen<select data-field="image_fit"><option value="contain" ${slide.image_fit!=='cover'?'selected':''}>Mostrar imagen completa</option><option value="cover" ${slide.image_fit==='cover'?'selected':''}>Llenar marco (puede recortar)</option></select><small class="help">Completa conserva toda la foto y puede dejar espacio libre. Llenar cubre el marco; usa foco y zoom por imagen para elegir el recorte.</small></label><label>Ancho del área de foto<div class="opacity-row"><input data-field="image_width_pct" type="range" min="35" max="65" value="${Math.max(35,Math.min(65,Number(slide.image_width_pct??55)))}"><output>${Math.max(35,Math.min(65,Number(slide.image_width_pct??55)))}%</output></div><small class="help">Solo cambia el espacio reservado en este banner; no afecta los demás.</small></label><label class="full">Rotación de imágenes (s)<input data-field="image_interval_seconds" type="number" min="2" max="20" value="${Number(slide.image_interval_seconds||5)}"></label>
@@ -218,30 +206,15 @@
     function renderChips() {
       $('#chips').innerHTML=state.chips.map((chip,index)=>`<div class="chip-row" data-chip="${index}"><input data-field="label" maxlength="60" aria-label="Texto del acceso" placeholder="Ofertas" value="${escapeHtml(chip.label||'')}"><select data-field="icon" aria-label="Icono"><option value="tag" ${chip.icon==='tag'?'selected':''}>Etiqueta</option><option value="truck" ${chip.icon==='truck'?'selected':''}>Envío</option><option value="sparkles" ${chip.icon==='sparkles'?'selected':''}>Nuevo</option><option value="star" ${chip.icon==='star'?'selected':''}>Destacado</option><option value="box" ${chip.icon==='box'?'selected':''}>Combo</option></select><input data-field="target_url" maxlength="500" aria-label="Enlace" placeholder="/tienda.html#catalogo" value="${escapeHtml(chip.target_url||'')}"><button class="icon-button" data-remove-chip type="button" aria-label="Quitar acceso"><i data-lucide="trash-2"></i></button><label class="check" style="grid-column:1/-1"><input data-field="is_active" type="checkbox" ${chip.is_active!==false?'checked':''}> Visible</label></div>`).join('') || '<p class="muted">No hay accesos promocionales configurados.</p>'; window.lucide?.createIcons();
     }
-    function renderCategoryChoices() {
-      const host=$('#categoryChoices');
-      if(!availableCategories.length){host.innerHTML='<p class="muted">No se pudieron cargar categorías disponibles.</p>';return;}
-      host.innerHTML=availableCategories.filter(category=>Number(category.productCount||0)>0).map(category=>{
-        const checked=state.categoryIds.includes(String(category.id));
-        return `<label class="category-choice"><input type="checkbox" value="${escapeHtml(category.id)}" ${checked?'checked':''}><img src="${escapeHtml(category.bannerImageUrl||'/assets/favicons/favicon-96x96.png')}" alt="" loading="lazy"><span>${escapeHtml(category.name)} · ${Number(category.productCount||0)}</span></label>`;
-      }).join('')||'<p class="muted">No hay categorías con productos visibles.</p>';
-    }
-    function renderProducts() {
-      $('#selected').innerHTML=state.products.map((product,index)=>`<div class="product-row" data-product="${index}"><img src="${escapeHtml(imageOf(product))}" alt="" width="48" height="48" loading="lazy"><div><strong>${escapeHtml(product.name)}</strong><small>${escapeHtml(product.category||'')}${product.sku?` · SKU ${escapeHtml(product.sku)}`:''}</small></div><div class="icon-actions"><button class="icon-button" data-move-product="-1" type="button" aria-label="Mover arriba" ${index===0?'disabled':''}><i data-lucide="arrow-up"></i></button><button class="icon-button" data-move-product="1" type="button" aria-label="Mover abajo" ${index===state.products.length-1?'disabled':''}><i data-lucide="arrow-down"></i></button><button class="icon-button" data-remove-product type="button" aria-label="Quitar producto"><i data-lucide="x"></i></button></div></div>`).join('') || '<p class="muted">Aún no hay productos destacados.</p>';
-      $('#results').innerHTML=productResults.map((product,index)=>{const exists=state.products.some(item=>String(item.id)===String(product.id));return `<div class="product-row"><img src="${escapeHtml(imageOf(product))}" alt="" width="48" height="48" loading="lazy"><div><strong>${escapeHtml(product.name)}</strong><small>${escapeHtml(product.category||'')}${product.sku?` · SKU ${escapeHtml(product.sku)}`:''}</small></div><button class="button secondary" type="button" data-add-product="${index}" ${exists||state.products.length>=12?'disabled':''}>${exists?'Agregado':'Destacar'}</button></div>`}).join(''); window.lucide?.createIcons();
-    }
     function snapshot() { return JSON.parse(JSON.stringify(state)); }
     function fillForm() {
-      $('#featuredEyebrow').value=state.featuredPage.eyebrow; $('#featuredTitle').value=state.featuredPage.title; $('#featuredDescription').value=state.featuredPage.description; $('#featuredNote').value=state.featuredPage.note;
-      $('#featuredProductsTitle').value=state.featuredPage.products_title; $('#featuredProductsDescription').value=state.featuredPage.products_description;
       $('#campaignName').value=state.campaign.name; $('#rotation').value=state.campaign.rotation_seconds; $('#active').checked=!!state.campaign.is_active;
       $('#campaignStarts').value=localDate(state.campaign.starts_at); $('#campaignEnds').value=localDate(state.campaign.ends_at);
       document.querySelectorAll('input[name="displayMode"]').forEach(input=>input.checked=input.value===state.campaign.display_mode);
-      renderSlides(); renderChips(); renderProducts(); renderFeaturedCopyPreview();
+      renderSlides(); renderChips();
     }
     function collectForm() {
       state.campaign={...state.campaign,name:$('#campaignName').value.trim(),rotation_seconds:Number($('#rotation').value)||7,is_active:$('#active').checked,display_mode:modeValue(),starts_at:$('#campaignStarts').value||'',ends_at:$('#campaignEnds').value||''};
-      state.featuredPage={eyebrow:$('#featuredEyebrow').value.trim(),title:$('#featuredTitle').value.trim(),description:$('#featuredDescription').value.trim(),note:$('#featuredNote').value.trim(),products_title:$('#featuredProductsTitle').value.trim(),products_description:$('#featuredProductsDescription').value.trim()};
     }
     function saveDraft() {
       collectForm();
@@ -262,7 +235,7 @@
     }
     function payloadForSave() {
       collectForm();
-      return {zone:activeZone,campaign:state.campaign,featured_page:state.featuredPage,slides:state.slides,product_ids:activeZone==='store-home'?state.products.map(product=>product.id):[],category_ids:activeZone==='store-home'?state.categoryIds:[],chips:activeZone==='store-home'?state.chips:[]};
+      return {zone:activeZone,campaign:state.campaign,slides:state.slides,chips:activeZone==='store-home'?state.chips:[]};
     }
     async function publish() {
       const buttons=[$('#save'),$('#saveTop')]; buttons.forEach(button=>button.disabled=true);
@@ -270,7 +243,14 @@
         const payload=payloadForSave();
         await api(`admin-store-campaigns?zone=${encodeURIComponent(activeZone)}`,{method:'POST',body:JSON.stringify(payload)});
         lastPublished=snapshot(); isDirty=false; localStorage.removeItem(draftKey()); message('Publicado. Los cambios de esta zona ya están guardados.');
-      } catch(error) { message(error.message,true); }
+      } catch(error) {
+        message(error.message,true);
+        const slideMatch=/^Banner #(\d+)/.exec(error.message||'');
+        if(slideMatch){
+          const card=$('#slides').querySelector(`[data-index="${Number(slideMatch[1])-1}"]`);
+          if(card){card.querySelector('details').open=true;card.scrollIntoView({behavior:'smooth',block:'center'});}
+        }
+      }
       finally { buttons.forEach(button=>button.disabled=false); }
     }
     async function load() {
@@ -278,23 +258,16 @@
         const result=await api(`admin-store-campaigns?zone=${encodeURIComponent(activeZone)}`); const c=result.campaign;
         const savedMode=c?.display_mode;
         Object.assign(state.campaign,{name:c?.name||(activeZone==='store-home'?'Portada de la tienda':'Banners secundarios'),rotation_seconds:Number(c?.rotation_seconds||7),is_active:c?String(c.is_active)==='1':true,display_mode:activeZone==='store-secondary'&&['carousel','single'].includes(savedMode)?'split':(savedMode||(activeZone==='store-home'?'carousel':'split')),starts_at:c?.starts_at||'',ends_at:c?.ends_at||''});
-        Object.assign(state.featuredPage,result.featured_page||{});
         state.slides=(result.slides||[]).map(slide=>({...slide,_editorKey:String(slide.id),card_layout:slide.card_layout==='side'?'side':'full',copy_background_color:/^#[0-9a-fA-F]{6}$/.test(slide.copy_background_color||'')?slide.copy_background_color:'#ffffff',image_width_pct:Number(slide.image_width_pct??55),is_active:String(slide.is_active)==='1',images:Array.isArray(slide.images)?slide.images.map(image=>({...image,focal_x:Number(image.focal_x??50),focal_y:Number(image.focal_y??50),zoom_pct:Number(image.zoom_pct??100),is_primary:String(image.is_primary)==='1'||image.is_primary===true})):[]}));
-        state.products=result.products||[]; state.chips=(result.chips||[]).map(chip=>({...chip,is_active:String(chip.is_active)==='1'}));
-        state.categoryIds=(result.featured_category_ids||[]).map(String);
-        availableCategories=activeZone==='store-home'?(await api('categories')).categories||[]:availableCategories;
+        state.chips=(result.chips||[]).map(chip=>({...chip,is_active:String(chip.is_active)==='1'}));
         lastPublished=snapshot();
         fillForm();
-        renderCategoryChoices();
         const draft=JSON.parse(localStorage.getItem(draftKey())||'null');
         if(draft?.state&&draft.saved_at>Date.now()-7*24*60*60*1000&&confirm('Hay un borrador local de esta zona. ¿Quieres recuperarlo?')) restoreDraft(draft.state);
         else if(draft) localStorage.removeItem(draftKey());
         $('#zoneTitle').textContent=activeZone==='store-home'?'Portada de la tienda':'Banners secundarios';
         $('#campaignName').closest('label').firstChild.textContent=activeZone==='store-home'?'Nombre de campaña':'Nombre de sección';
-        $('#featuredTextsSection').classList.toggle('hidden',activeZone!=='store-home');
         $('#chips').closest('.panel').classList.toggle('hidden',activeZone!=='store-home');
-        $('#selected').closest('.panel').classList.toggle('hidden',activeZone!=='store-home');
-        $('#featuredCategoriesPanel').classList.toggle('hidden',activeZone!=='store-home');
         document.querySelectorAll('input[name="displayMode"]').forEach(input=>input.closest('.format-option').classList.toggle('hidden',activeZone==='store-secondary'&&['carousel','single'].includes(input.value)));
         $('#campaignSlidesPanel .section-heading h3').textContent=activeZone==='store-home'?'Banners de portada':'Banners secundarios';
         $('#preview').setAttribute('aria-label',activeZone==='store-home'?'Vista previa de portada':'Vista previa de banners secundarios');
@@ -311,24 +284,16 @@
       if(isDirty)saveDraft();
       activeZone=input.value;isDirty=false;clearTimeout(draftTimer);
       state.campaign={name:activeZone==='store-home'?'Portada de la tienda':'Banners secundarios',rotation_seconds:7,is_active:true,display_mode:activeZone==='store-home'?'carousel':'split',starts_at:'',ends_at:''};
-      state.slides=[];state.products=[];state.chips=[];state.categoryIds=[];
+      state.slides=[];state.chips=[];
       await load();
     }));
-    $('#categoryChoices').addEventListener('change',event=>{
-      const input=event.target.closest('input[type="checkbox"]');if(!input)return;
-      const selected=[...$('#categoryChoices').querySelectorAll('input:checked')];
-      if(selected.length>7){input.checked=false;return message('Puedes destacar hasta siete categorías.',true);}
-      state.categoryIds=selected.map(item=>item.value);markDirty();
-    });
     $('#refreshPreview').addEventListener('click',renderPreview);
     $('#preview').addEventListener('click',event=>{const control=event.target.closest('[data-preview-step]');if(!control)return;const active=state.slides.filter(slide=>slide.is_active!==false);previewSlideIndex=(previewSlideIndex+Number(control.dataset.previewStep)+active.length)%active.length;renderPreview();});
     $('#app').addEventListener('input',event=>{
-      if(event.target.closest('.campaign-settings')||event.target.matches('#featuredEyebrow,#featuredTitle,#featuredDescription,#featuredNote,#featuredProductsTitle,#featuredProductsDescription')) {
-        collectForm(); if(event.target.id.startsWith('featured'))renderFeaturedCopyPreview(); markDirty();
-      }
+      if(event.target.closest('.campaign-settings')) { collectForm(); markDirty(); }
     });
     $('#app').addEventListener('change',event=>{
-      if(event.target.closest('.campaign-settings')||event.target.matches('#featuredEyebrow,#featuredTitle,#featuredDescription,#featuredNote,#featuredProductsTitle,#featuredProductsDescription')) { collectForm(); renderFeaturedCopyPreview(); markDirty(); }
+      if(event.target.closest('.campaign-settings')) { collectForm(); markDirty(); }
     });
     function updateCropVisuals(imageCard,image){
       const x=Number(image.focal_x??50),y=Number(image.focal_y??50),zoom=Number(image.zoom_pct??100);
@@ -408,10 +373,6 @@
     $('#chips').addEventListener('change',event=>{const row=event.target.closest('[data-chip]'),field=event.target.dataset.field;if(row&&field){state.chips[Number(row.dataset.chip)][field]=event.target.type==='checkbox'?event.target.checked:event.target.value;markDirty();}});
     $('#chips').addEventListener('click',event=>{const button=event.target.closest('[data-remove-chip]');if(!button)return;state.chips.splice(Number(button.closest('[data-chip]').dataset.chip),1);renderChips();markDirty();});
     $('#addChip').addEventListener('click',()=>{if(state.chips.length>=8)return message('Puedes publicar hasta 8 accesos.',true);state.chips.push({label:'',icon:'tag',target_url:'/tienda.html#catalogo',is_active:true});renderChips();markDirty();});
-    $('#searchButton').addEventListener('click',async()=>{const query=$('#productSearch').value.trim();if(query.length<2)return message('Escribe al menos dos caracteres para buscar.',true);const button=$('#searchButton');button.disabled=true;try{const result=await api(`admin-products?q=${encodeURIComponent(query)}&page=1&limit=8&visible=visible`);productResults=result.products||[];renderProducts();}catch(error){message(error.message,true);}finally{button.disabled=false;}});
-    $('#productSearch').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();$('#searchButton').click();}});
-    $('#results').addEventListener('click',event=>{const button=event.target.closest('[data-add-product]');if(!button||state.products.length>=12)return;const product=productResults[Number(button.dataset.addProduct)];if(product&&!state.products.some(item=>String(item.id)===String(product.id))){state.products.push(product);renderProducts();markDirty();}});
-    $('#selected').addEventListener('click',event=>{const button=event.target.closest('button'),row=button?.closest('[data-product]');if(!row)return;const index=Number(row.dataset.product);if(button.hasAttribute('data-remove-product'))state.products.splice(index,1);else{const to=index+Number(button.dataset.moveProduct);if(to<0||to>=state.products.length)return;[state.products[index],state.products[to]]=[state.products[to],state.products[index]];}renderProducts();markDirty();});
     document.querySelectorAll('#save,#saveTop').forEach(button=>button.addEventListener('click',publish));
     $('#saveDraft').addEventListener('click',saveDraft);
     $('#cancelEditor').addEventListener('click',()=>{if(isDirty&&!confirm('¿Descartar los cambios no publicados y volver a la última versión guardada?'))return;restorePublished();message('Cambios descartados.');});

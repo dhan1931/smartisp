@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SmartISP | Portada</title>
+  <link rel="icon" href="/assets/favicons/favicon.ico">
+  <link rel="stylesheet" href="/assets/css/admin-nav.css?v=admin-campaign-link-20261009">
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js" defer></script>
+  <script src="/assets/js/admin-nav.js?v=admin-campaign-link-20261009" defer></script>
+  <style>
+    :root{--ink:#123247;--muted:#607887;--line:#d8e5eb;--blue:#087fa5;--pale:#f2f7f9;--red:#b42318;--green:#16794b}*{box-sizing:border-box}body{margin:0;background:var(--pale);color:var(--ink);font:14px Arial,sans-serif}button,input,textarea,select{font:inherit}button{cursor:pointer}.top{padding:20px clamp(16px,4vw,44px);background:#102c3d;color:white}.top h1{margin:0;font-size:22px}.top p{margin:5px 0 0;color:#c5d8df}.shell{width:min(1100px,94vw);margin:24px auto 60px}.toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}.toolbar h2{margin:0 0 5px;font-size:20px}.muted{margin:0;color:var(--muted);line-height:1.5}.panel{padding:20px;background:white;border:1px solid var(--line);border-radius:8px;margin-bottom:16px}.section-heading{display:flex;justify-content:space-between;align-items:start;gap:14px}.section-heading h3{margin:0 0 5px;font-size:16px}.grid2{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:14px;align-items:end}label{display:block;margin:12px 0;color:var(--muted);font-size:12px;font-weight:700}input,textarea,select{display:block;width:100%;margin-top:6px;padding:10px 11px;color:var(--ink);background:#fff;border:1px solid #cddce4;border-radius:6px}input:focus,textarea:focus,select:focus{outline:2px solid #b6e3f2;border-color:var(--blue)}textarea{resize:vertical}.button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:9px 13px;border:1px solid transparent;border-radius:6px;background:var(--blue);color:white;font-weight:700;text-decoration:none}.button.secondary{border-color:var(--line);background:white;color:var(--ink)}.button:disabled{opacity:.5;cursor:not-allowed}.button svg{width:16px;height:16px}.product-list{display:grid;gap:8px;margin:14px 0}.product-row{display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;gap:12px;padding:9px;border:1px solid var(--line);border-radius:6px}.product-row img{width:48px;height:48px;object-fit:contain;background:#f5f8fa;border-radius:4px}.product-row strong,.product-row small{display:block;overflow-wrap:anywhere}.product-row small{margin-top:3px;color:var(--muted)}.search-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end}.search-row label{margin-bottom:0}.icon-actions{display:flex;gap:5px}.icon-button{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line);border-radius:5px;background:#fff;color:var(--ink)}.message{display:none;margin-top:12px;padding:11px;border-radius:6px;background:#e9f7f0;color:var(--green)}.message.show{display:block}.message.error{background:#fff0ee;color:var(--red)}.hidden{display:none!important}.auth{width:min(430px,92vw);margin:70px auto;padding:24px;background:#fff;border:1px solid var(--line);border-radius:8px}.auth h2{margin-top:0}.auth button{width:100%;margin-top:10px}.denied{text-align:center}.help{color:var(--muted);font-size:12px;line-height:1.5}
+    .sticky-actions{position:sticky;top:0;z-index:30;padding:10px 0;background:rgba(242,247,249,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .category-choices{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin-top:12px}.category-choice{display:flex;align-items:center;gap:9px;min-width:0;margin:0;padding:8px;border:1px solid var(--line);border-radius:6px;color:var(--ink);font-size:12px}.category-choice input{width:auto;margin:0;accent-color:var(--blue)}.category-choice img{width:48px;height:38px;object-fit:cover;border-radius:4px;background:#edf3f6}.category-choice span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    @media(max-width:760px){.shell{width:calc(100% - 20px);margin-top:16px}.panel{padding:14px}.grid2,.search-row{grid-template-columns:1fr}.sticky-actions{flex-direction:column;align-items:flex-start}}
+  </style>
+</head>
+<body>
+  <div id="smartisp-admin-nav" class="is-loading" data-active="portada"></div>
+  <header class="top"><h1>Portada de la tienda</h1><p>Textos de selección comercial, productos y categorías destacadas en tienda.html.</p></header>
+  <main class="shell">
+    <section id="denied" class="auth hidden denied"><h2>Acceso restringido</h2><p>Esta cuenta no tiene permisos para gestionar la portada.</p><a class="button secondary" href="/tienda.html">Ir a la tienda</a></section>
+    <section id="login" class="auth hidden"><h2>Acceso de administrador</h2><p class="muted">Ingresa con una cuenta autorizada.</p><form id="loginForm"><label>Correo<input name="email" type="email" autocomplete="username" required></label><label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label><button class="button" type="submit">Entrar al panel</button><div id="loginMessage" class="message"></div></form></section>
+    <section id="app" class="hidden">
+      <div class="toolbar sticky-actions"><div><h2>Portada de la tienda</h2><p id="identity" class="muted"></p></div><button id="save" class="button" type="button"><i data-lucide="save"></i> Publicar cambios</button></div>
+      <div class="toolbar-actions" style="display:flex;gap:8px;margin-bottom:14px"><a class="button secondary" href="/tienda.html" target="_blank" rel="noopener"><i data-lucide="external-link"></i> Ver tienda</a><a class="button secondary" href="/campanas.html"><i data-lucide="megaphone"></i> Ir a Banners</a></div>
+      <section class="panel">
+        <div class="section-heading"><div><h3>Textos de Selección comercial</h3><p class="muted">Encabezado y descripción de la vitrina de productos destacados.</p></div></div>
+        <div class="grid2"><label>Etiqueta<input id="featuredEyebrow" maxlength="80"></label><label>Título<input id="featuredTitle" maxlength="180"></label></div>
+        <label>Descripción<textarea id="featuredDescription" maxlength="500" rows="2"></textarea></label>
+        <label>Texto auxiliar<textarea id="featuredNote" maxlength="300" rows="2"></textarea></label>
+        <div class="grid2"><label>Título de productos<input id="featuredProductsTitle" maxlength="120"></label><label>Descripción de productos<input id="featuredProductsDescription" maxlength="300"></label></div>
+        <div id="featuredCopyPreview" class="help" aria-live="polite" style="padding:16px;border:1px solid var(--line);border-radius:7px;background:#f8fbfd;"></div>
+      </section>
+      <section class="panel"><div class="section-heading"><div><h3>Categorías destacadas</h3><p class="muted">Escoge hasta siete categorías existentes para las mini-categorías de la portada. Se usa su nombre, descripción, imagen y enlace actuales; sin ninguna elegida, se muestran automáticamente las de más productos.</p></div></div><div id="categoryChoices" class="category-choices" aria-live="polite"></div></section>
+      <section class="panel"><div class="section-heading"><div><h3>Productos destacados</h3><p class="muted">Busca productos visibles y define el orden de la vitrina (máximo 12).</p></div></div><div class="search-row"><label>Buscar por nombre, SKU o categoría<input id="productSearch" type="search" placeholder="Ej. router, cámara, impresora"></label><button id="searchButton" class="button secondary" type="button"><i data-lucide="search"></i> Buscar</button></div><div id="results" class="product-list" aria-live="polite"></div><div id="selected" class="product-list"></div></section>
+      <div id="saveMessage" class="message" role="status"></div>
+    </section>
+  </main>
+  <script>
+  (() => {
+    const $ = selector => document.querySelector(selector);
+    const state = { featuredPage:{eyebrow:'Selección comercial',title:'Productos destacados para redes, empresas y tecnología',description:'Una vitrina rápida de artículos del catálogo SmartISP: conectividad, cómputo, energía, seguridad, periféricos y equipamiento TI.',note:'Selección pensada para partir rápido: revisa precio, categoría y ficha antes de cotizar o comprar.',products_title:'Selección destacada',products_description:'Productos elegidos para mostrar novedades y alta rotación.'}, products:[], categoryIds:[] };
+    let productResults = [];
+    let availableCategories = [];
+    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const isAdmin = user => ['admin','administrator','administrador'].includes(String(user?.role || '').trim().toLowerCase());
+    const encode = value => { const bytes = new TextEncoder().encode(value); let binary=''; bytes.forEach(byte => binary += String.fromCharCode(byte)); return btoa(binary); };
+    async function api(action, options={}) {
+      const token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
+      const headers = { ...(options.headers || {}) };
+      if (token) { headers.Authorization = `Bearer ${token}`; headers['X-Admin-Token'] = token; }
+      let body = options.body;
+      if (typeof body === 'string' && options.method === 'POST') { headers['Content-Type']='application/json'; body=JSON.stringify({payload:encode(body)}); }
+      const [name,query='']=action.split('?');
+      const response = await fetch(`/api/router.php?action=${encodeURIComponent(name)}${query?'&'+query:''}`, {credentials:'include',...options,headers,body});
+      const text = await response.text(); let result={};
+      try { result=text?JSON.parse(text):{}; } catch { result={error:'Respuesta no válida del servidor.'}; }
+      if (!response.ok) { const error=new Error(result.error || 'No se pudo completar la operación.'); error.status=response.status; throw error; }
+      if (result.token) localStorage.setItem('smartisp.adminToken',result.token);
+      return result;
+    }
+    function message(text,error=false) { const target=$('#saveMessage'); target.textContent=text; target.classList.toggle('error',error); target.classList.add('show'); }
+    function showLogin() { $('#denied').classList.add('hidden'); $('#login').classList.remove('hidden'); }
+    function showDenied() { $('#login').classList.add('hidden'); $('#denied').classList.remove('hidden'); }
+    function showApp(user) { $('#login').classList.add('hidden'); $('#denied').classList.add('hidden'); $('#identity').textContent=`${user.name || ''} ${user.surname || ''} · ${user.email || ''}`; $('#app').classList.remove('hidden'); load(); }
+    const imageOf = product => product?.imageUrl || product?.image_url || '/assets/favicons/favicon-96x96.png';
+    function renderFeaturedCopyPreview() {
+      const values={eyebrow:$('#featuredEyebrow').value,title:$('#featuredTitle').value,description:$('#featuredDescription').value,note:$('#featuredNote').value,products_title:$('#featuredProductsTitle').value,products_description:$('#featuredProductsDescription').value};
+      $('#featuredCopyPreview').innerHTML=`<strong>${escapeHtml(values.eyebrow||'Etiqueta')}</strong><h3 style="margin:8px 0;color:var(--ink)">${escapeHtml(values.title||'Título de Selección comercial')}</h3><p style="margin:0 0 8px">${escapeHtml(values.description||'Descripción de la página')}</p><p style="margin:0 0 16px">${escapeHtml(values.note||'Texto auxiliar')}</p><strong>${escapeHtml(values.products_title||'Título de productos')}</strong><br>${escapeHtml(values.products_description||'Descripción de los productos')}`;
+    }
+    function renderCategoryChoices() {
+      const host=$('#categoryChoices');
+      if(!availableCategories.length){host.innerHTML='<p class="muted">No se pudieron cargar categorías disponibles.</p>';return;}
+      host.innerHTML=availableCategories.filter(category=>Number(category.productCount||0)>0).map(category=>{
+        const checked=state.categoryIds.includes(String(category.id));
+        return `<label class="category-choice"><input type="checkbox" value="${escapeHtml(category.id)}" ${checked?'checked':''}><img src="${escapeHtml(category.bannerImageUrl||'/assets/favicons/favicon-96x96.png')}" alt="" loading="lazy"><span>${escapeHtml(category.name)} · ${Number(category.productCount||0)}</span></label>`;
+      }).join('')||'<p class="muted">No hay categorías con productos visibles.</p>';
+    }
+    function renderProducts() {
+      $('#selected').innerHTML=state.products.map((product,index)=>`<div class="product-row" data-product="${index}"><img src="${escapeHtml(imageOf(product))}" alt="" width="48" height="48" loading="lazy"><div><strong>${escapeHtml(product.name)}</strong><small>${escapeHtml(product.category||'')}${product.sku?` · SKU ${escapeHtml(product.sku)}`:''}</small></div><div class="icon-actions"><button class="icon-button" data-move-product="-1" type="button" aria-label="Mover arriba" ${index===0?'disabled':''}><i data-lucide="arrow-up"></i></button><button class="icon-button" data-move-product="1" type="button" aria-label="Mover abajo" ${index===state.products.length-1?'disabled':''}><i data-lucide="arrow-down"></i></button><button class="icon-button" data-remove-product type="button" aria-label="Quitar producto"><i data-lucide="x"></i></button></div></div>`).join('') || '<p class="muted">Aún no hay productos destacados.</p>';
+      $('#results').innerHTML=productResults.map((product,index)=>{const exists=state.products.some(item=>String(item.id)===String(product.id));return `<div class="product-row"><img src="${escapeHtml(imageOf(product))}" alt="" width="48" height="48" loading="lazy"><div><strong>${escapeHtml(product.name)}</strong><small>${escapeHtml(product.category||'')}${product.sku?` · SKU ${escapeHtml(product.sku)}`:''}</small></div><button class="button secondary" type="button" data-add-product="${index}" ${exists||state.products.length>=12?'disabled':''}>${exists?'Agregado':'Destacar'}</button></div>`}).join(''); window.lucide?.createIcons();
+    }
+    function fillForm() {
+      $('#featuredEyebrow').value=state.featuredPage.eyebrow; $('#featuredTitle').value=state.featuredPage.title; $('#featuredDescription').value=state.featuredPage.description; $('#featuredNote').value=state.featuredPage.note;
+      $('#featuredProductsTitle').value=state.featuredPage.products_title; $('#featuredProductsDescription').value=state.featuredPage.products_description;
+      renderProducts(); renderFeaturedCopyPreview();
+    }
+    function collectForm() {
+      state.featuredPage={eyebrow:$('#featuredEyebrow').value.trim(),title:$('#featuredTitle').value.trim(),description:$('#featuredDescription').value.trim(),note:$('#featuredNote').value.trim(),products_title:$('#featuredProductsTitle').value.trim(),products_description:$('#featuredProductsDescription').value.trim()};
+    }
+    async function publish() {
+      const button=$('#save'); button.disabled=true;
+      try {
+        collectForm();
+        // Solo manda lo que esta pantalla administra -- sin 'campaign', 'slides' ni 'chips', para
+        // no tocar nada de lo que gestiona Banners (ver guarda por clave en campaigns.php).
+        const payload={zone:'store-home',featured_page:state.featuredPage,product_ids:state.products.map(product=>product.id),category_ids:state.categoryIds};
+        await api('admin-store-campaigns?zone=store-home',{method:'POST',body:JSON.stringify(payload)});
+        message('Publicado. La portada ya está actualizada.');
+      } catch(error) { message(error.message,true); }
+      finally { button.disabled=false; }
+    }
+    async function load() {
+      try {
+        const result=await api('admin-store-campaigns?zone=store-home');
+        Object.assign(state.featuredPage,result.featured_page||{});
+        state.products=result.products||[];
+        state.categoryIds=(result.featured_category_ids||[]).map(String);
+        availableCategories=(await api('categories')).categories||[];
+        fillForm();
+        renderCategoryChoices();
+      } catch(error) { message(`No se pudo cargar la portada: ${error.message}`,true); }
+    }
+    $('#loginForm').addEventListener('submit',async event=>{event.preventDefault();const form=event.currentTarget;const data=Object.fromEntries(new FormData(form));try{const result=await api('login',{method:'POST',body:JSON.stringify(data)});if(!isAdmin(result.user)){showDenied();return;}if(result.token)localStorage.setItem('smartisp.adminToken',result.token);showApp(result.user);}catch(error){message(error.message,true);}});
+    async function authenticate(){try{const result=await api('me');if(isAdmin(result.user))showApp(result.user);else showDenied();}catch(error){showLogin();if(error.status&&error.status!==401)message(error.message,true);}}
+    document.querySelectorAll('#featuredEyebrow,#featuredTitle,#featuredDescription,#featuredNote,#featuredProductsTitle,#featuredProductsDescription').forEach(el=>el.addEventListener('input',renderFeaturedCopyPreview));
+    $('#categoryChoices').addEventListener('change',event=>{
+      if(event.target.type!=='checkbox')return;
+      const selected=[...document.querySelectorAll('#categoryChoices input:checked')];
+      if(selected.length>7){event.target.checked=false;message('Puedes elegir hasta 7 categorías.',true);return;}
+      state.categoryIds=selected.map(item=>item.value);
+    });
+    $('#searchButton').addEventListener('click',async()=>{
+      const q=$('#productSearch').value.trim();
+      if(!q){productResults=[];renderProducts();return;}
+      try{const result=await api(`admin-products?q=${encodeURIComponent(q)}&limit=20&visible=visible`);productResults=result.products||[];renderProducts();}
+      catch(error){message(error.message,true);}
+    });
+    $('#productSearch').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();$('#searchButton').click();}});
+    $('#results').addEventListener('click',event=>{
+      const btn=event.target.closest('[data-add-product]');if(!btn)return;
+      const product=productResults[Number(btn.dataset.addProduct)];
+      if(product&&!state.products.some(item=>String(item.id)===String(product.id))&&state.products.length<12){state.products.push(product);renderProducts();}
+    });
+    $('#selected').addEventListener('click',event=>{
+      const removeBtn=event.target.closest('[data-remove-product]');
+      const moveBtn=event.target.closest('[data-move-product]');
+      const row=event.target.closest('[data-product]');if(!row)return;
+      const index=Number(row.dataset.product);
+      if(removeBtn){state.products.splice(index,1);renderProducts();return;}
+      if(moveBtn){const to=index+Number(moveBtn.dataset.moveProduct);if(to<0||to>=state.products.length)return;[state.products[index],state.products[to]]=[state.products[to],state.products[index]];renderProducts();}
+    });
+    $('#save').addEventListener('click',publish);
+    authenticate();
+  })();
+  </script>
+</body>
+</html>
