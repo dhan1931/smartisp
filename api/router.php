@@ -981,6 +981,7 @@ require __DIR__ . '/handlers/diagnostics.php';
 require __DIR__ . '/handlers/products.php';
 require __DIR__ . '/handlers/content.php';
 require __DIR__ . '/handlers/orders.php';
+require __DIR__ . '/handlers/customers.php';
 require __DIR__ . '/handlers/auth.php';
 
 // Acción no encontrada

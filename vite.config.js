@@ -21,6 +21,7 @@ export default defineConfig({
         configuracion: 'configuracion.html',
         campanas: 'campanas.html',
         pedidos: 'pedidos.html',
+        clientes: 'clientes.html',
         categorias: 'categorias.html',
         portada: 'portada.html',
         editorCatalogo: 'editor-catalogo.html',
