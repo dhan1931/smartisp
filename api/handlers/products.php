@@ -752,20 +752,36 @@ if ($action === 'categories') {
 
     if ($method === 'GET') {
         $cats = getDynamicCategoriesList($pdo);
-        echo json_encode(['categories' => $cats]);
+        echo json_encode(['categories' => $cats, 'macroGroups' => getCategoryMacroGroups($pdo)]);
         exit;
     }
 
     if ($method === 'POST') {
         $cats = $body['categories'] ?? [];
         if (is_array($cats)) {
+            // Antes este INSERT solo escribia id/name/subcategories: cada guardado desde el
+            // admin borraba en silencio el banner, icono, descripcion y keywords de TODAS las
+            // categorias (no solo la que se estaba editando), porque es un DELETE + reinsert
+            // completo. Ahora persiste todas las columnas que el editor realmente administra.
             $pdo->exec("DELETE FROM categories_rows");
-            $stmt = $pdo->prepare("INSERT INTO categories_rows (id, name, subcategories) VALUES (:id, :name, :sub)");
+            $stmt = $pdo->prepare("INSERT INTO categories_rows (id, name, subcategories, banner_image_url, banner_alt, description, icon, keywords, macro_group_id) VALUES (:id, :name, :sub, :banner, :alt, :description, :icon, :keywords, :macro)");
             foreach ($cats as $c) {
                 $cId = $c['id'] ?? uniqid('cat_');
                 $cName = $c['name'] ?? 'General';
-                $sub = is_array($c['subcategories'] ?? null) ? json_encode($c['subcategories']) : (string)($c['subcategories'] ?? '');
-                $stmt->execute([':id' => $cId, ':name' => $cName, ':sub' => $sub]);
+                $sub = is_array($c['subcategories'] ?? null) ? json_encode($c['subcategories'], JSON_UNESCAPED_UNICODE) : (string)($c['subcategories'] ?? '');
+                $keywords = is_array($c['keywords'] ?? null) ? json_encode($c['keywords'], JSON_UNESCAPED_UNICODE) : (string)($c['keywords'] ?? '');
+                $macroGroupId = trim((string)($c['macroGroupId'] ?? ''));
+                $stmt->execute([
+                    ':id' => $cId,
+                    ':name' => $cName,
+                    ':sub' => $sub,
+                    ':banner' => (string)($c['bannerImageUrl'] ?? ''),
+                    ':alt' => (string)($c['bannerAlt'] ?? ''),
+                    ':description' => (string)($c['description'] ?? ''),
+                    ':icon' => (string)($c['icon'] ?? 'package'),
+                    ':keywords' => $keywords,
+                    ':macro' => $macroGroupId !== '' ? $macroGroupId : null,
+                ]);
             }
         }
         echo json_encode(['ok' => true]);
@@ -773,6 +789,51 @@ if ($action === 'categories') {
     }
 }
 
+
+// Familias visuales del sidebar (antes hardcodeadas en tienda.html, ver migracion 017).
+if ($action === 'macro-groups') {
+    requireAdminAuth();
+
+    if ($method === 'GET') {
+        echo json_encode(['macroGroups' => getCategoryMacroGroups($pdo)]);
+        exit;
+    }
+
+    if ($method === 'POST') {
+        $groupId = trim((string)($body['id'] ?? ''));
+        $name = trim((string)($body['name'] ?? ''));
+        $icon = trim((string)($body['icon'] ?? '')) ?: 'package';
+        $sortOrder = (int)($body['sortOrder'] ?? 0);
+        if ($name === '') {
+            http_response_code(400);
+            echo json_encode(['error' => 'El nombre de la familia es obligatorio.']);
+            exit;
+        }
+        if ($groupId === '') {
+            $groupId = preg_replace('/[^a-z0-9_-]/', '-', strtolower($name));
+            $groupId = trim(preg_replace('/-+/', '-', $groupId), '-') ?: uniqid('grp_');
+        }
+        $stmt = $pdo->prepare("INSERT INTO category_macro_groups (id, name, icon, sort_order) VALUES (:id, :name, :icon, :sort) ON DUPLICATE KEY UPDATE name = VALUES(name), icon = VALUES(icon), sort_order = VALUES(sort_order)");
+        $stmt->execute([':id' => $groupId, ':name' => $name, ':icon' => $icon, ':sort' => $sortOrder]);
+        echo json_encode(['ok' => true, 'id' => $groupId]);
+        exit;
+    }
+
+    if ($method === 'DELETE') {
+        $groupId = trim((string)($_GET['id'] ?? ($body['id'] ?? '')));
+        if ($groupId === '' || $groupId === 'otros') {
+            http_response_code(400);
+            echo json_encode(['error' => 'No se puede eliminar esa familia.']);
+            exit;
+        }
+        // Las categorias que tenian esta familia quedan sin asignar, no se borran ni se mueven
+        // a otra familia en silencio -- el admin decide a donde van desde el panel.
+        $pdo->prepare('UPDATE categories_rows SET macro_group_id = NULL WHERE macro_group_id = :id')->execute([':id' => $groupId]);
+        $pdo->prepare('DELETE FROM category_macro_groups WHERE id = :id')->execute([':id' => $groupId]);
+        echo json_encode(['ok' => true]);
+        exit;
+    }
+}
 
 if ($action === 'categories-reset' || $action === 'categories/reset') {
     requireAdminAuth();

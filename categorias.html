@@ -370,6 +370,16 @@
           </div>
         </div>
         <div class="form-group">
+          <label class="form-label" for="catMacroGroupInput">Familia del sidebar de tienda:</label>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <select id="catMacroGroupInput" class="form-control" style="flex:1;">
+              <option value="">Sin familia asignada</option>
+            </select>
+            <button type="button" id="catMacroGroupNewBtn" class="btn btn-secondary btn-sm" title="Crear una familia nueva"><i data-lucide="plus" width="14"></i></button>
+          </div>
+          <small style="color:var(--muted); font-size:11px;">Agrupa esta categoría bajo una familia amplia (ej. "Componentes y Almacenamiento") en el menú lateral de la tienda. Antes vivía fija en el código; ahora se administra aquí.</small>
+        </div>
+        <div class="form-group">
           <label class="form-label" for="catSubcategoriesInput">Subcategorías (separadas por coma o saltos de línea):</label>
           <textarea id="catSubcategoriesInput" class="form-control" rows="3" placeholder="Ej: Portátiles y Laptops, Computadoras de Escritorio (PC), Equipos All-In-One"></textarea>
           <small style="color:var(--muted); font-size:11px;">Estas subcategorías aparecerán en el menú y filtros de la tienda.</small>
@@ -500,6 +510,15 @@
     const isUserAdmin = u => !!u && ['admin', 'administrator', 'administrador'].includes(String(u.role || '').trim().toLowerCase());
 
     let adminConfiguredCategories = [];
+    let adminMacroGroups = [];
+
+    const populateMacroGroupSelect = selectedId => {
+      const select = document.getElementById('catMacroGroupInput');
+      if (!select) return;
+      select.innerHTML = '<option value="">Sin familia asignada</option>' +
+        adminMacroGroups.map(g => `<option value="${escapeHtml(g.id)}">${escapeHtml(g.name)}</option>`).join('');
+      select.value = selectedId || '';
+    };
 
     const getCategoryIcon = name => {
       const n = (name || '').toLowerCase();
@@ -645,6 +664,8 @@
       try {
         const res = await api('categories');
         adminConfiguredCategories = res.categories || [];
+        adminMacroGroups = res.macroGroups || [];
+        populateMacroGroupSelect();
         renderMacroCategories(adminConfiguredCategories);
         populateReassignSelects();
       } catch (e) {
@@ -747,6 +768,7 @@
       document.getElementById('catNameInput').value = '';
       document.getElementById('catIdInput').value = '';
       document.getElementById('catIconInput').value = 'package';
+      populateMacroGroupSelect('');
       document.getElementById('catSubcategoriesInput').value = '';
       document.getElementById('catKeywordsInput').value = '';
       document.getElementById('catBannerUrlInput').value = '';
@@ -765,6 +787,7 @@
       document.getElementById('catNameInput').value = cat.name;
       document.getElementById('catIdInput').value = cat.id;
       document.getElementById('catIconInput').value = cat.icon || 'package';
+      populateMacroGroupSelect(cat.macroGroupId || '');
       document.getElementById('catSubcategoriesInput').value = (cat.subcategories || []).join('\n');
       document.getElementById('catKeywordsInput').value = (cat.keywords || []).join(', ');
       document.getElementById('catBannerUrlInput').value = cat.bannerImageUrl || '';
