@@ -1,11 +1,11 @@
 <?php
 $storefrontActivePage = $storefrontActivePage ?? '';
 $storefrontNavLinks = [
-    ['categories', '/categorias-destacadas', 'Categorías destacadas', 'layout-grid'],
-    ['products', '/productos-destacados', 'Productos destacados', 'sparkles'],
-    ['services', '/servicios', 'Servicios', 'settings'],
+    ['catalog', '/tienda.html', 'Tienda', 'house'],
+    ['categories', '/categorias-destacadas', 'Categorías', 'layout-grid'],
     ['about', '/nosotros', 'Nosotros', 'users'],
-    ['catalog', '/tienda.html#catalogo', 'Catálogo', 'store'],
+    ['services', '/servicios', 'Servicios', 'settings'],
+    ['products', '/productos-destacados', 'Productos', 'sparkles'],
 ];
 ?>
 <div class="storefront-topbar"><span><i data-lucide="truck" width="14"></i> Envío gratis en Guayas</span><span><i data-lucide="headphones" width="14"></i> Atención experta · Lun a Vie 9:00 a 18:00</span></div>

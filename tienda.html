@@ -125,7 +125,7 @@
 		button { cursor: pointer; }
 		.topbar { background: var(--navy); color: #d9efff; font-size: 12px; letter-spacing: .02em; padding: 9px 5vw; display: flex; justify-content: space-between; }
 		.topbar span { display: flex; align-items: center; gap: 7px; }
-		.nav { background: var(--white); border-bottom: 1px solid var(--line); padding: 16px 5vw; display: grid; grid-template-columns: minmax(120px, 220px) minmax(0, 680px) minmax(150px, 1fr); align-items: center; gap: 20px; position: sticky; top: 0; z-index: 1000; }
+		.nav { background: var(--white); border-bottom: 1px solid var(--line); padding: 16px 5vw; display: grid; grid-template-columns: minmax(120px, 220px) minmax(0, 680px) minmax(190px, 1fr); align-items: center; gap: 20px; position: sticky; top: 0; z-index: 1000; }
 		.logo { font-family: 'Space Grotesk', sans-serif; font-size: 23px; font-weight: 700; color: var(--navy); white-space: nowrap; letter-spacing: -.06em; display: inline-flex; align-items: center; text-decoration: none; }
 		html:not(.public-brand-ready) .logo { opacity: 0; }
 		.public-brand-ready .logo { opacity: 1; transition: opacity .12s ease; }
@@ -136,8 +136,9 @@
 		.search input { width: 100%; border: 0; outline: 0; padding: 13px 16px; background: transparent; color: var(--ink); text-align: center; }
 		.search input::placeholder { color: #6e879b; }
 		.search button { background: var(--blue); border: 0; color: var(--white); width: 48px; display: grid; place-items: center; }
-		.nav-actions { margin-left: auto; display: flex; gap: 18px; align-items: center; justify-self: end; }
+		.nav-actions { margin-left: auto; display: flex; gap: clamp(10px, 1.4vw, 18px); align-items: center; justify-self: end; min-width: 0; }
 		.nav-action { border: 0; background: transparent; color: var(--navy); display: flex; align-items: center; gap: 7px; font-weight: 600; padding: 4px; }
+		.nav-action span { white-space: nowrap; }
 		.public-menu-btn { display: none; align-items: center; justify-content: center; width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--navy); }
 		.public-menu-close { display: none; }
 		.public-menu-btn:hover { border-color: #9acfe9; color: var(--blue); }
@@ -1632,7 +1633,13 @@
         .store-campaign-cta { display: inline-flex; align-items: center; gap: 8px; padding: 11px 15px; border-radius: 5px; background: var(--blue); color: white; font-size: 13px; font-weight: 800; }
         .store-campaign-cta:hover { background: var(--blue-dark, #075d7d); color: white; }
         .store-campaign-controls { position: absolute; right: 16px; bottom: 14px; display: flex; align-items: center; gap: 8px; }
-        .store-campaign-control { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid rgba(16,44,61,.18); border-radius: 50%; background: rgba(255,255,255,.9); color: var(--navy); }
+        .store-campaign-control { display: grid; place-items: center; width: 48px; height: 48px; padding: 0; border: 1px solid rgba(16,44,61,.28); border-radius: 50%; background: rgba(255,255,255,.96); color: var(--navy); box-shadow:0 2px 12px rgba(6,24,40,.24); }
+        .store-campaign-control svg { width:24px; height:24px; stroke-width:2.5; }
+        .store-campaign:not(.is-layout) .store-campaign-controls { inset:0; right:auto; bottom:auto; display:block; pointer-events:none; }
+        .store-campaign:not(.is-layout) .store-campaign-control { position:absolute; top:50%; transform:translateY(-50%); pointer-events:auto; }
+        .store-campaign:not(.is-layout) #storeCampaignPrev { left:16px; }
+        .store-campaign:not(.is-layout) #storeCampaignNext { right:16px; }
+        .store-campaign:not(.is-layout) .store-campaign-dots { position:absolute; left:50%; bottom:14px; transform:translateX(-50%); }
         .store-campaign-dots { display: flex; gap: 6px; align-items: center; }
         .store-campaign-dot { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 8px; background: rgba(16,44,61,.35); }
         .store-campaign-dot[aria-current="true"] { width: 22px; background: var(--blue); }
@@ -1658,6 +1665,10 @@
         .mini-category-card:hover { border-color: var(--blue); box-shadow: 0 6px 16px rgba(16,44,61,.08); transform: translateY(-2px); }
         .mini-category-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: var(--sky); color: var(--blue); }
         .mini-category-name { font-size: 12px; font-weight: 700; color: var(--navy); line-height: 1.25; }
+        .mini-category-description { display:-webkit-box; overflow:hidden; max-width:100%; color:var(--muted); font-size:10px; line-height:1.35; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
+        .mini-category-card { min-width:0; overflow:hidden; padding:8px; border-color:#c7dce5; }
+        .mini-category-visual { display:grid; place-items:center; width:100%; aspect-ratio:1.55; overflow:hidden; border-radius:6px; background:#eef6f9; color:var(--blue); }
+        .mini-category-visual img { width:100%; height:100%; object-fit:cover; }
         @media(max-width: 1100px) { .mini-categories-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
         @media(max-width: 600px) { .mini-categories-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; } .mini-category-card { padding: 12px 6px; } }
         .store-trust-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; padding: 25px 1.7vw; }
@@ -1672,16 +1683,18 @@
         .campaign-featured-heading { display: flex; justify-content: space-between; align-items: end; gap: 12px; margin-bottom: 13px; }
         .campaign-featured-heading h2 { color: var(--navy); font-size: 22px; }
         .campaign-featured-heading span { color: var(--muted); font-size: 12px; }
-        .campaign-products-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px; }
+        .campaign-products-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 13px; }
         .campaign-product { display: flex; min-width: 0; flex-direction: column; padding: 11px; border: 1px solid var(--line); border-top: 3px solid var(--blue); border-radius: 8px; background: white; }
         .campaign-product-image { display: grid; place-items: center; overflow: hidden; aspect-ratio: 1.3; background: #f7fafb; border: 1px solid #edf2f4; border-radius: 5px; }
         .campaign-product-image img { width: 100%; height: 100%; object-fit: contain; }
         .campaign-product-category { overflow: hidden; margin-top: 10px; color: var(--blue); font-size: 10px; font-weight: 800; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
         .campaign-product-title { display: -webkit-box; overflow: hidden; min-height: 40px; margin: 4px 0 8px; color: var(--navy); font-size: 13px; font-weight: 700; line-height: 1.45; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+        .campaign-product-description { display:-webkit-box; overflow:hidden; min-height:32px; margin:0 0 8px; color:var(--muted); font-size:11px; line-height:1.45; -webkit-box-orient:vertical; -webkit-line-clamp:2; }
         .campaign-product-bottom { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: auto; }
         .campaign-product-price { color: var(--navy); font-size: 18px; font-weight: 800; }
         .campaign-product-add { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; padding: 0 10px; border: 1px solid #a9d8d0; border-radius: 5px; background: #eaf7f5; color: var(--blue); font-size: 12px; font-weight: 700; }
         .campaign-product-add:hover { background: var(--blue); color: white; }
+        @media (max-width: 1200px) { .campaign-products-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
         @media (max-width: 800px) {
           .store-campaign-area { padding: 10px 4vw 0; }
           .store-campaign { min-height: 230px; }
@@ -1690,19 +1703,28 @@
           .store-campaign-card .store-campaign-copy { width:100%; padding:14px; }
           .store-promo-chips { padding:10px 4vw 0; }
           .store-campaign-copy { width: 72%; padding: 22px; }
+          .store-campaign.is-photo-background .store-campaign-copy { width:86%; padding:22px 58px 34px; }
           .store-campaign-title { font-size: 26px; }
           .store-campaign-subtitle { font-size: 13px; }
           .campaign-featured { padding: 20px 4vw 0; }
           .campaign-products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
+        .secondary-campaign-area { padding-top:8px; }
+        .secondary-campaign-area .store-campaign { min-height:0; }
+        .secondary-campaign-area .store-campaign-card { min-height:220px; }
+        @media(max-width:520px){.secondary-campaign-area .store-campaign-card{min-height:190px}}
         @media (max-width: 420px) {
           .store-campaign { min-height: 205px; }
           .store-campaign.is-triple { grid-template-columns:1fr; }
           .store-campaign-card { min-height:175px; }
           .store-campaign-copy { width: 84%; padding: 16px; }
+          .store-campaign.is-photo-background .store-campaign-copy { width:100%; padding:18px 52px 34px; }
           .store-campaign-title { font-size: 22px; }
           .store-campaign-subtitle { font-size: 12px; margin-bottom: 12px; }
-          .store-campaign-controls { right: 9px; bottom: 9px; }
+          .store-campaign:not(.is-layout) .store-campaign-control { width:42px; height:42px; }
+          .store-campaign:not(.is-layout) #storeCampaignPrev { left:8px; }
+          .store-campaign:not(.is-layout) #storeCampaignNext { right:8px; }
+          .store-campaign:not(.is-layout) .store-campaign-dots { bottom:8px; }
           .campaign-product { padding: 8px; }
           .campaign-product-bottom { align-items: flex-start; flex-direction: column; }
           .campaign-product-add { width: 100%; }
@@ -1868,6 +1890,12 @@
         .store-campaign-media img { display:block; object-fit:cover; transition:opacity .35s ease; }
         .store-campaign::after { z-index:1; background:linear-gradient(90deg,rgba(248,252,254,.94),rgba(248,252,254,.52) 48%,rgba(248,252,254,0)); opacity:var(--campaign-overlay-opacity,.18); }
         .store-campaign-copy { position:relative; z-index:2; }
+        .store-campaign.is-photo-background::after { background:linear-gradient(90deg,rgba(6,24,40,.88) 0%,rgba(6,24,40,.68) 38%,rgba(6,24,40,.14) 76%,transparent 100%); }
+        .store-campaign.is-photo-background .store-campaign-eyebrow,.store-campaign.is-photo-background .store-campaign-title,.store-campaign.is-photo-background .store-campaign-subtitle { color:#fff; }
+        .store-campaign.is-photo-background .store-campaign-subtitle { text-shadow:0 1px 2px rgba(0,0,0,.3); }
+        .store-campaign.is-copy-panel .store-campaign-media { inset:0 0 0 auto; width:var(--campaign-image-width,55%); z-index:0; }
+        .store-campaign.is-copy-panel::after { inset:0 auto 0 calc(100% - var(--campaign-image-width,55%) - 8%); width:16%; background:linear-gradient(90deg,var(--copy-background,#fff),transparent); }
+        .store-campaign.is-copy-panel .store-campaign-copy { align-self:stretch; display:flex; width:calc(100% - var(--campaign-image-width,55%)); flex-direction:column; align-items:flex-start; justify-content:center; background:var(--copy-background,#fff); }
         .store-campaign-controls { z-index:4; }
         .store-campaign-badge,.store-campaign-promo { display:inline-flex; align-items:center; gap:7px; width:max-content; max-width:100%; padding:8px 12px; border:0; border-radius:5px; color:#fff; font-size:12px; font-weight:850; text-decoration:none; }
         .store-campaign-badge { position:absolute; z-index:3; top:16px; right:18px; background:#dc2626; box-shadow:0 3px 12px #102c3d33; }
@@ -1890,6 +1918,9 @@
         .store-campaign.is-cards .store-campaign-card { flex:0 0 min(390px,82vw); scroll-snap-align:start; }
         .store-campaign-card-media { position:absolute; z-index:-2; inset:0; width:100%; height:100%; object-fit:cover; }
         .store-campaign-card-overlay { position:absolute; z-index:-1; inset:0; background:linear-gradient(90deg,#f8fcfee8,#f8fcfe80 52%,transparent); }
+        .store-campaign-card.is-layout-full .store-campaign-card-overlay { background:linear-gradient(90deg,rgba(6,24,40,.82),rgba(6,24,40,.56) 45%,rgba(6,24,40,.04)); }
+        .store-campaign-card.is-layout-full .store-campaign-eyebrow,.store-campaign-card.is-layout-full .store-campaign-title,.store-campaign-card.is-layout-full .store-campaign-subtitle,.store-campaign-card.is-layout-full .store-campaign-cta { color:#fff; }
+        .store-campaign-card.is-layout-full .store-campaign-eyebrow { color:#8ee5ff; }
         .store-campaign-card-main { position:relative; z-index:2; display:flex; width:100%; height:100%; align-items:center; color:inherit; text-decoration:none; }
         .store-campaign-card-copy { position:relative; width:75%; padding:22px; }
         .store-campaign-card-copy .store-campaign-eyebrow,.store-campaign-card-copy .store-campaign-title,.store-campaign-card-copy .store-campaign-subtitle { display:block; }
@@ -1979,6 +2010,9 @@
 	<section class="campaign-featured" id="campaignFeatured" aria-labelledby="campaignFeaturedTitle">
 		<div class="campaign-featured-heading"><h2 id="campaignFeaturedTitle">Productos destacados</h2><span>Selección SmartISP</span></div>
 		<div class="campaign-products-grid" id="campaignProductsGrid"></div>
+	</section>
+	<section class="store-campaign-area secondary-campaign-area" id="secondaryCampaignArea" aria-label="Soluciones y promociones" hidden>
+		<div class="store-campaign is-layout is-split" id="secondaryCampaign"></div>
 	</section>
 	<section class="store-trust-row">
 		<div class="store-trust-item"><i data-lucide="shield-check" width="22"></i><div><strong>Compra segura</strong><span>Tus datos protegidos en cada transacción</span></div></div>
@@ -3812,6 +3846,7 @@
 
 		let storefrontSlides = [];
 		let storefrontFeaturedProducts = [];
+		let storefrontFeaturedCategoryIds = [];
 		let storefrontPromoChips = [];
 		let storefrontDisplayMode = 'carousel';
 		let storefrontSlideIndex = 0;
@@ -3860,6 +3895,12 @@
 			storefrontSlideIndex = (index + storefrontSlides.length) % storefrontSlides.length;
 			const slide = storefrontSlides[storefrontSlideIndex];
 			const banner = document.querySelector('#storeCampaign');
+			const isCopyPanel = slide.card_layout === 'side';
+			const copyBackground = /^#[0-9a-fA-F]{6}$/.test(slide.copy_background_color || '') ? slide.copy_background_color : '#ffffff';
+			banner.classList.toggle('is-photo-background', !isCopyPanel);
+			banner.classList.toggle('is-copy-panel', isCopyPanel);
+			banner.style.setProperty('--campaign-image-width', `${Math.max(35, Math.min(65, Number(slide.image_width_pct ?? 55)))}%`);
+			banner.style.setProperty('--copy-background', copyBackground);
 			banner.classList.toggle('is-contain', slide.image_fit === 'contain');
 			const image = document.querySelector('#storeCampaignImage');
 			clearStorefrontImageTimers();
@@ -3869,7 +3910,8 @@
 			image.style.objectFit = slide.image_fit === 'contain' ? 'contain' : 'cover';
 			image.style.opacity = String(Math.max(0, Math.min(100, Number(slide.image_opacity ?? 100))) / 100);
 			applyCampaignImageFocus(image, images[0]);
-			banner.style.setProperty('--campaign-overlay-opacity', String(Math.max(0, Math.min(100, Number(slide.overlay_opacity ?? 18))) / 100));
+			const overlayOpacity = Math.max(0, Math.min(100, Number(slide.overlay_opacity ?? 68))) / 100;
+			banner.style.setProperty('--campaign-overlay-opacity', String(isCopyPanel ? overlayOpacity : Math.max(.55, overlayOpacity)));
 			startStorefrontImageRotation(image, slide);
 			document.querySelector('#storeCampaignEyebrow').textContent = slide.eyebrow || '';
 			document.querySelector('#storeCampaignEyebrow').hidden = !slide.eyebrow;
@@ -3907,6 +3949,7 @@
 					<a class="campaign-product-image" href="${escapeHtml(productUrl)}" aria-label="Ver ${escapeHtml(product.name)}"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(product.name)}" width="320" height="246" loading="${index < 2 ? 'eager' : 'lazy'}" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${escapeHtml(fallbackImage(product))}';}"></a>
 					<div class="campaign-product-category">${escapeHtml(product.category || 'SmartISP')}</div>
 					<a class="campaign-product-title" href="${escapeHtml(productUrl)}">${escapeHtml(product.name || 'Producto')}</a>
+					<p class="campaign-product-description">${escapeHtml(product.description || '')}</p>
 					<div class="campaign-product-bottom"><strong class="campaign-product-price">${money(product.price)}</strong><button type="button" class="campaign-product-add" data-campaign-add="${index}" aria-label="Agregar ${escapeHtml(product.name)} al carrito"><i data-lucide="shopping-cart" width="15"></i> Agregar</button></div>
 				</article>`;
 			}).join('');
@@ -3923,23 +3966,27 @@
 				if (!count) return;
 				const groupId = cat.macroGroupId || 'otros';
 				if (!groups.has(groupId)) {
-					groups.set(groupId, { id: groupId, name: cat.macroGroupName || 'Otras Soluciones IT', icon: cat.macroGroupIcon || 'package', count: 0, topCategory: null, topCount: 0 });
+					groups.set(groupId, { id: groupId, name: cat.macroGroupName || 'Otras Soluciones IT', icon: cat.macroGroupIcon || 'package', count: 0, topCategory: null, topCount: 0, image: '', alt: '' });
 				}
 				const g = groups.get(groupId);
 				g.count += count;
-				if (count > g.topCount) { g.topCount = count; g.topCategory = cat.name; }
+				if (count > g.topCount) { g.topCount = count; g.topCategory = cat.name; g.image = cat.bannerImageUrl || ''; g.alt = cat.bannerAlt || cat.name; }
 			});
 			const sorted = [...groups.values()].sort((a, b) => b.count - a.count);
-			const top7 = sorted.slice(0, 7);
-			const cardsHtml = top7.map(g => {
+			const chosen = storefrontFeaturedCategoryIds.length
+				? storefrontFeaturedCategoryIds.map(id => catalogCategoryRows.find(cat => String(cat.id) === String(id))).filter(cat => cat && Number(cat.productCount || 0) > 0).slice(0, 7)
+				: [];
+			const displayItems = chosen.length ? chosen.map(cat => ({ id:cat.id, name:cat.name, icon:cat.icon || cat.macroGroupIcon || 'package', topCategory:cat.name, image:cat.bannerImageUrl || '', alt:cat.bannerAlt || cat.name, description:cat.description || '' })) : sorted.slice(0, 7);
+			const cardsHtml = displayItems.map(g => {
 				const href = g.topCategory ? `/categoria/${encodeURIComponent(slugifyText(g.topCategory))}/` : '/categorias-destacadas';
 				return `<a class="mini-category-card" href="${escapeHtml(href)}">
-					<span class="mini-category-icon"><i data-lucide="${escapeHtml(g.icon)}" width="20"></i></span>
+					<span class="mini-category-visual">${g.image ? `<img src="${escapeHtml(g.image)}" alt="${escapeHtml(g.alt)}" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><i data-lucide="${escapeHtml(g.icon)}" width="24" hidden></i>` : `<i data-lucide="${escapeHtml(g.icon)}" width="24"></i>`}</span>
 					<span class="mini-category-name">${escapeHtml(g.name)}</span>
+					${g.description ? `<span class="mini-category-description">${escapeHtml(g.description)}</span>` : ''}
 				</a>`;
 			}).join('');
 			const moreHtml = `<a class="mini-category-card" href="/categorias-destacadas">
-				<span class="mini-category-icon"><i data-lucide="more-horizontal" width="20"></i></span>
+				<span class="mini-category-visual"><i data-lucide="more-horizontal" width="24"></i></span>
 				<span class="mini-category-name">Más Categorías</span>
 			</a>`;
 			grid.innerHTML = cardsHtml + moreHtml;
@@ -3962,7 +4009,8 @@
 			const icon = ['sparkles','star','truck'].includes(slide.promo_chip_icon) ? slide.promo_chip_icon : 'tag';
 			const isSide = slide.card_layout === 'side';
 			const imageOpacity = Math.max(0,Math.min(100,Number(slide.image_opacity ?? 100)))/100;
-			const overlayOpacity = Math.max(0,Math.min(100,Number(slide.overlay_opacity ?? 18)))/100;
+			const configuredOverlayOpacity = Math.max(0,Math.min(100,Number(slide.overlay_opacity ?? 68)))/100;
+			const overlayOpacity = isSide ? configuredOverlayOpacity : Math.max(.55, configuredOverlayOpacity);
 			// "full" (por defecto visual del diseño original): imagen de fondo a toda la tarjeta,
 			// image_width_pct no aplica -- no tiene sentido un ancho parcial en un fondo completo.
 			// "side": imagen angosta a la derecha + panel de texto; el ancho real (35-65%, del
@@ -3976,11 +4024,12 @@
 			if (isSide) {
 				const imageWidth = Math.max(35, Math.min(65, Number(slide.image_width_pct ?? 55)));
 				const textWidth = 100 - imageWidth;
+				const copyBackground = /^#[0-9a-fA-F]{6}$/.test(slide.copy_background_color || '') ? slide.copy_background_color : '#ffffff';
 				const overlayBandWidth = 12;
 				const overlayStart = Math.max(0, textWidth - overlayBandWidth / 2);
 				mediaStyle = `inset:0 0 0 auto;width:${imageWidth}%;object-position:center;${mediaStyle}`;
 				overlayStyle = `inset:0 auto 0 ${overlayStart}%;width:${overlayBandWidth}%;${overlayStyle}`;
-				mainStyle = `width:${textWidth}%`;
+				mainStyle = `width:${textWidth}%;background:${copyBackground}`;
 			}
 			// "full": sin ancho parcial inline -- usa el fondo a toda la tarjeta que ya define
 			// la clase CSS base (.store-campaign-card-media), igual que la version original.
@@ -3990,16 +4039,46 @@
 		};
 		const startLayoutImageRotations = () => {
 			clearStorefrontImageTimers();
-			document.querySelectorAll('.store-campaign-card [data-campaign-image]').forEach(image => {
+			document.querySelectorAll('#storeCampaign .store-campaign-card [data-campaign-image]').forEach(image => {
 				const slide = storefrontSlides[Number(image.dataset.slideIndex)];
 				if (slide) startStorefrontImageRotation(image, slide);
 			});
 		};
+		let secondaryCampaignSlides = [];
+		const startSecondaryImageRotations = () => {
+			document.querySelectorAll('#secondaryCampaign .store-campaign-card [data-campaign-image]').forEach((image, index) => {
+				const slide = secondaryCampaignSlides[index];
+				if (slide) startStorefrontImageRotation(image, slide);
+			});
+		};
+		const loadSecondaryCampaigns = async () => {
+			try {
+				const response = await fetch(`/api/auth/store-campaigns?zone=store-secondary&_t=${Date.now()}`, { cache: 'no-store' });
+				if (!response.ok) return;
+				const data = await response.json();
+				const section = document.querySelector('#secondaryCampaignArea');
+				const host = document.querySelector('#secondaryCampaign');
+				secondaryCampaignSlides = Array.isArray(data.slides) ? data.slides : [];
+				if (!section || !host || !secondaryCampaignSlides.length) return;
+				const mode = ['split','triple','grid','cards'].includes(data.display_mode) ? data.display_mode : 'split';
+				const limit = { split: 2, triple: 3, grid: 4 }[mode] || secondaryCampaignSlides.length;
+				host.className = `store-campaign is-layout is-${mode}`;
+				host.innerHTML = secondaryCampaignSlides.slice(0, limit).map((slide, index) => renderCampaignCard(slide, index)).join('');
+				section.hidden = false;
+				startSecondaryImageRotations();
+				window.lucide?.createIcons();
+			} catch (error) {
+				console.warn('No se pudieron cargar los banners secundarios:', error);
+			}
+		};
 		const loadStorefrontCampaigns = async () => {
+			loadSecondaryCampaigns();
 			try {
 				const response = await fetch(`/api/auth/store-campaigns?_t=${Date.now()}`, { cache: 'no-store' });
 				if (!response.ok) return;
 				const data = await response.json();
+				storefrontFeaturedCategoryIds = Array.isArray(data.featured_category_ids) ? data.featured_category_ids.map(String) : [];
+				renderMiniCategories();
 				storefrontSlides = Array.isArray(data.slides) ? data.slides : [];
 				storefrontDisplayMode = ['carousel', 'single', 'split', 'triple', 'grid', 'cards'].includes(data.display_mode) ? data.display_mode : 'carousel';
 				storefrontPromoChips = Array.isArray(data.chips) ? data.chips : [];
@@ -4039,6 +4118,7 @@
 							startStorefrontImageRotation(document.querySelector('#storeCampaignImage'),storefrontSlides[storefrontSlideIndex]);
 							startStorefrontRotation(data.rotation_seconds);
 						} else startLayoutImageRotations();
+						startSecondaryImageRotations();
 					};
 					banner.addEventListener('mouseenter',stopStorefrontRotation);
 					banner.addEventListener('mouseleave',resumeStorefrontAnimations);
