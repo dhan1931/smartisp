@@ -21,6 +21,7 @@ y Sprint 2 se documenta aquí mientras tanto; cada tarea ya existe como task rea
 - [x] **DEV-20261006-006** `medium` `refactor` — Rediseñar el inicio del panel admin: métricas reales, quitar lo redundante
 - [x] **DEV-20261006-008** `medium` `feature` — Pantalla dedicada de Macro-Categorías (sacarla del inicio del admin)
 - [ ] **DEV-20261006-009** `low` `data` — Calidad de datos: solo 7 de 57 categorías tienen subcategoría real
+- [ ] **DEV-20261009-001** `high` `feature` — Editor de campañas adaptable: encuadre focal por imagen, zoom persistente y formato triple desplazable en tablet/móvil
 
 ## Épica: Dashboard tipo SaaS (sidebar, métricas operativas, salud de catálogo)
 
