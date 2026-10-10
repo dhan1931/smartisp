@@ -320,6 +320,9 @@ image_url	varchar(500)	No
 image_alt	varchar(200)	Yes	NULL	
 sort_order	smallint(5)	No	0	
 is_primary	tinyint(1)	No	0	
+focal_x	tinyint(3)	No	50	Foco horizontal independiente por imagen (0-100)
+focal_y	tinyint(3)	No	50	Foco vertical independiente por imagen (0-100)
+zoom_pct	smallint(5)	No	100	Zoom independiente por imagen (100-180)
 created_at	timestamp	No	current_timestamp()	
 Indexes
 Keyname	Type	Unique	Packed	Column	Cardinality	Collation	Null	Comment

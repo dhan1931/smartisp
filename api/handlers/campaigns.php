@@ -109,7 +109,7 @@ if ($action === 'admin-store-campaigns') {
         $slideRows = $slides->fetchAll(PDO::FETCH_ASSOC);
         if ($slideRows) {
             $marks = implode(',', array_fill(0, count($slideRows), '?'));
-            $gallery = $pdo->prepare("SELECT id, slide_id, image_url, image_alt, sort_order, is_primary FROM storefront_campaign_slide_images WHERE slide_id IN ($marks) ORDER BY slide_id, sort_order, id");
+            $gallery = $pdo->prepare("SELECT id, slide_id, image_url, image_alt, sort_order, is_primary, focal_x, focal_y, zoom_pct FROM storefront_campaign_slide_images WHERE slide_id IN ($marks) ORDER BY slide_id, sort_order, id");
             $gallery->execute(array_column($slideRows, 'id'));
             $imagesBySlide = [];
             foreach ($gallery->fetchAll(PDO::FETCH_ASSOC) as $image) $imagesBySlide[(string)$image['slide_id']][] = $image;
@@ -233,7 +233,7 @@ if ($action === 'admin-store-campaigns') {
             $pdo->prepare('DELETE FROM storefront_campaign_products WHERE campaign_id = ?')->execute([$campaignId]);
             if (array_key_exists('chips', $body)) $pdo->prepare('DELETE FROM storefront_promo_chips')->execute();
             $slideInsert = $pdo->prepare('INSERT INTO storefront_campaign_slides (campaign_id, eyebrow, title, subtitle, button_text, target_url, image_url, image_alt, image_fit, image_width_pct, card_layout, sort_order, is_active, starts_at, ends_at, badge_label, badge_tone, image_opacity, overlay_opacity, image_interval_seconds, promo_chip_label, promo_chip_icon, promo_chip_target_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-            $galleryInsert = $pdo->prepare('INSERT INTO storefront_campaign_slide_images (slide_id, image_url, image_alt, sort_order, is_primary) VALUES (?, ?, ?, ?, ?)');
+            $galleryInsert = $pdo->prepare('INSERT INTO storefront_campaign_slide_images (slide_id, image_url, image_alt, sort_order, is_primary, focal_x, focal_y, zoom_pct) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
             foreach ($slides as $index => $slide) {
                 $images = is_array($slide['images'] ?? null) ? array_slice($slide['images'], 0, 12) : [];
                 if (!$images && trim((string)($slide['image_url'] ?? '')) !== '') $images[] = ['image_url' => $slide['image_url'], 'image_alt' => $slide['image_alt'] ?? '', 'is_primary' => true];
@@ -266,7 +266,7 @@ if ($action === 'admin-store-campaigns') {
                     substr(trim((string)($slide['promo_chip_target_url'] ?? $slide['target_url'] ?? '/tienda.html#catalogo')), 0, 500),
                 ]);
                 $slideId = (int)$pdo->lastInsertId();
-                foreach ($images as $imageIndex => $image) $galleryInsert->execute([$slideId, substr(trim((string)$image['image_url']), 0, 500), storefrontCampaignText((string)($image['image_alt'] ?? $slide['title'] ?? ''), 200) ?: null, $imageIndex, $imageIndex === $primaryIndex ? 1 : 0]);
+                foreach ($images as $imageIndex => $image) $galleryInsert->execute([$slideId, substr(trim((string)$image['image_url']), 0, 500), storefrontCampaignText((string)($image['image_alt'] ?? $slide['title'] ?? ''), 200) ?: null, $imageIndex, $imageIndex === $primaryIndex ? 1 : 0, max(0, min(100, (int)($image['focal_x'] ?? 50))), max(0, min(100, (int)($image['focal_y'] ?? 50))), max(100, min(180, (int)($image['zoom_pct'] ?? 100)))]);
             }
             $productInsert = $pdo->prepare('INSERT INTO storefront_campaign_products (campaign_id, product_id, sort_order) VALUES (?, ?, ?)');
             foreach ($productIds as $index => $productId) $productInsert->execute([$campaignId, $productId, $index]);
@@ -299,7 +299,7 @@ if ($action === 'store-campaigns' && $method === 'GET') {
     $publicSlides = $slideStmt->fetchAll(PDO::FETCH_ASSOC);
     if ($publicSlides) {
         $marks = implode(',', array_fill(0, count($publicSlides), '?'));
-        $gallery = $pdo->prepare("SELECT slide_id, image_url, image_alt, sort_order, is_primary FROM storefront_campaign_slide_images WHERE slide_id IN ($marks) ORDER BY slide_id, sort_order, id");
+        $gallery = $pdo->prepare("SELECT slide_id, image_url, image_alt, sort_order, is_primary, focal_x, focal_y, zoom_pct FROM storefront_campaign_slide_images WHERE slide_id IN ($marks) ORDER BY slide_id, sort_order, id");
         $gallery->execute(array_column($publicSlides, 'id'));
         $imagesBySlide = [];
         foreach ($gallery->fetchAll(PDO::FETCH_ASSOC) as $image) $imagesBySlide[(string)$image['slide_id']][] = $image;

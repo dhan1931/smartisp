@@ -1881,8 +1881,6 @@
           .store-campaign-card-copy{width:100%;padding:16px}
           .store-campaign-card-copy .store-campaign-title{font-size:20px;line-height:1.15}
           .store-campaign-card-copy .store-campaign-subtitle{display:-webkit-box;overflow:hidden;line-height:1.35;-webkit-box-orient:vertical;-webkit-line-clamp:3}
-          .store-campaign-card.is-layout-side .store-campaign-card-media{width:48%!important}
-          .store-campaign-card.is-layout-side .store-campaign-card-main{width:58%!important}
           .store-campaign-card.is-layout-side .store-campaign-card-copy{padding:14px 10px 14px 14px}
           .store-campaign-card.is-layout-side .store-campaign-card-copy .store-campaign-title{font-size:19px}
           .store-campaign-card.is-layout-side .store-campaign-card-promo{max-width:46%;font-size:10px}
@@ -1904,6 +1902,9 @@
           .store-campaign-card:not(.is-layout-side) .store-campaign-card-copy{padding:13px}
         }
     </style>
+  <style>
+    @media(max-width:1100px){.store-campaign.is-triple{display:flex;align-items:stretch;gap:12px;overflow-x:auto;overscroll-behavior-inline:contain;padding:0 0 10px;scroll-snap-type:x mandatory;scrollbar-width:thin;-webkit-overflow-scrolling:touch}.store-campaign.is-triple .store-campaign-card{flex:0 0 min(82vw,460px);width:min(82vw,460px);min-width:0;scroll-snap-align:start}}
+  </style>
 </head>
 <body>
 	<div class="topbar"><span><i data-lucide="truck" width="14"></i> Envío gratis en Guayas</span><span><i data-lucide="clock" width="13"></i> Atención experta · Lun a Vie 9:00 a 18:00</span></div>
@@ -3682,6 +3683,18 @@
 			const primaryIndex = images.findIndex(image => image.is_primary === true || String(image.is_primary) === '1');
 			return primaryIndex > 0 ? [images[primaryIndex], ...images.slice(0, primaryIndex), ...images.slice(primaryIndex + 1)] : images;
 		};
+		const campaignImageFocus = image => {
+			const x = Math.max(0, Math.min(100, Number(image?.focal_x ?? 50)));
+			const y = Math.max(0, Math.min(100, Number(image?.focal_y ?? 50)));
+			const zoom = Math.max(100, Math.min(180, Number(image?.zoom_pct ?? 100))) / 100;
+			return { x, y, zoom };
+		};
+		const applyCampaignImageFocus = (element, image) => {
+			const focus = campaignImageFocus(image);
+			element.style.objectPosition = `${focus.x}% ${focus.y}%`;
+			element.style.transform = `scale(${focus.zoom})`;
+			element.style.transformOrigin = `${focus.x}% ${focus.y}%`;
+		};
 		const campaignExternal = target => /^https:\/\//i.test(String(target || ''));
 		const setCampaignLink = (link, target) => {
 			link.href = target || '/tienda.html#catalogo';
@@ -3697,6 +3710,7 @@
 				index = (index + 1) % images.length;
 				image.src = images[index].image_url;
 				image.alt = images[index].image_alt || slide.title || '';
+				applyCampaignImageFocus(image, images[index]);
 			}, Math.max(2, Math.min(20, Number(slide.image_interval_seconds) || 5)) * 1000);
 			storefrontImageTimers.push(timer);
 		};
@@ -3714,6 +3728,7 @@
 			image.alt = images[0]?.image_alt || slide.image_alt || slide.title || '';
 			image.style.objectFit = slide.image_fit === 'contain' ? 'contain' : 'cover';
 			image.style.opacity = String(Math.max(0, Math.min(100, Number(slide.image_opacity ?? 100))) / 100);
+			applyCampaignImageFocus(image, images[0]);
 			banner.style.setProperty('--campaign-overlay-opacity', String(Math.max(0, Math.min(100, Number(slide.overlay_opacity ?? 18))) / 100));
 			startStorefrontImageRotation(image, slide);
 			document.querySelector('#storeCampaignEyebrow').textContent = slide.eyebrow || '';
@@ -3794,9 +3809,11 @@
 				overlayStyle = `inset:0 auto 0 ${overlayStart}%;width:${overlayBandWidth}%;${overlayStyle}`;
 				mainStyle = `width:${textWidth}%`;
 			} else {
-				const imageWidth = Math.max(35, Math.min(75, Number(slide.image_width_pct ?? 68)));
+				const imageWidth = Math.max(35, Math.min(65, Number(slide.image_width_pct ?? 55)));
 				mediaStyle = `inset:0 0 0 auto;width:${imageWidth}%;object-position:right center;${mediaStyle}`;
 			}
+			const focus = campaignImageFocus(image);
+			mediaStyle += `;object-position:${focus.x}% ${focus.y}%;transform:scale(${focus.zoom});transform-origin:${focus.x}% ${focus.y}%`;
 			return `<article class="store-campaign-card${isSide ? ' is-layout-side' : ' is-layout-full'}" data-campaign-card="${index}"><img class="store-campaign-card-media" data-campaign-image data-slide-index="${index}" src="${escapeHtml(image.image_url || '')}" alt="${escapeHtml(image.image_alt || slide.title || '')}" style="${mediaStyle}"><span class="store-campaign-card-overlay" style="${overlayStyle}"></span><a class="store-campaign-card-main" href="${escapeHtml(target)}" style="${mainStyle}" ${campaignExternal(target) ? 'target="_blank" rel="noopener noreferrer"' : ''}><span class="store-campaign-card-copy"><span class="store-campaign-eyebrow" ${slide.eyebrow?'':'hidden'}>${escapeHtml(slide.eyebrow||'')}</span><span class="store-campaign-title">${escapeHtml(slide.title||'')}</span><span class="store-campaign-subtitle" ${slide.subtitle?'':'hidden'}>${escapeHtml(slide.subtitle||'')}</span><span class="store-campaign-cta">${escapeHtml(slide.button_text||'Explorar')} →</span></span></a>${slide.badge_label?`<span class="store-campaign-badge store-campaign-card-badge ${tone}">${escapeHtml(slide.badge_label)}</span>`:''}${slide.promo_chip_label?`<a class="store-campaign-card-promo" href="${escapeHtml(promoTarget)}" ${campaignExternal(promoTarget) ? 'target="_blank" rel="noopener noreferrer"' : ''}><i data-lucide="${icon}" width="14"></i>${escapeHtml(slide.promo_chip_label)}</a>`:''}</article>`;
 		};
 		const startLayoutImageRotations = () => {
