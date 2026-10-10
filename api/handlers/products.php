@@ -18,6 +18,8 @@ if ($action === 'catalog' && $method === 'GET') {
         $category = trim((string)($_GET['category'] ?? ''));
         $subcategory = trim((string)($_GET['subcategory'] ?? ''));
         $categoryListRaw = (string)($_GET['category_list'] ?? '');
+        $minPrice = trim((string)($_GET['min_price'] ?? ''));
+        $maxPrice = trim((string)($_GET['max_price'] ?? ''));
 
         $where = 'visible = 1';
         $params = [];
@@ -42,6 +44,14 @@ if ($action === 'catalog' && $method === 'GET') {
         if ($subcategory !== '') {
             $where .= ' AND subcategory = :subcategory';
             $params[':subcategory'] = $subcategory;
+        }
+        if ($minPrice !== '' && is_numeric($minPrice) && (float)$minPrice >= 0) {
+            $where .= ' AND price >= :min_price';
+            $params[':min_price'] = (float)$minPrice;
+        }
+        if ($maxPrice !== '' && is_numeric($maxPrice) && (float)$maxPrice >= 0) {
+            $where .= ' AND price <= :max_price';
+            $params[':max_price'] = (float)$maxPrice;
         }
         if ($categoryListRaw !== '') {
             $categoryList = json_decode($categoryListRaw, true);
