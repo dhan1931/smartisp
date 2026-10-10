@@ -2022,11 +2022,11 @@
 		<div class="store-trust-item"><i data-lucide="truck" width="22"></i><div><strong>Despacho a todo Ecuador</strong><span>Recibe donde estés</span></div></div>
 		<div class="store-trust-item"><i data-lucide="award" width="22"></i><div><strong>Garantía y respaldo</strong><span>Productos originales con soporte técnico</span></div></div>
 	</section>
-	<main hidden>
-		<!-- El catalogo completo (grid paginado, sidebar de categorias, busqueda/filtros) se quita
-		     de la portada de tienda.html -- se movera a otra pagina. El markup y el JS que lo
-		     maneja se dejan intactos (ocultos) para no romper nada mientras se decide el destino
-		     final; nada de esto es visible para el usuario mientras "hidden" siga aqui. -->
+	<main hidden id="catalogView">
+		<!-- El catalogo completo (grid paginado, sidebar de categorias, busqueda/filtros) esta oculto
+		     en la portada normal de tienda.html. Se muestra cuando la URL trae ?view=categorias,
+		     ?categoria=, ?macro= o ?q= -- ese es el modo "Categorias" al que apunta el nav y las
+		     busquedas (ver applyCategoriasViewMode() mas abajo). -->
 		<section class="content" id="catalogo">
 			<div class="store-layout">
 				<button type="button" class="category-drawer-backdrop" id="categoryDrawerBackdrop" aria-label="Cerrar categorías" hidden></button>
@@ -3561,7 +3561,13 @@
 				}
 			});
 		}
-		document.querySelector('#searchForm').addEventListener('submit', event => { event.preventDefault(); refreshView(true); document.querySelector('#catalogo').scrollIntoView({ behavior: 'smooth' }); });
+		document.querySelector('#searchForm').addEventListener('submit', event => {
+			event.preventDefault();
+			const term = document.querySelector('#searchInput').value.trim();
+			if (!window.isCategoriasView) { window.location.href = `/categorias-destacadas${term ? `?q=${encodeURIComponent(term)}` : ''}`; return; }
+			refreshView(true);
+			document.querySelector('#catalogo').scrollIntoView({ behavior: 'smooth' });
+		});
 		let searchDebounceTimer = null;
 		document.querySelector('#searchInput').addEventListener('input', () => {
 			// DEV-20261006-002: antes cada tecla disparaba un render() completo (filtrar+ordenar
@@ -4195,6 +4201,14 @@
 			const searchParam = urlParams.get('q') || urlParams.get('buscar') || urlParams.get('s');
 			const cartParam = urlParams.get('openCart') || urlParams.get('carrito');
 			const accountParam = urlParams.get('openAccount') || urlParams.get('cuenta');
+			const pathIsCategorias = window.location.pathname.replace(/\/$/, '') === '/categorias-destacadas';
+			window.isCategoriasView = pathIsCategorias || Boolean(catParam) || Boolean(macroParam) || Boolean(searchParam);
+			if (window.isCategoriasView) {
+				document.querySelector('#catalogView').hidden = false;
+				document.querySelectorAll('#mNavHome,#mNavCategories').forEach(el => el.classList.toggle('active', el.id === 'mNavCategories'));
+				document.querySelectorAll('.public-nav a').forEach(a => a.removeAttribute('aria-current'));
+				document.querySelector('.public-nav a[href="/categorias-destacadas"]')?.setAttribute('aria-current', 'page');
+			}
 
 			if (catParam) {
 				const macro = getMacroCategory(catParam);
@@ -4236,11 +4250,18 @@
 			console.warn('URL params no disponibles:', e);
 		}
 
+		const applyCategoriasViewMode = () => {
+			if (!window.isCategoriasView) return;
+			document.querySelectorAll('.store-campaign-area, #storePromoChips, #miniCategories, #campaignFeatured, .store-trust-row').forEach(el => { el.hidden = true; });
+		};
+		applyCategoriasViewMode();
+
 		renderSidebarCategories();
 		render();
 		window.lucide && window.lucide.createIcons();
 		applyRemoteSite();
-		loadStorefrontCampaigns();
+		loadStorefrontCampaigns().then(applyCategoriasViewMode);
+		if (window.isCategoriasView) setTimeout(applyCategoriasViewMode, 1200);
 
 		// =============================================================
 		// CONTROLADORES DE LA BARRA INFERIOR MÓVIL (BOTTOM NAV)
@@ -4248,6 +4269,7 @@
 		const mNavHome = document.querySelector('#mNavHome');
 		if (mNavHome) {
 			mNavHome.addEventListener('click', () => {
+				if (window.isCategoriasView) { window.location.href = '/tienda.html'; return; }
 				selectedFilter = 'all';
 				if (typeof renderSidebarCategories === 'function') renderSidebarCategories();
 				const searchInput = document.querySelector('#searchInput');
@@ -4262,6 +4284,7 @@
 		const mNavCategories = document.querySelector('#mNavCategories');
 		if (mNavCategories) {
 			mNavCategories.addEventListener('click', () => {
+				if (!window.isCategoriasView) { window.location.href = '/categorias-destacadas'; return; }
 				openCategoryDrawer();
 				document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
 				mNavCategories.classList.add('active');
@@ -4271,6 +4294,7 @@
 		const mNavSearch = document.querySelector('#mNavSearch');
 		if (mNavSearch) {
 			mNavSearch.addEventListener('click', () => {
+				if (!window.isCategoriasView) { window.location.href = '/categorias-destacadas'; return; }
 				const searchInput = document.querySelector('#searchInput');
 				if (searchInput) {
 					searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });

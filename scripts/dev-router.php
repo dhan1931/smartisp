@@ -59,7 +59,9 @@ if ($uri === '/productos-destacados') {
     exit;
 }
 if ($uri === '/categorias-destacadas') {
-    require $root . '/categorias-destacadas.php';
+    // tienda.html detecta el modo catalogo por location.pathname (ver .htaccess).
+    header('Content-Type: text/html; charset=utf-8');
+    readfile($root . '/tienda.html');
     exit;
 }
 if ($uri === '/servicios') {

@@ -17,7 +17,10 @@ DirectoryIndex tienda.html index.html index.htm index.php
     RewriteRule ^sitemap-products\.xml$ sitemap-products.php [QSA,L]
     RewriteRule ^sitemap-categories\.xml$ sitemap-categories.php [QSA,L]
     RewriteRule ^productos-destacados/?$ productos-destacados.php [QSA,L]
-    RewriteRule ^categorias-destacadas/?$ categorias-destacadas.php [QSA,L]
+    # categorias-destacadas.php (hub con tarjetas) quedo reemplazada por el catalogo real:
+    # ahora esta ruta sirve tienda.html, que detecta el modo catalogo por location.pathname
+    # (un query string inyectado aqui por el rewrite no le llegaria al JS del navegador).
+    RewriteRule ^categorias-destacadas/?$ tienda.html [QSA,L]
     RewriteRule ^servicios/?$ servicios.html [QSA,L]
     RewriteRule ^nosotros/?$ nosotros.html [QSA,L]
     RewriteRule ^categoria/([^/]+)/?$ categoria.php?slug=$1 [QSA,L]
