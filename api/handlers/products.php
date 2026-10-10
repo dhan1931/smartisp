@@ -94,7 +94,9 @@ if ($action === 'catalog' && $method === 'GET') {
         $products = array_map('normalizeProductRow', $stmt->fetchAll());
 
         $stmtContent = $pdo->query("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows
-            WHERE setting_key IN ('hero_title', 'hero_text', 'primary_color', 'footer_text', 'catalog_visible', 'hero_visible', 'benefits_visible')");
+            WHERE setting_key IN ('hero_title', 'hero_text', 'primary_color', 'footer_text', 'catalog_visible', 'hero_visible', 'benefits_visible',
+                'footer_whatsapp', 'footer_email', 'footer_address',
+                'footer_social_instagram', 'footer_social_facebook', 'footer_social_youtube', 'footer_social_linkedin')");
         $allContent = $stmtContent ? $stmtContent->fetchAll() : [];
         $content = [];
         $excludePrefixes = [

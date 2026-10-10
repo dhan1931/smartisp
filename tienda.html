@@ -323,10 +323,44 @@
 		.benefit i { color: #7bd6ff; }
 		.benefit strong { display: block; font-size: 13px; margin-bottom: 4px; }
 		.benefit span { color: #a8c0d0; font-size: 11px; }
-		footer { padding: 35px 5vw; background: white; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 30px; color: var(--muted); font-size: 12px; }
-		footer .logo { color: var(--navy); margin-bottom: 9px; }
-		.footer-links { display: flex; gap: 30px; }
-		.footer-links a:hover { color: var(--blue); }
+		.site-footer { background: #0b2032; color: #a9c2d4; font-size: 13px; }
+		.site-footer-top { display: grid; grid-template-columns: 1.6fr repeat(3, 1fr) 1fr 1.1fr; gap: 28px; padding: 44px 5vw 30px; }
+		.site-footer-logo { font-family: 'Space Grotesk', sans-serif; font-size: 23px; font-weight: 800; color: #fff; letter-spacing: -.02em; }
+		.site-footer-logo small { display: block; font-family: system-ui, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .12em; color: #6f93ad; margin-top: 3px; }
+		.site-footer-brand h3 { margin: 16px 0 8px; color: #fff; font-size: 16px; line-height: 1.3; }
+		.site-footer-brand p { margin: 0; color: #8aa6ba; font-size: 12.5px; line-height: 1.5; }
+		.site-footer-social { display: flex; gap: 10px; margin-top: 16px; }
+		.site-footer-social a { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg,#f58529,#dd2a7b 42%,#8134af 74%,#515bd4); color: #fff; }
+		.site-footer-social a:nth-child(2) { background: #1877f2; }
+		.site-footer-social a:nth-child(3) { background: #ff0000; }
+		.site-footer-social a:nth-child(4) { background: #0a66c2; }
+		.site-footer-col h4, .site-footer-contact h4 { margin: 0 0 14px; color: #fff; font-size: 14px; font-weight: 800; }
+		.site-footer-col { display: flex; flex-direction: column; gap: 10px; }
+		.site-footer-col a { color: #a9c2d4; }
+		.site-footer-col a:hover { color: #fff; }
+		.site-footer-contact { display: flex; flex-direction: column; gap: 14px; }
+		.site-footer-contact a, .site-footer-contact-item { display: flex; align-items: flex-start; gap: 10px; color: #a9c2d4; }
+		.site-footer-contact i { color: #4fd1c5; flex-shrink: 0; margin-top: 2px; }
+		.site-footer-contact strong { display: block; color: #fff; font-size: 13px; font-weight: 700; }
+		.site-footer-contact small { color: #7f9bb0; font-size: 11px; }
+		.site-footer-whatsapp-card { position: relative; overflow: hidden; padding: 20px; border-radius: 14px; background: linear-gradient(135deg,#0f3d2e,#0b2032); border: 1px solid #1d4a3a; }
+		.site-footer-whatsapp-card i:first-child { color: #25d366; }
+		.site-footer-whatsapp-card strong { display: block; margin-top: 8px; color: #cdeede; font-size: 12px; }
+		.site-footer-whatsapp-card h4 { margin: 4px 0 8px; color: #fff; font-size: 16px; }
+		.site-footer-whatsapp-card p { margin: 0 0 14px; color: #9fc2b4; font-size: 12px; line-height: 1.4; }
+		.site-footer-whatsapp-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 8px; background: #25d366; color: #06301f; font-weight: 800; font-size: 13px; }
+		.site-footer-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 22px; padding: 18px 5vw; border-top: 1px solid #1c3448; }
+		.site-footer-badges > span { display: inline-flex; align-items: center; gap: 8px; color: #a9c2d4; font-size: 12px; font-weight: 700; white-space: nowrap; }
+		.site-footer-badges i { color: #4fd1c5; }
+		.site-footer-payments { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+		.site-footer-payments small { color: #7f9bb0; font-size: 11px; margin-right: 2px; }
+		.site-footer-payments span { padding: 5px 9px; border: 1px solid #294a5f; border-radius: 5px; background: #122c40; color: #cfe1ec; font-size: 10.5px; font-weight: 800; }
+		.site-footer-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; padding: 16px 5vw; border-top: 1px solid #1c3448; color: #7f9bb0; font-size: 11.5px; }
+		.site-footer-bottom div { display: flex; gap: 18px; flex-wrap: wrap; }
+		.site-footer-bottom a { color: #7f9bb0; }
+		.site-footer-bottom a:hover { color: #fff; }
+		@media(max-width: 1100px) { .site-footer-top { grid-template-columns: repeat(3, 1fr); } .site-footer-whatsapp-card { grid-column: 1 / -1; } }
+		@media(max-width: 700px) { .site-footer-top { grid-template-columns: 1fr 1fr; padding: 32px 20px 24px; } .site-footer-badges { padding: 16px 20px; } .site-footer-payments { margin-left: 0; } .site-footer-bottom { padding: 14px 20px; } }
 		@media (max-width: 1080px) {
 			.nav { display:flex; flex-wrap:wrap; }
 			.search { order:3; flex:1 1 100%; }
@@ -437,7 +471,6 @@
 		.add { border-radius: 7px; color: #087ea4; background: #eaf7f5; border-color: #a9d8d0; }
 		.benefits { background: #102c3d; padding-top: 28px; padding-bottom: 28px; }
 		.benefit i { color: #62c8bd; }
-		footer { padding-top: 42px; padding-bottom: 42px; }
 		.modal-panel, .drawer-panel { border-radius: 10px; box-shadow: 0 24px 70px rgba(16,44,61,.22); }
 		.modal-close { border-radius: 50%; }
 		.account-switch { width: 100%; border: 0; background: transparent; color: var(--muted); padding: 17px 4px 2px; font-size: 12px; }
@@ -1341,18 +1374,6 @@
 				padding: 24px 5vw !important;
 				box-sizing: border-box !important;
 			}
-			footer {
-				width: 100% !important;
-				max-width: 100% !important;
-				flex-direction: column !important;
-				gap: 20px !important;
-				padding: 28px 5vw !important;
-				box-sizing: border-box !important;
-			}
-			.footer-links {
-				flex-direction: column !important;
-				gap: 10px !important;
-			}
 
 			/* Modal Detalle de Producto tipo Bottom Sheet */
 			.modal {
@@ -2006,7 +2027,70 @@
 		</section>
 		<section class="benefits"><div class="benefit"><i data-lucide="shield-check" width="25"></i><div><strong>Compra segura</strong><span>Protegemos cada transacción</span></div></div><div class="benefit"><i data-lucide="headphones" width="25"></i><div><strong>Asesoría especializada</strong><span>Personas reales, respuestas claras</span></div></div><div class="benefit"><i data-lucide="package-check" width="25"></i><div><strong>Despacho a todo Ecuador</strong><span>Recibe donde estés</span></div></div></section>
 	</main>
-	<footer><div><div class="logo">smart<b>isp</b><span style="color:#f5a524">.</span></div><div>Infraestructura que mantiene tu red en movimiento.</div></div><div class="footer-links"><a href="#catalogo">Catálogo de Productos</a><a href="https://wa.me/593983576667" target="_blank" rel="noopener">Contacto y Soporte</a></div><div>© 2026 SmartISP</div></footer>
+	<footer class="site-footer">
+		<div class="site-footer-top">
+			<div class="site-footer-brand">
+				<div class="site-footer-logo">SMART-ISP<small>Infraestructura y Soluciones TI</small></div>
+				<h3>Tecnología que impulsa tus proyectos.</h3>
+				<p>Equipamiento tecnológico, infraestructura y soluciones TI para hogares y empresas.</p>
+				<div class="site-footer-social" id="footerSocial">
+					<a href="#" id="footerSocialInstagram" aria-label="Instagram" hidden><i data-lucide="instagram" width="18"></i></a>
+					<a href="#" id="footerSocialFacebook" aria-label="Facebook" hidden><i data-lucide="facebook" width="18"></i></a>
+					<a href="#" id="footerSocialYoutube" aria-label="YouTube" hidden><i data-lucide="youtube" width="18"></i></a>
+					<a href="#" id="footerSocialLinkedin" aria-label="LinkedIn" hidden><i data-lucide="linkedin" width="18"></i></a>
+				</div>
+			</div>
+			<div class="site-footer-col">
+				<h4>Tienda</h4>
+				<a href="/tienda.html#catalogo">Catálogo de Productos</a>
+				<a href="#">Nuevos Ingresos</a>
+				<a href="#">Ofertas y Promociones</a>
+				<a href="#">Marcas</a>
+				<a href="/tienda.html#catalogo">Todos los Productos</a>
+			</div>
+			<div class="site-footer-col">
+				<h4>Nosotros</h4>
+				<a href="/nosotros">Quiénes Somos</a>
+				<a href="#">Proyectos y Servicios</a>
+				<a href="#">Blog / Novedades</a>
+				<a href="#">Trabaja con Nosotros</a>
+				<a href="#">Ubicación</a>
+			</div>
+			<div class="site-footer-col">
+				<h4>Servicios</h4>
+				<a href="#">Soluciones Empresariales</a>
+				<a href="#">Implementación TI</a>
+				<a href="#">Infraestructura de Redes</a>
+				<a href="#">Seguridad y Videovigilancia</a>
+				<a href="/servicios">Soporte y Mantenimiento</a>
+			</div>
+			<div class="site-footer-col site-footer-contact">
+				<h4>Contáctanos</h4>
+				<a href="#" id="footerWhatsappLink" hidden><i data-lucide="message-circle" width="17"></i><span><strong id="footerWhatsappText"></strong><small>Escríbenos por WhatsApp</small></span></a>
+				<a href="#" id="footerEmailLink" hidden><i data-lucide="mail" width="17"></i><span><strong id="footerEmailText"></strong><small>Respuesta rápida</small></span></a>
+				<div class="site-footer-contact-item" id="footerAddressItem" hidden><i data-lucide="map-pin" width="17"></i><span><strong id="footerAddressText"></strong></span></div>
+			</div>
+			<div class="site-footer-whatsapp-card" id="footerWhatsappCard" hidden>
+				<i data-lucide="message-circle" width="26"></i>
+				<strong>¿Tienes dudas?</strong>
+				<h4>Escríbenos por WhatsApp</h4>
+				<p>Te asesoramos en productos y soluciones para tu hogar o empresa.</p>
+				<a href="#" id="footerWhatsappCta" class="site-footer-whatsapp-btn"><i data-lucide="message-circle" width="16"></i> Abrir WhatsApp <i data-lucide="arrow-right" width="15"></i></a>
+			</div>
+		</div>
+		<div class="site-footer-badges">
+			<span><i data-lucide="shield-check" width="18"></i> Productos originales</span>
+			<span><i data-lucide="award" width="18"></i> Garantía oficial</span>
+			<span><i data-lucide="package-check" width="18"></i> Devoluciones seguras</span>
+			<span><i data-lucide="headphones" width="18"></i> Soporte técnico</span>
+			<span><i data-lucide="handshake" width="18"></i> Asesoría especializada</span>
+			<div class="site-footer-payments"><small>Métodos de pago:</small><span>Visa</span><span>Mastercard</span><span>Amex</span><span>Diners Club</span><span>Banco Pichincha</span><span>PayPhone</span></div>
+		</div>
+		<div class="site-footer-bottom">
+			<span id="footerCopyright">© SMART-ISP. Todos los derechos reservados.</span>
+			<div><a href="#">Términos y Condiciones</a><a href="#">Política de Privacidad</a><a href="#">Políticas de Garantía</a></div>
+		</div>
+	</footer>
 
 	<!-- Barra de Navegación Inferior Móvil (Estilo App Nativa) -->
 	<nav class="mobile-bottom-nav" aria-label="Navegación rápida móvil">
@@ -3511,6 +3595,48 @@
 			}
 		});
 		window.__publicBrandManaged = true;
+		const renderFooterContent = content => {
+			if (!content) return;
+			if (content.footer_text) {
+				const brandP = document.querySelector('.site-footer-brand p');
+				if (brandP) brandP.textContent = content.footer_text;
+			}
+			const whatsapp = (content.footer_whatsapp || '').trim();
+			if (whatsapp) {
+				const digits = whatsapp.replace(/[^\d]/g, '');
+				const waHref = `https://wa.me/${digits}`;
+				const waLink = document.querySelector('#footerWhatsappLink');
+				if (waLink) { waLink.href = waHref; waLink.target = '_blank'; waLink.rel = 'noopener'; waLink.hidden = false; document.querySelector('#footerWhatsappText').textContent = whatsapp; }
+				const waCta = document.querySelector('#footerWhatsappCta');
+				const waCard = document.querySelector('#footerWhatsappCard');
+				if (waCta) { waCta.href = waHref; waCta.target = '_blank'; waCta.rel = 'noopener'; }
+				if (waCard) waCard.hidden = false;
+			}
+			const email = (content.footer_email || '').trim();
+			if (email) {
+				const emailLink = document.querySelector('#footerEmailLink');
+				if (emailLink) { emailLink.href = `mailto:${email}`; emailLink.hidden = false; document.querySelector('#footerEmailText').textContent = email; }
+			}
+			const address = (content.footer_address || '').trim();
+			if (address) {
+				const addressItem = document.querySelector('#footerAddressItem');
+				if (addressItem) { addressItem.hidden = false; document.querySelector('#footerAddressText').textContent = address; }
+			}
+			const socials = [
+				['footer_social_instagram', '#footerSocialInstagram'],
+				['footer_social_facebook', '#footerSocialFacebook'],
+				['footer_social_youtube', '#footerSocialYoutube'],
+				['footer_social_linkedin', '#footerSocialLinkedin']
+			];
+			socials.forEach(([key, selector]) => {
+				const url = (content[key] || '').trim();
+				const el = document.querySelector(selector);
+				if (el && url) { el.href = url; el.target = '_blank'; el.rel = 'noopener'; el.hidden = false; }
+			});
+			const copyright = document.querySelector('#footerCopyright');
+			if (copyright) copyright.textContent = `© ${new Date().getFullYear()} SMART-ISP. Todos los derechos reservados.`;
+			window.lucide?.createIcons();
+		};
 		const applySiteLogo = content => {
 			if (!content || window.__publicBrandManaged) return;
 			const mode = content.landing_logo_type || (content.landing_logo_image ? 'image' : content.logo_type || (content.logo_image ? 'image' : 'text'));
@@ -3620,7 +3746,7 @@
 				if (content.hero_text && document.querySelector('.hero p')) document.querySelector('.hero p').textContent = content.hero_text;
 				if (content.hero_image && document.querySelector('.hero')) document.querySelector('.hero').style.backgroundImage = `url("${content.hero_image}")`;
 				if (content.primary_color) document.documentElement.style.setProperty('--blue', content.primary_color);
-				if (content.footer_text && document.querySelector('footer > div:first-child > div:last-child')) document.querySelector('footer > div:first-child > div:last-child').textContent = content.footer_text;
+				renderFooterContent(content);
 				if (content.catalog_visible === 'false' && document.querySelector('#catalogo')) document.querySelector('#catalogo').hidden = true;
 				if (content.hero_visible === 'false' && document.querySelector('.hero')) document.querySelector('.hero').hidden = true;
 				if (content.benefits_visible === 'false' && document.querySelector('.benefits')) document.querySelector('.benefits').hidden = true;
