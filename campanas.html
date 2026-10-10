@@ -50,12 +50,16 @@
     .image-crop summary{cursor:pointer;color:var(--blue);font-size:12.5px;font-weight:800}
     .image-crop label{margin:7px 0;font-size:11px}
     .image-crop[open] summary{margin-bottom:8px}
-    .crop-canvas{position:relative;width:100%;aspect-ratio:1.9;overflow:hidden;border:1px solid var(--line);border-radius:6px;background:#eef3f6;cursor:crosshair;touch-action:none}
+    .crop-canvas{position:relative;width:100%;aspect-ratio:2.4;border:1px solid var(--line);border-radius:6px;background:#eef3f6;cursor:crosshair;touch-action:none}
+    .crop-canvas-media{position:absolute;inset:0;overflow:hidden;border-radius:5px}
     .crop-canvas img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;user-select:none}
-    .crop-crosshair{position:absolute;width:26px;height:26px;margin-left:-13px;margin-top:-13px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1.5px #087ea4,0 2px 6px rgba(0,0,0,.4);pointer-events:none}
+    .crop-crosshair{position:absolute;width:26px;height:26px;margin-left:-13px;margin-top:-13px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1.5px #087ea4,0 2px 6px rgba(0,0,0,.4);pointer-events:none;z-index:2}
     .crop-crosshair::before,.crop-crosshair::after{content:"";position:absolute;background:#fff}
     .crop-crosshair::before{top:50%;left:3px;right:3px;height:1.5px;margin-top:-.75px}
     .crop-crosshair::after{left:50%;top:3px;bottom:3px;width:1.5px;margin-left:-.75px}
+    .crop-frame{position:absolute;border:1.5px dashed #fff;box-shadow:0 0 0 1px #087ea4,0 2px 10px rgba(0,0,0,.35);pointer-events:none}
+    .crop-handle{position:absolute;width:16px;height:16px;margin:-8px;border:2px solid #087ea4;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4);pointer-events:auto;touch-action:none;cursor:nwse-resize}
+    .crop-handle[data-corner="tr"],.crop-handle[data-corner="bl"]{cursor:nesw-resize}
     .crop-help{margin:6px 0 2px;color:var(--muted);font-size:11px}
     @media(max-width:760px){.campaign-preview.preview-triple{display:flex;overflow-x:auto;scroll-snap-type:x mandatory}.campaign-preview.preview-triple .preview-card{flex:0 0 min(82vw,420px);scroll-snap-align:start}}
   </style>
@@ -186,7 +190,8 @@
         slide.image_url=primary?.image_url||'';
         const images=slide.images.map((image,imageIndex)=>{
           const fx=Number(image.focal_x??50),fy=Number(image.focal_y??50),zoom=Number(image.zoom_pct??100);
-          return `<div class="gallery-item ${image.is_primary?'is-primary':''}" data-image="${imageIndex}"><img src="${escapeHtml(image.image_url)}" alt="${escapeHtml(image.image_alt||'') }" width="240" height="140" loading="lazy" style="object-position:${fx}% ${fy}%;transform:scale(${zoom/100});transform-origin:${fx}% ${fy}%"><strong>${escapeHtml(image.image_url.split('/').pop())}</strong><div class="gallery-actions"><button type="button" data-primary-image ${image.is_primary?'disabled':''}>${image.is_primary?'Portada':'Usar portada'}</button><button type="button" data-image-up ${imageIndex===0?'disabled':''} aria-label="Subir orden">↑</button><button type="button" data-image-down ${imageIndex===slide.images.length-1?'disabled':''} aria-label="Bajar orden">↓</button><button type="button" data-remove-image aria-label="Quitar imagen">×</button></div><details class="image-crop" open><summary>✂️ Ajustar encuadre (recorte)</summary><p class="crop-help">Arrastra sobre la imagen para elegir qué parte se ve siempre, o usa los controles de abajo.</p><div class="crop-canvas" data-crop-canvas><img data-focal-preview src="${escapeHtml(image.image_url)}" alt="" style="object-position:${fx}% ${fy}%;transform:scale(${zoom/100});transform-origin:${fx}% ${fy}%"><div class="crop-crosshair" data-crop-crosshair style="left:${fx}%;top:${fy}%"></div></div><label>Foco horizontal<div class="opacity-row"><input data-image-field="focal_x" type="range" min="0" max="100" value="${fx}"><output>${fx}%</output></div></label><label>Foco vertical<div class="opacity-row"><input data-image-field="focal_y" type="range" min="0" max="100" value="${fy}"><output>${fy}%</output></div></label><label>Zoom<div class="opacity-row"><input data-image-field="zoom_pct" type="range" min="100" max="180" value="${zoom}"><output>${zoom}%</output></div></label></details></div>`;
+          const f=cropFrameRect(fx,fy,zoom);
+          return `<div class="gallery-item ${image.is_primary?'is-primary':''}" data-image="${imageIndex}"><img src="${escapeHtml(image.image_url)}" alt="${escapeHtml(image.image_alt||'') }" width="240" height="140" loading="lazy" style="object-position:${fx}% ${fy}%;transform:scale(${zoom/100});transform-origin:${fx}% ${fy}%"><strong>${escapeHtml(image.image_url.split('/').pop())}</strong><div class="gallery-actions"><button type="button" data-primary-image ${image.is_primary?'disabled':''}>${image.is_primary?'Portada':'Usar portada'}</button><button type="button" data-image-up ${imageIndex===0?'disabled':''} aria-label="Subir orden">↑</button><button type="button" data-image-down ${imageIndex===slide.images.length-1?'disabled':''} aria-label="Bajar orden">↓</button><button type="button" data-remove-image aria-label="Quitar imagen">×</button></div><details class="image-crop" open><summary>✂️ Ajustar encuadre (recorte)</summary><p class="crop-help">Arrastra el recuadro para mover el encuadre, o sus esquinas para acercar/alejar. También puedes usar los controles de abajo.</p><div class="crop-canvas" data-crop-canvas><div class="crop-canvas-media"><img data-focal-preview src="${escapeHtml(image.image_url)}" alt="" style="object-position:${fx}% ${fy}%;transform:scale(${zoom/100});transform-origin:${fx}% ${fy}%"></div><div class="crop-frame" data-crop-frame style="left:${f.left}%;top:${f.top}%;width:${f.size}%;height:${f.size}%"><div class="crop-handle" data-crop-handle data-corner="tl" style="left:0%;top:0%"></div><div class="crop-handle" data-crop-handle data-corner="tr" style="left:100%;top:0%"></div><div class="crop-handle" data-crop-handle data-corner="bl" style="left:0%;top:100%"></div><div class="crop-handle" data-crop-handle data-corner="br" style="left:100%;top:100%"></div></div><div class="crop-crosshair" data-crop-crosshair style="left:${fx}%;top:${fy}%"></div></div><label>Foco horizontal<div class="opacity-row"><input data-image-field="focal_x" type="range" min="0" max="100" value="${fx}"><output>${fx}%</output></div></label><label>Foco vertical<div class="opacity-row"><input data-image-field="focal_y" type="range" min="0" max="100" value="${fy}"><output>${fy}%</output></div></label><label>Zoom<div class="opacity-row"><input data-image-field="zoom_pct" type="range" min="100" max="180" value="${zoom}"><output>${zoom}%</output></div></label></details></div>`;
         }).join('');
         return `<article class="slide" data-index="${index}" data-editor-key="${escapeHtml(slide._editorKey)}"><details ${expandedKeys.has(slide._editorKey)?'open':''}><summary><span class="slide-number">${index+1}</span><span class="slide-summary-copy">${escapeHtml(slide.title||'Banner sin título')}<small>${slide.images.length} imagen${slide.images.length===1?'':'es'} · ${slide.is_active===false?'Borrador oculto':'Visible en tienda'}</small></span><span class="slide-summary-actions"><button class="icon-button" type="button" data-move="-1" aria-label="Mover banner arriba" ${index===0?'disabled':''}>↑</button><button class="icon-button" type="button" data-move="1" aria-label="Mover banner abajo" ${index===state.slides.length-1?'disabled':''}>↓</button><button class="icon-button" type="button" data-remove aria-label="Eliminar banner">×</button></span></summary><div class="slide-body"><div class="slide-fields">
           <label>Etiqueta<input data-field="eyebrow" maxlength="100" value="${escapeHtml(slide.eyebrow||'')}" placeholder="Conectividad y redes"></label><label>Título (opcional)<input data-field="title" maxlength="180" value="${escapeHtml(slide.title||'')}" placeholder="Déjalo vacío para mostrar solo la foto"></label>
@@ -295,23 +300,41 @@
     $('#app').addEventListener('change',event=>{
       if(event.target.closest('.campaign-settings')) { collectForm(); markDirty(); }
     });
+    function cropFrameRect(x,y,zoomPct){
+      const size=Math.max(100/1.8,Math.min(100,10000/Math.max(100,Number(zoomPct)||100)));
+      const left=Math.max(0,Math.min(100-size,Number(x)-size/2));
+      const top=Math.max(0,Math.min(100-size,Number(y)-size/2));
+      return {left,top,size};
+    }
     function updateCropVisuals(imageCard,image){
       const x=Number(image.focal_x??50),y=Number(image.focal_y??50),zoom=Number(image.zoom_pct??100);
       imageCard.querySelectorAll('img').forEach(img=>{img.style.objectPosition=`${x}% ${y}%`;img.style.transform=`scale(${zoom/100})`;img.style.transformOrigin=`${x}% ${y}%`;});
       const crosshair=imageCard.querySelector('[data-crop-crosshair]');
       if(crosshair){crosshair.style.left=`${x}%`;crosshair.style.top=`${y}%`;}
+      const frame=imageCard.querySelector('[data-crop-frame]');
+      if(frame){const f=cropFrameRect(x,y,zoom);frame.style.left=`${f.left}%`;frame.style.top=`${f.top}%`;frame.style.width=`${f.size}%`;frame.style.height=`${f.size}%`;}
       const xRange=imageCard.querySelector('[data-image-field="focal_x"]'),yRange=imageCard.querySelector('[data-image-field="focal_y"]'),zRange=imageCard.querySelector('[data-image-field="zoom_pct"]');
       if(xRange){xRange.value=x;xRange.nextElementSibling.value=`${x}%`;}
       if(yRange){yRange.value=y;yRange.nextElementSibling.value=`${y}%`;}
       if(zRange){zRange.value=zoom;zRange.nextElementSibling.value=`${zoom}%`;}
     }
     let cropDrag=null;
+    let cropResize=null;
     const cropPointFromEvent=(canvas,event)=>{
       const rect=canvas.getBoundingClientRect();
       const px=event.touches?event.touches[0].clientX:event.clientX, py=event.touches?event.touches[0].clientY:event.clientY;
       return {x:Math.round(Math.max(0,Math.min(100,(px-rect.left)/rect.width*100))),y:Math.round(Math.max(0,Math.min(100,(py-rect.top)/rect.height*100)))};
     };
     $('#slides').addEventListener('pointerdown',event=>{
+      const handle=event.target.closest('[data-crop-handle]');
+      if(handle){
+        const canvas=handle.closest('[data-crop-canvas]');
+        const imageCard=canvas.closest('[data-image]'),slide=state.slides[Number(imageCard.closest('[data-index]').dataset.index)],image=slide.images[Number(imageCard.dataset.image)];
+        cropResize={canvas,imageCard,image};
+        canvas.setPointerCapture?.(event.pointerId);
+        event.stopPropagation();
+        return;
+      }
       const canvas=event.target.closest('[data-crop-canvas]');
       if(!canvas)return;
       const imageCard=canvas.closest('[data-image]'),slide=state.slides[Number(imageCard.closest('[data-index]').dataset.index)],image=slide.images[Number(imageCard.dataset.image)];
@@ -322,12 +345,25 @@
       updateCropVisuals(imageCard,image);markDirty();
     });
     $('#slides').addEventListener('pointermove',event=>{
+      if(cropResize){
+        if(event.buttons===0){cropResize=null;return;}
+        const point=cropPointFromEvent(cropResize.canvas,event);
+        const fx=Number(cropResize.image.focal_x??50),fy=Number(cropResize.image.focal_y??50);
+        const halfSize=Math.max(Math.abs(point.x-fx),Math.abs(point.y-fy));
+        const size=Math.max(100/1.8,Math.min(100,halfSize*2));
+        cropResize.image.zoom_pct=Math.round(Math.max(100,Math.min(180,10000/size)));
+        updateCropVisuals(cropResize.imageCard,cropResize.image);
+        return;
+      }
       if(!cropDrag||event.buttons===0){if(cropDrag&&event.buttons===0)cropDrag=null;return;}
       const point=cropPointFromEvent(cropDrag.canvas,event);
       cropDrag.image.focal_x=point.x;cropDrag.image.focal_y=point.y;
       updateCropVisuals(cropDrag.imageCard,cropDrag.image);
     });
-    ['pointerup','pointerleave','pointercancel'].forEach(evt=>$('#slides').addEventListener(evt,()=>{if(cropDrag){renderPreview();markDirty();cropDrag=null;}}));
+    ['pointerup','pointerleave','pointercancel'].forEach(evt=>$('#slides').addEventListener(evt,()=>{
+      if(cropDrag){renderPreview();markDirty();cropDrag=null;}
+      if(cropResize){renderPreview();markDirty();cropResize=null;}
+    }));
     $('#slides').addEventListener('input',event=>{
       const imageCard=event.target.closest('[data-image]'),imageField=event.target.dataset.imageField;
       if(imageCard&&imageField){
