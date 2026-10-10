@@ -1841,24 +1841,21 @@
         .store-campaign.is-triple { grid-template-columns:repeat(3,minmax(0,1fr)); }
         .store-campaign.is-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
         .store-campaign.is-cards { display:flex; align-items:stretch; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:thin; }
-        /* Base: estilo "imagen completa" (card_layout = full) -- imagen de fondo a toda la
-           tarjeta, texto en un panel semitransparente encima. Es el estilo original; el
-           estilo "lateral" (is-layout-side) lo sobreescribe mas abajo, con su propio ambito,
-           para que no se pisen entre si (antes eran dos bloques sin ambito compitiendo). */
+        /* Portada panoramica: fotografia alineada a la derecha y panel de texto superpuesto
+           desde la izquierda. El diseno lateral conserva su composicion independiente abajo. */
         .store-campaign-card { position:relative; display:flex; flex:1 1 0; min-width:0; min-height:250px; aspect-ratio:1.8; overflow:hidden; align-items:center; border:1px solid var(--line); border-radius:8px; background:#e7f3f8; isolation:isolate; }
         .store-campaign.is-cards .store-campaign-card { flex:0 0 min(390px,82vw); scroll-snap-align:start; }
-        .store-campaign-card-backdrop { position:absolute; z-index:0; inset:-8px; background-position:center; background-size:cover; filter:blur(9px); opacity:.25; transform:scale(1.04); }
-        .store-campaign-card-media { position:absolute; z-index:0; inset:5% 3% 5% auto; width:60%; height:90%; object-fit:contain; }
-        .store-campaign-card-overlay { position:absolute; z-index:1; inset:0; background:linear-gradient(90deg,rgba(248,252,254,.94) 0%,rgba(248,252,254,.84) 38%,rgba(248,252,254,.16) 72%,rgba(248,252,254,.04)); }
-        .store-campaign-card-main { position:relative; z-index:2; display:flex; width:100%; height:100%; align-items:center; color:inherit; text-decoration:none; }
-        .store-campaign-card-copy { position:relative; width:58%; padding:22px; border-radius:0 8px 8px 0; background:linear-gradient(90deg,rgba(248,252,254,.94),rgba(248,252,254,.76) 78%,rgba(248,252,254,0)); backdrop-filter:blur(3px); }
+        .store-campaign-card-media { position:absolute; z-index:0; inset:0 0 0 auto; width:68%; height:100%; object-fit:cover; object-position:right center; }
+        .store-campaign-card-overlay { position:absolute; z-index:1; inset:0 auto 0 58%; width:14%; background:linear-gradient(90deg,#f8fcfee8,transparent); }
+        .store-campaign-card-main { position:relative; z-index:2; display:flex; width:62%; height:100%; align-items:center; color:inherit; text-decoration:none; background:linear-gradient(90deg,#f8fcfe 0%,#f8fcfe 78%,rgba(248,252,254,.94) 100%); }
+        .store-campaign-card-copy { position:relative; width:100%; padding:18px 12px 18px 20px; }
         .store-campaign-card-copy .store-campaign-eyebrow,.store-campaign-card-copy .store-campaign-title,.store-campaign-card-copy .store-campaign-subtitle { display:block; }
         .store-campaign-card-copy .store-campaign-title { margin:8px 0; font-size:25px; }
         .store-campaign-card-copy .store-campaign-subtitle { margin-bottom:13px; font-size:13px; }
         .store-campaign-card-copy .store-campaign-cta { padding:9px 12px; }
         .store-campaign-card-badge { position:absolute; z-index:2; top:12px; right:12px; }
         .store-campaign-card-promo { position:absolute; z-index:2; bottom:12px; right:12px; display:inline-flex; align-items:center; gap:6px; padding:7px 10px; border:1px solid #ffffffb8; border-radius:5px; background:#102c3de8; color:#fff; font-size:11px; font-weight:800; }
-        .store-campaign.is-triple .store-campaign-card { min-height:185px; aspect-ratio:2.1; }
+        .store-campaign.is-triple .store-campaign-card { min-height:230px; aspect-ratio:2.1; }
         .store-campaign.is-grid .store-campaign-card { min-height:225px; aspect-ratio:1.7; }
         @media(max-width:800px){.store-campaign.is-split,.store-campaign.is-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.store-campaign.is-triple{grid-template-columns:1fr}.store-campaign-card{min-height:210px}.store-campaign-card-copy{width:82%;padding:17px}.store-campaign-card-copy .store-campaign-title{font-size:21px}}
         @media(max-width:520px){.store-campaign.is-split,.store-campaign.is-grid{grid-template-columns:1fr}.store-campaign.is-cards .store-campaign-card{flex-basis:88vw}.store-campaign-card{min-height:185px;aspect-ratio:1.55}.store-campaign-card-copy{width:78%;padding:14px}.store-campaign-card-copy .store-campaign-title{font-size:19px}.store-campaign-badge{top:10px;right:10px}}
@@ -1869,7 +1866,6 @@
            image_width_pct del banner, 35-65%) -- aqui solo quedan los valores por defecto. */
         .store-campaign-card.is-layout-side{min-height:230px;aspect-ratio:2.1;align-items:stretch;background:#fff}
         .store-campaign.is-triple .store-campaign-card.is-layout-side{min-height:230px;aspect-ratio:2.1}
-        .store-campaign-card.is-layout-side .store-campaign-card-backdrop{display:none}
         .store-campaign-card.is-layout-side .store-campaign-card-media{z-index:0;inset:0 0 0 auto;width:55%;height:100%;object-fit:cover;object-position:right center}
         .store-campaign-card.is-layout-side .store-campaign-card-overlay{z-index:1;width:12%;background:linear-gradient(90deg,#f8fcfee8,transparent)}
         .store-campaign-card.is-layout-side .store-campaign-card-main{width:45%;background:linear-gradient(90deg,#fff 0%,#fff 82%,rgba(255,255,255,.97) 100%)}
@@ -1882,7 +1878,7 @@
         @media(max-width:800px){
           .store-campaign.is-triple,.store-campaign.is-grid,.store-campaign.is-split,.store-campaign.is-cards{display:flex;align-items:stretch;gap:10px;overflow-x:auto;overscroll-behavior-inline:contain;padding:0 0 8px;scroll-snap-type:x mandatory;scrollbar-color:#9bb9c8 #e8f0f4;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
           .store-campaign.is-triple .store-campaign-card,.store-campaign.is-grid .store-campaign-card,.store-campaign.is-split .store-campaign-card,.store-campaign.is-cards .store-campaign-card{flex:0 0 min(82vw,420px);width:min(82vw,420px);min-width:0;min-height:190px;aspect-ratio:1.7;scroll-snap-align:start}
-          .store-campaign-card-copy{width:80%;padding:16px}
+          .store-campaign-card-copy{width:100%;padding:16px}
           .store-campaign-card-copy .store-campaign-title{font-size:20px;line-height:1.15}
           .store-campaign-card-copy .store-campaign-subtitle{display:-webkit-box;overflow:hidden;line-height:1.35;-webkit-box-orient:vertical;-webkit-line-clamp:3}
           .store-campaign-card.is-layout-side .store-campaign-card-media{width:48%!important}
@@ -1890,6 +1886,10 @@
           .store-campaign-card.is-layout-side .store-campaign-card-copy{padding:14px 10px 14px 14px}
           .store-campaign-card.is-layout-side .store-campaign-card-copy .store-campaign-title{font-size:19px}
           .store-campaign-card.is-layout-side .store-campaign-card-promo{max-width:46%;font-size:10px}
+          .store-campaign-card:not(.is-layout-side){min-height:210px;aspect-ratio:2.15}
+          .store-campaign-card:not(.is-layout-side) .store-campaign-card-media{width:68%}
+          .store-campaign-card:not(.is-layout-side) .store-campaign-card-main{width:61%}
+          .store-campaign-card:not(.is-layout-side) .store-campaign-card-copy{padding:16px}
         }
         @media(max-width:420px){
           .store-campaign.is-triple .store-campaign-card,.store-campaign.is-grid .store-campaign-card,.store-campaign.is-split .store-campaign-card,.store-campaign.is-cards .store-campaign-card{flex-basis:82vw;width:82vw;min-height:185px;aspect-ratio:1.72}
@@ -1898,6 +1898,10 @@
           .store-campaign-card-badge{top:9px;right:9px;padding:6px 8px;font-size:10px}
           .store-campaign-card.is-layout-side .store-campaign-card-copy{padding:12px 8px 12px 12px}
           .store-campaign-card.is-layout-side .store-campaign-card-copy .store-campaign-title{font-size:17px}
+          .store-campaign-card:not(.is-layout-side){min-height:190px;aspect-ratio:1.8}
+          .store-campaign-card:not(.is-layout-side) .store-campaign-card-media{width:67%}
+          .store-campaign-card:not(.is-layout-side) .store-campaign-card-main{width:66%}
+          .store-campaign-card:not(.is-layout-side) .store-campaign-card-copy{padding:13px}
         }
     </style>
 </head>
@@ -3693,8 +3697,6 @@
 				index = (index + 1) % images.length;
 				image.src = images[index].image_url;
 				image.alt = images[index].image_alt || slide.title || '';
-				const backdrop = image.closest('.store-campaign-card')?.querySelector('[data-campaign-backdrop]');
-				if (backdrop) backdrop.style.backgroundImage = `url("${images[index].image_url}")`;
 			}, Math.max(2, Math.min(20, Number(slide.image_interval_seconds) || 5)) * 1000);
 			storefrontImageTimers.push(timer);
 		};
@@ -3780,7 +3782,7 @@
 			// degradado de transición, calculado aquí en vez de una posición fija en CSS (ese
 			// desfase -- banner con la franja de transición en el lugar equivocado del borde real
 			// de la imagen -- era el bug real de la versión lateral).
-			let mediaStyle = `object-fit:${isSide && slide.image_fit === 'cover' ? 'cover' : 'contain'};opacity:${imageOpacity}`;
+			let mediaStyle = `object-fit:${slide.image_fit === 'cover' ? 'cover' : 'contain'};opacity:${imageOpacity}`;
 			let overlayStyle = `opacity:${overlayOpacity}`;
 			let mainStyle = '';
 			if (isSide) {
@@ -3792,7 +3794,7 @@
 				overlayStyle = `inset:0 auto 0 ${overlayStart}%;width:${overlayBandWidth}%;${overlayStyle}`;
 				mainStyle = `width:${textWidth}%`;
 			}
-			return `<article class="store-campaign-card${isSide ? ' is-layout-side' : ''}" data-campaign-card="${index}"><span class="store-campaign-card-backdrop" data-campaign-backdrop aria-hidden="true" style="background-image:url('${escapeHtml(image.image_url || '')}')"></span><img class="store-campaign-card-media" data-campaign-image data-slide-index="${index}" src="${escapeHtml(image.image_url || '')}" alt="${escapeHtml(image.image_alt || slide.title || '')}" style="${mediaStyle}"><span class="store-campaign-card-overlay" style="${overlayStyle}"></span><a class="store-campaign-card-main" href="${escapeHtml(target)}" style="${mainStyle}" ${campaignExternal(target) ? 'target="_blank" rel="noopener noreferrer"' : ''}><span class="store-campaign-card-copy"><span class="store-campaign-eyebrow" ${slide.eyebrow?'':'hidden'}>${escapeHtml(slide.eyebrow||'')}</span><span class="store-campaign-title">${escapeHtml(slide.title||'')}</span><span class="store-campaign-subtitle" ${slide.subtitle?'':'hidden'}>${escapeHtml(slide.subtitle||'')}</span><span class="store-campaign-cta">${escapeHtml(slide.button_text||'Explorar')} →</span></span></a>${slide.badge_label?`<span class="store-campaign-badge store-campaign-card-badge ${tone}">${escapeHtml(slide.badge_label)}</span>`:''}${slide.promo_chip_label?`<a class="store-campaign-card-promo" href="${escapeHtml(promoTarget)}" ${campaignExternal(promoTarget) ? 'target="_blank" rel="noopener noreferrer"' : ''}><i data-lucide="${icon}" width="14"></i>${escapeHtml(slide.promo_chip_label)}</a>`:''}</article>`;
+			return `<article class="store-campaign-card${isSide ? ' is-layout-side' : ' is-layout-full'}" data-campaign-card="${index}"><img class="store-campaign-card-media" data-campaign-image data-slide-index="${index}" src="${escapeHtml(image.image_url || '')}" alt="${escapeHtml(image.image_alt || slide.title || '')}" style="${mediaStyle}"><span class="store-campaign-card-overlay" style="${overlayStyle}"></span><a class="store-campaign-card-main" href="${escapeHtml(target)}" style="${mainStyle}" ${campaignExternal(target) ? 'target="_blank" rel="noopener noreferrer"' : ''}><span class="store-campaign-card-copy"><span class="store-campaign-eyebrow" ${slide.eyebrow?'':'hidden'}>${escapeHtml(slide.eyebrow||'')}</span><span class="store-campaign-title">${escapeHtml(slide.title||'')}</span><span class="store-campaign-subtitle" ${slide.subtitle?'':'hidden'}>${escapeHtml(slide.subtitle||'')}</span><span class="store-campaign-cta">${escapeHtml(slide.button_text||'Explorar')} →</span></span></a>${slide.badge_label?`<span class="store-campaign-badge store-campaign-card-badge ${tone}">${escapeHtml(slide.badge_label)}</span>`:''}${slide.promo_chip_label?`<a class="store-campaign-card-promo" href="${escapeHtml(promoTarget)}" ${campaignExternal(promoTarget) ? 'target="_blank" rel="noopener noreferrer"' : ''}><i data-lucide="${icon}" width="14"></i>${escapeHtml(slide.promo_chip_label)}</a>`:''}</article>`;
 		};
 		const startLayoutImageRotations = () => {
 			clearStorefrontImageTimers();
