@@ -305,6 +305,7 @@ badge_label	varchar(60)	Yes	NULL
 badge_tone	varchar(20)	No	discount	
 image_opacity	tinyint(3)	No	100	
 overlay_opacity	tinyint(3)	No	18	
+copy_background_color	char(7)	No	#ffffff	Color solido del panel de texto del banner (hexadecimal).
 image_interval_seconds	smallint(5)	No	5	
 Indexes
 Keyname	Type	Unique	Packed	Column	Cardinality	Collation	Null	Comment
