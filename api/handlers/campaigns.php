@@ -284,7 +284,7 @@ if ($action === 'admin-store-campaigns') {
                     storefrontCampaignText((string)($primary['image_alt'] ?? $slide['title'] ?? ''), 200) ?: null,
                     in_array(($slide['image_fit'] ?? 'cover'), ['cover', 'contain'], true) ? $slide['image_fit'] : 'cover',
                     max(35, min(65, (int)($slide['image_width_pct'] ?? 55))),
-                    in_array(($slide['card_layout'] ?? 'side'), ['full', 'side'], true) ? $slide['card_layout'] : 'side',
+                    in_array(($slide['card_layout'] ?? 'full'), ['full', 'side'], true) ? $slide['card_layout'] : 'full',
                     preg_match('/^#[0-9a-fA-F]{6}$/', (string)($slide['copy_background_color'] ?? '')) ? $slide['copy_background_color'] : '#ffffff',
                     $index,
                     !array_key_exists('is_active', $slide) || !empty($slide['is_active']) ? 1 : 0,
