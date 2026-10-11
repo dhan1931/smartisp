@@ -471,6 +471,7 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
             'name'          => $name,
             'subcategories' => array_values($subs),
             'bannerImageUrl' => (string)($row['banner_image_url'] ?? ''),
+            'iconImageUrl' => (string)($row['icon_image_url'] ?? ''),
             'bannerAlt' => (string)($row['banner_alt'] ?? ''),
             'description' => (string)($row['description'] ?? ''),
             'icon' => (string)($row['icon'] ?? 'package'),
