@@ -819,6 +819,9 @@
       transition: width .2s ease;
     }
   </style>
+  <style>
+    @media(max-width:600px){#productModal .form-row{display:grid;grid-template-columns:minmax(0,1fr)}#productModal .modal-dialog{padding:20px;max-height:90dvh}#productModal .form-control{font-size:16px}#productModal .modal-head{position:sticky;top:-20px;padding:14px 0;background:#fff;z-index:2}}
+  </style>
 </head>
 <body>
   <link rel="stylesheet" href="/assets/css/admin-nav.css?v=admin-campaign-link-20261009">
@@ -854,13 +857,13 @@
     <nav class="nav-tabs">
       <button type="button" class="tab-btn active" data-tab="tab-products">
         <i data-lucide="package" width="18"></i>
-        <span>1. Catálogo de Productos</span>
+        <span>Productos</span>
         <span class="tab-count" id="countProdTab">0</span>
       </button>
       <button type="button" class="tab-btn" data-tab="tab-importer">
         <i data-lucide="file-spreadsheet" width="18"></i>
-        <span>2. Importador Inteligente Excel</span>
-        <span class="tab-count" style="background:#dcfce7; color:#15803d;">Afinidad AI</span>
+        <span>Importar Excel</span>
+        <span class="tab-count" style="background:#dcfce7; color:#15803d;">Vista previa</span>
       </button>
       <a href="/categorias.html" class="tab-btn" style="text-decoration:none; margin-left:auto;">
         <i data-lucide="folder-tree" width="18"></i>
@@ -907,12 +910,12 @@
         <div class="card-header">
           <div>
             <h2 class="card-title"><i data-lucide="package-search" width="20"></i> Productos Registrados en el Catálogo</h2>
-            <p class="card-desc">Aquí puedes ver todos los productos subidos a la tienda, editar cualquier característica (nombre, SKU, precio, imagen, descripción, categoría y subcategoría) o eliminarlos todos juntos.</p>
+            <p class="card-desc">Filtra por familia y categoría, revisa tus productos y edita sus datos. Las familias y categorías se administran en <a href="/categorias.html">Categorías</a>.</p>
           </div>
           <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-            <button type="button" id="btnDeleteAllProducts" class="btn btn-danger" style="background:#fee2e2; color:#b91c1c; border-color:#fca5a5;" title="Eliminar todos los productos subidos en un solo momento">
+            <details><summary class="btn btn-secondary">Más acciones</summary><button type="button" id="btnDeleteAllProducts" class="btn btn-danger" style="background:#fee2e2; color:#b91c1c; border-color:#fca5a5;" title="Eliminar todos los productos subidos en un solo momento">
               <i data-lucide="trash-2" width="16"></i> Eliminar todos los productos
-            </button>
+            </button></details>
             <button type="button" class="btn btn-secondary" onclick="switchTab('tab-importer')">
               <i data-lucide="file-up" width="16"></i> Importar Excel
             </button>
@@ -928,10 +931,11 @@
             <i data-lucide="search" class="search-icon" width="16"></i>
             <input type="text" id="productSearchInput" placeholder="Buscar por nombre, SKU, marca, categoría, subcategoría...">
           </div>
-          <select id="filterMacroCat" class="filter-select">
-            <option value="all">Todas las Macro-Categorías</option>
+          <select id="filterFamily" class="filter-select" aria-label="Familia"><option value="all">Todas las familias</option></select>
+          <select id="filterMacroCat" class="filter-select" aria-label="Categoría">
+            <option value="all">Todas las categorías</option>
           </select>
-          <select id="filterSubCat" class="filter-select">
+          <select id="filterSubCat" class="filter-select" aria-label="Subcategoría">
             <option value="all">Todas las Subcategorías</option>
           </select>
           <select id="filterVisibility" class="filter-select">
@@ -1177,8 +1181,9 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="prodCategorySelect">* Macro-Categoría General:</label>
+            <label class="form-label" for="prodCategorySelect">* Categoría del producto:</label>
             <select id="prodCategorySelect" class="form-control" required></select>
+            <small id="prodCategoryFamilyInfo" style="color:var(--muted)"></small>
           </div>
           <div class="form-group">
             <label class="form-label" for="prodSubcategorySelect">Subcategoría:</label>
@@ -1352,6 +1357,7 @@
   <script>
     // --- ESTADO GLOBAL ---
     let categoriesList = [];
+    let productFamilies = [];
     let productsList = []; // solo la página actual (DEV-20261005-022: paginado real, ya no el catálogo completo)
     let currentProductSpecs = [];
     let currentProductGallery = [];
@@ -1814,6 +1820,7 @@
     // - admin-products-stats trae los totales (tarjetas, conteo por categoría) con consultas
     //   de agregación, sin transferir las filas.
     const currentProductFilters = () => ({
+      family: document.getElementById('filterFamily')?.value || 'all',
       q: (document.getElementById('productSearchInput')?.value || '').trim(),
       category: document.getElementById('filterMacroCat')?.value || 'all',
       subcategory: document.getElementById('filterSubCat')?.value || 'all',
@@ -1848,8 +1855,9 @@
       try {
         const catsRes = await api('categories');
         categoriesList = catsRes.categories || [];
-        await Promise.all([loadProductsPage(1), loadProductsStats()]);
+        productFamilies = catsRes.macroGroups || [];
         renderCategorySelects();
+        await Promise.all([loadProductsPage(1), loadProductsStats()]);
       } catch (err) {
         console.error('Error cargando catálogo:', err);
         showToast(err.message, 'error');
@@ -1883,14 +1891,18 @@
       const reFrom = document.getElementById('reassignFromCategory');
       const reTo = document.getElementById('reassignToCategory');
 
-      const defaultCats = ['General', 'Servidores', 'Networking', 'Almacenamiento', 'Computadoras y Laptops', 'Seguridad Electrónica'];
-      const availableCatNames = categoriesList.length ? categoriesList.map(c => c.name) : defaultCats;
-      const catOptions = availableCatNames.map(c => `<option value="${c}">${c}</option>`).join('');
+      const familyFilter = document.getElementById('filterFamily');
+      const familyValue = familyFilter.value || 'all';
+      familyFilter.innerHTML = '<option value="all">Todas las familias</option>' + productFamilies.map(group => `<option value="${escapeHtmlEditor(group.id)}">${escapeHtmlEditor(group.name)}</option>`).join('') + '<option value="ungrouped">Sin familia</option>';
+      familyFilter.value = [...familyFilter.options].some(option => option.value === familyValue) ? familyValue : 'all';
+      const available = categoriesList.filter(cat => familyFilter.value === 'all' || (familyFilter.value === 'ungrouped' ? !cat.macroGroupId : cat.macroGroupId === familyFilter.value));
+      const groupedOptions = list => [...productFamilies.map(group => ({...group, categories:list.filter(cat => cat.macroGroupId === group.id)})), {name:'Sin familia', categories:list.filter(cat => !productFamilies.some(group => group.id === cat.macroGroupId))}].filter(group => group.categories.length).map(group => `<optgroup label="${escapeHtmlEditor(group.name)}">${group.categories.map(cat => `<option value="${escapeHtmlEditor(cat.name)}">${escapeHtmlEditor(cat.name)}</option>`).join('')}</optgroup>`).join('');
+      const catOptions = groupedOptions(categoriesList);
 
       if (macroFilter) {
         const cur = macroFilter.value;
-        macroFilter.innerHTML = `<option value="all">Todas las Macro-Categorías</option>${catOptions}`;
-        macroFilter.value = cur || 'all';
+        macroFilter.innerHTML = `<option value="all">Todas las categorías</option>${groupedOptions(available)}`;
+        macroFilter.value = [...macroFilter.options].some(option => option.value === cur) ? cur : 'all';
       }
       if (prodCat) {
         const curProdCat = prodCat.value;
@@ -1901,6 +1913,13 @@
       if (reTo) reTo.innerHTML = catOptions;
 
       updateSubcategoryOptions();
+      updateProductCategoryContext();
+    };
+
+    const updateProductCategoryContext = () => {
+      const cat = categoriesList.find(cat => cat.name === document.getElementById('prodCategorySelect').value);
+      document.getElementById('prodCategoryFamilyInfo').textContent = cat ? `Familia: ${productFamilies.find(group => group.id === cat.macroGroupId)?.name || 'Sin familia'}` : 'Crea una categoría en Categorías para asignar este producto.';
+      document.getElementById('subcatDataList').innerHTML = (cat?.subcategories || []).map(sub => `<option value="${escapeHtmlEditor(sub)}"></option>`).join('');
     };
 
     const updateSubcategoryOptions = () => {
@@ -1910,7 +1929,8 @@
 
       const subcatSet = new Set();
       categoriesList.forEach(c => {
-        if (macroVal === 'all' || c.name === macroVal) {
+        const family = document.getElementById('filterFamily').value;
+        if ((family === 'all' || (family === 'ungrouped' ? !c.macroGroupId : c.macroGroupId === family)) && (macroVal === 'all' || c.name === macroVal)) {
           (c.subcategories || []).forEach(s => subcatSet.add(s));
         }
       });
@@ -2092,8 +2112,9 @@
     };
 
     let productFilterDebounceTimer = null;
-    ['productSearchInput', 'filterMacroCat', 'filterSubCat', 'filterVisibility', 'filterPhoto', 'filterPrice'].forEach(id => {
+    ['productSearchInput', 'filterFamily', 'filterMacroCat', 'filterSubCat', 'filterVisibility', 'filterPhoto', 'filterPrice'].forEach(id => {
       document.getElementById(id)?.addEventListener('input', () => {
+        if (id === 'filterFamily') renderCategorySelects();
         if (id === 'filterMacroCat') updateSubcategoryOptions();
         // Cualquier cambio de filtro vuelve a pedir la página 1 al servidor (ya no se filtra en
         // memoria). La búsqueda de texto se demora un poco para no disparar una petición por tecla.
@@ -2342,6 +2363,7 @@
       if (chkQuotePriceEl) chkQuotePriceEl.checked = false;
       if (quotePriceBadgeEl) quotePriceBadgeEl.style.display = 'none';
       document.getElementById('prodCategorySelect').value = categoriesList[0]?.name || 'General';
+      updateProductCategoryContext();
       document.getElementById('prodSubcategoryInput').value = '';
       document.getElementById('prodImageUrlInput').value = '';
       document.getElementById('prodExternalUrlInput').value = '';
@@ -2387,6 +2409,7 @@
       }
 
       document.getElementById('prodCategorySelect').value = p.category || (categoriesList[0]?.name || 'General');
+      updateProductCategoryContext();
       document.getElementById('prodSubcategoryInput').value = p.subcategory || '';
       document.getElementById('prodImageUrlInput').value = p.imageUrl || '';
       document.getElementById('prodExternalUrlInput').value = p.externalUrl || '';
@@ -2609,6 +2632,7 @@
       executeImageSearch(prod.name, prod.category, 'all');
     };
 
+    document.getElementById('prodCategorySelect').addEventListener('change', updateProductCategoryContext);
     document.getElementById('btnSearchProductImage').addEventListener('click', () => {
       const name = document.getElementById('prodNameInput').value;
       const cat = document.getElementById('prodCategorySelect').value;

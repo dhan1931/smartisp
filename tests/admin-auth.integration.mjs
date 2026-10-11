@@ -128,6 +128,28 @@ try {
   assert.equal((await request('me')).status, 401, 'El intento adminOnly de un cliente no debe autenticarlo');
 
   const admin = await login(fixtures.admin, true);
+  const categoryFixture = {id:'ci-http-category',name:'CI HTTP categoría',macroGroupId:'componentes',iconImageUrl:'https://example.test/icon.webp',bannerImageUrl:'https://example.test/banner.webp'};
+  const categorySave = await request('categories', {method:'POST',body:{category:categoryFixture}});
+  assert.equal(categorySave.status,200,'El guardado individual debe aceptar imagen y banner separados');
+  await db.execute("INSERT INTO products_rows (id,name,price,visible,category) VALUES ('ci-http-product','CI HTTP producto',1,1,?)",[categoryFixture.name]);
+  const categoryRead = await request('categories');
+  const savedCategory = categoryRead.data.categories.find(category=>category.id===categoryFixture.id);
+  assert.equal(savedCategory.macroGroupId,'componentes');
+  assert.equal(savedCategory.iconImageUrl,categoryFixture.iconImageUrl);
+  assert.equal(savedCategory.bannerImageUrl,categoryFixture.bannerImageUrl);
+  const familyProducts = await request('admin-products?family=componentes&category='+encodeURIComponent(categoryFixture.name));
+  assert.equal(familyProducts.status,200);
+  assert.equal(familyProducts.data.products.length,1,'La familia debe incluir los productos de su categoría');
+  const otherFamily = await request('admin-products?family=redes&category='+encodeURIComponent(categoryFixture.name));
+  assert.equal(otherFamily.data.products.length,0,'La familia no debe incluir productos de otra familia');
+  assert.equal((await request('categories?id='+categoryFixture.id,{method:'DELETE'})).status,409,'No se debe borrar una categoría con productos');
+  const imageBody = new FormData();
+  imageBody.append('image',new Blob([Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6wXAAAAAASUVORK5CYII=','base64')],{type:'image/png'}),'icon.png');
+  const imageResponse=await fetch(`${baseUrl}/api/router.php?action=upload-merch-image&category=categories`,{method:'POST',headers:{Cookie:cookie},body:imageBody});
+  assert.equal(imageResponse.status,200,'La subida de imagen de categoría debe aceptar un PNG real');
+  const uploadedImage=await imageResponse.json();
+  const servedImage=await fetch(baseUrl+uploadedImage.url.replace('/api/auth/serve-upload?','/api/router.php?action=serve-upload&'));
+  assert.equal(servedImage.status,200,'La imagen subida debe poder mostrarse sin sesión');
   assert.equal(admin.role, 'admin', 'Los roles admin equivalentes deben normalizarse');
   for (const action of ['admin-orders-stats', 'admin-orders', 'admin-products', 'categories', 'admin-dashboard-stats', 'admin-dashboard-insights']) {
     const result = await request(action);
@@ -208,6 +230,8 @@ try {
     await new Promise(resolve => php.once('exit', resolve));
   }
   await db.execute('DELETE FROM orders_rows WHERE id IN (?)', [orderIds]).catch(() => {});
+  await db.execute("DELETE FROM products_rows WHERE id='ci-http-product'").catch(()=>{});
+  await db.execute("DELETE FROM categories_rows WHERE id='ci-http-category'").catch(()=>{});
   await db.execute('DELETE FROM users_rows WHERE id IN (?, ?)', [fixtures.admin.id, fixtures.customer.id]).catch(() => {});
   await db.execute('DELETE FROM settings_rows WHERE setting_key = ?', [settingKey]).catch(() => {});
   await db.execute('DELETE FROM settings_rows WHERE setting_key = ?', [storefrontColumnsKey]).catch(() => {});

@@ -67,9 +67,10 @@
     const rail = $('#categoryFamilyRail');
     const families = state.groups;
     rail.innerHTML = families.map(group => {
-      const representative = group.categories.find(category => imageIsSafe(category.bannerImageUrl)) || group.categories[0];
-      const image = imageIsSafe(representative?.bannerImageUrl)
-        ? `<img src="${escapeHtml(representative.bannerImageUrl)}" alt="" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false">${icon(group.icon, 'class="family-tile-icon" hidden')}`
+      const representative = group.categories.find(category => imageIsSafe(category.iconImageUrl)) || group.categories[0];
+      const imageUrl = representative?.macroGroupImage || representative?.iconImageUrl;
+      const image = imageIsSafe(imageUrl)
+        ? `<img src="${escapeHtml(imageUrl)}" alt="" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false">${icon(group.icon, 'class="family-tile-icon" hidden')}`
         : `<span class="family-tile-icon">${icon(group.icon)}</span>`;
       return `<button class="family-tile${state.macro === group.id ? ' is-active' : ''}" type="button" data-family="${escapeHtml(group.id)}" aria-pressed="${state.macro === group.id}">${image}<strong>${escapeHtml(group.name)}</strong><small>${group.count.toLocaleString('es-EC')} productos</small></button>`;
     }).join('');

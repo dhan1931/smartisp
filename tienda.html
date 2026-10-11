@@ -4015,14 +4015,14 @@
 				}
 				const g = groups.get(groupId);
 				g.count += count;
-				if (count > g.topCount) { g.topCount = count; g.topCategory = cat.name; g.image = cat.bannerImageUrl || ''; g.alt = cat.bannerAlt || cat.name; }
+				if (count > g.topCount) { g.topCount = count; g.topCategory = cat.name; g.image = cat.iconImageUrl || ''; g.alt = cat.name; }
 			});
 			const sorted = [...groups.values()].filter(g => g.visible).sort((a, b) => (a.sortOrder - b.sortOrder) || (b.count - a.count));
 			sorted.forEach(g => { g.image = g.macroImage || g.image; });
 			const chosen = storefrontFeaturedCategoryIds.length
 				? storefrontFeaturedCategoryIds.map(id => catalogCategoryRows.find(cat => String(cat.id) === String(id))).filter(cat => cat && Number(cat.productCount || 0) > 0).slice(0, 7)
 				: [];
-			const displayItems = chosen.length ? chosen.map(cat => ({ id:cat.id, name:cat.name, icon:cat.icon || cat.macroGroupIcon || 'package', topCategory:cat.name, image:cat.bannerImageUrl || '', alt:cat.bannerAlt || cat.name, description:cat.description || '' })) : sorted.slice(0, 7);
+			const displayItems = chosen.length ? chosen.map(cat => ({ id:cat.id, name:cat.name, icon:cat.icon || cat.macroGroupIcon || 'package', topCategory:cat.name, image:cat.iconImageUrl || '', alt:cat.name, description:cat.description || '' })) : sorted.slice(0, 7);
 			const cardsHtml = displayItems.map(g => {
 				const href = g.topCategory ? `/categoria/${encodeURIComponent(slugifyText(g.topCategory))}/` : '/categorias-destacadas';
 				return `<a class="mini-category-card" href="${escapeHtml(href)}">

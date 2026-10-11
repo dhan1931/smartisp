@@ -10,7 +10,8 @@ const required = [
   'sitemap-products.php', 'sitemap-categories.php', 'api/router.php', 'api/config.php',
   'assets/js/admin-nav.js', 'assets/js/public-brand.js', 'assets/js/public-account.js', 'assets/js/public-admin-link.js',
   'assets/js/storefront-discovery.js', 'assets/css/storefront-discovery.css',
-  'includes/storefront-discovery-nav.php', 'includes/storefront-product-card.php'
+  'includes/storefront-discovery-nav.php', 'includes/storefront-product-card.php',
+  'assets/js/categories-admin.js', 'api/category-admin.php'
 ];
 
 const missing = required.filter(file => !existsSync(path.join('dist', file)));

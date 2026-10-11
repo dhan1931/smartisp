@@ -334,6 +334,15 @@ if ($action === 'admin-products') {
             $where[] = 'category = :category';
             $params[':category'] = $category;
         }
+        $family = trim((string)($_GET['family'] ?? ''));
+        if ($family !== '' && $family !== 'all') {
+            if ($family === 'ungrouped') {
+                $where[] = "NOT EXISTS (SELECT 1 FROM categories_rows c WHERE c.name = `$pTable`.category AND c.macro_group_id IS NOT NULL AND c.macro_group_id <> '')";
+            } else {
+                $where[] = "EXISTS (SELECT 1 FROM categories_rows c WHERE c.name = `$pTable`.category AND c.macro_group_id = :family)";
+                $params[':family'] = $family;
+            }
+        }
         $subcategory = trim((string)($_GET['subcategory'] ?? ''));
         if ($subcategory !== '' && $subcategory !== 'all') {
             $where[] = 'subcategory = :subcategory';
@@ -765,32 +774,44 @@ if ($action === 'categories') {
     }
 
     if ($method === 'POST') {
-        $cats = $body['categories'] ?? [];
-        if (is_array($cats)) {
-            // Antes este INSERT solo escribia id/name/subcategories: cada guardado desde el
-            // admin borraba en silencio el banner, icono, descripcion y keywords de TODAS las
-            // categorias (no solo la que se estaba editando), porque es un DELETE + reinsert
-            // completo. Ahora persiste todas las columnas que el editor realmente administra.
-            $pdo->exec("DELETE FROM categories_rows");
-            $stmt = $pdo->prepare("INSERT INTO categories_rows (id, name, subcategories, banner_image_url, banner_alt, description, icon, keywords, macro_group_id) VALUES (:id, :name, :sub, :banner, :alt, :description, :icon, :keywords, :macro)");
-            foreach ($cats as $c) {
-                $cId = $c['id'] ?? uniqid('cat_');
-                $cName = $c['name'] ?? 'General';
-                $sub = is_array($c['subcategories'] ?? null) ? json_encode($c['subcategories'], JSON_UNESCAPED_UNICODE) : (string)($c['subcategories'] ?? '');
-                $keywords = is_array($c['keywords'] ?? null) ? json_encode($c['keywords'], JSON_UNESCAPED_UNICODE) : (string)($c['keywords'] ?? '');
-                $macroGroupId = trim((string)($c['macroGroupId'] ?? ''));
-                $stmt->execute([
-                    ':id' => $cId,
-                    ':name' => $cName,
-                    ':sub' => $sub,
-                    ':banner' => (string)($c['bannerImageUrl'] ?? ''),
-                    ':alt' => (string)($c['bannerAlt'] ?? ''),
-                    ':description' => (string)($c['description'] ?? ''),
-                    ':icon' => (string)($c['icon'] ?? 'package'),
-                    ':keywords' => $keywords,
-                    ':macro' => $macroGroupId !== '' ? $macroGroupId : null,
-                ]);
+        require_once __DIR__ . '/../category-admin.php';
+        $cats = isset($body['category']) ? [$body['category']] : ($body['categories'] ?? null);
+        if (!is_array($cats) || !$cats) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Selecciona una categoría para guardar.']);
+            exit;
+        }
+        try {
+            saveCategoryChanges($pdo, $cats);
+        } catch (InvalidArgumentException $error) {
+            http_response_code(400);
+            echo json_encode(['error' => $error->getMessage()]);
+            exit;
+        }
+        echo json_encode(['ok' => true]);
+        exit;
+    }
+    if ($method === 'DELETE') {
+        $id = trim((string)($_GET['id'] ?? ''));
+        $pdo->beginTransaction();
+        try {
+            $find = $pdo->prepare('SELECT name FROM categories_rows WHERE id = :id FOR UPDATE');
+            $find->execute([':id' => $id]);
+            $name = $find->fetchColumn();
+            $table = getProductsTableName($pdo);
+            $count = $pdo->prepare("SELECT COUNT(*) FROM `$table` WHERE category = :name");
+            $count->execute([':name' => $name ?: '']);
+            if ($count->fetchColumn()) {
+                $pdo->rollBack();
+                http_response_code(409);
+                echo json_encode(['error' => 'Esta categoría tiene productos. Muévelos a otra categoría antes de eliminarla.']);
+                exit;
             }
+            $pdo->prepare('DELETE FROM categories_rows WHERE id = :id')->execute([':id' => $id]);
+            $pdo->commit();
+        } catch (Throwable $error) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $error;
         }
         echo json_encode(['ok' => true]);
         exit;

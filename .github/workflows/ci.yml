@@ -47,7 +47,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: pdo_mysql
+          extensions: pdo_mysql, mbstring
           coverage: none
       - name: Install Node dependencies
         run: npm ci
@@ -63,6 +63,8 @@ jobs:
         run: php scripts/migrate.php
       - name: Assert migrated schema and data
         run: php tests/assert-migrations.php
+      - name: Verify category edits preserve catalog data
+        run: php tests/assert-category-admin.php
       - name: Exercise admin authorization and dashboard metrics
         run: node tests/admin-auth.integration.mjs
       - name: Confirm migration runner is repeatable
