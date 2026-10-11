@@ -124,6 +124,7 @@
         <div><input type="text" value="${escapeHtml(brand.name)}" maxlength="150" data-brand-name></div>
         <div class="brand-actions">
           <label class="check" style="display:flex;align-items:center;gap:5px;margin:0;font-size:12px;font-weight:400"><input type="checkbox" ${brand.isActive?'checked':''} data-brand-active style="width:auto;margin:0"> Activa</label>
+          <label class="icon-button" aria-label="Reemplazar logo"><i data-lucide="image-up"></i><input type="file" accept="image/jpeg,image/png,image/webp" hidden data-brand-logo-upload></label>
           <button class="icon-button" type="button" data-brand-move="-1" ${index===0?'disabled':''} aria-label="Subir"><i data-lucide="arrow-up"></i></button>
           <button class="icon-button" type="button" data-brand-move="1" ${index===brands.length-1?'disabled':''} aria-label="Bajar"><i data-lucide="arrow-down"></i></button>
           <button class="icon-button" type="button" data-brand-remove aria-label="Quitar marca"><i data-lucide="x"></i></button>
@@ -259,6 +260,21 @@
       if(event.target.closest('[data-brand-active]')){
         brand.isActive=event.target.checked;
         try{await saveBrand(brand);}catch(error){message(error.message,true);}
+        return;
+      }
+      const logoUpload=event.target.closest('[data-brand-logo-upload]');
+      if(logoUpload&&logoUpload.files?.length){
+        const file=logoUpload.files[0];
+        if(file.size>8*1024*1024){message('El logo supera el límite de 8 MB.',true);logoUpload.value='';return;}
+        try{
+          const form=new FormData();form.append('image',file);
+          const result=await api('upload-merch-image?category=brands',{method:'POST',body:form});
+          brand.logoUrl=result.url;
+          await saveBrand(brand);
+          renderBrands();
+          message('Logo actualizado.');
+        }catch(error){message(error.message,true);}
+        finally{logoUpload.value='';}
       }
     });
     $('#brandList').addEventListener('blur',async event=>{
