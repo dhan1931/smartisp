@@ -1,7 +1,35 @@
 # Backlog: editor de banners multi-página (reingeniería)
 
 Anotado el 2026-10-11 a pedido explícito del usuario (quedándose sin tokens en la sesión)
-para no perder la idea. No implementado todavía — solo diseño/alcance.
+para no perder la idea.
+
+## Actualización 2026-10-11: la parte "hero editable por página" ya se hizo
+
+Se implementó la versión reducida de los puntos 1 y 2 de abajo ("Qué se pediría construir"),
+sin la reingeniería completa de secciones/layouts:
+
+- `STOREFRONT_CAMPAIGN_ZONES` en `api/handlers/campaigns.php` generaliza `code` a una lista
+  (`store-home`, `store-secondary`, `nosotros`, `servicios`) en vez de 2 valores hardcodeados.
+  Agregar una página más es agregar un string a esa lista + una entrada en `ZONE_CONFIG` de
+  `campanas.html` + el mismo snippet de fetch/render que ya tienen `nosotros.html`/
+  `servicios.html` (~20 líneas, ver esos archivos).
+- `campanas.html`: el selector de zona pasó de 2 radio buttons a 4, y toda la lógica
+  condicional (`activeZone==='store-home'?A:B`) se centralizó en un objeto `ZONE_CONFIG` en vez
+  de ternarios repetidos — necesario para que agregar páginas no signifique tocar N lugares.
+- `nosotros.html` y `servicios.html`: el `<section class="hero">` de texto plano ahora se
+  convierte en hero con imagen de fondo + overlay cuando el admin publica un banner para esa
+  zona (eyebrow/título/subtítulo de la campaña reemplazan al texto fijo); si no hay banner
+  publicado, se ve exactamente igual que antes (fallback a texto plano, sin romper nada).
+  No usa carrusel ni botón propio todavía (solo el primer slide activo, sin controles de
+  carrusel) — si se necesita carrusel real ahí, falta portar esa parte de `tienda.html`.
+- Verificado end-to-end contra MariaDB local: guardar un banner para zona `nosotros` desde el
+  editor real (Playwright) → el endpoint público lo expone → `nosotros.html` lo renderiza con
+  imagen, overlay y texto reales.
+
+**Lo que sigue sin existir** (puntos 3 y 4 de abajo, sin cambios): grillas de tarjetas,
+carrusel de "proyectos realizados", formulario de cotización, tipos de sección con layout
+propio. Eso sigue siendo la reingeniería grande — lo de arriba fue la pieza chica y barata
+(un hero editable por página), no el sistema completo de secciones.
 
 ## Pedido original
 
