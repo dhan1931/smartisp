@@ -82,6 +82,8 @@ $campaignEditorColumns = (int)$pdo->query("SELECT COUNT(*) FROM information_sche
 $assert($campaignEditorColumns === 10, 'Faltan campos de programación, chip u opacidad para campañas.');
 $categoryMetadataColumns = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'categories_rows' AND COLUMN_NAME IN ('banner_image_url', 'banner_alt', 'description', 'icon', 'keywords')")->fetchColumn();
 $assert($categoryMetadataColumns === 5, 'Faltan campos de banner, descripción o metadatos en categories_rows.');
+$categoryImageColumn = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'categories_rows' AND COLUMN_NAME = 'icon_image_url'")->fetchColumn();
+$assert($categoryImageColumn === 1, 'Falta la imagen de tarjeta independiente del banner.');
 $homeCampaign = $pdo->query("SELECT code, name, is_active, rotation_seconds FROM storefront_campaigns WHERE code = 'store-home'")->fetch();
 $assert($homeCampaign && $homeCampaign['name'] === 'Portada de la tienda' && (int)$homeCampaign['is_active'] === 1 && (int)$homeCampaign['rotation_seconds'] === 7, 'No se creó correctamente la campaña inicial de tienda.');
 $campaignFk = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE
