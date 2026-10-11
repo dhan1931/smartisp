@@ -116,7 +116,7 @@ if ($action === 'admin-store-campaigns') {
             echo json_encode(['campaign' => null, 'slides' => [], 'products' => [], 'chips' => [], 'featured_page' => $featuredPage, 'featured_category_ids' => $featuredCategoryIds]);
             exit;
         }
-        $slides = $pdo->prepare('SELECT id, eyebrow, title, subtitle, button_text, target_url, image_url, image_alt, image_fit, image_width_pct, card_layout, copy_background_color, bullet_style, bullet_color, title_color, subtitle_color, is_active, starts_at, ends_at, badge_label, badge_tone, image_opacity, overlay_opacity, image_interval_seconds, promo_chip_label, promo_chip_icon, promo_chip_target_url FROM storefront_campaign_slides WHERE campaign_id = :id ORDER BY sort_order, id');
+        $slides = $pdo->prepare('SELECT id, eyebrow, title, subtitle, button_text, button_visible, target_url, image_url, image_alt, image_fit, image_width_pct, card_layout, copy_background_color, bullet_style, bullet_color, title_color, subtitle_color, is_active, starts_at, ends_at, badge_label, badge_tone, image_opacity, overlay_opacity, image_interval_seconds, promo_chip_label, promo_chip_icon, promo_chip_target_url FROM storefront_campaign_slides WHERE campaign_id = :id ORDER BY sort_order, id');
         $slides->execute([':id' => $campaign['id']]);
         $slideRows = $slides->fetchAll(PDO::FETCH_ASSOC);
         if ($slideRows) {
@@ -161,6 +161,7 @@ if ($action === 'admin-store-campaigns') {
         $heroHeightPct = max(60, min(100, (int)($settings['hero_height_pct'] ?? ($existingCampaign['hero_height_pct'] ?? 100))));
         $displayMode = in_array(($settings['display_mode'] ?? ($existingCampaign['display_mode'] ?? 'carousel')), ['carousel', 'single', 'split', 'triple', 'grid', 'cards'], true) ? ($settings['display_mode'] ?? $existingCampaign['display_mode'] ?? 'carousel') : 'carousel';
         $isActive = $touchesCampaignSettings ? !empty($settings['is_active']) : !empty($existingCampaign['is_active']);
+        $mobileSwipe = $touchesCampaignSettings ? !empty($settings['mobile_swipe']) : !empty($existingCampaign['mobile_swipe']);
         try {
             $campaignStarts = array_key_exists('starts_at', $settings) ? storefrontCampaignDate($settings['starts_at']) : ($existingCampaign['starts_at'] ?? null);
             $campaignEnds = array_key_exists('ends_at', $settings) ? storefrontCampaignDate($settings['ends_at']) : ($existingCampaign['ends_at'] ?? null);
@@ -280,8 +281,8 @@ if ($action === 'admin-store-campaigns') {
 
         $pdo->beginTransaction();
         try {
-            $pdo->prepare("INSERT INTO storefront_campaigns (code, name, placement, is_active, rotation_seconds, display_mode, hero_height_pct, starts_at, ends_at) VALUES (:code, :name, :placement, :active, :rotation, :mode, :hero_height, :starts, :ends) ON DUPLICATE KEY UPDATE name = VALUES(name), placement = VALUES(placement), is_active = VALUES(is_active), rotation_seconds = VALUES(rotation_seconds), display_mode = VALUES(display_mode), hero_height_pct = VALUES(hero_height_pct), starts_at = VALUES(starts_at), ends_at = VALUES(ends_at)")
-                ->execute([':code' => $code, ':name' => $name, ':placement' => $isPrimaryZone ? 'home' : $code, ':active' => $isActive ? 1 : 0, ':rotation' => $rotation, ':mode' => $displayMode, ':hero_height' => $heroHeightPct, ':starts' => $campaignStarts, ':ends' => $campaignEnds]);
+            $pdo->prepare("INSERT INTO storefront_campaigns (code, name, placement, is_active, rotation_seconds, display_mode, hero_height_pct, mobile_swipe, starts_at, ends_at) VALUES (:code, :name, :placement, :active, :rotation, :mode, :hero_height, :swipe, :starts, :ends) ON DUPLICATE KEY UPDATE name = VALUES(name), placement = VALUES(placement), is_active = VALUES(is_active), rotation_seconds = VALUES(rotation_seconds), display_mode = VALUES(display_mode), hero_height_pct = VALUES(hero_height_pct), mobile_swipe = VALUES(mobile_swipe), starts_at = VALUES(starts_at), ends_at = VALUES(ends_at)")
+                ->execute([':code' => $code, ':name' => $name, ':placement' => $isPrimaryZone ? 'home' : $code, ':active' => $isActive ? 1 : 0, ':rotation' => $rotation, ':mode' => $displayMode, ':hero_height' => $heroHeightPct, ':swipe' => $mobileSwipe ? 1 : 0, ':starts' => $campaignStarts, ':ends' => $campaignEnds]);
             if ($isPrimaryZone) {
                 $saveFeaturedSetting = $pdo->prepare('INSERT INTO settings_rows (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = CURRENT_TIMESTAMP');
                 foreach ($featuredPage as $field => $value) $saveFeaturedSetting->execute(['store_featured_' . $field, $value]);
@@ -313,7 +314,7 @@ if ($action === 'admin-store-campaigns') {
             if ($touchesSlides) $pdo->prepare('DELETE FROM storefront_campaign_slides WHERE campaign_id = ?')->execute([$campaignId]);
             if ($touchesProducts) $pdo->prepare('DELETE FROM storefront_campaign_products WHERE campaign_id = ?')->execute([$campaignId]);
             if ($isPrimaryZone && array_key_exists('chips', $body)) $pdo->prepare('DELETE FROM storefront_promo_chips')->execute();
-            $slideInsert = $pdo->prepare('INSERT INTO storefront_campaign_slides (campaign_id, eyebrow, title, subtitle, button_text, target_url, image_url, image_alt, image_fit, image_width_pct, card_layout, copy_background_color, bullet_style, bullet_color, title_color, subtitle_color, sort_order, is_active, starts_at, ends_at, badge_label, badge_tone, image_opacity, overlay_opacity, image_interval_seconds, promo_chip_label, promo_chip_icon, promo_chip_target_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+            $slideInsert = $pdo->prepare('INSERT INTO storefront_campaign_slides (campaign_id, eyebrow, title, subtitle, button_text, button_visible, target_url, image_url, image_alt, image_fit, image_width_pct, card_layout, copy_background_color, bullet_style, bullet_color, title_color, subtitle_color, sort_order, is_active, starts_at, ends_at, badge_label, badge_tone, image_opacity, overlay_opacity, image_interval_seconds, promo_chip_label, promo_chip_icon, promo_chip_target_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
             $galleryInsert = $pdo->prepare('INSERT INTO storefront_campaign_slide_images (slide_id, image_url, image_alt, sort_order, is_primary, focal_x, focal_y, zoom_pct) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
             foreach ($slides as $index => $slide) {
                 $images = is_array($slide['images'] ?? null) ? array_slice($slide['images'], 0, 12) : [];
@@ -327,6 +328,7 @@ if ($action === 'admin-store-campaigns') {
                     trim((string)$slide['title']),
                     storefrontCampaignText((string)($slide['subtitle'] ?? ''), 500) ?: null,
                     storefrontCampaignText((string)($slide['button_text'] ?? 'Explorar'), 60) ?: 'Explorar',
+                    !array_key_exists('button_visible', $slide) || !empty($slide['button_visible']) ? 1 : 0,
                     substr(trim((string)($slide['target_url'] ?? '')), 0, 500),
                     substr(trim((string)($primary['image_url'] ?? '')), 0, 500),
                     storefrontCampaignText((string)($primary['image_alt'] ?? $slide['title'] ?? ''), 200) ?: null,
@@ -382,7 +384,7 @@ if ($action === 'store-campaigns' && $method === 'GET') {
         if (is_array($decodedCategoryIds)) $featuredCategoryIds = array_values(array_map('strval', $decodedCategoryIds));
     }
     $now = 'UTC_TIMESTAMP()';
-    $stmt = $pdo->prepare("SELECT id, rotation_seconds, display_mode, hero_height_pct FROM storefront_campaigns WHERE code = :code AND is_active = 1 AND (starts_at IS NULL OR starts_at <= $now) AND (ends_at IS NULL OR ends_at > $now) LIMIT 1");
+    $stmt = $pdo->prepare("SELECT id, rotation_seconds, display_mode, hero_height_pct, mobile_swipe FROM storefront_campaigns WHERE code = :code AND is_active = 1 AND (starts_at IS NULL OR starts_at <= $now) AND (ends_at IS NULL OR ends_at > $now) LIMIT 1");
     $stmt->execute([':code' => $publicCode]);
     $campaign = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$campaign) {
@@ -390,7 +392,7 @@ if ($action === 'store-campaigns' && $method === 'GET') {
         echo json_encode(['slides' => [], 'products' => [], 'chips' => $chips, 'featured_category_ids' => $featuredCategoryIds]);
         exit;
     }
-    $slideStmt = $pdo->prepare('SELECT id, eyebrow, title, subtitle, button_text, target_url, image_url, image_alt, image_fit, image_width_pct, card_layout, copy_background_color, bullet_style, bullet_color, title_color, subtitle_color, starts_at, ends_at, badge_label, badge_tone, image_opacity, overlay_opacity, image_interval_seconds, promo_chip_label, promo_chip_icon, promo_chip_target_url FROM storefront_campaign_slides WHERE campaign_id = :id AND is_active = 1 AND (starts_at IS NULL OR starts_at <= UTC_TIMESTAMP()) AND (ends_at IS NULL OR ends_at > UTC_TIMESTAMP()) ORDER BY sort_order, id');
+    $slideStmt = $pdo->prepare('SELECT id, eyebrow, title, subtitle, button_text, button_visible, target_url, image_url, image_alt, image_fit, image_width_pct, card_layout, copy_background_color, bullet_style, bullet_color, title_color, subtitle_color, starts_at, ends_at, badge_label, badge_tone, image_opacity, overlay_opacity, image_interval_seconds, promo_chip_label, promo_chip_icon, promo_chip_target_url FROM storefront_campaign_slides WHERE campaign_id = :id AND is_active = 1 AND (starts_at IS NULL OR starts_at <= UTC_TIMESTAMP()) AND (ends_at IS NULL OR ends_at > UTC_TIMESTAMP()) ORDER BY sort_order, id');
     $slideStmt->execute([':id' => $campaign['id']]);
     $publicSlides = $slideStmt->fetchAll(PDO::FETCH_ASSOC);
     if ($publicSlides) {
@@ -414,6 +416,6 @@ if ($action === 'store-campaigns' && $method === 'GET') {
         $chips = $pdo->query("SELECT label, icon, target_url FROM storefront_promo_chips WHERE is_active = 1 AND (starts_at IS NULL OR starts_at <= UTC_TIMESTAMP()) AND (ends_at IS NULL OR ends_at > UTC_TIMESTAMP()) ORDER BY sort_order, id")->fetchAll(PDO::FETCH_ASSOC);
     }
     header('Cache-Control: public, max-age=60');
-    echo json_encode(['rotation_seconds' => max(4, min(20, (int)$campaign['rotation_seconds'])), 'display_mode' => $campaign['display_mode'] ?: 'carousel', 'hero_height_pct' => max(60, min(100, (int)($campaign['hero_height_pct'] ?? 100))), 'slides' => $publicSlides, 'products' => $products, 'chips' => $chips, 'featured_category_ids' => $featuredCategoryIds]);
+    echo json_encode(['rotation_seconds' => max(4, min(20, (int)$campaign['rotation_seconds'])), 'display_mode' => $campaign['display_mode'] ?: 'carousel', 'hero_height_pct' => max(60, min(100, (int)($campaign['hero_height_pct'] ?? 100))), 'mobile_swipe' => !empty($campaign['mobile_swipe']), 'slides' => $publicSlides, 'products' => $products, 'chips' => $chips, 'featured_category_ids' => $featuredCategoryIds]);
     exit;
 }
