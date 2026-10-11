@@ -1993,6 +1993,8 @@
     @media(max-width:800px){
       #secondaryCampaign{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;overflow:visible;padding:0;scroll-snap-type:none}
       #secondaryCampaign .store-campaign-card{width:100%;min-width:0;min-height:210px;aspect-ratio:auto}
+      #secondaryCampaign.is-cards{display:flex;align-items:stretch;overflow-x:auto;overscroll-behavior-inline:contain;padding-bottom:8px;scroll-snap-type:x mandatory;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+      #secondaryCampaign.is-cards .store-campaign-card{flex:0 0 88%;width:88%;scroll-snap-align:start}
       #secondaryCampaign .is-layout-full{flex-direction:column;align-items:stretch}
       #secondaryCampaign .is-layout-full .store-campaign-card-media{width:100%;height:100%}
       #secondaryCampaign .is-layout-full .store-campaign-card-main{width:100%;min-height:210px;height:auto}

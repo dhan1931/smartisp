@@ -63,6 +63,19 @@
     .crop-help{margin:6px 0 2px;color:var(--muted);font-size:11px}
     @media(max-width:760px){.campaign-preview.preview-triple{display:flex;overflow-x:auto;scroll-snap-type:x mandatory}.campaign-preview.preview-triple .preview-card{flex:0 0 min(82vw,420px);scroll-snap-align:start}}
   </style>
+  <style>
+    @media(max-width:800px){
+      .campaign-preview.preview-secondary{grid-template-columns:minmax(0,1fr)}
+      .campaign-preview.preview-secondary.preview-cards{display:flex;overflow-x:auto;scroll-snap-type:x mandatory}
+      .campaign-preview.preview-secondary.preview-cards .preview-card{flex:0 0 88%;scroll-snap-align:start}
+      .campaign-preview.preview-secondary .preview-card{min-height:210px;aspect-ratio:auto}
+      .campaign-preview.preview-secondary .preview-copy{width:100%;max-width:100%}
+      .campaign-preview.preview-secondary .preview-card.is-layout-side{flex-direction:column;align-items:stretch}
+      .campaign-preview.preview-secondary .is-layout-side .preview-media{position:relative;inset:auto!important;width:100%!important;height:auto;aspect-ratio:16/9}
+      .campaign-preview.preview-secondary .is-layout-side .preview-copy{width:100%!important;max-width:100%!important;padding:20px}
+      .campaign-preview.preview-secondary .is-layout-side .preview-overlay{display:none}
+    }
+  </style>
 </head>
 <body>
   <div id="smartisp-admin-nav" class="is-loading" data-active="campanas"></div>
@@ -86,8 +99,9 @@
           <label class="format-option"><input type="radio" name="displayMode" value="split"><span><strong>Dos banners</strong><small>Dos tarjetas en paralelo.</small></span></label>
           <label class="format-option"><input type="radio" name="displayMode" value="triple"><span><strong>Tres banners</strong><small>Fila horizontal de tres anuncios.</small></span></label>
           <label class="format-option"><input type="radio" name="displayMode" value="grid"><span><strong>Cuadrícula de cuatro</strong><small>Cuatro piezas en dos columnas.</small></span></label>
-          <label class="format-option"><input type="radio" name="displayMode" value="cards"><span><strong>Carrusel de tarjetas</strong><small>Tarjetas horizontales desplazables.</small></span></label>
+          <label class="format-option"><input type="radio" name="displayMode" value="cards"><span><strong>Carrusel de tarjetas · deslizable</strong><small>Desliza horizontalmente, también en teléfonos.</small></span></label>
         </div>
+        <p id="secondaryLayoutHelp" class="help hidden">En teléfonos, Dos banners, Tres banners y Cuadrícula se muestran uno debajo del otro. Elige Carrusel de tarjetas para deslizar. Puedes ajustar el encuadre y el zoom de cada imagen en su banner.</p>
         <div class="preview-actions"><div><strong>Vista previa en vivo</strong><p id="previewHint" class="muted">Se actualiza con tus banners y su orden actual.</p></div><button id="refreshPreview" class="button secondary" type="button"><i data-lucide="rotate-cw"></i> Actualizar vista</button></div>
         <div id="preview" class="campaign-preview" aria-label="Vista previa de portada"></div>
       </section>
@@ -149,7 +163,8 @@
       ['preview-carousel','preview-single','preview-split','preview-triple','preview-grid','preview-cards'].forEach(name=>host.classList.toggle(name, name===`preview-${mode}`));
       previewSlideIndex=active.length?previewSlideIndex%active.length:0;
       const slides=(mode==='carousel'||mode==='single')?active.slice(previewSlideIndex,previewSlideIndex+1):active.slice(0,count);
-      $('#previewHint').textContent=mode==='carousel'&&active.length>1?`Banner ${previewSlideIndex+1} de ${active.length} · cambia cada ${Number(state.campaign.rotation_seconds)||7} s en la tienda.`:`${slides.length} banner${slides.length===1?'':'s'} · formato ${mode}.`;
+      host.classList.toggle('preview-secondary',activeZone==='store-secondary');
+      $('#previewHint').textContent=activeZone==='store-secondary'?`${slides.length} banner${slides.length===1?'':'s'} · en teléfonos: ${mode==='cards'?'desliza horizontalmente para verlos':'uno debajo del otro'}.`:mode==='carousel'&&active.length>1?`Banner ${previewSlideIndex+1} de ${active.length} · cambia cada ${Number(state.campaign.rotation_seconds)||7} s en la tienda.`:`${slides.length} banner${slides.length===1?'':'s'} · formato ${mode}.`;
       const content=slides.map((slide,index)=>{
         const images=Array.isArray(slide.images)?slide.images:[];
         const primary=images.find(image=>image.is_primary)||images[0];
@@ -279,6 +294,7 @@
         $('#chips').closest('.panel').classList.toggle('hidden',activeZone!=='store-home');
         document.querySelectorAll('input[name="displayMode"]').forEach(input=>input.closest('.format-option').classList.toggle('hidden',activeZone==='store-secondary'&&['carousel','single'].includes(input.value)));
         $('#campaignSlidesPanel .section-heading h3').textContent=activeZone==='store-home'?'Banners de portada':'Banners secundarios';
+        $('#secondaryLayoutHelp').classList.toggle('hidden',activeZone!=='store-secondary');
         $('#preview').setAttribute('aria-label',activeZone==='store-home'?'Vista previa de portada':'Vista previa de banners secundarios');
       } catch(error) { message(`No se pudo cargar el gestor de campañas: ${error.message}`,true); }
     }
