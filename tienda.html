@@ -2051,7 +2051,7 @@
 		<div class="store-trust-item"><i data-lucide="award" width="22"></i><div><strong>Garantía y respaldo</strong><span>Productos originales con soporte técnico</span></div></div>
 	</section>
 	<section class="store-brands-row" id="storeBrandsRow" hidden>
-		<div class="store-brands-head"><h3>Nuestras Marcas</h3><a href="/categorias-destacadas">Ver todas las marcas <i data-lucide="arrow-right" width="15"></i></a></div>
+		<div class="store-brands-head"><h3 id="storeBrandsTitle">Nuestras Marcas</h3><a href="/categorias-destacadas">Ver todas las marcas <i data-lucide="arrow-right" width="15"></i></a></div>
 		<div class="store-brands-list" id="storeBrandsList"></div>
 	</section>
 	<main hidden id="catalogView">
@@ -2220,6 +2220,7 @@
 		<aside class="drawer" id="drawer"><div class="drawer-panel"><div class="drawer-head"><h2>Tu carrito</h2><button class="icon-button" id="closeCart" aria-label="Cerrar carrito"><i data-lucide="x"></i></button></div><div class="cart-items" id="cartItems">Tu carrito está vacío.</div><div class="drawer-footer"><div class="cart-total"><span>Total</span><span id="cartTotal">$0</span></div><button class="primary checkout">Finalizar compra <i data-lucide="arrow-up-right" width="16"></i></button></div></div></aside>
 		<div class="modal" id="productModal" role="dialog" aria-modal="true" aria-labelledby="detailTitle"><div class="modal-panel"><button class="icon-button modal-close" data-close-modal="productModal" aria-label="Cerrar especificaciones"><i data-lucide="x"></i></button><div id="productDetail"></div></div></div>
 		<div class="modal" id="accountModal" style="display:none;" aria-hidden="true"></div>
+	<script src="/assets/js/brands-section.js?v=1"></script>
 	<script>
 		let products = [];
 		// DEV-20261006-002: products.indexOf(product) en cada tarjeta era O(n) por producto, O(n^2)
@@ -4296,23 +4297,9 @@
 		};
 		applyCategoriasViewMode();
 
-		const loadStoreBrands = async () => {
-			if (window.isCategoriasView) return;
-			try {
-				const response = await fetch(`/api/auth/brands?_t=${Date.now()}`, { cache: 'no-store' });
-				if (!response.ok) return;
-				const data = await response.json();
-				const brands = Array.isArray(data.brands) ? data.brands : [];
-				if (!brands.length) return;
-				const row = document.querySelector('#storeBrandsRow');
-				document.querySelector('#storeBrandsList').innerHTML = brands.map(brand =>
-					`<div class="store-brand-item"><img src="${escapeHtml(brand.logoUrl)}" alt="${escapeHtml(brand.name)}" loading="lazy"></div>`
-				).join('');
-				row.hidden = false;
-				window.lucide?.createIcons();
-			} catch (error) { console.warn('No se pudieron cargar las marcas:', error); }
-		};
-		loadStoreBrands();
+		if (!window.isCategoriasView && window.initBrandsSection) {
+			window.initBrandsSection({ containerSelector: '#storeBrandsRow', listSelector: '#storeBrandsList', titleSelector: '#storeBrandsTitle', itemClass: 'store-brand-item' });
+		}
 
 		renderSidebarCategories();
 		render();
