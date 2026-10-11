@@ -72,13 +72,20 @@ if ($action === 'upload-campaign-image' && $method === 'POST') {
     exit;
 }
 
+// Zonas de banners validas -- una fila de storefront_campaigns por codigo. 'store-home' es la
+// unica zona "primaria" (con vitrina de productos destacados y chips promocionales); el resto
+// son zonas de banners simples, un hero por pagina publica. Agregar una pagina nueva aca +
+// wirear el fetch/render en esa pagina publica (ver tienda.html/nosotros.html/servicios.html
+// para el patron) es todo lo que hace falta -- no requiere cambios de esquema.
+const STOREFRONT_CAMPAIGN_ZONES = ['store-home', 'store-secondary', 'nosotros', 'servicios'];
+
 if ($action === 'admin-store-campaigns') {
     requireAdminAuth();
     // zone distingue el banner principal (hero, con su vitrina de productos destacados y chips
     // promocionales) de zonas secundarias (solo banners, sin esas secciones asociadas) -- misma
     // tabla storefront_campaigns, una fila por zone/code.
     $zoneInput = (string)($_GET['zone'] ?? ($body['zone'] ?? 'store-home'));
-    $code = in_array($zoneInput, ['store-home', 'store-secondary'], true) ? $zoneInput : 'store-home';
+    $code = in_array($zoneInput, STOREFRONT_CAMPAIGN_ZONES, true) ? $zoneInput : 'store-home';
     $isPrimaryZone = $code === 'store-home';
 
     if ($method === 'GET') {
@@ -274,7 +281,7 @@ if ($action === 'admin-store-campaigns') {
         $pdo->beginTransaction();
         try {
             $pdo->prepare("INSERT INTO storefront_campaigns (code, name, placement, is_active, rotation_seconds, display_mode, hero_height_pct, starts_at, ends_at) VALUES (:code, :name, :placement, :active, :rotation, :mode, :hero_height, :starts, :ends) ON DUPLICATE KEY UPDATE name = VALUES(name), placement = VALUES(placement), is_active = VALUES(is_active), rotation_seconds = VALUES(rotation_seconds), display_mode = VALUES(display_mode), hero_height_pct = VALUES(hero_height_pct), starts_at = VALUES(starts_at), ends_at = VALUES(ends_at)")
-                ->execute([':code' => $code, ':name' => $name, ':placement' => $isPrimaryZone ? 'home' : 'home-secondary', ':active' => $isActive ? 1 : 0, ':rotation' => $rotation, ':mode' => $displayMode, ':hero_height' => $heroHeightPct, ':starts' => $campaignStarts, ':ends' => $campaignEnds]);
+                ->execute([':code' => $code, ':name' => $name, ':placement' => $isPrimaryZone ? 'home' : $code, ':active' => $isActive ? 1 : 0, ':rotation' => $rotation, ':mode' => $displayMode, ':hero_height' => $heroHeightPct, ':starts' => $campaignStarts, ':ends' => $campaignEnds]);
             if ($isPrimaryZone) {
                 $saveFeaturedSetting = $pdo->prepare('INSERT INTO settings_rows (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = CURRENT_TIMESTAMP');
                 foreach ($featuredPage as $field => $value) $saveFeaturedSetting->execute(['store_featured_' . $field, $value]);
@@ -362,7 +369,7 @@ if ($action === 'admin-store-campaigns') {
 
 if ($action === 'store-campaigns' && $method === 'GET') {
     $zoneInput = (string)($_GET['zone'] ?? 'store-home');
-    $publicCode = in_array($zoneInput, ['store-home', 'store-secondary'], true) ? $zoneInput : 'store-home';
+    $publicCode = in_array($zoneInput, STOREFRONT_CAMPAIGN_ZONES, true) ? $zoneInput : 'store-home';
     $isPrimaryZonePublic = $publicCode === 'store-home';
     $featuredCategoryIds = [];
     if ($isPrimaryZonePublic) {
