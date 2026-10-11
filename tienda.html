@@ -1622,7 +1622,7 @@
             .store-sidebar { width: min(80vw, 440px) !important; max-width: 440px !important; background: #fff !important; }
         }
         .store-campaign-area { padding: 14px 1.7vw 0; }
-        .store-campaign { position: relative; display: none; width: 100%; min-height: 270px; aspect-ratio: 2.4; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: #e8f3f7; isolation: isolate; }
+        .store-campaign { position: relative; display: none; width: 100%; min-height: 270px; aspect-ratio: var(--hero-ar, 2.4); overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: #e8f3f7; isolation: isolate; }
         .store-campaign.is-visible { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; }
         .store-campaign-media { position: absolute; inset: 0; z-index: -2; }
         .store-campaign-media img { width: 100%; height: 100%; object-fit: cover; }
@@ -4094,6 +4094,8 @@
 				renderMiniCategories();
 				storefrontSlides = Array.isArray(data.slides) ? data.slides : [];
 				storefrontDisplayMode = ['carousel', 'single', 'split', 'triple', 'grid', 'cards'].includes(data.display_mode) ? data.display_mode : 'carousel';
+				const heroHeightPct = Math.max(60, Math.min(100, Number(data.hero_height_pct) || 100));
+				document.querySelector('#storeCampaign')?.style.setProperty('--hero-ar', (240 / heroHeightPct).toFixed(3));
 				storefrontPromoChips = Array.isArray(data.chips) ? data.chips : [];
 				storefrontFeaturedProducts = Array.isArray(data.products) ? data.products.map(product => ({
 					...product,
