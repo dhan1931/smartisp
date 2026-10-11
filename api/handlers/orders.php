@@ -233,12 +233,35 @@ if ($action === 'admin-orders') {
     $offset = ($page - 1) * $limit;
     $status = trim((string)($_GET['status'] ?? ''));
     $q = trim((string)($_GET['q'] ?? ''));
+    $payment = trim((string)($_GET['payment'] ?? ''));
+    $dateFrom = trim((string)($_GET['dateFrom'] ?? ''));
+    $dateTo = trim((string)($_GET['dateTo'] ?? ''));
+    $isValidDate = static function (string $value): bool {
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $parts) !== 1) return false;
+        return checkdate((int)$parts[2], (int)$parts[3], (int)$parts[1]);
+    };
 
     $where = [];
     $params = [];
     if ($status !== '' && $status !== 'all' && in_array($status, ADMIN_ORDER_STATUSES, true)) {
         $where[] = 'status = :status';
         $params[':status'] = $status;
+    }
+    if ($payment === 'paid') {
+        $where[] = "LOWER(COALESCE(payment_status, '')) IN ('paid', 'confirmed', 'succeeded', 'completed', 'approved', 'captured')";
+    } elseif (in_array($payment, ['pending', 'quote_pending'], true)) {
+        $where[] = 'LOWER(COALESCE(payment_status, \'\')) = :payment';
+        $params[':payment'] = $payment;
+    } elseif ($payment === 'other') {
+        $where[] = "LOWER(COALESCE(payment_status, '')) NOT IN ('paid', 'confirmed', 'succeeded', 'completed', 'approved', 'captured', 'pending', 'quote_pending')";
+    }
+    if ($isValidDate($dateFrom)) {
+        $where[] = 'created_at >= :date_from';
+        $params[':date_from'] = $dateFrom . ' 00:00:00';
+    }
+    if ($isValidDate($dateTo)) {
+        $where[] = 'created_at < :date_to';
+        $params[':date_to'] = date('Y-m-d', strtotime($dateTo . ' +1 day')) . ' 00:00:00';
     }
     if ($q !== '') {
         $columns = $pdo->query('SHOW COLUMNS FROM orders_rows')->fetchAll(PDO::FETCH_COLUMN);

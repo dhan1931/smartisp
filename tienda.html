@@ -1980,6 +1980,24 @@
     </style>
   <style>
     @media(max-width:1100px){.store-campaign.is-triple{display:flex;align-items:stretch;gap:12px;overflow-x:auto;overscroll-behavior-inline:contain;padding:0 0 10px;scroll-snap-type:x mandatory;scrollbar-width:thin;-webkit-overflow-scrolling:touch}.store-campaign.is-triple .store-campaign-card{flex:0 0 min(82vw,460px);width:min(82vw,460px);min-width:0;scroll-snap-align:start}}
+    /* Los secundarios se leen completos en telefono, sin recortar la siguiente tarjeta.
+       El modo full conserva su fondo completo; side apila foto y panel de contenido. */
+    @media(max-width:800px){
+      #secondaryCampaign{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;overflow:visible;padding:0;scroll-snap-type:none}
+      #secondaryCampaign .store-campaign-card{width:100%;min-width:0;min-height:210px;aspect-ratio:auto}
+      #secondaryCampaign .is-layout-full{flex-direction:column;align-items:stretch}
+      #secondaryCampaign .is-layout-full .store-campaign-card-media{width:100%;height:100%}
+      #secondaryCampaign .is-layout-full .store-campaign-card-main{width:100%;min-height:210px;height:auto}
+      #secondaryCampaign .is-layout-full .store-campaign-card-copy{width:100%;padding:22px}
+      #secondaryCampaign .is-layout-side{flex-direction:column;align-items:stretch}
+      #secondaryCampaign .is-layout-side .store-campaign-card-media{position:relative;inset:auto!important;width:100%!important;height:auto;aspect-ratio:16/9}
+      #secondaryCampaign .is-layout-side .store-campaign-card-overlay{display:none}
+      #secondaryCampaign .is-layout-side .store-campaign-card-main{width:100%!important;height:auto;flex:1}
+      #secondaryCampaign .is-layout-side .store-campaign-card-copy{padding:20px}
+      #secondaryCampaign .store-campaign-card-copy .store-campaign-title{font-size:22px;line-height:1.2;overflow-wrap:anywhere}
+      #secondaryCampaign .store-campaign-card-copy .store-campaign-subtitle{display:block;overflow:visible;-webkit-line-clamp:unset}
+      #secondaryCampaign .store-campaign-card-promo{position:relative;right:auto;bottom:auto;align-self:flex-end;max-width:calc(100% - 32px);margin:0 16px 16px}
+    }
   </style>
 </head>
 <body>
