@@ -1678,8 +1678,8 @@
         .store-brands-head h3 { margin: 0; font-size: 17px; color: var(--navy); }
         .store-brands-head a { display: inline-flex; align-items: center; gap: 5px; color: var(--blue); font-size: 13px; font-weight: 700; text-decoration: none; }
         .store-brands-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
-        .store-brand-item { display: grid; place-items: center; height: 70px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
-        .store-brand-item img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .store-brand-item { position: relative; height: 70px; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+        .store-brand-item img { position: absolute; inset: 10px; width: calc(100% - 20px); height: calc(100% - 20px); object-fit: contain; }
         @media(max-width: 520px) { .store-brands-list { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); } .store-brand-item { height: 56px; } }
         .store-trust-item { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
         .store-trust-item i { color: var(--blue); flex-shrink: 0; }
