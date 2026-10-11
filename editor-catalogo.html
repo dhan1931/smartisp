@@ -822,57 +822,16 @@
   <style>
     @media(max-width:600px){#productModal .form-row{display:grid;grid-template-columns:minmax(0,1fr)}#productModal .modal-dialog{padding:20px;max-height:90dvh}#productModal .form-control{font-size:16px}#productModal .modal-head{position:sticky;top:-20px;padding:14px 0;background:#fff;z-index:2}}
   </style>
-</head>
+<link rel="stylesheet" href="/assets/css/products-admin.css?v=products-v2"></head>
 <body>
   <link rel="stylesheet" href="/assets/css/admin-nav.css?v=admin-campaign-link-20261009">
   <div id="smartisp-admin-nav" class="is-loading" data-active="productos"></div>
   <script src="/assets/js/admin-nav.js?v=admin-campaign-link-20261009" defer></script>
 
-  <!-- Top Navigation -->
-  <header class="top-header">
-    <div class="brand-wrap">
-      <div class="brand-title">
-        <span class="brand-badge">PRODUCTOS</span>
-      </div>
-    </div>
-    <div class="top-actions">
-      <button type="button" class="btn btn-sm" onclick="document.getElementById('btnNewProduct').click()" style="background:#0284c7; color:#fff; font-weight:700; border:none; box-shadow:0 2px 6px rgba(2,132,199,0.4);">
-        <i data-lucide="plus" width="14"></i> Agregar Producto Manual
-      </button>
-      <a href="/admin.html" class="btn btn-dark btn-sm">
-        <i data-lucide="arrow-left" width="15"></i> Volver a Admin General
-      </a>
-      <a href="/tienda.html" target="_blank" class="btn btn-dark btn-sm">
-        <i data-lucide="shopping-bag" width="15"></i> Ver Tienda ↗
-      </a>
-      <span id="userBadge" style="font-size:12px; color:#cbd5e1; margin-left:8px;"></span>
-      <button id="logoutBtn" class="btn btn-danger btn-sm" style="margin-left:4px;">Salir</button>
-    </div>
-  </header>
-
-  <!-- Main Content Shell -->
+<!-- Main Content Shell -->
   <main class="main-shell">
 
-    <!-- Tab Switcher -->
-    <nav class="nav-tabs">
-      <button type="button" class="tab-btn active" data-tab="tab-products">
-        <i data-lucide="package" width="18"></i>
-        <span>Productos</span>
-        <span class="tab-count" id="countProdTab">0</span>
-      </button>
-      <button type="button" class="tab-btn" data-tab="tab-importer">
-        <i data-lucide="file-spreadsheet" width="18"></i>
-        <span>Importar Excel</span>
-        <span class="tab-count" style="background:#dcfce7; color:#15803d;">Vista previa</span>
-      </button>
-      <a href="/categorias.html" class="tab-btn" style="text-decoration:none; margin-left:auto;">
-        <i data-lucide="folder-tree" width="18"></i>
-        <span>Categorías y Subcategorías</span>
-        <i data-lucide="external-link" width="13"></i>
-      </a>
-    </nav>
-
-    <!-- TAB 1: CATÁLOGO DE PRODUCTOS (VISTA PRINCIPAL) -->
+<!-- TAB 1: CATÁLOGO DE PRODUCTOS (VISTA PRINCIPAL) -->
     <section id="tab-products" class="tab-pane active">
       <!-- Stats Row de Productos -->
       <div class="stats-row">
@@ -909,7 +868,7 @@
       <div class="content-card">
         <div class="card-header">
           <div>
-            <h2 class="card-title"><i data-lucide="package-search" width="20"></i> Productos Registrados en el Catálogo</h2>
+            <h2 class="card-title"><i data-lucide="package-search" width="20"></i> Catálogo</h2>
             <p class="card-desc">Filtra por familia y categoría, revisa tus productos y edita sus datos. Las familias y categorías se administran en <a href="/categorias.html">Categorías</a>.</p>
           </div>
           <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
@@ -962,7 +921,7 @@
               <tr>
                 <th style="width:60px;">Foto</th>
                 <th>Producto & SKU</th>
-                <th>Macro-Categoría</th>
+                <th>Categoría</th>
                 <th>Subcategoría</th>
                 <th>Precio Tienda</th>
                 <th style="text-align:center; width:80px;">Visible</th>
@@ -1463,6 +1422,7 @@
     let productsTotal = 0;
     let productsTotalPages = 1;
     let productsStats = { total: 0, visible: 0, with_photo: 0, without_photo: 0, by_category: [] };
+    let productsStatsLoaded = false;
     let currentAdminUser = null;
     const isAdminRole = user => !!user && ['admin', 'administrator', 'administrador'].includes(String(user.role || '').trim().toLowerCase());
     let currentImportState = null;
@@ -1843,6 +1803,13 @@
 
     const loadProductsStats = async () => {
       productsStats = await api('admin-products-stats');
+      productsStatsLoaded = true;
+      renderProductsTab();
+    };
+    const updateProductStats = () => {
+      for(const [id,key] of [['statProductsTotal','total'],['statProductsVisible','visible'],['statProductsWithPhoto','with_photo'],['statProductsWithoutPhoto','without_photo']]) {
+        const element=document.getElementById(id);if(element)element.textContent=productsStatsLoaded?(productsStats[key]??0):'—';
+      }
     };
 
     // Llamar después de cualquier alta/edición/borrado: refresca la página visible y las
@@ -1992,6 +1959,7 @@
 
     const renderProductsTab = () => {
       const tbody = document.getElementById('productsTableBody');
+      const results=document.getElementById('productResults');if(results)results.textContent=`${productsTotal.toLocaleString()} resultado${productsTotal===1?'':'s'}`;
       const countTab = document.getElementById('countProdTab');
       // Las 4 tarjetas y el contador de la pestaña son del catálogo completo (admin-products-stats),
       // no de la página actual: antes salían de productsList cuando ese array traía todo; desde la
@@ -2011,7 +1979,8 @@
       renderProductsPager();
 
       // Estado vacío si no hay ningún producto registrado en todo el catálogo (no solo esta página)
-      if (!productsTotal) {
+      updateProductStats();
+      if (!productsTotal && productsStatsLoaded && Number(productsStats.total) === 0) {
         tbody.innerHTML = `
           <tr>
             <td colspan="7" style="text-align:center; padding:50px 20px;">
@@ -2053,59 +2022,19 @@
       }
 
       tbody.innerHTML = items.map(p => {
-        const hasImg = Boolean(p.imageUrl);
-        const imgEl = hasImg
-          ? `<img src="${p.imageUrl}" alt="" loading="lazy" class="prod-thumb-img" onclick="openQuickImageSearch('${p.id}')" title="Clic para buscar otra foto">`
-          : `<div class="prod-thumb-placeholder" onclick="openQuickImageSearch('${p.id}')" title="Buscar foto en Amazon o Google"><i data-lucide="camera" width="16"></i><span>Buscar</span></div>`;
-
-        const isVisible = p.visible !== false;
-
-        return `
-          <tr data-prod-id="${p.id}">
-            <td>${imgEl}</td>
-            <td>
-              <strong class="prod-title">${p.name || 'Sin nombre'}</strong>
-              <div style="display:flex; gap:8px; align-items:center; margin-top:4px; flex-wrap:wrap;">
-                ${p.sku ? `<code class="prod-sku">SKU: ${p.sku}</code>` : ''}
-                <a href="${getProductPublicUrl(p)}" target="_blank" style="font-size:11.5px; color:var(--blue); font-weight:600; text-decoration:none; display:inline-flex; align-items:center; gap:3px;" title="Ver enlace único indexable en Google">
-                  <i data-lucide="external-link" width="12"></i> Enlace Google
-                </a>
-                ${p.externalUrl ? `<a href="${p.externalUrl}" target="_blank" style="font-size:11px; color:var(--muted); text-decoration:none; display:inline-flex; align-items:center; gap:3px;"><i data-lucide="link" width="11"></i> Ficha fabricante</a>` : ''}
-              </div>
-            </td>
-            <td>
-              <span class="badge-cat"><i data-lucide="folder" width="12"></i> ${p.category || 'General'}</span>
-            </td>
-            <td>
-              ${p.subcategory ? `<span class="badge-sub">${p.subcategory}</span>` : '<span style="color:var(--muted); font-size:12px;">—</span>'}
-            </td>
-            <td>
-              <span class="prod-price">${formatMoney(p.price)}</span>
-            </td>
-            <td style="text-align:center;">
-              <label class="switch-toggle" title="Cambiar visibilidad">
-                <input type="checkbox" ${isVisible ? 'checked' : ''} onchange="toggleProductVisibility('${p.id}', this.checked)">
-                <span class="slider"></span>
-              </label>
-            </td>
-            <td style="text-align:right;">
-              <div style="display:flex; justify-content:flex-end; gap:6px;">
-                <a href="${getProductPublicUrl(p)}" target="_blank" class="btn btn-secondary btn-sm" title="Abrir ficha web de este producto (enlace permanente)">
-                  <i data-lucide="external-link" width="14"></i>
-                </a>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="openEditProductModal('${p.id}')" title="Editar producto">
-                  <i data-lucide="edit-3" width="14"></i>
-                </button>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="openQuickImageSearch('${p.id}')" title="Buscar foto en Amazon">
-                  <i data-lucide="image" width="14"></i>
-                </button>
-                <button type="button" class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')" title="Eliminar producto">
-                  <i data-lucide="trash-2" width="14"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-        `;
+        const html=escapeHtmlEditor;
+        const argument=html(JSON.stringify(String(p.id)));
+        const isVisible=p.visible!==false;
+        const img=p.imageUrl?`<img src="${html(p.imageUrl)}" alt="" loading="lazy" class="prod-thumb-img">`:`<span class="product-no-photo"><i data-lucide="image" width="22"></i><small>Sin foto</small></span>`;
+        return `<tr class="product-row" data-prod-id="${html(p.id)}">
+          <td class="product-photo">${img}</td>
+          <td class="product-identity"><strong class="prod-title">${html(p.name||'Sin nombre')}</strong>${p.sku?`<code class="prod-sku">SKU: ${html(p.sku)}</code>`:''}</td>
+          <td class="product-category" data-label="Categoría"><span class="badge-cat">${html(p.category||'General')}</span></td>
+          <td class="product-subcategory" data-label="Subcategoría">${p.subcategory?`<span class="badge-sub">${html(p.subcategory)}</span>`:'<span class="muted">Sin subcategoría</span>'}</td>
+          <td class="product-price" data-label="Precio"><span class="prod-price">${Number(p.price)>0?formatMoney(p.price):'Cotización'}</span></td>
+          <td class="product-visibility"><label class="product-visibility-control"><span class="switch-toggle"><input aria-label="Visible en tienda: ${html(p.name)}" type="checkbox" ${isVisible?'checked':''} onchange="toggleProductVisibility(${argument},this.checked)"><span class="slider"></span></span><span>${isVisible?'Visible':'Oculto'}</span></label></td>
+          <td class="product-actions"><div class="product-action-buttons"><button type="button" class="btn btn-secondary" onclick="openEditProductModal(${argument})">Editar</button><details class="product-more"><summary class="btn btn-secondary" aria-label="Más acciones para ${html(p.name)}">Más</summary><div class="product-more-menu"><a href="${html(getProductPublicUrl(p))}" target="_blank" rel="noopener">Ver en tienda ↗</a><button type="button" onclick="openQuickImageSearch(${argument})">Buscar imagen</button>${p.externalUrl?`<a href="${html(p.externalUrl)}" target="_blank" rel="noopener">Ficha del fabricante ↗</a>`:''}<button type="button" class="danger" onclick="deleteProduct(${argument})">Eliminar producto</button></div></details></div></td>
+        </tr>`;
       }).join('');
 
       lucide.createIcons();
@@ -3266,7 +3195,7 @@
     });
 
     // --- AUTENTICACIÓN Y CIERRE DE SESIÓN ---
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
+    document.getElementById('logoutBtn')?.addEventListener('click', async () => {
       try { await api('logout', { method: 'POST' }); } catch (e) {}
       localStorage.removeItem('smartisp.accountUser');
       localStorage.removeItem('smartisp.adminToken');
@@ -3325,6 +3254,6 @@
       }
     })();
   </script>
-</body>
+<script src="/assets/js/products-layout.js?v=products-v2"></script></body>
 </html>
 
