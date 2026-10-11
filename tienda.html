@@ -1636,6 +1636,8 @@
         .store-campaign-bullet-mark { flex: 0 0 auto; width: 14px; height: 14px; }
         .store-campaign-bullet-circle { border-radius: 50%; }
         .store-campaign-bullet-square { border-radius: 3px; }
+        .store-campaign-bullet-check-circle { display: grid; place-items: center; border-radius: 50%; }
+        .store-campaign-bullet-check-circle svg { width: 9px; height: 9px; color: #fff; }
         .store-campaign-bullets i[data-lucide] { flex: 0 0 auto; }
         .store-campaign-cta { display: inline-flex; align-items: center; gap: 9px; padding: 14px 22px; border-radius: 6px; background: var(--blue); color: white; font-size: 14px; font-weight: 800; }
         .store-campaign-cta[hidden] { display: none; }
@@ -3904,7 +3906,7 @@
 		let storefrontDisplayMode = 'carousel';
 		let storefrontSlideIndex = 0;
 		let storefrontRotationTimer = 0;
-		let storefrontImageTimers = [];
+		const storefrontImageTimers = new Map();
 		const campaignSlideImages = slide => {
 			const images = Array.isArray(slide.images) ? [...slide.images].sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0)) : [];
 			if (!images.length && slide.image_url) images.push({ image_url: slide.image_url, image_alt: slide.image_alt || slide.title });
@@ -3929,25 +3931,35 @@
 			if (campaignExternal(link.href)) { link.target = '_blank'; link.rel = 'noopener noreferrer'; }
 			else { link.removeAttribute('target'); link.removeAttribute('rel'); }
 		};
-		const clearStorefrontImageTimers = () => { storefrontImageTimers.forEach(clearInterval); storefrontImageTimers = []; };
+		const clearStorefrontImageTimers = (image = null) => {
+			storefrontImageTimers.forEach((rotation, element) => {
+				if (image && element !== image) return;
+				clearInterval(rotation.timer); clearTimeout(rotation.timeout);
+				storefrontImageTimers.delete(element);
+			});
+		};
 		const startStorefrontImageRotation = (image, slide) => {
+			clearStorefrontImageTimers(image);
 			const images = campaignSlideImages(slide);
 			if (images.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 			let index = 0;
 			const baseOpacity = image.style.opacity || getComputedStyle(image).opacity || '1';
-			const fadeMs = 450;
+			const transitionMs = Math.max(150, Math.min(2000, Number(slide.image_transition_ms) || 1000));
+			const fadeMs = transitionMs / 2;
 			image.style.transition = `opacity ${fadeMs}ms ease`;
-			const timer = setInterval(() => {
+			const rotation = { timer: 0, timeout: 0 };
+			rotation.timer = setInterval(() => {
 				index = (index + 1) % images.length;
 				image.style.opacity = '0';
-				setTimeout(() => {
+				rotation.timeout = setTimeout(() => {
+					rotation.timeout = 0;
 					image.src = images[index].image_url;
 					image.alt = images[index].image_alt || slide.title || '';
 					applyCampaignImageFocus(image, images[index]);
 					image.style.opacity = baseOpacity;
 				}, fadeMs);
-			}, Math.max(2, Math.min(20, Number(slide.image_interval_seconds) || 5)) * 1000);
-			storefrontImageTimers.push(timer);
+			}, Math.max(transitionMs + 100, Math.max(2, Math.min(20, Number(slide.image_interval_seconds) || 5)) * 1000));
+			storefrontImageTimers.set(image, rotation);
 		};
 		const renderStorefrontSlide = index => {
 			if (!storefrontSlides.length) return;
@@ -3963,7 +3975,7 @@
 			banner.style.setProperty('--copy-background', copyBackground);
 			banner.classList.toggle('is-contain', slide.image_fit === 'contain');
 			const image = document.querySelector('#storeCampaignImage');
-			clearStorefrontImageTimers();
+			clearStorefrontImageTimers(image);
 			const images = campaignSlideImages(slide);
 			image.src = images[0]?.image_url || slide.image_url || '';
 			image.alt = images[0]?.image_alt || slide.image_alt || slide.title || '';
@@ -4076,12 +4088,13 @@
 		// item con marcador (check/circulo/cuadrado) en el color elegido (bullet_color).
 		const campaignBulletMarkup = (style, color) => {
 			if (style === 'check') return `<i data-lucide="check" width="14" style="color:${escapeHtml(color)}"></i>`;
+			if (style === 'check-circle') return `<span class="store-campaign-bullet-mark store-campaign-bullet-check-circle" style="background:${escapeHtml(color)}"><i data-lucide="check"></i></span>`;
 			return `<span class="store-campaign-bullet-mark store-campaign-bullet-${style}" style="background:${escapeHtml(color)}"></span>`;
 		};
 		const campaignSubtitleHtml = slide => {
 			const text = String(slide.subtitle || '');
 			if (!text) return '';
-			const style = ['check', 'circle', 'square'].includes(slide.bullet_style) ? slide.bullet_style : 'none';
+			const style = ['check', 'circle', 'square', 'check-circle'].includes(slide.bullet_style) ? slide.bullet_style : 'none';
 			if (style === 'none') return escapeHtml(text).replace(/\n/g, '<br>');
 			const color = /^#[0-9a-fA-F]{6}$/.test(slide.bullet_color || '') ? slide.bullet_color : '#16a34a';
 			const items = text.split('\n').map(line => line.trim()).filter(Boolean);
