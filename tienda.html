@@ -3973,13 +3973,17 @@
 			const overlayOpacity = Math.max(0, Math.min(100, Number(slide.overlay_opacity ?? 68))) / 100;
 			banner.style.setProperty('--campaign-overlay-opacity', String(isCopyPanel ? overlayOpacity : Math.max(.55, overlayOpacity)));
 			startStorefrontImageRotation(image, slide);
-			document.querySelector('#storeCampaignEyebrow').textContent = slide.eyebrow || '';
-			document.querySelector('#storeCampaignEyebrow').hidden = !slide.eyebrow;
+			const eyebrowEl = document.querySelector('#storeCampaignEyebrow');
+			eyebrowEl.textContent = slide.eyebrow || '';
+			eyebrowEl.hidden = !slide.eyebrow;
 			const titleEl = document.querySelector('#storeCampaignTitle'), subtitleEl = document.querySelector('#storeCampaignSubtitle');
 			const textColor = campaignTextColorStyle(slide);
 			titleEl.textContent = slide.title || ''; titleEl.style.cssText = textColor.title;
 			subtitleEl.innerHTML = campaignSubtitleHtml(slide); subtitleEl.style.cssText = textColor.subtitle;
 			subtitleEl.hidden = !slide.subtitle;
+			applyCampaignFontScale(eyebrowEl, slide.eyebrow_size);
+			applyCampaignFontScale(titleEl, slide.title_size);
+			applyCampaignFontScale(subtitleEl, slide.subtitle_size);
 			window.lucide?.createIcons();
 			document.querySelector('#storeCampaignButton').textContent = slide.button_text || 'Explorar';
 			const campaignLink = document.querySelector('#storeCampaignLink');
@@ -4084,6 +4088,23 @@
 			return `<ul class="store-campaign-bullets">${items.map(item => `<li>${campaignBulletMarkup(style, color)}<span>${escapeHtml(item)}</span></li>`).join('')}</ul>`;
 		};
 		const campaignButtonVisible = slide => !(slide.button_visible === false || slide.button_visible === 0 || slide.button_visible === '0');
+		const CAMPAIGN_FONT_SCALE = { sm: .8, md: 1, lg: 1.25, xl: 1.5 };
+		const applyCampaignFontScale = (el, sizeKey) => {
+			if (!el) return;
+			const scale = CAMPAIGN_FONT_SCALE[sizeKey];
+			if (!scale || scale === 1) { el.style.fontSize = ''; return; }
+			const current = parseFloat(getComputedStyle(el).fontSize) || 16;
+			el.style.fontSize = (current * scale).toFixed(1) + 'px';
+		};
+		const applyCampaignCardFontScales = (host, slides) => {
+			host.querySelectorAll('[data-campaign-card]').forEach(card => {
+				const slide = slides[Number(card.dataset.campaignCard)];
+				if (!slide) return;
+				applyCampaignFontScale(card.querySelector('.store-campaign-eyebrow'), slide.eyebrow_size);
+				applyCampaignFontScale(card.querySelector('.store-campaign-title'), slide.title_size);
+				applyCampaignFontScale(card.querySelector('.store-campaign-subtitle'), slide.subtitle_size);
+			});
+		};
 		const campaignTextColorStyle = slide => {
 			const title = /^#[0-9a-fA-F]{6}$/.test(slide.title_color || '') ? `color:${slide.title_color};` : '';
 			const subtitle = /^#[0-9a-fA-F]{6}$/.test(slide.subtitle_color || '') ? `color:${slide.subtitle_color};` : '';
@@ -4153,8 +4174,10 @@
 				const mode = ['split','triple','grid','cards'].includes(data.display_mode) ? data.display_mode : 'split';
 				const limit = { split: 2, triple: 3, grid: 4 }[mode] || secondaryCampaignSlides.length;
 				host.className = `store-campaign is-layout is-${mode}${data.mobile_swipe ? ' is-mobile-swipe' : ''}`;
-				host.innerHTML = secondaryCampaignSlides.slice(0, limit).map((slide, index) => renderCampaignCard(slide, index)).join('');
+				const secondarySliceForRender = secondaryCampaignSlides.slice(0, limit);
+				host.innerHTML = secondarySliceForRender.map((slide, index) => renderCampaignCard(slide, index)).join('');
 				section.hidden = false;
+				applyCampaignCardFontScales(host, secondarySliceForRender);
 				startSecondaryImageRotations();
 				window.lucide?.createIcons();
 			} catch (error) {
@@ -4189,8 +4212,10 @@
 					if (['split','triple','grid','cards'].includes(storefrontDisplayMode)) {
 						banner.classList.add('is-layout', `is-${storefrontDisplayMode}`);
 						const limit = { split:2, triple:3, grid:4 }[storefrontDisplayMode] || storefrontSlides.length;
-						banner.innerHTML = storefrontSlides.slice(0,limit).map((slide,index)=>renderCampaignCard(slide,index)).join('');
+						const primarySliceForRender = storefrontSlides.slice(0,limit);
+						banner.innerHTML = primarySliceForRender.map((slide,index)=>renderCampaignCard(slide,index)).join('');
 						banner.classList.add('is-visible');
+						applyCampaignCardFontScales(banner, primarySliceForRender);
 						startLayoutImageRotations();
 						window.lucide?.createIcons();
 					} else {
