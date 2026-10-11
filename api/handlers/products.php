@@ -812,6 +812,13 @@ if ($action === 'macro-groups') {
         $name = trim((string)($body['name'] ?? ''));
         $icon = trim((string)($body['icon'] ?? '')) ?: 'package';
         $sortOrder = (int)($body['sortOrder'] ?? 0);
+        $imageUrl = trim((string)($body['imageUrl'] ?? ''));
+        $visible = array_key_exists('visible', $body) ? (!empty($body['visible']) ? 1 : 0) : 1;
+        if ($imageUrl !== '' && !storefrontCampaignSafeUrl($imageUrl, true)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'La imagen de la familia no tiene una ruta válida.']);
+            exit;
+        }
         if ($name === '') {
             http_response_code(400);
             echo json_encode(['error' => 'El nombre de la familia es obligatorio.']);
@@ -821,8 +828,8 @@ if ($action === 'macro-groups') {
             $groupId = preg_replace('/[^a-z0-9_-]/', '-', strtolower($name));
             $groupId = trim(preg_replace('/-+/', '-', $groupId), '-') ?: uniqid('grp_');
         }
-        $stmt = $pdo->prepare("INSERT INTO category_macro_groups (id, name, icon, sort_order) VALUES (:id, :name, :icon, :sort) ON DUPLICATE KEY UPDATE name = VALUES(name), icon = VALUES(icon), sort_order = VALUES(sort_order)");
-        $stmt->execute([':id' => $groupId, ':name' => $name, ':icon' => $icon, ':sort' => $sortOrder]);
+        $stmt = $pdo->prepare("INSERT INTO category_macro_groups (id, name, icon, sort_order, image_url, visible) VALUES (:id, :name, :icon, :sort, :image, :visible) ON DUPLICATE KEY UPDATE name = VALUES(name), icon = VALUES(icon), sort_order = VALUES(sort_order), image_url = VALUES(image_url), visible = VALUES(visible)");
+        $stmt->execute([':id' => $groupId, ':name' => $name, ':icon' => $icon, ':sort' => $sortOrder, ':image' => $imageUrl ?: null, ':visible' => $visible]);
         echo json_encode(['ok' => true, 'id' => $groupId]);
         exit;
     }
@@ -838,6 +845,115 @@ if ($action === 'macro-groups') {
         // a otra familia en silencio -- el admin decide a donde van desde el panel.
         $pdo->prepare('UPDATE categories_rows SET macro_group_id = NULL WHERE macro_group_id = :id')->execute([':id' => $groupId]);
         $pdo->prepare('DELETE FROM category_macro_groups WHERE id = :id')->execute([':id' => $groupId]);
+        echo json_encode(['ok' => true]);
+        exit;
+    }
+}
+
+// Imagen de una familia (mini-categorias de portada) o logo de una marca. Mismo flujo de
+// validacion/limite que upload-campaign-image; se diferencian solo por el directorio destino.
+if ($action === 'upload-merch-image' && $method === 'POST') {
+    requireAdminAuth();
+    $category = (string)($_GET['category'] ?? ($_POST['category'] ?? ''));
+    if (!in_array($category, ['categories', 'brands'], true)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Categoría de imagen inválida.']);
+        exit;
+    }
+    if (empty($_FILES['image']['tmp_name']) || (int)($_FILES['image']['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK || !is_uploaded_file($_FILES['image']['tmp_name'])) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Selecciona una imagen para subir.']);
+        exit;
+    }
+    $file = $_FILES['image'];
+    if ((int)($file['size'] ?? 0) < 1 || (int)($file['size'] ?? 0) > 8 * 1024 * 1024) {
+        http_response_code(400);
+        echo json_encode(['error' => 'La imagen supera el límite de 8 MB.']);
+        exit;
+    }
+    $info = @getimagesize($file['tmp_name']);
+    $mime = $info['mime'] ?? '';
+    $extensions = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+    if (!isset($extensions[$mime]) || (int)($info[0] ?? 0) < 1 || (int)($info[1] ?? 0) < 1 || (int)$info[0] * (int)$info[1] > 40000000) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Usa una imagen JPG, PNG o WebP válida de hasta 40 megapíxeles.']);
+        exit;
+    }
+    $dir = getSmartispUploadsDir($category);
+    if (!is_dir($dir)) {
+        http_response_code(500);
+        echo json_encode(['error' => 'No se pudo preparar el almacenamiento de imágenes.']);
+        exit;
+    }
+    $filename = rtrim($category, 's') . '_' . bin2hex(random_bytes(12)) . '.' . $extensions[$mime];
+    if (!move_uploaded_file($file['tmp_name'], $dir . '/' . $filename)) {
+        http_response_code(500);
+        echo json_encode(['error' => 'No se pudo guardar la imagen.']);
+        exit;
+    }
+    echo json_encode(['ok' => true, 'url' => '/api/auth/serve-upload?category=' . $category . '&file=' . rawurlencode($filename)]);
+    exit;
+}
+
+// Destacador de marcas (logos + orden + activo) para la portada de la tienda.
+if ($action === 'brands') {
+    if ($method === 'GET' && empty($_GET['admin'])) {
+        // Publico: solo marcas activas, en el orden que eligio el admin.
+        $stmt = $pdo->query('SELECT id, name, logo_url FROM storefront_brands WHERE is_active = 1 ORDER BY sort_order, name');
+        $brands = array_map(static fn($b) => ['id' => (int)$b['id'], 'name' => (string)$b['name'], 'logoUrl' => (string)$b['logo_url']], $stmt ? $stmt->fetchAll() : []);
+        header('Cache-Control: public, max-age=60');
+        echo json_encode(['brands' => $brands]);
+        exit;
+    }
+
+    requireAdminAuth();
+
+    if ($method === 'GET') {
+        $stmt = $pdo->query('SELECT id, name, logo_url, sort_order, is_active FROM storefront_brands ORDER BY sort_order, name');
+        $brands = array_map(static fn($b) => [
+            'id' => (int)$b['id'], 'name' => (string)$b['name'], 'logoUrl' => (string)$b['logo_url'],
+            'sortOrder' => (int)$b['sort_order'], 'isActive' => (string)$b['is_active'] === '1',
+        ], $stmt ? $stmt->fetchAll() : []);
+        echo json_encode(['brands' => $brands]);
+        exit;
+    }
+
+    if ($method === 'POST') {
+        $id = (int)($body['id'] ?? 0);
+        $name = trim((string)($body['name'] ?? ''));
+        $logoUrl = trim((string)($body['logoUrl'] ?? ''));
+        $sortOrder = (int)($body['sortOrder'] ?? 0);
+        $isActive = !empty($body['isActive']) ? 1 : 0;
+        if ($name === '' || strlen($name) > 150) {
+            http_response_code(400);
+            echo json_encode(['error' => 'El nombre de la marca es obligatorio (máximo 150 caracteres).']);
+            exit;
+        }
+        if ($logoUrl === '' || !storefrontCampaignSafeUrl($logoUrl, true)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Sube un logo válido para la marca.']);
+            exit;
+        }
+        if ($id > 0) {
+            $pdo->prepare('UPDATE storefront_brands SET name = :name, logo_url = :logo, sort_order = :sort, is_active = :active WHERE id = :id')
+                ->execute([':name' => $name, ':logo' => $logoUrl, ':sort' => $sortOrder, ':active' => $isActive, ':id' => $id]);
+        } else {
+            $pdo->prepare('INSERT INTO storefront_brands (name, logo_url, sort_order, is_active) VALUES (:name, :logo, :sort, :active)')
+                ->execute([':name' => $name, ':logo' => $logoUrl, ':sort' => $sortOrder, ':active' => $isActive]);
+            $id = (int)$pdo->lastInsertId();
+        }
+        echo json_encode(['ok' => true, 'id' => $id]);
+        exit;
+    }
+
+    if ($method === 'DELETE') {
+        $id = (int)($_GET['id'] ?? ($body['id'] ?? 0));
+        if ($id <= 0) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Marca inválida.']);
+            exit;
+        }
+        $pdo->prepare('DELETE FROM storefront_brands WHERE id = :id')->execute([':id' => $id]);
         echo json_encode(['ok' => true]);
         exit;
     }

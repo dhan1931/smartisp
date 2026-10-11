@@ -212,7 +212,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($action === 'serve-upload' && $method === 'GET') {
     $category = (string)($_GET['category'] ?? '');
     $file = (string)($_GET['file'] ?? '');
-    if (!in_array($category, ['campaigns', 'products'], true) || !preg_match('/^[A-Za-z0-9._-]+$/', $file)) {
+    if (!in_array($category, ['campaigns', 'products', 'categories', 'brands'], true) || !preg_match('/^[A-Za-z0-9._-]+$/', $file)) {
         http_response_code(404);
         echo json_encode(['error' => 'Imagen no encontrada.']);
         exit;
@@ -901,82 +901,15 @@ if ($action === 'landing-content-reset' || $action === 'landing-content/reset') 
     exit;
 }
 
-// -------------------------------------------------------------
-// GESTIÓN DE CATEGORÍAS (/api/auth/categories, /api/auth/categories-reassign)
-// -------------------------------------------------------------
-if ($action === 'categories') {
-    requireAdminAuth();
-
-    if ($method === 'GET') {
-        $cats = getDynamicCategoriesList($pdo);
-        echo json_encode(['categories' => $cats]);
-        exit;
-    }
-
-    if ($method === 'POST') {
-        $cats = $body['categories'] ?? [];
-        if (is_array($cats)) {
-            $savedVisuals = [];
-            $existingVisuals = $pdo->query('SELECT id, name, banner_image_url, banner_alt, description, icon, keywords FROM categories_rows');
-            foreach ($existingVisuals->fetchAll(PDO::FETCH_ASSOC) as $existing) {
-                $visual = [
-                    'bannerImageUrl' => (string)($existing['banner_image_url'] ?? ''),
-                    'bannerAlt' => (string)($existing['banner_alt'] ?? ''),
-                    'description' => (string)($existing['description'] ?? ''),
-                    'icon' => (string)($existing['icon'] ?? 'package'),
-                    'keywords' => (string)($existing['keywords'] ?? '[]')
-                ];
-                $savedVisuals['id:' . (string)$existing['id']] = $visual;
-                $savedVisuals['name:' . strtolower(trim((string)$existing['name']))] = $visual;
-            }
-            $pdo->exec("DELETE FROM categories_rows");
-            $stmt = $pdo->prepare("INSERT INTO categories_rows (id, name, subcategories, banner_image_url, banner_alt, description, icon, keywords) VALUES (:id, :name, :sub, :banner, :alt, :description, :icon, :keywords)");
-            $clipCategoryText = static function (string $value, int $limit): string {
-                if (function_exists('mb_substr')) return mb_substr($value, 0, $limit, 'UTF-8');
-                if (preg_match('/^.{0,' . $limit . '}/us', $value, $match)) return $match[0];
-                return substr($value, 0, $limit);
-            };
-            $knownCategoryIcons = ['laptop','network','cable','server','shield-check','zap','monitor','hard-drive','headphones','printer','phone-call','file-code','package','cpu','wifi','camera'];
-            foreach ($cats as $c) {
-                $cId = $c['id'] ?? uniqid('cat_');
-                $cName = $c['name'] ?? 'General';
-                $sub = is_array($c['subcategories'] ?? null) ? json_encode($c['subcategories']) : (string)($c['subcategories'] ?? '');
-                $previousVisual = $savedVisuals['id:' . (string)$cId] ?? $savedVisuals['name:' . strtolower(trim((string)$cName))] ?? [];
-                $banner = trim((string)($c['bannerImageUrl'] ?? $previousVisual['bannerImageUrl'] ?? ''));
-                $safeBanner = str_starts_with($banner, '/') && !str_starts_with($banner, '//') && !str_contains($banner, '..') && !str_contains($banner, '\\');
-                $safeBanner = $safeBanner || (filter_var($banner, FILTER_VALIDATE_URL) !== false && strtolower((string)parse_url($banner, PHP_URL_SCHEME)) === 'https');
-                if (!$safeBanner || preg_match('/[\\x00-\\x1F\\x7F]/', $banner)) $banner = '';
-                $stmt->execute([
-                    ':id' => $cId,
-                    ':name' => $cName,
-                    ':sub' => $sub,
-                    ':banner' => $clipCategoryText($banner, 500),
-                    ':alt' => $clipCategoryText(trim((string)($c['bannerAlt'] ?? $previousVisual['bannerAlt'] ?? '')), 200),
-                    ':description' => $clipCategoryText(trim((string)($c['description'] ?? $previousVisual['description'] ?? '')), 500),
-                    ':icon' => in_array((string)($c['icon'] ?? $previousVisual['icon'] ?? 'package'), $knownCategoryIcons, true) ? (string)($c['icon'] ?? $previousVisual['icon'] ?? 'package') : 'package',
-                    ':keywords' => json_encode(array_values(array_unique(array_slice(array_filter(array_map(static function ($keyword) {
-                        $keyword = trim((string)$keyword);
-                        return function_exists('mb_strtolower') ? mb_strtolower($keyword, 'UTF-8') : strtolower($keyword);
-                    }, is_array($c['keywords'] ?? null) ? $c['keywords'] : [])), 0, 100))), JSON_UNESCAPED_UNICODE)
-                ]);
-            }
-        }
-        echo json_encode(['ok' => true]);
-        exit;
-    }
-}
-
-if ($action === 'categories-reset' || $action === 'categories/reset') {
-    requireAdminAuth();
-    $pdo->exec("DELETE FROM categories_rows");
-    echo json_encode(['ok' => true]);
-    exit;
-}
-
 if (in_array($action, ['store-campaigns', 'admin-store-campaigns', 'upload-campaign-image'], true)) {
     require __DIR__ . '/handlers/campaigns.php';
 }
 
+// 'categories' y 'categories-reset' vivian tambien aca arriba, duplicados y desactualizados
+// (sin macro_group_id ni los campos nuevos de familia) -- como este bloque corria ANTES del
+// require de abajo, tapaba por completo la version real/mantenida de handlers/products.php.
+// Guardar categorias desde el admin pasaba por el duplicado viejo y borraba en silencio el
+// macro_group_id de todas las categorias en cada guardado. Se elimino el duplicado.
 require __DIR__ . '/handlers/diagnostics.php';
 require __DIR__ . '/handlers/products.php';
 require __DIR__ . '/handlers/content.php';
