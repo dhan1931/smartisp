@@ -264,66 +264,11 @@ if ($action === 'admin-products') {
     requireAdminAuth();
     $pTable = getProductsTableName($pdo);
 
+    // La consulta mantenida vive en handlers/products.php; no duplicarla aquí.
     if ($method === 'GET') {
-        $page = max(1, (int)($_GET['page'] ?? 1));
-        $limit = min(200, max(1, (int)($_GET['limit'] ?? 50)));
-        $offset = ($page - 1) * $limit;
-        $where = ['1=1'];
-        $params = [];
-
-        $category = trim((string)($_GET['category'] ?? ''));
-        if ($category !== '' && $category !== 'all') {
-            $where[] = 'category = :category';
-            $params[':category'] = $category;
-        }
-        $subcategory = trim((string)($_GET['subcategory'] ?? ''));
-        if ($subcategory !== '' && $subcategory !== 'all') {
-            $where[] = 'subcategory = :subcategory';
-            $params[':subcategory'] = $subcategory;
-        }
-        $visible = trim((string)($_GET['visible'] ?? ''));
-        if ($visible === 'visible') $where[] = 'visible = 1';
-        elseif ($visible === 'hidden') $where[] = 'visible = 0';
-
-        $photo = trim((string)($_GET['photo'] ?? ''));
-        if ($photo === 'with_photo') $where[] = "(image_url IS NOT NULL AND image_url != '')";
-        elseif ($photo === 'without_photo') $where[] = "(image_url IS NULL OR image_url = '')";
-
-        $price = trim((string)($_GET['price'] ?? ''));
-        if ($price === 'with_price') $where[] = '(price IS NOT NULL AND price > 0)';
-        elseif ($price === 'quote') $where[] = '(price IS NULL OR price <= 0)';
-
-        $search = trim((string)($_GET['q'] ?? ''));
-        if ($search !== '') {
-            $where[] = '(name LIKE :q_name OR sku LIKE :q_sku OR category LIKE :q_cat OR subcategory LIKE :q_sub OR description LIKE :q_desc)';
-            $likeSearch = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $search) . '%';
-            foreach (['name', 'sku', 'cat', 'sub', 'desc'] as $field) {
-                $params[':q_' . $field] = $likeSearch;
-            }
-        }
-
-        $whereSql = implode(' AND ', $where);
-        $totalStmt = $pdo->prepare("SELECT COUNT(*) FROM `$pTable` WHERE $whereSql");
-        $totalStmt->execute($params);
-        $total = (int)$totalStmt->fetchColumn();
-
-        $stmt = $pdo->prepare("SELECT * FROM `$pTable` WHERE $whereSql ORDER BY created_at DESC, id ASC LIMIT :limit OFFSET :offset");
-        foreach ($params as $key => $value) $stmt->bindValue($key, $value);
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-        $stmt->execute();
-        $products = array_map('normalizeProductRow', $stmt->fetchAll());
-
-        echo json_encode([
-            'products' => $products,
-            'total' => $total,
-            'page' => $page,
-            'limit' => $limit,
-            'totalPages' => (int)ceil($total / max(1, $limit)),
-        ]);
+        require __DIR__ . '/handlers/products.php';
         exit;
     }
-
     if ($method === 'POST') {
         ensureProductTableColumns($pdo, $pTable);
 
