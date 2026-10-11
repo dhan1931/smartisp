@@ -1630,7 +1630,13 @@
         .store-campaign-copy { width: min(560px, 60%); padding: 32px 38px 32px 76px; }
         .store-campaign-eyebrow { color: var(--blue); font-size: 12px; font-weight: 800; text-transform: uppercase; }
         .store-campaign-title { margin: 9px 0 8px; color: var(--navy); font-size: 36px; line-height: 1.08; }
-        .store-campaign-subtitle { max-width: 440px; margin: 0 0 18px; color: #526d7d; font-size: 15px; line-height: 1.5; }
+        .store-campaign-subtitle { max-width: 440px; margin: 0 0 18px; color: #526d7d; font-size: 15px; line-height: 1.5; white-space: pre-line; }
+        .store-campaign-bullets { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; white-space: normal; }
+        .store-campaign-bullets li { display: flex; align-items: center; gap: 9px; }
+        .store-campaign-bullet-mark { flex: 0 0 auto; width: 14px; height: 14px; }
+        .store-campaign-bullet-circle { border-radius: 50%; }
+        .store-campaign-bullet-square { border-radius: 3px; }
+        .store-campaign-bullets i[data-lucide] { flex: 0 0 auto; }
         .store-campaign-cta { display: inline-flex; align-items: center; gap: 9px; padding: 14px 22px; border-radius: 6px; background: var(--blue); color: white; font-size: 14px; font-weight: 800; }
         .store-campaign-cta:hover { background: var(--blue-dark, #075d7d); color: white; }
         .store-campaign-controls { position: absolute; right: 16px; bottom: 14px; display: flex; align-items: center; gap: 8px; }
@@ -2029,7 +2035,7 @@
 		<div class="store-campaign" id="storeCampaign" aria-roledescription="carrusel" aria-label="Campañas de la tienda" aria-live="polite">
 			<div class="store-campaign-media"><img id="storeCampaignImage" width="1600" height="560" alt="" fetchpriority="high"></div>
 			<span class="store-campaign-badge" id="storeCampaignBadge" hidden></span>
-			<div class="store-campaign-copy"><div class="store-campaign-eyebrow" id="storeCampaignEyebrow"></div><h1 class="store-campaign-title" id="storeCampaignTitle"></h1><p class="store-campaign-subtitle" id="storeCampaignSubtitle"></p><a class="store-campaign-cta" id="storeCampaignLink" href="/tienda.html#catalogo"><span id="storeCampaignButton"></span><i data-lucide="arrow-right" width="16"></i></a><a class="store-campaign-promo" id="storeCampaignPromo" hidden></a></div>
+			<div class="store-campaign-copy"><div class="store-campaign-eyebrow" id="storeCampaignEyebrow"></div><h1 class="store-campaign-title" id="storeCampaignTitle"></h1><div class="store-campaign-subtitle" id="storeCampaignSubtitle"></div><a class="store-campaign-cta" id="storeCampaignLink" href="/tienda.html#catalogo"><span id="storeCampaignButton"></span><i data-lucide="arrow-right" width="16"></i></a><a class="store-campaign-promo" id="storeCampaignPromo" hidden></a></div>
 			<div class="store-campaign-controls" id="storeCampaignControls" hidden><button class="store-campaign-control" id="storeCampaignPrev" type="button" aria-label="Banner anterior"><i data-lucide="chevron-left"></i></button><div class="store-campaign-dots" id="storeCampaignDots"></div><button class="store-campaign-control" id="storeCampaignNext" type="button" aria-label="Banner siguiente"><i data-lucide="chevron-right"></i></button></div>
 		</div>
 	</section>
@@ -3961,9 +3967,12 @@
 			startStorefrontImageRotation(image, slide);
 			document.querySelector('#storeCampaignEyebrow').textContent = slide.eyebrow || '';
 			document.querySelector('#storeCampaignEyebrow').hidden = !slide.eyebrow;
-			document.querySelector('#storeCampaignTitle').textContent = slide.title || '';
-			document.querySelector('#storeCampaignSubtitle').textContent = slide.subtitle || '';
-			document.querySelector('#storeCampaignSubtitle').hidden = !slide.subtitle;
+			const titleEl = document.querySelector('#storeCampaignTitle'), subtitleEl = document.querySelector('#storeCampaignSubtitle');
+			const textColor = campaignTextColorStyle(slide);
+			titleEl.textContent = slide.title || ''; titleEl.style.cssText = textColor.title;
+			subtitleEl.innerHTML = campaignSubtitleHtml(slide); subtitleEl.style.cssText = textColor.subtitle;
+			subtitleEl.hidden = !slide.subtitle;
+			window.lucide?.createIcons();
 			document.querySelector('#storeCampaignButton').textContent = slide.button_text || 'Explorar';
 			setCampaignLink(document.querySelector('#storeCampaignLink'), slide.target_url);
 			const badge = document.querySelector('#storeCampaignBadge');
@@ -4047,6 +4056,28 @@
 			if (storefrontDisplayMode !== 'carousel' || storefrontSlides.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 			storefrontRotationTimer = setInterval(() => renderStorefrontSlide(storefrontSlideIndex + 1), Math.max(4, Math.min(20, Number(seconds) || 7)) * 1000);
 		};
+		// Subtitulo del banner: por defecto texto plano que SI respeta los saltos de linea que
+		// escribe el admin (antes se perdian, quedaba todo en un parrafo corrido). Si el admin
+		// elige un estilo de vineta (bullet_style != 'none'), cada linea no vacia se muestra como
+		// item con marcador (check/circulo/cuadrado) en el color elegido (bullet_color).
+		const campaignBulletMarkup = (style, color) => {
+			if (style === 'check') return `<i data-lucide="check" width="14" style="color:${escapeHtml(color)}"></i>`;
+			return `<span class="store-campaign-bullet-mark store-campaign-bullet-${style}" style="background:${escapeHtml(color)}"></span>`;
+		};
+		const campaignSubtitleHtml = slide => {
+			const text = String(slide.subtitle || '');
+			if (!text) return '';
+			const style = ['check', 'circle', 'square'].includes(slide.bullet_style) ? slide.bullet_style : 'none';
+			if (style === 'none') return escapeHtml(text).replace(/\n/g, '<br>');
+			const color = /^#[0-9a-fA-F]{6}$/.test(slide.bullet_color || '') ? slide.bullet_color : '#16a34a';
+			const items = text.split('\n').map(line => line.trim()).filter(Boolean);
+			return `<ul class="store-campaign-bullets">${items.map(item => `<li>${campaignBulletMarkup(style, color)}<span>${escapeHtml(item)}</span></li>`).join('')}</ul>`;
+		};
+		const campaignTextColorStyle = slide => {
+			const title = /^#[0-9a-fA-F]{6}$/.test(slide.title_color || '') ? `color:${slide.title_color};` : '';
+			const subtitle = /^#[0-9a-fA-F]{6}$/.test(slide.subtitle_color || '') ? `color:${slide.subtitle_color};` : '';
+			return { title, subtitle };
+		};
 		const renderCampaignCard = (slide, index) => {
 			const images = campaignSlideImages(slide);
 			const image = images[0] || {};
@@ -4082,7 +4113,8 @@
 			// la clase CSS base (.store-campaign-card-media), igual que la version original.
 			const focus = campaignImageFocus(image);
 			mediaStyle += `;object-position:${focus.x}% ${focus.y}%;transform:scale(${focus.zoom});transform-origin:${focus.x}% ${focus.y}%`;
-			return `<article class="store-campaign-card${isSide ? ' is-layout-side' : ' is-layout-full'}" data-campaign-card="${index}"><img class="store-campaign-card-media" data-campaign-image data-slide-index="${index}" src="${escapeHtml(image.image_url || '')}" alt="${escapeHtml(image.image_alt || slide.title || '')}" style="${mediaStyle}"><span class="store-campaign-card-overlay" style="${overlayStyle}"></span><a class="store-campaign-card-main" href="${escapeHtml(target)}" style="${mainStyle}" ${campaignExternal(target) ? 'target="_blank" rel="noopener noreferrer"' : ''}><span class="store-campaign-card-copy"><span class="store-campaign-eyebrow" ${slide.eyebrow?'':'hidden'}>${escapeHtml(slide.eyebrow||'')}</span><span class="store-campaign-title">${escapeHtml(slide.title||'')}</span><span class="store-campaign-subtitle" ${slide.subtitle?'':'hidden'}>${escapeHtml(slide.subtitle||'')}</span><span class="store-campaign-cta">${escapeHtml(slide.button_text||'Explorar')} →</span></span></a>${slide.badge_label?`<span class="store-campaign-badge store-campaign-card-badge ${tone}">${escapeHtml(slide.badge_label)}</span>`:''}${slide.promo_chip_label?`<a class="store-campaign-card-promo" href="${escapeHtml(promoTarget)}" ${campaignExternal(promoTarget) ? 'target="_blank" rel="noopener noreferrer"' : ''}><i data-lucide="${icon}" width="14"></i>${escapeHtml(slide.promo_chip_label)}</a>`:''}</article>`;
+			const textColor = campaignTextColorStyle(slide);
+			return `<article class="store-campaign-card${isSide ? ' is-layout-side' : ' is-layout-full'}" data-campaign-card="${index}"><img class="store-campaign-card-media" data-campaign-image data-slide-index="${index}" src="${escapeHtml(image.image_url || '')}" alt="${escapeHtml(image.image_alt || slide.title || '')}" style="${mediaStyle}"><span class="store-campaign-card-overlay" style="${overlayStyle}"></span><a class="store-campaign-card-main" href="${escapeHtml(target)}" style="${mainStyle}" ${campaignExternal(target) ? 'target="_blank" rel="noopener noreferrer"' : ''}><span class="store-campaign-card-copy"><span class="store-campaign-eyebrow" ${slide.eyebrow?'':'hidden'}>${escapeHtml(slide.eyebrow||'')}</span><span class="store-campaign-title" style="${textColor.title}">${escapeHtml(slide.title||'')}</span><span class="store-campaign-subtitle" style="${textColor.subtitle}" ${slide.subtitle?'':'hidden'}>${campaignSubtitleHtml(slide)}</span><span class="store-campaign-cta">${escapeHtml(slide.button_text||'Explorar')} →</span></span></a>${slide.badge_label?`<span class="store-campaign-badge store-campaign-card-badge ${tone}">${escapeHtml(slide.badge_label)}</span>`:''}${slide.promo_chip_label?`<a class="store-campaign-card-promo" href="${escapeHtml(promoTarget)}" ${campaignExternal(promoTarget) ? 'target="_blank" rel="noopener noreferrer"' : ''}><i data-lucide="${icon}" width="14"></i>${escapeHtml(slide.promo_chip_label)}</a>`:''}</article>`;
 		};
 		const startLayoutImageRotations = () => {
 			clearStorefrontImageTimers();
