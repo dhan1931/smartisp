@@ -79,9 +79,10 @@
         var logo = root.querySelector('.admin-nav-logo');
         if (!logo) return;
 
-        var mode = content.landing_logo_type || (content.landing_logo_image ? 'image' : content.logo_type || (content.logo_image ? 'image' : 'text'));
+        var mode = content.logo_type || content.landing_logo_type || 'image';
         var brand = content.landing_logo_text || content.brand_name || content.logo_text || 'SmartISP';
-        var image = content.landing_logo_image || content.logo_image || '';
+        var image = content.logo_image || content.landing_logo_image || '/assets/img/logo-default.jpg';
+        if (/\/assets\/img\/logo\.(png|webp)(\?|$)/.test(image)) image = '/assets/img/logo-default.jpg';
         var height = parseInt(content.landing_logo_height || content.logo_height, 10) || 38;
         logo.replaceChildren();
         if (mode === 'image' && image) {
@@ -127,7 +128,7 @@
     root.innerHTML =
       '<div class="admin-nav-brand">' +
       '<button type="button" class="admin-nav-mobile-toggle" title="Abrir menú" aria-label="Abrir menú" aria-expanded="false" aria-controls="admin-nav-links"><i data-lucide="menu" aria-hidden="true"></i></button>' +
-      '<span class="admin-nav-logo">SmartISP</span>' +
+      '<span class="admin-nav-logo"><img src="/assets/img/logo-default.jpg" alt="SmartISP" width="1280" height="426"></span>' +
       '<div><strong>Panel Administrativo</strong></div>' +
       '<button type="button" class="admin-nav-toggle" title="' + (collapsed ? 'Expandir barra lateral' : 'Contraer barra lateral') + '" aria-label="' + (collapsed ? 'Expandir barra lateral' : 'Contraer barra lateral') + '" aria-controls="admin-nav-links" aria-expanded="' + (!collapsed) + '">' +
       '<i data-lucide="' + (collapsed ? 'panel-left-open' : 'panel-left-close') + '" aria-hidden="true"></i>' +
@@ -146,7 +147,8 @@
     if (window.lucide) window.lucide.createIcons();
 
     loadConfiguredLogo(root);
-    root.querySelector('.admin-nav-toggle').addEventListener('click', function () {
+    root.querySelector('.admin-nav-toggle').addEventListener('click', function (event) {
+      event.stopPropagation();
       var nextCollapsed = !document.body.classList.contains('admin-sidebar-collapsed');
       document.body.classList.toggle('admin-sidebar-collapsed', nextCollapsed);
       this.setAttribute('title', nextCollapsed ? 'Expandir barra lateral' : 'Contraer barra lateral');
@@ -175,7 +177,8 @@
       mobileToggle.innerHTML = '<i data-lucide="' + (open ? 'x' : 'menu') + '" aria-hidden="true"></i>';
       if (window.lucide) window.lucide.createIcons();
     };
-    mobileToggle.addEventListener('click', function () {
+    mobileToggle.addEventListener('click', function (event) {
+      event.stopPropagation();
       setMobileOpen(!root.classList.contains('is-mobile-open'));
     });
     brand.addEventListener('click', function (event) {
