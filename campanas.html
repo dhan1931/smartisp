@@ -16,7 +16,7 @@
     .campaign-preview{grid-template-columns:repeat(3,minmax(0,1fr));min-height:160px}.campaign-preview.preview-single{grid-template-columns:minmax(0,1fr)}.campaign-preview.preview-split{grid-template-columns:repeat(2,minmax(0,1fr))}.campaign-preview.preview-triple{grid-template-columns:repeat(3,minmax(0,1fr))}.campaign-preview.preview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.campaign-preview.preview-cards{display:flex;overflow:auto}.preview-card{position:relative;min-width:0;min-height:190px;aspect-ratio:16/7;padding:0;background:#dcecf4;border:1px solid #cadce5}.campaign-preview.preview-triple .preview-card,.campaign-preview.preview-grid .preview-card{aspect-ratio:1.55;min-height:160px}.campaign-preview.preview-cards .preview-card{flex:0 0 min(360px,78vw)}.preview-card:before{display:none}.preview-media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.preview-overlay{position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(248,252,254,.98),rgba(248,252,254,.72) 58%,rgba(248,252,254,.02))}.preview-copy{z-index:2}.preview-copy p{font-size:12px;line-height:1.45}.preview-badge{position:absolute;z-index:3;top:11px;right:11px;padding:6px 10px;border-radius:5px;background:#dc2626;color:white;font-size:11px;font-weight:900;box-shadow:0 2px 8px #12324733}.preview-badge.new{background:#059669}.preview-badge.featured{background:#087ea4}.preview-badge.dark{background:#102c3d}.preview-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px}.preview-actions .muted{font-size:12px}
     .slides{gap:10px}.slide{display:block;padding:0;overflow:hidden;background:#fff;border-color:#cfdfe5}.slide details>summary{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;list-style:none;color:var(--ink);font-weight:800;background:#f8fbfc}.slide details>summary::-webkit-details-marker{display:none}.slide-summary-copy{min-width:0;flex:1}.slide-summary-copy small{display:block;margin-top:3px;color:var(--muted);font-weight:500;overflow-wrap:anywhere}.slide-number{display:grid;place-items:center;flex:0 0 30px;aspect-ratio:1;border-radius:50%;background:#e6f3f8;color:var(--blue)}.slide-summary-actions{display:flex;gap:5px}.slide-body{padding:12px 16px 16px;border-top:1px solid var(--line)}.slide-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px}.slide-fields label{margin:8px 0}.slide-fields label.full{grid-column:1/-1}.slide-fields input[type=range]{padding:0;accent-color:var(--blue)}.opacity-row{display:grid;grid-template-columns:1fr 48px;gap:8px;align-items:center}.opacity-row output{color:var(--ink);font-size:12px;text-align:right}.gallery{grid-column:1/-1;padding:12px;border:1px solid var(--line);border-radius:7px;background:#f8fbfc}.gallery-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.gallery-head strong{font-size:13px}.gallery-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px;margin-top:10px}.gallery-item{position:relative;padding:8px;border:1px solid var(--line);border-radius:6px;background:#fff}.gallery-item.is-primary{border:2px solid var(--blue);padding:7px}.gallery-item img{display:block;width:100%;height:86px;object-fit:cover;border-radius:4px;background:#eef3f6}.gallery-item strong{display:block;overflow:hidden;margin:6px 0;color:var(--ink);font-size:11px;text-overflow:ellipsis;white-space:nowrap}.gallery-actions{display:flex;gap:5px}.gallery-actions button{flex:1;min-height:29px;padding:4px;border:1px solid var(--line);border-radius:4px;background:white;color:var(--ink);font-size:11px}.gallery-actions button:disabled{opacity:.45}.gallery-empty{margin:8px 0;color:var(--muted);font-size:12px}.image-fit-row,.date-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}.date-row{grid-column:1/-1}.badge-fields{display:grid;grid-template-columns:1fr 180px;gap:0 12px}.check.compact{font-size:12px}.sticky-actions{display:flex;justify-content:space-between;align-items:center;gap:12px}.sticky-actions .left-actions,.sticky-actions .right-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     @media(max-width:760px){.campaign-settings{grid-template-columns:1fr 1fr}.campaign-settings .full{grid-column:1/-1}.format-options{grid-template-columns:1fr 1fr}.campaign-preview,.campaign-preview.preview-triple{grid-template-columns:1fr}.campaign-preview.preview-split,.campaign-preview.preview-grid{grid-template-columns:1fr 1fr}.preview-card{min-height:175px;aspect-ratio:1.5}.preview-copy{max-width:75%}.preview-copy h4{font-size:17px}.slide-fields,.badge-fields,.image-fit-row,.date-row{grid-template-columns:1fr}.slide-fields label.full,.date-row,.gallery{grid-column:1}.gallery-list{grid-template-columns:repeat(2,minmax(0,1fr))}.sticky-actions{align-items:flex-start;flex-direction:column}.sticky-actions .left-actions,.sticky-actions .right-actions{width:100%}.sticky-actions .button{flex:1}}
-    .campaign-preview.preview-carousel,.campaign-preview.preview-single{grid-template-columns:minmax(0,1fr)}.campaign-preview.preview-carousel .preview-card,.campaign-preview.preview-single .preview-card{aspect-ratio:2.4;min-height:250px}.preview-carousel-controls{display:flex;align-items:center;justify-content:flex-end;gap:10px;grid-column:1/-1;color:var(--muted);font-size:12px}.preview-promo{position:absolute;z-index:4;right:12px;bottom:12px;display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid #ffffffb8;border-radius:5px;background:#fff;color:var(--blue);font-size:12px;font-weight:800;box-shadow:0 2px 8px #12324724}.preview-promo svg{width:14px;height:14px}.preview-overlay{pointer-events:none}.campaign-preview.preview-cards .preview-card{flex:0 0 min(360px,78vw)}
+    .campaign-preview.preview-carousel,.campaign-preview.preview-single{grid-template-columns:minmax(0,1fr)}.campaign-preview.preview-carousel .preview-card,.campaign-preview.preview-single .preview-card{aspect-ratio:var(--hero-ar,2.4);min-height:250px}.preview-carousel-controls{display:flex;align-items:center;justify-content:flex-end;gap:10px;grid-column:1/-1;color:var(--muted);font-size:12px}.preview-promo{position:absolute;z-index:4;right:12px;bottom:12px;display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid #ffffffb8;border-radius:5px;background:#fff;color:var(--blue);font-size:12px;font-weight:800;box-shadow:0 2px 8px #12324724}.preview-promo svg{width:14px;height:14px}.preview-overlay{pointer-events:none}.campaign-preview.preview-cards .preview-card{flex:0 0 min(360px,78vw)}
     @media(max-width:760px){.campaign-preview.preview-carousel .preview-card,.campaign-preview.preview-single .preview-card{min-height:200px;aspect-ratio:1.25}.preview-promo{right:8px;bottom:8px;padding:6px 8px;font-size:11px}.preview-copy{max-width:68%}.preview-copy h4{font-size:16px}}
     .panel,.slide,.gallery,.gallery-item,.format-option{border-color:#bfd2dc}.preview-card{background:#fff}.slide details>summary{border-bottom:1px solid #d1e0e7}.slide details[open]>summary{background:#eaf6fa}.gallery-item img{object-fit:contain}.slide-fields input[type=range]{min-width:0}
     .category-choices{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin-top:12px}.category-choice{display:flex;align-items:center;gap:9px;min-width:0;margin:0;padding:8px;border:1px solid var(--line);border-radius:6px;color:var(--ink);font-size:12px}.category-choice input{width:auto;margin:0;accent-color:var(--blue)}.category-choice img{width:48px;height:38px;object-fit:cover;border-radius:4px;background:#edf3f6}.category-choice span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -50,7 +50,7 @@
     .image-crop summary{cursor:pointer;color:var(--blue);font-size:12.5px;font-weight:800}
     .image-crop label{margin:7px 0;font-size:11px}
     .image-crop[open] summary{margin-bottom:8px}
-    .crop-canvas{position:relative;width:100%;aspect-ratio:2.4;border:1px solid var(--line);border-radius:6px;background:#eef3f6;cursor:crosshair;touch-action:none}
+    .crop-canvas{position:relative;width:100%;aspect-ratio:var(--hero-ar,2.4);border:1px solid var(--line);border-radius:6px;background:#eef3f6;cursor:crosshair;touch-action:none}
     .crop-canvas-media{position:absolute;inset:0;overflow:hidden;border-radius:5px}
     .crop-canvas img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;user-select:none}
     .crop-crosshair{position:absolute;width:26px;height:26px;margin-left:-13px;margin-top:-13px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1.5px #087ea4,0 2px 6px rgba(0,0,0,.4);pointer-events:none;z-index:2}
@@ -79,7 +79,7 @@
       <div id="saveMessageTop" class="message" role="status"></div>
       <div class="toolbar-actions" style="margin-bottom:14px"><a class="button secondary" href="/productos-destacados" target="_blank" rel="noopener"><i data-lucide="sparkles"></i> Ver selección comercial</a><a class="button secondary" href="/categorias-destacadas" target="_blank" rel="noopener"><i data-lucide="panels-top-left"></i> Ver categorías y banners</a><a class="button secondary" href="/tienda.html" target="_blank" rel="noopener"><i data-lucide="external-link"></i> Ver tienda</a></div>
       <section class="panel"><div class="section-heading"><div><h3>Presentación de portada</h3><p class="muted">Elige el formato, programa su vigencia y revisa la composición. Los textos de "Selección comercial", productos y categorías destacadas se administran en <a href="/portada.html">Portada</a>.</p></div></div>
-        <div class="campaign-settings"><label>Nombre de campaña<input id="campaignName" maxlength="150"></label><label>Rotación entre banners (s)<input id="rotation" type="number" min="4" max="20"></label><label class="check compact"><input id="active" type="checkbox"> Visible en tienda</label><label>Activar desde<input id="campaignStarts" type="datetime-local"></label><label>Desactivar desde<input id="campaignEnds" type="datetime-local"></label></div>
+        <div class="campaign-settings"><label>Nombre de campaña<input id="campaignName" maxlength="150"></label><label>Rotación entre banners (s)<input id="rotation" type="number" min="4" max="20"></label><label class="check compact"><input id="active" type="checkbox"> Visible en tienda</label><label>Activar desde<input id="campaignStarts" type="datetime-local"></label><label>Desactivar desde<input id="campaignEnds" type="datetime-local"></label><label class="full">Alto del banner principal<div class="opacity-row"><input id="heroHeightPct" type="range" min="60" max="100" step="5"><output>100%</output></div><small class="help">Achica el banner sin recortar la imagen (el ancho siempre ocupa toda la pantalla). Solo afecta el formato "Carrusel panorámico" / "Portada única".</small></label></div>
         <label>Presentación</label><div class="format-options" id="formatOptions">
           <label class="format-option"><input type="radio" name="displayMode" value="carousel"><span><strong>Carrusel panorámico</strong><small>Un banner ancho, rota entre banners activos.</small></span></label>
           <label class="format-option"><input type="radio" name="displayMode" value="single"><span><strong>Portada única</strong><small>Una sola pieza editorial, sin controles.</small></span></label>
@@ -99,7 +99,7 @@
   <script>
   (() => {
     const $ = selector => document.querySelector(selector);
-    const state = { campaign: { name:'Portada de la tienda',rotation_seconds:7,is_active:true,display_mode:'carousel',starts_at:'',ends_at:'' }, slides:[], chips:[] };
+    const state = { campaign: { name:'Portada de la tienda',rotation_seconds:7,is_active:true,display_mode:'carousel',hero_height_pct:100,starts_at:'',ends_at:'' }, slides:[], chips:[] };
     let activeZone = 'store-home';
     let previewSlideIndex = 0;
     let slideKeyCounter = 0;
@@ -142,6 +142,8 @@
     function showDenied() { $('#login').classList.add('hidden'); $('#denied').classList.remove('hidden'); }
     function showApp(user) { $('#login').classList.add('hidden'); $('#denied').classList.add('hidden'); $('#identity').textContent=`${user.name || ''} ${user.surname || ''} · ${user.email || ''}`; $('#app').classList.remove('hidden'); load(); }
     function renderPreview() {
+      const heroHeightPct=Math.max(60,Math.min(100,Number(state.campaign.hero_height_pct)||100));
+      document.documentElement.style.setProperty('--hero-ar',(240/heroHeightPct).toFixed(3));
       const mode=modeValue(), active=state.slides.filter(slide=>slide.is_active!==false), count={single:1,split:2,triple:3,grid:4}[mode]||active.length;
       const host=$('#preview');
       ['preview-carousel','preview-single','preview-split','preview-triple','preview-grid','preview-cards'].forEach(name=>host.classList.toggle(name, name===`preview-${mode}`));
@@ -215,11 +217,13 @@
     function fillForm() {
       $('#campaignName').value=state.campaign.name; $('#rotation').value=state.campaign.rotation_seconds; $('#active').checked=!!state.campaign.is_active;
       $('#campaignStarts').value=localDate(state.campaign.starts_at); $('#campaignEnds').value=localDate(state.campaign.ends_at);
+      const heroHeightPct=Math.max(60,Math.min(100,Number(state.campaign.hero_height_pct)||100));
+      $('#heroHeightPct').value=heroHeightPct; $('#heroHeightPct').nextElementSibling.value=`${heroHeightPct}%`;
       document.querySelectorAll('input[name="displayMode"]').forEach(input=>input.checked=input.value===state.campaign.display_mode);
       renderSlides(); renderChips();
     }
     function collectForm() {
-      state.campaign={...state.campaign,name:$('#campaignName').value.trim(),rotation_seconds:Number($('#rotation').value)||7,is_active:$('#active').checked,display_mode:modeValue(),starts_at:$('#campaignStarts').value||'',ends_at:$('#campaignEnds').value||''};
+      state.campaign={...state.campaign,name:$('#campaignName').value.trim(),rotation_seconds:Number($('#rotation').value)||7,is_active:$('#active').checked,display_mode:modeValue(),hero_height_pct:Number($('#heroHeightPct').value)||100,starts_at:$('#campaignStarts').value||'',ends_at:$('#campaignEnds').value||''};
     }
     function saveDraft() {
       collectForm();
@@ -262,7 +266,7 @@
       try {
         const result=await api(`admin-store-campaigns?zone=${encodeURIComponent(activeZone)}`); const c=result.campaign;
         const savedMode=c?.display_mode;
-        Object.assign(state.campaign,{name:c?.name||(activeZone==='store-home'?'Portada de la tienda':'Banners secundarios'),rotation_seconds:Number(c?.rotation_seconds||7),is_active:c?String(c.is_active)==='1':true,display_mode:activeZone==='store-secondary'&&['carousel','single'].includes(savedMode)?'split':(savedMode||(activeZone==='store-home'?'carousel':'split')),starts_at:c?.starts_at||'',ends_at:c?.ends_at||''});
+        Object.assign(state.campaign,{name:c?.name||(activeZone==='store-home'?'Portada de la tienda':'Banners secundarios'),rotation_seconds:Number(c?.rotation_seconds||7),is_active:c?String(c.is_active)==='1':true,display_mode:activeZone==='store-secondary'&&['carousel','single'].includes(savedMode)?'split':(savedMode||(activeZone==='store-home'?'carousel':'split')),hero_height_pct:Math.max(60,Math.min(100,Number(c?.hero_height_pct)||100)),starts_at:c?.starts_at||'',ends_at:c?.ends_at||''});
         state.slides=(result.slides||[]).map(slide=>({...slide,_editorKey:String(slide.id),card_layout:slide.card_layout==='side'?'side':'full',copy_background_color:/^#[0-9a-fA-F]{6}$/.test(slide.copy_background_color||'')?slide.copy_background_color:'#ffffff',image_width_pct:Number(slide.image_width_pct??55),is_active:String(slide.is_active)==='1',images:Array.isArray(slide.images)?slide.images.map(image=>({...image,focal_x:Number(image.focal_x??50),focal_y:Number(image.focal_y??50),zoom_pct:Number(image.zoom_pct??100),is_primary:String(image.is_primary)==='1'||image.is_primary===true})):[]}));
         state.chips=(result.chips||[]).map(chip=>({...chip,is_active:String(chip.is_active)==='1'}));
         lastPublished=snapshot();
@@ -288,14 +292,17 @@
       }
       if(isDirty)saveDraft();
       activeZone=input.value;isDirty=false;clearTimeout(draftTimer);
-      state.campaign={name:activeZone==='store-home'?'Portada de la tienda':'Banners secundarios',rotation_seconds:7,is_active:true,display_mode:activeZone==='store-home'?'carousel':'split',starts_at:'',ends_at:''};
+      state.campaign={name:activeZone==='store-home'?'Portada de la tienda':'Banners secundarios',rotation_seconds:7,is_active:true,display_mode:activeZone==='store-home'?'carousel':'split',hero_height_pct:100,starts_at:'',ends_at:''};
       state.slides=[];state.chips=[];
       await load();
     }));
     $('#refreshPreview').addEventListener('click',renderPreview);
     $('#preview').addEventListener('click',event=>{const control=event.target.closest('[data-preview-step]');if(!control)return;const active=state.slides.filter(slide=>slide.is_active!==false);previewSlideIndex=(previewSlideIndex+Number(control.dataset.previewStep)+active.length)%active.length;renderPreview();});
     $('#app').addEventListener('input',event=>{
-      if(event.target.closest('.campaign-settings')) { collectForm(); markDirty(); }
+      if(event.target.closest('.campaign-settings')) {
+        if(event.target.id==='heroHeightPct') event.target.nextElementSibling.value=`${event.target.value}%`;
+        collectForm(); markDirty(); renderPreview();
+      }
     });
     $('#app').addEventListener('change',event=>{
       if(event.target.closest('.campaign-settings')) { collectForm(); markDirty(); }

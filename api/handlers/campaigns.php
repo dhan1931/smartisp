@@ -160,6 +160,7 @@ if ($action === 'admin-store-campaigns') {
         $categoryIds = ($isPrimaryZone && is_array($body['category_ids'] ?? null)) ? array_values(array_unique(array_slice(array_filter(array_map(static fn($id) => trim((string)$id), $body['category_ids']), static fn($id) => $id !== ''), 0, 7))) : [];
         $name = trim((string)($settings['name'] ?? ($existingCampaign['name'] ?? 'Portada de la tienda')));
         $rotation = max(4, min(20, (int)($settings['rotation_seconds'] ?? ($existingCampaign['rotation_seconds'] ?? 7))));
+        $heroHeightPct = max(60, min(100, (int)($settings['hero_height_pct'] ?? ($existingCampaign['hero_height_pct'] ?? 100))));
         $displayMode = in_array(($settings['display_mode'] ?? ($existingCampaign['display_mode'] ?? 'carousel')), ['carousel', 'single', 'split', 'triple', 'grid', 'cards'], true) ? ($settings['display_mode'] ?? $existingCampaign['display_mode'] ?? 'carousel') : 'carousel';
         $isActive = $touchesCampaignSettings ? !empty($settings['is_active']) : !empty($existingCampaign['is_active']);
         try {
@@ -268,8 +269,8 @@ if ($action === 'admin-store-campaigns') {
 
         $pdo->beginTransaction();
         try {
-            $pdo->prepare("INSERT INTO storefront_campaigns (code, name, placement, is_active, rotation_seconds, display_mode, starts_at, ends_at) VALUES (:code, :name, :placement, :active, :rotation, :mode, :starts, :ends) ON DUPLICATE KEY UPDATE name = VALUES(name), placement = VALUES(placement), is_active = VALUES(is_active), rotation_seconds = VALUES(rotation_seconds), display_mode = VALUES(display_mode), starts_at = VALUES(starts_at), ends_at = VALUES(ends_at)")
-                ->execute([':code' => $code, ':name' => $name, ':placement' => $isPrimaryZone ? 'home' : 'home-secondary', ':active' => $isActive ? 1 : 0, ':rotation' => $rotation, ':mode' => $displayMode, ':starts' => $campaignStarts, ':ends' => $campaignEnds]);
+            $pdo->prepare("INSERT INTO storefront_campaigns (code, name, placement, is_active, rotation_seconds, display_mode, hero_height_pct, starts_at, ends_at) VALUES (:code, :name, :placement, :active, :rotation, :mode, :hero_height, :starts, :ends) ON DUPLICATE KEY UPDATE name = VALUES(name), placement = VALUES(placement), is_active = VALUES(is_active), rotation_seconds = VALUES(rotation_seconds), display_mode = VALUES(display_mode), hero_height_pct = VALUES(hero_height_pct), starts_at = VALUES(starts_at), ends_at = VALUES(ends_at)")
+                ->execute([':code' => $code, ':name' => $name, ':placement' => $isPrimaryZone ? 'home' : 'home-secondary', ':active' => $isActive ? 1 : 0, ':rotation' => $rotation, ':mode' => $displayMode, ':hero_height' => $heroHeightPct, ':starts' => $campaignStarts, ':ends' => $campaignEnds]);
             if ($isPrimaryZone) {
                 $saveFeaturedSetting = $pdo->prepare('INSERT INTO settings_rows (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = CURRENT_TIMESTAMP');
                 foreach ($featuredPage as $field => $value) $saveFeaturedSetting->execute(['store_featured_' . $field, $value]);
@@ -366,7 +367,7 @@ if ($action === 'store-campaigns' && $method === 'GET') {
         if (is_array($decodedCategoryIds)) $featuredCategoryIds = array_values(array_map('strval', $decodedCategoryIds));
     }
     $now = 'UTC_TIMESTAMP()';
-    $stmt = $pdo->prepare("SELECT id, rotation_seconds, display_mode FROM storefront_campaigns WHERE code = :code AND is_active = 1 AND (starts_at IS NULL OR starts_at <= $now) AND (ends_at IS NULL OR ends_at > $now) LIMIT 1");
+    $stmt = $pdo->prepare("SELECT id, rotation_seconds, display_mode, hero_height_pct FROM storefront_campaigns WHERE code = :code AND is_active = 1 AND (starts_at IS NULL OR starts_at <= $now) AND (ends_at IS NULL OR ends_at > $now) LIMIT 1");
     $stmt->execute([':code' => $publicCode]);
     $campaign = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$campaign) {
@@ -398,6 +399,6 @@ if ($action === 'store-campaigns' && $method === 'GET') {
         $chips = $pdo->query("SELECT label, icon, target_url FROM storefront_promo_chips WHERE is_active = 1 AND (starts_at IS NULL OR starts_at <= UTC_TIMESTAMP()) AND (ends_at IS NULL OR ends_at > UTC_TIMESTAMP()) ORDER BY sort_order, id")->fetchAll(PDO::FETCH_ASSOC);
     }
     header('Cache-Control: public, max-age=60');
-    echo json_encode(['rotation_seconds' => max(4, min(20, (int)$campaign['rotation_seconds'])), 'display_mode' => $campaign['display_mode'] ?: 'carousel', 'slides' => $publicSlides, 'products' => $products, 'chips' => $chips, 'featured_category_ids' => $featuredCategoryIds]);
+    echo json_encode(['rotation_seconds' => max(4, min(20, (int)$campaign['rotation_seconds'])), 'display_mode' => $campaign['display_mode'] ?: 'carousel', 'hero_height_pct' => max(60, min(100, (int)($campaign['hero_height_pct'] ?? 100))), 'slides' => $publicSlides, 'products' => $products, 'chips' => $chips, 'featured_category_ids' => $featuredCategoryIds]);
     exit;
 }
