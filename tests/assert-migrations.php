@@ -91,4 +91,9 @@ $campaignFk = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.KEY_COLU
       AND CONSTRAINT_NAME = 'fk_storefront_campaign_products_product'")->fetchColumn();
 $assert($campaignFk === 1, 'La relación de productos destacados no tiene su clave foránea.');
 
+$bulletColumn = $pdo->query("SHOW COLUMNS FROM storefront_campaign_slides LIKE 'bullet_style'")->fetch();
+$transitionColumn = $pdo->query("SHOW COLUMNS FROM storefront_campaign_slides LIKE 'image_transition_ms'")->fetch();
+$assert($bulletColumn && $bulletColumn['Type'] === 'varchar(20)', 'El estilo de viñeta debe admitir check-circle sin truncarse.');
+$assert($transitionColumn && (int)$transitionColumn['Default'] === 1000, 'Falta la duración predeterminada de transición de 1000 ms.');
+
 echo "Migraciones verificadas: claves, tipos, fecha, correo, historial y esquema de campañas correctos.\n";
