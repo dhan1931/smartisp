@@ -84,11 +84,11 @@
     svg.lucide { width: 1em; height: 1em; vertical-align: -0.125em; stroke-width: 2; flex-shrink: 0; }
   </style>
   <script src="/assets/vendor/lucide.min.js?v=1.55.0"></script>
-</head>
+<link rel="stylesheet" href="/assets/css/settings-layout.css?v=settings-v2"></head>
 <body>
-  <link rel="stylesheet" href="/assets/css/admin-nav.css?v=admin-campaign-link-20261009">
+  <link rel="stylesheet" href="/assets/css/admin-nav.css?v=admin-brand-20261011">
   <div id="smartisp-admin-nav" class="is-loading" data-active="config"></div>
-  <script src="/assets/js/admin-nav.js?v=admin-campaign-link-20261009" defer></script>
+  <script src="/assets/js/admin-nav.js?v=admin-brand-20261011" defer></script>
   <header class="top"><div><h1>SmartISP Administracion</h1><span>Configuración de apariencia, visibilidad y correo</span></div><div style="display:flex;gap:8px;"><a class="button secondary" href="/">Ver presentación</a></div></header>
   <main class="shell">
     <section id="accessDeniedPanel" class="login hidden">
@@ -486,9 +486,9 @@
     const DEFAULT_CONTENT = {
       brand_name: 'SmartISP',
       logo_type: 'image',
-      logo_image: '',
+      logo_image: '/assets/img/logo-default.jpg',
       logo_height: '38',
-      logo_dark_image: '',
+      logo_dark_image: '/assets/img/logo-default.jpg',
       logo_dark_height: '42',
       logo_dark_invert: 'false',
       logo_text: 'smartisp',
@@ -551,7 +551,7 @@
       closeCropEditor(true);
     };
     const formValues = form => Object.fromEntries(new FormData(form));
-    const fillForm = (form, values) => form.querySelectorAll('[name]').forEach(input => { if (input.type !== 'file') input.value = values[input.name] ?? ''; });
+    const fillForm = (form, values) => form.querySelectorAll('[name]').forEach(input => { if (input.type !== 'file' && Object.prototype.hasOwnProperty.call(values,input.name)) input.value = values[input.name] ?? ''; });
     const valuesWithImage = async form => {
       const values = formValues(form);
       const fileInput = form.querySelector('input[name="hero_image_file"]');
@@ -987,6 +987,7 @@
     const loadContent = async () => {
       const result = await api('admin-content');
       const values = { ...DEFAULT_CONTENT, ...Object.fromEntries(result.content.map(item => [item.key, item.value])) };
+      for(const key of ['logo_image','logo_dark_image'])if(!values[key]||/\/assets\/img\/logo\.(png|webp)(\?|$)/.test(values[key]))values[key]=DEFAULT_CONTENT[key];
 
       // Valores pesados (logos en base64) ya no vienen en la respuesta de arriba (DEV-20261005-022):
       // se piden aparte, en paralelo, solo ahora que se abre el panel de Apariencia/Contenido.
@@ -1280,9 +1281,16 @@
     // resto del código ya la invocaba: contentForm necesita valuesWithImage (archivos/logos),
     // visibilityForm son solo valores planos.
     const saveForm = async (form, messageEl, successText) => {
-      const values = form.id === 'contentForm' ? await valuesWithImage(form) : formValues(form);
-      await api('admin-content', { method: 'POST', body: JSON.stringify(values) });
-      showMessage(messageEl, successText);
+      const button=form.querySelector('[type="submit"]');
+      if(button?.disabled)return;
+      if(button)button.disabled=true;
+      try {
+        const allValues = form.id === 'contentForm' && form.dataset.settingsSection !== 'contact' ? await valuesWithImage(form) : formValues(form);
+        const values = window.smartispSettingsPayload ? window.smartispSettingsPayload(form,allValues) : allValues;
+        await api('admin-content', { method: 'POST', body: JSON.stringify(values) });
+        showMessage(messageEl, successText);
+        form.dispatchEvent(new CustomEvent('settings-saved'));
+      } finally { if(button)button.disabled=false; }
     };
 
     const isUserAdmin = u => {
@@ -1467,9 +1475,9 @@
         btn.innerHTML = originalHtml;
       }
     });
-    $('#resetContentButton').addEventListener('click', async () => { const form = $('#contentForm'); fillForm(form, DEFAULT_CONTENT); syncLogoSettings(DEFAULT_CONTENT); updateDesignPreview(); try { await saveForm(form, $('#contentMessage'), 'Apariencia restaurada al predeterminado.'); } catch (error) { showMessage($('#contentMessage'), error.message, true); } });
+    $('#resetContentButton').addEventListener('click', () => { const form = $('#contentForm'); const defaults=window.smartispSettingsPayload?window.smartispSettingsPayload(form,DEFAULT_CONTENT):DEFAULT_CONTENT;fillForm(form,defaults);if(defaults.logo_image!==undefined){$('#logoFileInput').value='';$('#logoDarkFileInput').value='';syncLogoSettings(DEFAULT_CONTENT);}updateDesignPreview();form.dispatchEvent(new Event('input',{bubbles:true}));showMessage($('#contentMessage'),'Valores predeterminados preparados. Guarda para aplicarlos.'); });
     $('#resetVisibilityButton').addEventListener('click', async () => { const form = $('#visibilityForm'); fillForm(form, DEFAULT_VISIBILITY); try { await saveForm(form, $('#visibilityMessage'), 'Visibilidad restaurada al predeterminado.'); } catch (error) { showMessage($('#visibilityMessage'), error.message, true); } });
-    $('#clearContentButton').addEventListener('click', () => { fillForm($('#contentForm'), DEFAULT_CONTENT); syncLogoSettings(DEFAULT_CONTENT); updateDesignPreview(); showMessage($('#contentMessage'), 'Campos restablecidos. Guarda para aplicar los cambios.'); });
+    $('#clearContentButton').addEventListener('click', () => $('#resetContentButton').click());
     $('#adminPanel').addEventListener('change', event => { const input = event.target; if (input.type !== 'file' || !input.files[0]) return; if (input.name === 'logo_image_file' || input.name === 'logo_dark_image_file') return; const form = input.closest('form'); const outputInput = form.querySelector('[name="hero_image"]'); if (!outputInput) return; try { openCropEditor(input.files[0], input, outputInput); } catch (error) { input.value = ''; showMessage($('#contentMessage'), error.message, true); } });
     $('#cropAspect').addEventListener('change', updateCropBox);
     $('#cropBox').addEventListener('pointerdown', event => { cropState.dragging = true; cropState.resizeHandle = event.target.dataset.resize || ''; cropState.startX = event.clientX; cropState.startY = event.clientY; cropState.startBoxX = cropState.box.x; cropState.startBoxY = cropState.box.y; cropState.startBoxW = cropState.box.w; cropState.startBoxH = cropState.box.h; event.currentTarget.setPointerCapture(event.pointerId); });
@@ -1515,5 +1523,5 @@
     if (window.lucide) window.lucide.createIcons();
     checkAuthAndInit();
   </script>
-</body>
+<script src="/assets/js/settings-layout.js?v=settings-v2"></script></body>
 </html>

@@ -248,7 +248,7 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
     <link rel="icon" type="image/png" sizes="192x192" href="<?= $siteUrl ?>/assets/favicons/favicon-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="<?= $siteUrl ?>/assets/favicons/apple-touch-icon.png">
     <meta name="theme-color" content="#102a43">
-    <script src="/assets/js/public-brand.js?v=canonical-logo-layout-20261009" defer></script>
+    <script src="/assets/js/public-brand.js?v=admin-brand-20261011" defer></script>
 
     <!-- Open Graph / Redes Sociales (Facebook, WhatsApp, LinkedIn) -->
     <meta property="og:type" content="product">
