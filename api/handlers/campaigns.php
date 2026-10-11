@@ -250,9 +250,22 @@ if ($action === 'admin-store-campaigns') {
                 exit;
             }
         }
-        $activeSlides = array_filter($slides, static fn($slide) => !array_key_exists('is_active', $slide) || !empty($slide['is_active']));
+        // Pantallas que no tocan banners (p.ej. portada.html, que solo guarda textos/productos/
+        // categorias destacadas) no mandan 'slides' -- contar eso como 0 banners activos tumbaba
+        // el guardado de esas pantallas con "este formato necesita al menos N banners visibles"
+        // aunque los banners reales seguian intactos en la base. Si no se tocan, se cuentan los
+        // que ya existen en la base en vez de asumir cero.
+        if (array_key_exists('slides', $body)) {
+            $activeSlidesCount = count(array_filter($slides, static fn($slide) => !array_key_exists('is_active', $slide) || !empty($slide['is_active'])));
+        } elseif (!empty($existingCampaign['id'])) {
+            $existingActiveCount = $pdo->prepare('SELECT COUNT(*) FROM storefront_campaign_slides WHERE campaign_id = :id AND is_active = 1');
+            $existingActiveCount->execute([':id' => $existingCampaign['id']]);
+            $activeSlidesCount = (int)$existingActiveCount->fetchColumn();
+        } else {
+            $activeSlidesCount = 0;
+        }
         $requiredSlides = ['split' => 2, 'triple' => 3, 'grid' => 4][$displayMode] ?? 1;
-        if ($isActive && count($activeSlides) < $requiredSlides) {
+        if ($isActive && $activeSlidesCount < $requiredSlides) {
             http_response_code(400);
             echo json_encode(['error' => 'Este formato necesita al menos ' . $requiredSlides . ' banners visibles.']);
             exit;
