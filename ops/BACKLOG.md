@@ -49,6 +49,16 @@ de datos reales es su propia tarea porque varios requieren backend nuevo, no sol
 
 - [ ] **DEV-20261006-016** `low` `feature` — Clientes, Clasificación IA, Inventario/Stock, Analítica/Reportes: el mockup los muestra, pero ninguno existe en el backend; cada uno necesita su propio diseño de alcance antes de empezar.
 
+## Épica: Promociones, ofertas y mejoras de admin — 2026-10-11
+
+Pedido explícito del usuario, anotado para no perderlo (sesión con tokens limitados).
+
+- [ ] **DEV-20261011-001** `high` `feature` — Sistema de descuentos por producto/categoría (precio tachado + precio con descuento, con o sin vigencia)
+- [ ] **DEV-20261011-002** `high` `feature` — Sistema de ofertas/promociones (destacar productos en oferta, posible badge "Oferta" ya existe en banners pero no en catálogo/ficha de producto)
+- [ ] **DEV-20261011-003** `high` `feature` — Sistema de cupones (código, % o monto fijo, vigencia, límite de usos, aplicación en checkout) — necesita tabla nueva, lógica de validación en checkout, y UI admin para crearlos/listarlos
+- [ ] **DEV-20261011-004** `low` `refactor` — Selector de "Categorías destacadas" en Portada (`#categoryChoices`, grilla de checkboxes) se ve plano — mejorar visualmente (más parecido a las tarjetas de familia con imagen que ya tiene el selector de "Imágenes de familias")
+- [ ] **DEV-20261011-005** `low` `data` — "El sistema de productos también puede mejorar" (pedido del usuario, sin detalle específico — preguntar qué parte exactamente: ¿edición, listado, filtros, importación?)
+
 ## Épica: Tienda pública y campañas — referencia visual 2026-10-09
 
 Prioridad inmediata: cerrar la vista pública de productos, categorías y campañas. La referencia nueva del

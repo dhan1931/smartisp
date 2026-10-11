@@ -64,9 +64,10 @@
       <article class="card"><strong>Atencion comercial</strong><p>Cotizaciones por WhatsApp, pedidos, despacho y acompanamiento postventa.</p></article>
     </section>
     <a class="cta" href="https://wa.me/593983576667" target="_blank" rel="noopener">Solicitar asesoria por WhatsApp</a>
-    <section class="brands-row" id="brandsRow" hidden><h2>Marcas con las que trabajamos</h2><div class="brands-list" id="brandsList"></div></section>
+    <section class="brands-row" id="brandsRow" hidden><h2 id="brandsTitle">Nuestras Marcas</h2><div class="brands-list" id="brandsList"></div></section>
   </main>
   <footer>SmartISP Ecuador · Servicios, catalogo y asesoria tecnologica.</footer>
+  <script src="/assets/js/brands-section.js?v=1"></script>
   <script>
   (async () => {
     try {
@@ -87,20 +88,7 @@
       if (slide.subtitle) document.querySelector('#heroSubtitle').textContent = slide.subtitle;
     } catch (error) { console.warn('No se pudo cargar el banner de la pagina:', error); }
   })();
-  (async () => {
-    try {
-      const response = await fetch('/api/auth/brands?_t=' + Date.now(), { cache: 'no-store' });
-      if (!response.ok) return;
-      const data = await response.json();
-      const brands = Array.isArray(data.brands) ? data.brands : [];
-      if (!brands.length) return;
-      const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-      document.querySelector('#brandsList').innerHTML = brands.map(brand =>
-        `<div class="brand-item"><img src="${esc(brand.logoUrl)}" alt="${esc(brand.name)}" loading="lazy"></div>`
-      ).join('');
-      document.querySelector('#brandsRow').hidden = false;
-    } catch (error) { console.warn('No se pudieron cargar las marcas:', error); }
-  })();
+  window.initBrandsSection && window.initBrandsSection();
   </script>
   <script src="/assets/js/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
   <link rel="stylesheet" href="/assets/css/storefront-cart.css?v=shared-cart-drawer-20261009">
