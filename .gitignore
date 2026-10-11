@@ -28,6 +28,8 @@ uploads/cache/
 uploads/products/*
 !uploads/products/.gitkeep
 uploads/campaigns/*
+uploads/categories/*
+uploads/brands/*
 CLAUDE.md
 .npm-cache/
 .playwright-cli/

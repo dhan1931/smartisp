@@ -1,16 +1,7 @@
 <?php
 // API de campanas editoriales del storefront y productos destacados.
-
-function storefrontCampaignSafeUrl(string $url, bool $image = false): bool {
-    $url = trim($url);
-    if ($url === '' || strlen($url) > 500 || preg_match('/[\x00-\x1F\x7F]/', $url) || str_contains($url, '\\')) return false;
-    if (str_starts_with($url, '/') && !str_starts_with($url, '//')) {
-        return !$image || preg_match('#^/uploads/(campaigns|products)/[A-Za-z0-9._-]+$#', $url) === 1
-            || preg_match('#^/api/auth/serve-upload\?category=(campaigns|products)&file=[A-Za-z0-9._%-]+$#', $url) === 1;
-    }
-    if (!$image && str_starts_with($url, '#')) return true;
-    return filter_var($url, FILTER_VALIDATE_URL) !== false && strtolower((string)parse_url($url, PHP_URL_SCHEME)) === 'https';
-}
+// storefrontCampaignSafeUrl() vive en api/db.php (helper compartido, siempre cargado) porque
+// products.php (macro-groups, brands) tambien la necesita y no siempre se incluye campaigns.php.
 
 function storefrontCampaignText(string $value, int $limit): string {
     $value = trim($value);

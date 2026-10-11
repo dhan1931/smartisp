@@ -1,6 +1,21 @@
 <?php
 // Conexión y gestión de base de datos MySQL (Hostinger / phpMyAdmin)
 
+// Mantener la lista de categorias de upload (campaigns|products|categories|brands) en sync con
+// el whitelist de api/router.php (accion serve-upload) y con los directorios que de verdad
+// escriben los handlers de upload -- una URL que esta funcion acepte pero que serve-upload
+// rechace rompe la imagen en silencio.
+function storefrontCampaignSafeUrl(string $url, bool $image = false): bool {
+    $url = trim($url);
+    if ($url === '' || strlen($url) > 500 || preg_match('/[\x00-\x1F\x7F]/', $url) || str_contains($url, '\\')) return false;
+    if (str_starts_with($url, '/') && !str_starts_with($url, '//')) {
+        return !$image || preg_match('#^/uploads/(campaigns|products|categories|brands)/[A-Za-z0-9._-]+$#', $url) === 1
+            || preg_match('#^/api/auth/serve-upload\?category=(campaigns|products|categories|brands)&file=[A-Za-z0-9._%-]+$#', $url) === 1;
+    }
+    if (!$image && str_starts_with($url, '#')) return true;
+    return filter_var($url, FILTER_VALIDATE_URL) !== false && strtolower((string)parse_url($url, PHP_URL_SCHEME)) === 'https';
+}
+
 function getDbConnection() {
     static $pdo = null;
     if ($pdo !== null) {
@@ -357,10 +372,17 @@ function getCategoryMacroGroups(PDO $pdo): array {
             `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
     } catch (Throwable $e) {}
-    $stmt = $pdo->query("SELECT id, name, icon FROM category_macro_groups ORDER BY sort_order, name");
+    $stmt = $pdo->query("SELECT id, name, icon, image_url, sort_order, visible FROM category_macro_groups ORDER BY sort_order, name");
     $groups = [];
     foreach (($stmt ? $stmt->fetchAll() : []) as $g) {
-        $groups[] = ['id' => (string)$g['id'], 'name' => (string)$g['name'], 'icon' => (string)($g['icon'] ?: 'package')];
+        $groups[] = [
+            'id' => (string)$g['id'],
+            'name' => (string)$g['name'],
+            'icon' => (string)($g['icon'] ?: 'package'),
+            'imageUrl' => (string)($g['image_url'] ?? ''),
+            'sortOrder' => (int)($g['sort_order'] ?? 0),
+            'visible' => $g['visible'] === null ? true : (string)$g['visible'] === '1',
+        ];
     }
     return $groups;
 }
@@ -415,7 +437,7 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
     }
     $resolveMacroGroup = function (?string $groupId) use ($macroGroups): array {
         $groupId = (string)($groupId ?? '');
-        return $macroGroups[$groupId] ?? ['id' => '', 'name' => '', 'icon' => ''];
+        return $macroGroups[$groupId] ?? ['id' => '', 'name' => '', 'icon' => '', 'imageUrl' => '', 'sortOrder' => 0, 'visible' => true];
     };
 
     $stmt = $pdo->query("SELECT * FROM categories_rows");
@@ -459,6 +481,9 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
             'macroGroupId'   => $macro['id'],
             'macroGroupName' => $macro['name'],
             'macroGroupIcon' => $macro['icon'],
+            'macroGroupImage' => $macro['imageUrl'] ?? '',
+            'macroGroupSortOrder' => $macro['sortOrder'] ?? 0,
+            'macroGroupVisible' => $macro['visible'] ?? true,
             'updated_at'    => $row['updated_at'] ?? null
         ];
     }
@@ -482,6 +507,9 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
                 'macroGroupId'   => '',
                 'macroGroupName' => '',
                 'macroGroupIcon' => '',
+                'macroGroupImage' => '',
+                'macroGroupSortOrder' => 0,
+                'macroGroupVisible' => true,
                 'updated_at'    => date('Y-m-d H:i:s')
             ];
             $cats[] = $newCat;

@@ -1673,6 +1673,14 @@
         @media(max-width: 1100px) { .mini-categories-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
         @media(max-width: 600px) { .mini-categories-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; } .mini-category-card { padding: 12px 6px; } }
         .store-trust-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; padding: 25px 1.7vw; }
+        .store-brands-row { padding: 0 1.7vw 28px; }
+        .store-brands-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .store-brands-head h3 { margin: 0; font-size: 17px; color: var(--navy); }
+        .store-brands-head a { display: inline-flex; align-items: center; gap: 5px; color: var(--blue); font-size: 13px; font-weight: 700; text-decoration: none; }
+        .store-brands-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+        .store-brand-item { display: grid; place-items: center; height: 70px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+        .store-brand-item img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        @media(max-width: 520px) { .store-brands-list { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); } .store-brand-item { height: 56px; } }
         .store-trust-item { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
         .store-trust-item i { color: var(--blue); flex-shrink: 0; }
         .store-trust-item strong { display: block; color: var(--navy); font-size: 13.5px; font-weight: 800; }
@@ -2021,6 +2029,10 @@
 		<div class="store-trust-item"><i data-lucide="headphones" width="22"></i><div><strong>Asesoría especializada</strong><span>Personas reales, respuestas claras</span></div></div>
 		<div class="store-trust-item"><i data-lucide="truck" width="22"></i><div><strong>Despacho a todo Ecuador</strong><span>Recibe donde estés</span></div></div>
 		<div class="store-trust-item"><i data-lucide="award" width="22"></i><div><strong>Garantía y respaldo</strong><span>Productos originales con soporte técnico</span></div></div>
+	</section>
+	<section class="store-brands-row" id="storeBrandsRow" hidden>
+		<div class="store-brands-head"><h3>Nuestras Marcas</h3><a href="/categorias-destacadas">Ver todas las marcas <i data-lucide="arrow-right" width="15"></i></a></div>
+		<div class="store-brands-list" id="storeBrandsList"></div>
 	</section>
 	<main hidden id="catalogView">
 		<!-- El catalogo completo (grid paginado, sidebar de categorias, busqueda/filtros) esta oculto
@@ -3979,13 +3991,14 @@
 				if (!count) return;
 				const groupId = cat.macroGroupId || 'otros';
 				if (!groups.has(groupId)) {
-					groups.set(groupId, { id: groupId, name: cat.macroGroupName || 'Otras Soluciones IT', icon: cat.macroGroupIcon || 'package', count: 0, topCategory: null, topCount: 0, image: '', alt: '' });
+					groups.set(groupId, { id: groupId, name: cat.macroGroupName || 'Otras Soluciones IT', icon: cat.macroGroupIcon || 'package', macroImage: cat.macroGroupImage || '', sortOrder: Number(cat.macroGroupSortOrder || 0), visible: cat.macroGroupVisible !== false, count: 0, topCategory: null, topCount: 0, image: '', alt: '' });
 				}
 				const g = groups.get(groupId);
 				g.count += count;
 				if (count > g.topCount) { g.topCount = count; g.topCategory = cat.name; g.image = cat.bannerImageUrl || ''; g.alt = cat.bannerAlt || cat.name; }
 			});
-			const sorted = [...groups.values()].sort((a, b) => b.count - a.count);
+			const sorted = [...groups.values()].filter(g => g.visible).sort((a, b) => (a.sortOrder - b.sortOrder) || (b.count - a.count));
+			sorted.forEach(g => { g.image = g.macroImage || g.image; });
 			const chosen = storefrontFeaturedCategoryIds.length
 				? storefrontFeaturedCategoryIds.map(id => catalogCategoryRows.find(cat => String(cat.id) === String(id))).filter(cat => cat && Number(cat.productCount || 0) > 0).slice(0, 7)
 				: [];
@@ -4259,9 +4272,27 @@
 
 		const applyCategoriasViewMode = () => {
 			if (!window.isCategoriasView) return;
-			document.querySelectorAll('.store-campaign-area, #storePromoChips, #miniCategories, #campaignFeatured, .store-trust-row').forEach(el => { el.hidden = true; });
+			document.querySelectorAll('.store-campaign-area, #storePromoChips, #miniCategories, #campaignFeatured, .store-trust-row, #storeBrandsRow').forEach(el => { el.hidden = true; });
 		};
 		applyCategoriasViewMode();
+
+		const loadStoreBrands = async () => {
+			if (window.isCategoriasView) return;
+			try {
+				const response = await fetch(`/api/auth/brands?_t=${Date.now()}`, { cache: 'no-store' });
+				if (!response.ok) return;
+				const data = await response.json();
+				const brands = Array.isArray(data.brands) ? data.brands : [];
+				if (!brands.length) return;
+				const row = document.querySelector('#storeBrandsRow');
+				document.querySelector('#storeBrandsList').innerHTML = brands.map(brand =>
+					`<div class="store-brand-item"><img src="${escapeHtml(brand.logoUrl)}" alt="${escapeHtml(brand.name)}" loading="lazy"></div>`
+				).join('');
+				row.hidden = false;
+				window.lucide?.createIcons();
+			} catch (error) { console.warn('No se pudieron cargar las marcas:', error); }
+		};
+		loadStoreBrands();
 
 		renderSidebarCategories();
 		render();
