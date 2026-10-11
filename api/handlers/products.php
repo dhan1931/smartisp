@@ -336,10 +336,13 @@ if ($action === 'admin-products') {
         }
         $family = trim((string)($_GET['family'] ?? ''));
         if ($family !== '' && $family !== 'all') {
+            // Las tablas importadas pueden tener collations distintas. Comparar en la
+            // misma evita el error 1267 al enlazar los nombres de categoria.
+            $sameCategory = "CONVERT(c.name USING utf8mb4) COLLATE utf8mb4_unicode_ci = CONVERT(`$pTable`.category USING utf8mb4) COLLATE utf8mb4_unicode_ci";
             if ($family === 'ungrouped') {
-                $where[] = "NOT EXISTS (SELECT 1 FROM categories_rows c WHERE c.name = `$pTable`.category AND c.macro_group_id IS NOT NULL AND c.macro_group_id <> '')";
+                $where[] = "NOT EXISTS (SELECT 1 FROM categories_rows c WHERE $sameCategory AND c.macro_group_id IS NOT NULL AND c.macro_group_id <> '')";
             } else {
-                $where[] = "EXISTS (SELECT 1 FROM categories_rows c WHERE c.name = `$pTable`.category AND c.macro_group_id = :family)";
+                $where[] = "EXISTS (SELECT 1 FROM categories_rows c WHERE $sameCategory AND c.macro_group_id = :family)";
                 $params[':family'] = $family;
             }
         }

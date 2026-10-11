@@ -138,7 +138,7 @@ try {
   assert.equal(savedCategory.iconImageUrl,categoryFixture.iconImageUrl);
   assert.equal(savedCategory.bannerImageUrl,categoryFixture.bannerImageUrl);
   const familyProducts = await request('admin-products?family=componentes&category='+encodeURIComponent(categoryFixture.name));
-  assert.equal(familyProducts.status,200);
+  assert.equal(familyProducts.status,200,`El filtro de familia falló: ${JSON.stringify(familyProducts.data)}\n${startupError}`);
   assert.equal(familyProducts.data.products.length,1,'La familia debe incluir los productos de su categoría');
   const otherFamily = await request('admin-products?family=redes&category='+encodeURIComponent(categoryFixture.name));
   assert.equal(otherFamily.data.products.length,0,'La familia no debe incluir productos de otra familia');
