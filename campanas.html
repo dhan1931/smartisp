@@ -116,6 +116,7 @@
         <label class="format-option"><input type="radio" name="campaignZone" value="nosotros"><span><strong>Página Nosotros</strong><small>Banner arriba del contenido de /nosotros</small></span></label>
         <label class="format-option"><input type="radio" name="campaignZone" value="servicios"><span><strong>Página Servicios</strong><small>Banner arriba del contenido de /servicios</small></span></label>
         <label class="format-option"><input type="radio" name="campaignZone" value="servicios-proyectos"><span><strong>Proyectos realizados</strong><small>Carrusel de tarjetas en /servicios, debajo del formulario</small></span></label>
+        <label class="format-option"><input type="radio" name="campaignZone" value="servicios-especializados"><span><strong>Servicios especializados</strong><small>Cuadrícula de tarjetas en /servicios, debajo del hero</small></span></label>
       </div></div>
       <div class="toolbar sticky-actions"><div><h2 id="zoneTitle">Portada de la tienda</h2><p id="identity" class="muted"></p></div><div class="right-actions"><button id="cancelEditor" class="button secondary" type="button">Cancelar</button><button id="saveDraft" class="button secondary" type="button"><i data-lucide="file-clock"></i> Guardar borrador</button><button id="saveTop" class="button" type="button"><i data-lucide="save"></i> Publicar cambios</button></div></div>
       <div id="saveMessageTop" class="message" role="status"></div>
@@ -153,6 +154,7 @@
       'nosotros': { isPrimary:false, defaultMode:'single', restrictCarouselSingle:false, defaultName:'Banner — Nosotros', title:'Página Nosotros', nameLabel:'Nombre de sección', slidesHeading:'Banner de Nosotros', previewLabel:'Vista previa del banner de Nosotros' },
       'servicios': { isPrimary:false, defaultMode:'single', restrictCarouselSingle:false, defaultName:'Banner — Servicios', title:'Página Servicios', nameLabel:'Nombre de sección', slidesHeading:'Banner de Servicios', previewLabel:'Vista previa del banner de Servicios' },
       'servicios-proyectos': { isPrimary:false, defaultMode:'cards', restrictCarouselSingle:true, defaultName:'Proyectos realizados', title:'Proyectos realizados', nameLabel:'Nombre de sección', slidesHeading:'Proyectos realizados', previewLabel:'Vista previa de proyectos realizados' },
+      'servicios-especializados': { isPrimary:false, defaultMode:'cards', restrictCarouselSingle:true, defaultName:'Servicios especializados', title:'Servicios especializados', nameLabel:'Nombre de sección', slidesHeading:'Servicios especializados', previewLabel:'Vista previa de servicios especializados' },
     };
     const zoneConfig = () => ZONE_CONFIG[activeZone] || ZONE_CONFIG['store-secondary'];
     const state = { campaign: { name:'Portada de la tienda',rotation_seconds:7,is_active:true,display_mode:'carousel',hero_height_pct:100,mobile_swipe:false,starts_at:'',ends_at:'' }, slides:[], chips:[] };
