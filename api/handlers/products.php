@@ -810,6 +810,7 @@ if ($action === 'categories') {
                 echo json_encode(['error' => 'Esta categoría tiene productos. Muévelos a otra categoría antes de eliminarla.']);
                 exit;
             }
+            $pdo->prepare('UPDATE categories_rows SET parent_category_id = NULL WHERE parent_category_id = :id')->execute([':id' => $id]);
             $pdo->prepare('DELETE FROM categories_rows WHERE id = :id')->execute([':id' => $id]);
             $pdo->commit();
         } catch (Throwable $error) {
