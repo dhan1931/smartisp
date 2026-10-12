@@ -77,7 +77,7 @@ if ($action === 'upload-campaign-image' && $method === 'POST') {
 // son zonas de banners simples, un hero por pagina publica. Agregar una pagina nueva aca +
 // wirear el fetch/render en esa pagina publica (ver tienda.html/nosotros.html/servicios.html
 // para el patron) es todo lo que hace falta -- no requiere cambios de esquema.
-const STOREFRONT_CAMPAIGN_ZONES = ['store-home', 'store-secondary', 'nosotros', 'servicios'];
+const STOREFRONT_CAMPAIGN_ZONES = ['store-home', 'store-secondary', 'nosotros', 'servicios', 'servicios-proyectos'];
 
 if ($action === 'admin-store-campaigns') {
     requireAdminAuth();
