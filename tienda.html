@@ -2236,7 +2236,6 @@
 	</nav>
 
 		<aside class="drawer" id="drawer"><div class="drawer-panel"><div class="drawer-head"><h2>Tu carrito</h2><button class="icon-button" id="closeCart" aria-label="Cerrar carrito"><i data-lucide="x"></i></button></div><div class="cart-items" id="cartItems">Tu carrito está vacío.</div><div class="drawer-footer"><div class="cart-total"><span>Total</span><span id="cartTotal">$0</span></div><button class="primary checkout">Finalizar compra <i data-lucide="arrow-up-right" width="16"></i></button></div></div></aside>
-		<div class="modal" id="productModal" role="dialog" aria-modal="true" aria-labelledby="detailTitle"><div class="modal-panel"><button class="icon-button modal-close" data-close-modal="productModal" aria-label="Cerrar especificaciones"><i data-lucide="x"></i></button><div id="productDetail"></div></div></div>
 		<div class="modal" id="accountModal" style="display:none;" aria-hidden="true"></div>
 	<script src="/assets/js/brands-section.js?v=1"></script>
 	<script>
@@ -3061,7 +3060,7 @@
 				}
 			});
 			document.querySelectorAll('.product').forEach(card => {
-				const open = () => openProduct(products[card.dataset.index]);
+				const open = () => { const product = products[card.dataset.index]; if (product) window.location.href = getProductUrl(product); };
 				card.addEventListener('click', event => {
 					if (event.target.closest('button')) return;
 					if (event.target.closest('.btn-card-view')) return;
@@ -3164,8 +3163,6 @@
 			}, 4000);
 		};
 
-		let originalDocumentTitle = document.title;
-
 		const slugifyText = text => {
 			return String(text || '')
 				.normalize('NFD')
@@ -3183,131 +3180,6 @@
 			return `/producto/${encodeURIComponent(pid)}-${slug}`;
 		};
 
-		const closeProductModal = (updateHistory = true) => {
-			const modal = document.querySelector('#productModal');
-			if (modal) modal.classList.remove('open');
-			if (originalDocumentTitle) document.title = originalDocumentTitle;
-			if (updateHistory) {
-				const currentParams = new URLSearchParams(window.location.search);
-				if (currentParams.has('p') || currentParams.has('id')) {
-					currentParams.delete('p');
-					currentParams.delete('id');
-					const cleanQuery = currentParams.toString();
-					const cleanUrl = cleanQuery ? `${window.location.pathname}?${cleanQuery}` : window.location.pathname;
-					history.replaceState(null, '', cleanUrl);
-				}
-			}
-		};
-
-		const openProduct = (product, updateHistory = true) => {
-			if (!product) return;
-			const pImg = getProductImageUrl(product);
-			const fbImg = fallbackImage(product);
-			const hasReviews = Number(product.reviews || 0) > 0;
-			const reviewsHtml = hasReviews
-				? `<div><span class="stars">★★★★★</span><span class="reviews">${product.reviews} opiniones</span></div>`
-				: `<div><span class="reviews" style="margin-left:0;font-style:italic;">Sin opiniones registradas</span></div>`;
-			
-			const productUrl = getProductUrl(product);
-			const fullProductUrl = window.location.origin + productUrl;
-
-			document.querySelector('#productDetail').innerHTML = `
-				<div class="detail-layout">
-					<div class="detail-image">
-						<img src="${pImg}" alt="${product.name}" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}">
-					</div>
-					<div class="detail-copy">
-						<div class="product-brand">${product.brand || 'SmartISP'} · ${product.category || 'General'}</div>
-						<h2 id="detailTitle">${product.name}</h2>
-						${reviewsHtml}
-						<div class="price-block modal-price-block">
-							<span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span>
-							${Number(product.price || 0) > 0 ? '<span class="price-tax-label">Precios incluye iva</span>' : ''}
-						</div>
-						<p class="detail-description">${product.description || ''}</p>
-						<div class="specs">${(product.specs || []).map(spec => `<div class="spec"><span>${spec[0]}</span><strong>${spec[1]}</strong></div>`).join('')}</div>
-						<div class="modal-actions">
-							<button class="primary" data-detail-add="${productIndexMap.get(product)}">
-								Agregar al carrito <i data-lucide="shopping-cart" width="16"></i>
-							</button>
-							<button type="button" class="btn-share-link" id="btnShareModal" title="Copiar enlace único para compartir">
-								<i data-lucide="link" width="15"></i> Copiar enlace
-							</button>
-							<a href="${productUrl}" target="_blank" rel="noopener noreferrer" class="btn-view-card" title="Abrir ficha web completa en una nueva pestaña">
-								<i data-lucide="external-link" width="15"></i> Ficha web
-							</a>
-						</div>
-					</div>
-				</div>
-			`;
-			const productModal = document.querySelector('#productModal');
-			productModal.dataset.productId = String(product.id || '');
-			const descriptionEl = productModal.querySelector('.detail-description');
-			if (descriptionEl) descriptionEl.textContent = product.description || 'Cargando descripción…';
-			productModal.classList.add('open');
-			if (!product.description && product.id) {
-				const detailParams = new URLSearchParams({ q: product.id, details: '1', limit: '1' });
-				fetch('/api/auth/catalog?' + detailParams.toString(), { cache: 'no-store' })
-					.then(response => response.ok ? response.json() : Promise.reject(new Error('detail request failed')))
-					.then(data => {
-						if (productModal.dataset.productId !== String(product.id)) return;
-						const description = data.products && data.products[0] && data.products[0].description;
-						descriptionEl.textContent = description || 'Este producto no tiene descripción adicional.';
-					})
-					.catch(() => {
-						if (productModal.dataset.productId === String(product.id)) descriptionEl.textContent = 'No se pudo cargar la descripción.';
-					});
-			}
-			window.lucide && window.lucide.createIcons();
-
-			if (updateHistory) {
-				const currentParams = new URLSearchParams(window.location.search);
-				currentParams.set('p', product.id || product.sku);
-				history.pushState({ modalOpen: true, productId: product.id }, '', `${window.location.pathname}?${currentParams.toString()}`);
-			}
-			originalDocumentTitle = originalDocumentTitle || document.title;
-			document.title = `${product.name} - SmartISP`;
-
-			const addBtn = document.querySelector('[data-detail-add]');
-			if (addBtn) {
-				addBtn.addEventListener('click', () => {
-					addBtn.innerHTML = '<span style="font-size:15px;font-weight:800;">✓ ¡Agregado al carrito!</span>';
-					addBtn.style.backgroundColor = '#10b981';
-					setTimeout(() => {
-						addBtn.innerHTML = 'Agregar al carrito <i data-lucide="shopping-cart" width="16"></i>';
-						addBtn.style.backgroundColor = '';
-						if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
-					}, 1200);
-					addToCart(product);
-				});
-			}
-
-			const shareBtn = document.querySelector('#btnShareModal');
-			if (shareBtn) {
-				shareBtn.addEventListener('click', async () => {
-					try {
-						if (navigator.clipboard && navigator.clipboard.writeText) {
-							await navigator.clipboard.writeText(fullProductUrl);
-						} else {
-							const t = document.createElement('input');
-							t.value = fullProductUrl;
-							document.body.appendChild(t);
-							t.select();
-							document.execCommand('copy');
-							document.body.removeChild(t);
-						}
-						shareBtn.innerHTML = '<i data-lucide="check" width="15" style="color:#10b981;"></i> ¡Enlace copiado!';
-						if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
-						setTimeout(() => {
-							shareBtn.innerHTML = '<i data-lucide="link" width="15"></i> Copiar enlace';
-							if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
-						}, 2000);
-					} catch (e) {
-						prompt('Copia este enlace directo al producto:', fullProductUrl);
-					}
-				});
-			}
-		};
 		const addToCart = product => {
 			if (!product) return;
 			const key = productKey(product);
@@ -3687,35 +3559,13 @@
 			});
 		}
 		document.querySelectorAll('[data-close-modal]').forEach(button => button.addEventListener('click', () => {
-			const modalId = button.dataset.closeModal;
-			if (modalId === 'productModal') {
-				closeProductModal();
-			} else {
-				document.querySelector(`#${modalId}`)?.classList.remove('open');
-			}
+			document.querySelector(`#${button.dataset.closeModal}`)?.classList.remove('open');
 		}));
 		document.querySelectorAll('.modal').forEach(modal => modal.addEventListener('click', event => {
-			if (event.target === modal) {
-				if (modal.id === 'productModal') {
-					closeProductModal();
-				} else {
-					modal.classList.remove('open');
-				}
-			}
+			if (event.target === modal) modal.classList.remove('open');
 		}));
-		window.addEventListener('popstate', () => {
-			const modal = document.querySelector('#productModal');
-			if (modal && modal.classList.contains('open')) {
-				closeProductModal(false);
-			}
-		});
 		window.addEventListener('keydown', event => {
-			if (event.key === 'Escape') {
-				const modal = document.querySelector('#productModal');
-				if (modal && modal.classList.contains('open')) {
-					closeProductModal();
-				}
-			}
+			if (event.key === 'Escape') document.querySelectorAll('.modal.open').forEach(modal => modal.classList.remove('open'));
 		});
 		window.__publicBrandManaged = true;
 		const renderFooterContent = content => {
@@ -4292,7 +4142,7 @@
 
 				let found = products.find(p => String(p.id).toLowerCase() === String(targetId).toLowerCase() || String(p.sku).toLowerCase() === String(targetId).toLowerCase());
 				if (found) {
-					openProduct(found, false);
+					window.location.replace(getProductUrl(found));
 					return;
 				}
 
@@ -4313,7 +4163,7 @@
 							if (!products.some(p => p.id === single.id)) {
 								products.push(single);
 							}
-							openProduct(single, false);
+							window.location.replace(getProductUrl(single));
 						}
 					}
 				} catch (err) {
