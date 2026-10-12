@@ -27,7 +27,7 @@ function render() {
   const q=$('#search').value.trim().toLocaleLowerCase(), family=$('#familyFilter').value;
   const rows=categories.filter(cat=>(family==='all'||(family==='ungrouped'?!cat.macroGroupId:cat.macroGroupId===family)) && `${cat.name} ${(cat.subcategories||[]).join(' ')}`.toLocaleLowerCase().includes(q));
   $('#resultCount').textContent=`${rows.length} de ${categories.length} categorías`;
-  $('#categoryList').innerHTML=rows.map(cat=>`<article class="category-row"><div class="category-visual">${visual(cat.iconImageUrl,cat.icon)}</div><div class="category-info"><h3>${escapeHtml(cat.name)}</h3><p>${escapeHtml(families.find(group=>group.id===cat.macroGroupId)?.name || 'Sin familia')}</p><p class="category-meta"><span>${Number(cat.productCount||0)} productos</span><span>${(cat.subcategories||[]).length} subcategorías</span>${cat.iconImageUrl?'<span>Imagen propia</span>':''}${cat.bannerImageUrl?'<span>Con banner</span>':''}</p></div><div class="category-actions"><button class="button secondary" data-edit="${escapeHtml(cat.id)}">Editar</button><a class="button secondary" href="/editor-catalogo.html?category=${encodeURIComponent(cat.name)}">Productos ↗</a><details><summary class="button secondary" aria-label="Más opciones para ${escapeHtml(cat.name)}">⋯</summary><div class="more-actions"><button data-move="${escapeHtml(cat.id)}">Mover sus productos</button><button class="danger" data-delete="${escapeHtml(cat.id)}">Eliminar categoría</button></div></details></div></article>`).join('') || '<p class="empty">No hay categorías que coincidan. Prueba otra búsqueda o crea una categoría.</p>';
+  $('#categoryList').innerHTML=rows.map(cat=>{const parent=categories.find(item=>item.id===cat.parentCategoryId);const childCount=categories.filter(item=>item.parentCategoryId===cat.id).length;return `<article class="category-row"><div class="category-visual">${visual(cat.iconImageUrl,cat.icon)}</div><div class="category-info"><h3>${escapeHtml(cat.name)}</h3><p>${escapeHtml(families.find(group=>group.id===cat.macroGroupId)?.name || 'Sin familia')}${parent?` · Subcategoría de ${escapeHtml(parent.name)}`:''}</p><p class="category-meta"><span>${Number(cat.productCount||0)} productos</span>${childCount?`<span>${childCount} subcategoría${childCount===1?'':'s'}</span>`:''}<span>${(cat.subcategories||[]).length} etiquetas</span>${cat.iconImageUrl?'<span>Imagen propia</span>':''}${cat.bannerImageUrl?'<span>Con banner</span>':''}</p></div><div class="category-actions"><button class="button secondary" data-edit="${escapeHtml(cat.id)}">Editar</button><a class="button secondary" href="/editor-catalogo.html?category=${encodeURIComponent(cat.name)}">Productos ↗</a><details><summary class="button secondary" aria-label="Más opciones para ${escapeHtml(cat.name)}">⋯</summary><div class="more-actions"><button data-move="${escapeHtml(cat.id)}">Mover sus productos</button><button class="danger" data-delete="${escapeHtml(cat.id)}">Eliminar categoría</button></div></details></div></article>`;}).join('') || '<p class="empty">No hay categorías que coincidan. Prueba otra búsqueda o crea una categoría.</p>';
   $('#familyList').innerHTML=families.map(group=>`<article class="category-row"><div class="category-visual">${visual(group.imageUrl,group.icon)}</div><div class="category-info"><h3>${escapeHtml(group.name)}</h3><p>${categories.filter(cat=>cat.macroGroupId===group.id).length} categorías · ${group.visible?'Visible en tienda':'Oculta en tienda'} · Orden ${Number(group.sortOrder||0)}</p></div><div class="category-actions"><button class="button secondary" data-edit-family="${escapeHtml(group.id)}">Editar familia</button></div></article>`).join('') || '<p class="empty">Crea una familia para organizar tus categorías.</p>';
   window.lucide?.createIcons();
 }
@@ -42,11 +42,19 @@ function preview(form,name) {
   element.replaceChildren(); if(!safeImage(url)){element.textContent='Sin imagen';return;}
   const img=new Image(); img.src=url; img.alt=''; img.onerror=()=>{element.textContent='No se pudo cargar la imagen';}; element.append(img);
 }
+function descendantIds(id) {
+  const result=new Set();
+  const walk=parentId=>{categories.filter(item=>item.parentCategoryId===parentId).forEach(child=>{if(!result.has(child.id)){result.add(child.id);walk(child.id);}});};
+  walk(id);
+  return result;
+}
 function editCategory(id='') {
   editingId=id; const cat=categories.find(item=>item.id===id)||{}, form=$('#categoryForm'); form.reset();
   form.querySelectorAll('details').forEach(details=>details.open=false);
   form.elements.macroGroupId.innerHTML='<option value="">Sin familia</option>'+families.map(group=>`<option value="${escapeHtml(group.id)}">${escapeHtml(group.name)}</option>`).join('');
-  for(const field of ['id','name','description','macroGroupId','iconImageUrl','bannerImageUrl','bannerAlt'])form.elements[field].value=cat[field]||'';
+  const blocked=id?descendantIds(id):new Set();
+  form.elements.parentCategoryId.innerHTML='<option value="">(Ninguna -- categoría principal)</option>'+categories.filter(item=>item.id!==id&&!blocked.has(item.id)).map(item=>`<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`).join('');
+  for(const field of ['id','name','description','macroGroupId','parentCategoryId','iconImageUrl','bannerImageUrl','bannerAlt'])form.elements[field].value=cat[field]||'';
   form.elements.icon.value=cat.icon||'package';
   if(!form.elements.icon.value){const option=new Option(cat.icon,cat.icon);form.elements.icon.add(option);form.elements.icon.value=cat.icon;}
   form.elements.subcategories.value=(cat.subcategories||[]).join('\n'); form.elements.keywords.value=(cat.keywords||[]).join('\n'); form.elements.id.readOnly=Boolean(id);

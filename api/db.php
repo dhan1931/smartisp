@@ -426,6 +426,7 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
             `icon` VARCHAR(64) NOT NULL DEFAULT 'package',
             `keywords` LONGTEXT NULL,
             `macro_group_id` VARCHAR(100) NULL,
+            `parent_category_id` VARCHAR(100) NULL,
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
@@ -479,6 +480,7 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
                 ? $decodedKeywords
                 : array_values(array_filter(array_map('trim', explode(',', (string)($row['keywords'] ?? ''))))),
             'productCount'  => $catMap[$name]['count'] ?? 0,
+            'parentCategoryId' => (string)($row['parent_category_id'] ?? ''),
             'macroGroupId'   => $macro['id'],
             'macroGroupName' => $macro['name'],
             'macroGroupIcon' => $macro['icon'],
