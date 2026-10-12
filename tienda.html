@@ -4375,7 +4375,7 @@
 
 		const applyCategoriasViewMode = () => {
 			if (!window.isCategoriasView) return;
-			document.querySelectorAll('.store-campaign-area, #storePromoChips, #miniCategories, #campaignFeatured, .store-trust-row, #storeBrandsRow').forEach(el => { el.hidden = true; });
+			document.querySelectorAll('.store-campaign-area, #storePromoChips, #campaignFeatured, .store-trust-row, #storeBrandsRow').forEach(el => { el.hidden = true; });
 		};
 		applyCategoriasViewMode();
 
@@ -4387,10 +4387,22 @@
 		render();
 		window.lucide && window.lucide.createIcons();
 		applyRemoteSite();
-		// En modo catalogo (/categorias-destacadas) el hero, los banners secundarios, las
-		// mini-categorias y los destacados de portada estan ocultos (ver applyCategoriasViewMode) --
-		// pedir esos dos endpoints de campañas ahi no sirve de nada, solo trafico/tiempo perdido.
-		if (!window.isCategoriasView) loadStorefrontCampaigns().then(applyCategoriasViewMode);
+		// En modo catalogo (/categorias-destacadas) el hero y los banners secundarios estan ocultos
+		// (ver applyCategoriasViewMode) -- pedir esos endpoints de campañas ahi no sirve de nada.
+		// Las categorias destacadas SI se muestran ahi (igual que en portada), asi que se pide nada
+		// mas la lista de ids destacados en vez de llamar a loadStorefrontCampaigns() completo.
+		if (window.isCategoriasView) {
+			fetch(`/api/auth/store-campaigns?_t=${Date.now()}`, { cache: 'no-store' })
+				.then(response => response.ok ? response.json() : null)
+				.then(data => {
+					if (!data) return;
+					storefrontFeaturedCategoryIds = Array.isArray(data.featured_category_ids) ? data.featured_category_ids.map(String) : [];
+					renderMiniCategories();
+				})
+				.catch(() => {});
+		} else {
+			loadStorefrontCampaigns().then(applyCategoriasViewMode);
+		}
 
 		// =============================================================
 		// CONTROLADORES DE LA BARRA INFERIOR MÓVIL (BOTTOM NAV)
