@@ -224,6 +224,7 @@
         options.rotationSeconds = data.rotation_seconds;
         const heroHeightPct = Math.max(60, Math.min(100, Number(data.hero_height_pct) || 100));
         banner.style.setProperty('--hero-ar', (240 / heroHeightPct).toFixed(3));
+        root.classList.toggle('is-full-width', data.layout_width === 'full');
         root.hidden = false;
         banner.classList.remove('is-single', 'is-contain', 'is-triple', 'is-layout', 'is-split', 'is-grid', 'is-cards');
         if (['split', 'triple', 'grid', 'cards'].includes(displayMode)) {

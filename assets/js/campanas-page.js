@@ -6,16 +6,16 @@
     // ejemplo del patron minimo: fetch a /api/auth/store-campaigns?zone=<code>, renderizar si
     // hay slides). No hace falta tocar el modelo de datos ni el resto del editor.
     const ZONE_CONFIG = {
-      'store-home': { isPrimary:true, defaultMode:'carousel', restrictCarouselSingle:false, defaultName:'Portada de la tienda', title:'Portada de la tienda', nameLabel:'Nombre de campaña', slidesHeading:'Banners de portada', previewLabel:'Vista previa de portada' },
-      'store-secondary': { isPrimary:false, defaultMode:'split', restrictCarouselSingle:true, defaultName:'Banners secundarios', title:'Banners secundarios', nameLabel:'Nombre de sección', slidesHeading:'Banners secundarios', previewLabel:'Vista previa de banners secundarios' },
-      'categorias': { isPrimary:false, defaultMode:'single', restrictCarouselSingle:false, defaultName:'Banner — Categorías', title:'Página Categorías', nameLabel:'Nombre de sección', slidesHeading:'Banner de Categorías', previewLabel:'Vista previa del banner de Categorías' },
-      'nosotros': { isPrimary:false, defaultMode:'single', restrictCarouselSingle:false, defaultName:'Banner — Nosotros', title:'Página Nosotros', nameLabel:'Nombre de sección', slidesHeading:'Banner de Nosotros', previewLabel:'Vista previa del banner de Nosotros' },
-      'servicios': { isPrimary:false, defaultMode:'single', restrictCarouselSingle:false, defaultName:'Banner — Servicios', title:'Página Servicios', nameLabel:'Nombre de sección', slidesHeading:'Banner de Servicios', previewLabel:'Vista previa del banner de Servicios' },
-      'servicios-proyectos': { isPrimary:false, defaultMode:'cards', restrictCarouselSingle:true, defaultName:'Proyectos realizados', title:'Proyectos realizados', nameLabel:'Nombre de sección', slidesHeading:'Proyectos realizados', previewLabel:'Vista previa de proyectos realizados' },
-      'servicios-especializados': { isPrimary:false, defaultMode:'cards', restrictCarouselSingle:true, defaultName:'Servicios especializados', title:'Servicios especializados', nameLabel:'Nombre de sección', slidesHeading:'Servicios especializados', previewLabel:'Vista previa de servicios especializados' },
+      'store-home': { isPrimary:true, defaultMode:'carousel', defaultLayoutWidth:'full', restrictCarouselSingle:false, defaultName:'Portada de la tienda', title:'Portada de la tienda', nameLabel:'Nombre de campaña', slidesHeading:'Banners de portada', previewLabel:'Vista previa de portada' },
+      'store-secondary': { isPrimary:false, defaultMode:'split', defaultLayoutWidth:'full', restrictCarouselSingle:true, defaultName:'Banners secundarios', title:'Banners secundarios', nameLabel:'Nombre de sección', slidesHeading:'Banners secundarios', previewLabel:'Vista previa de banners secundarios' },
+      'categorias': { isPrimary:false, defaultMode:'single', defaultLayoutWidth:'contained', restrictCarouselSingle:false, defaultName:'Banner — Categorías', title:'Página Categorías', nameLabel:'Nombre de sección', slidesHeading:'Banner de Categorías', previewLabel:'Vista previa del banner de Categorías' },
+      'nosotros': { isPrimary:false, defaultMode:'single', defaultLayoutWidth:'contained', restrictCarouselSingle:false, defaultName:'Banner — Nosotros', title:'Página Nosotros', nameLabel:'Nombre de sección', slidesHeading:'Banner de Nosotros', previewLabel:'Vista previa del banner de Nosotros' },
+      'servicios': { isPrimary:false, defaultMode:'single', defaultLayoutWidth:'contained', restrictCarouselSingle:false, defaultName:'Banner — Servicios', title:'Página Servicios', nameLabel:'Nombre de sección', slidesHeading:'Banner de Servicios', previewLabel:'Vista previa del banner de Servicios' },
+      'servicios-proyectos': { isPrimary:false, defaultMode:'cards', defaultLayoutWidth:'contained', restrictCarouselSingle:true, defaultName:'Proyectos realizados', title:'Proyectos realizados', nameLabel:'Nombre de sección', slidesHeading:'Proyectos realizados', previewLabel:'Vista previa de proyectos realizados' },
+      'servicios-especializados': { isPrimary:false, defaultMode:'cards', defaultLayoutWidth:'contained', restrictCarouselSingle:true, defaultName:'Servicios especializados', title:'Servicios especializados', nameLabel:'Nombre de sección', slidesHeading:'Servicios especializados', previewLabel:'Vista previa de servicios especializados' },
     };
     const zoneConfig = () => ZONE_CONFIG[activeZone] || ZONE_CONFIG['store-secondary'];
-    const state = { campaign: { name:'Portada de la tienda',rotation_seconds:7,is_active:true,display_mode:'carousel',hero_height_pct:100,mobile_swipe:false,starts_at:'',ends_at:'' }, slides:[], chips:[] };
+    const state = { campaign: { name:'Portada de la tienda',rotation_seconds:7,is_active:true,display_mode:'carousel',layout_width:'contained',hero_height_pct:100,mobile_swipe:false,starts_at:'',ends_at:'' }, slides:[], chips:[] };
     let activeZone = 'store-home';
     let previewSlideIndex = 0;
     let slideKeyCounter = 0;
@@ -27,6 +27,7 @@
     const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const isAdmin = user => ['admin','administrator','administrador'].includes(String(user?.role || '').trim().toLowerCase());
     const modeValue = () => document.querySelector('input[name="displayMode"]:checked')?.value || 'carousel';
+    const layoutWidthValue = () => document.querySelector('input[name="layoutWidth"]:checked')?.value || 'contained';
     const localDate = value => {
       if (!value) return '';
       const text = String(value);
@@ -209,10 +210,11 @@
       const heroHeightPct=Math.max(60,Math.min(100,Number(state.campaign.hero_height_pct)||100));
       $('#heroHeightPct').value=heroHeightPct; $('#heroHeightPct').nextElementSibling.value=`${heroHeightPct}%`;
       document.querySelectorAll('input[name="displayMode"]').forEach(input=>input.checked=input.value===state.campaign.display_mode);
+      document.querySelectorAll('input[name="layoutWidth"]').forEach(input=>input.checked=input.value===state.campaign.layout_width);
       renderSlides(); renderChips();
     }
     function collectForm() {
-      state.campaign={...state.campaign,name:$('#campaignName').value.trim(),rotation_seconds:Number($('#rotation').value)||7,is_active:$('#active').checked,display_mode:modeValue(),hero_height_pct:Number($('#heroHeightPct').value)||100,mobile_swipe:$('#mobileSwipe').checked,starts_at:$('#campaignStarts').value||'',ends_at:$('#campaignEnds').value||''};
+      state.campaign={...state.campaign,name:$('#campaignName').value.trim(),rotation_seconds:Number($('#rotation').value)||7,is_active:$('#active').checked,display_mode:modeValue(),layout_width:layoutWidthValue(),hero_height_pct:Number($('#heroHeightPct').value)||100,mobile_swipe:$('#mobileSwipe').checked,starts_at:$('#campaignStarts').value||'',ends_at:$('#campaignEnds').value||''};
     }
     function saveDraft() {
       collectForm();
@@ -239,7 +241,7 @@
       const result=await api(`admin-store-campaigns?zone=${encodeURIComponent(zone)}`); const c=result.campaign;
       const savedMode=c?.display_mode;
       const zc=ZONE_CONFIG[zone]||ZONE_CONFIG['store-secondary'];
-      const campaign={name:c?.name||zc.defaultName,rotation_seconds:Number(c?.rotation_seconds||7),is_active:c?String(c.is_active)==='1':true,display_mode:zc.restrictCarouselSingle&&['carousel','single'].includes(savedMode)?'split':(savedMode||zc.defaultMode),hero_height_pct:Math.max(60,Math.min(100,Number(c?.hero_height_pct)||100)),mobile_swipe:String(c?.mobile_swipe)==='1',starts_at:c?.starts_at||'',ends_at:c?.ends_at||''};
+      const campaign={name:c?.name||zc.defaultName,rotation_seconds:Number(c?.rotation_seconds||7),is_active:c?String(c.is_active)==='1':true,display_mode:zc.restrictCarouselSingle&&['carousel','single'].includes(savedMode)?'split':(savedMode||zc.defaultMode),layout_width:['contained','full'].includes(c?.layout_width)?c.layout_width:(zc.defaultLayoutWidth||'contained'),hero_height_pct:Math.max(60,Math.min(100,Number(c?.hero_height_pct)||100)),mobile_swipe:String(c?.mobile_swipe)==='1',starts_at:c?.starts_at||'',ends_at:c?.ends_at||''};
       const slides=(result.slides||[]).map(slide=>({...slide,_editorKey:String(slide.id),card_layout:slide.card_layout==='side'?'side':'full',copy_background_color:/^#[0-9a-fA-F]{6}$/.test(slide.copy_background_color||'')?slide.copy_background_color:'#ffffff',image_width_pct:Number(slide.image_width_pct??55),is_active:String(slide.is_active)==='1',button_visible:String(slide.button_visible)!=='0',button2_visible:String(slide.button2_visible)==='1',images:Array.isArray(slide.images)?slide.images.map(image=>({...image,focal_x:Number(image.focal_x??50),focal_y:Number(image.focal_y??50),zoom_pct:Number(image.zoom_pct??100),is_primary:String(image.is_primary)==='1'||image.is_primary===true})):[]}));
       const chips=(result.chips||[]).map(chip=>({...chip,is_active:String(chip.is_active)==='1'}));
       return {campaign,slides,chips};
@@ -294,6 +296,10 @@
         $('#campaignName').closest('label').firstChild.textContent=zc.nameLabel;
         $('#chips').closest('.panel').classList.toggle('hidden',!zc.isPrimary);
         document.querySelectorAll('input[name="displayMode"]').forEach(input=>input.closest('.format-option').classList.toggle('hidden',zc.restrictCarouselSingle&&['carousel','single'].includes(input.value)));
+        const supportsLayoutWidth=!['servicios-proyectos','servicios-especializados'].includes(activeZone);
+        $('#layoutWidthOptions').classList.toggle('hidden',!supportsLayoutWidth);
+        $('#layoutWidthOptions').previousElementSibling.classList.toggle('hidden',!supportsLayoutWidth);
+        $('#layoutWidthOptions').nextElementSibling.classList.toggle('hidden',!supportsLayoutWidth);
         $('#campaignSlidesPanel .section-heading h3').textContent=zc.slidesHeading;
         $('#secondaryLayoutHelp').classList.toggle('hidden',!zc.restrictCarouselSingle);
         $('#mobileSwipeRow').classList.toggle('hidden',!zc.restrictCarouselSingle);
@@ -303,6 +309,7 @@
     $('#loginForm').addEventListener('submit',async event=>{event.preventDefault();const form=event.currentTarget;const data=Object.fromEntries(new FormData(form));try{const result=await api('login',{method:'POST',body:JSON.stringify(data)});if(!isAdmin(result.user)){showDenied();return;}if(result.token)localStorage.setItem('smartisp.adminToken',result.token);showApp(result.user);}catch(error){message(error.message,true,$('#loginMessage'));}});
     async function authenticate(){try{const result=await api('me');if(isAdmin(result.user))showApp(result.user);else showDenied();}catch(error){showLogin();if(error.status&&error.status!==401)message(error.message,true,$('#loginMessage'));}}
     document.querySelectorAll('input[name="displayMode"]').forEach(input=>input.addEventListener('change',()=>{collectForm();markDirty();}));
+    document.querySelectorAll('input[name="layoutWidth"]').forEach(input=>input.addEventListener('change',()=>{collectForm();markDirty();}));
     document.querySelectorAll('input[name="campaignZone"]').forEach(input=>input.addEventListener('change',async()=>{
       if(input.value===activeZone)return;
       if(isDirty&&!confirm('Hay cambios sin publicar en esta zona. Se guardará un borrador local antes de cambiar. ¿Continuar?')){
@@ -311,7 +318,7 @@
       if(isDirty)saveDraft();
       activeZone=input.value;isDirty=false;clearTimeout(draftTimer);
       const zc=zoneConfig();
-      state.campaign={name:zc.defaultName,rotation_seconds:7,is_active:true,display_mode:zc.defaultMode,hero_height_pct:100,starts_at:'',ends_at:''};
+      state.campaign={name:zc.defaultName,rotation_seconds:7,is_active:true,display_mode:zc.defaultMode,layout_width:zc.defaultLayoutWidth||'contained',hero_height_pct:100,starts_at:'',ends_at:''};
       state.slides=[];state.chips=[];
       await load();
     }));

@@ -2,6 +2,12 @@
    Extraido y generalizado del banner de tienda.html para que nosotros.html/servicios.html
    puedan mostrar las mismas variantes que el panel de campanas permite elegir. */
 .store-campaign-area { padding: 14px 1.7vw 0; }
+/* Formato "full": el banner ignora el max-width del contenedor que lo rodea y ocupa todo el
+   ancho de pantalla (como el hero principal de la tienda). Funciona sin importar donde esta
+   anidado el <section>, siempre que ningun ancestro recorte con overflow-x más angosto que
+   el viewport. */
+.store-campaign-area.is-full-width { width: 100vw; max-width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); padding-left: 0; padding-right: 0; }
+.store-campaign-area.is-full-width .store-campaign { border-left: 0; border-right: 0; border-radius: 0; }
 .store-campaign { position: relative; display: none; width: 100%; min-height: 270px; aspect-ratio: var(--hero-ar, 2.4); overflow: hidden; border: 1px solid var(--sd-line, #d8e5eb); border-radius: 9px; background: #e8f3f7; isolation: isolate; }
 .store-campaign.is-visible { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; }
 .store-campaign-media { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
