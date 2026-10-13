@@ -56,7 +56,20 @@
   </nav>
   <nav class="storefront-mobile-bar" aria-label="Accesos rápidos"><a href="/tienda.html"><i data-lucide="store" width="19"></i><span>Tienda</span></a><a href="/categorias-destacadas"><i data-lucide="layout-grid" width="19"></i><span>Categorías</span></a><a href="/tienda.html#catalogo"><i data-lucide="search" width="19"></i><span>Buscar</span></a><a href="/tienda.html?openCart=1" data-open-cart><i data-lucide="shopping-cart" width="19"></i><span>Carrito</span></a><a href="/tienda.html?openAccount=1"><i data-lucide="user" width="19"></i><span>Cuenta</span></a></nav>
   <main>
-    <section class="hero" id="pageHero"><div class="eyebrow" id="heroEyebrow">Servicios SmartISP</div><h1 id="heroTitle">Soluciones TI para comprar mejor e implementar con criterio</h1><p id="heroSubtitle">Ademas de vender productos, SmartISP acompana a empresas, hogares tecnicos e ISP con asesoria, seleccion de equipos y soporte comercial para proyectos de tecnologia.</p><div class="hero-actions" id="heroActions" hidden><a class="cta" id="heroButton" href="/tienda.html"></a><a class="cta is-outline" id="heroButton2" href="/tienda.html" hidden></a></div></section>
+    <section class="store-campaign-area" aria-label="Servicios SmartISP" hidden>
+      <div class="store-campaign" id="storeCampaign" aria-roledescription="carrusel" aria-label="Banner Servicios" aria-live="polite">
+        <div class="store-campaign-media"><img id="storeCampaignImage" width="1600" height="560" alt="" fetchpriority="high"></div>
+        <span class="store-campaign-badge" id="storeCampaignBadge" hidden></span>
+        <div class="store-campaign-copy">
+          <div class="store-campaign-eyebrow" id="storeCampaignEyebrow"></div>
+          <h1 class="store-campaign-title" id="storeCampaignTitle"></h1>
+          <div class="store-campaign-subtitle" id="storeCampaignSubtitle"></div>
+          <div class="store-campaign-actions"><a class="store-campaign-cta" id="storeCampaignLink" href="/tienda.html"><span id="storeCampaignButton"></span><i data-lucide="arrow-right" width="16"></i></a><a class="store-campaign-cta is-outline" id="storeCampaignLink2" href="/tienda.html" hidden><span id="storeCampaignButton2"></span></a></div>
+          <a class="store-campaign-promo" id="storeCampaignPromo" hidden></a>
+        </div>
+        <div class="store-campaign-controls" id="storeCampaignControls" hidden><button class="store-campaign-control" id="storeCampaignPrev" type="button" aria-label="Banner anterior"><i data-lucide="chevron-left"></i></button><div class="store-campaign-dots" id="storeCampaignDots"></div><button class="store-campaign-control" id="storeCampaignNext" type="button" aria-label="Banner siguiente"><i data-lucide="chevron-right"></i></button></div>
+      </div>
+    </section>
     <section class="grid" id="servicesGrid">
       <article class="card"><strong>Asesoria de compra</strong><p>Seleccion de equipos segun necesidad, presupuesto, compatibilidad y disponibilidad.</p></article>
       <article class="card"><strong>Redes y fibra optica</strong><p>Equipamiento para conectividad, switching, WiFi, cableado, fibra y crecimiento de infraestructura.</p></article>
@@ -84,41 +97,10 @@
   </main>
   <footer>SmartISP Ecuador · Servicios, catalogo y asesoria tecnologica.</footer>
   <script src="/assets/js/brands-section.js?v=1"></script>
+  <link rel="stylesheet" href="/assets/css/storefront-campaign.css?v=shared-campaign-hero-20261013">
+  <script src="/assets/js/storefront-campaign.js?v=shared-campaign-hero-20261013"></script>
   <script>
-  (async () => {
-    try {
-      const response = await fetch('/api/auth/store-campaigns?zone=servicios&_t=' + Date.now(), { cache: 'no-store' });
-      if (!response.ok) return;
-      const data = await response.json();
-      const slide = (Array.isArray(data.slides) ? data.slides : []).find(s => String(s.is_active) !== '0');
-      if (!slide) return;
-      const image = Array.isArray(slide.images) && slide.images.length ? (slide.images.find(i => String(i.is_primary) === '1') || slide.images[0]) : null;
-      const imageUrl = image?.image_url || slide.image_url;
-      if (!imageUrl) return;
-      const hero = document.querySelector('#pageHero');
-      hero.classList.add('has-banner');
-      hero.style.backgroundImage = `url(${imageUrl})`;
-      hero.style.setProperty('--hero-focal', `${Number(image?.focal_x ?? 50)}% ${Number(image?.focal_y ?? 50)}%`);
-      if (slide.eyebrow) document.querySelector('#heroEyebrow').textContent = slide.eyebrow;
-      if (slide.title) document.querySelector('#heroTitle').textContent = slide.title;
-      if (slide.subtitle) document.querySelector('#heroSubtitle').textContent = slide.subtitle;
-      const btn1On = !(slide.button_visible === false || slide.button_visible === 0 || slide.button_visible === '0');
-      if (btn1On && slide.button_text) {
-        const button1 = document.querySelector('#heroButton');
-        button1.textContent = slide.button_text;
-        button1.href = slide.target_url || '/tienda.html';
-        document.querySelector('#heroActions').hidden = false;
-      }
-      const btn2On = slide.button2_visible === true || slide.button2_visible === 1 || slide.button2_visible === '1';
-      if (btn2On && slide.button2_text) {
-        const button2 = document.querySelector('#heroButton2');
-        button2.textContent = slide.button2_text;
-        button2.href = slide.button2_url || slide.target_url || '/tienda.html';
-        button2.hidden = false;
-        document.querySelector('#heroActions').hidden = false;
-      }
-    } catch (error) { console.warn('No se pudo cargar el banner de la pagina:', error); }
-  })();
+  window.initStorefrontCampaignHero('servicios');
   document.querySelector('#quoteForm').addEventListener('submit', event => {
     event.preventDefault();
     const form = event.currentTarget;
