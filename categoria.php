@@ -238,7 +238,7 @@ foreach ($products as $idx => $product) {
   <link rel="icon" type="image/svg+xml" href="/assets/favicons/favicon.svg">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
   <script src="/assets/js/public-brand.js?v=admin-brand-20261011" defer></script>
-  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=public-admin-access-20261009">
+  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=header-unify-20261013">
   <script src="/assets/vendor/lucide.min.js?v=1.55.0"></script>
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="SmartISP Ecuador">

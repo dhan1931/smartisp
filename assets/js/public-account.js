@@ -4,6 +4,21 @@
   const accountLinks = document.querySelectorAll('a[href*="openAccount=1"]');
   if (!accountLinks.length) return;
 
+  // tienda.html guarda el nombre del usuario autenticado en localStorage/sessionStorage
+  // ('smartisp.accountUser') al iniciar sesion; aqui solo lo leemos para que el boton
+  // "Mi cuenta" de las demas paginas publicas muestre el mismo nombre en vez de quedarse
+  // siempre en el texto generico.
+  try {
+    const raw = localStorage.getItem('smartisp.accountUser') || sessionStorage.getItem('smartisp.accountUser');
+    const user = raw ? JSON.parse(raw) : null;
+    if (user?.name) {
+      accountLinks.forEach(link => {
+        const span = link.querySelector('span');
+        if (span) span.textContent = user.name;
+      });
+    }
+  } catch {}
+
   const dialog = document.createElement('dialog');
   dialog.className = 'public-account-dialog';
   dialog.setAttribute('aria-label', 'Mi cuenta');
