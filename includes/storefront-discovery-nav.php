@@ -8,7 +8,7 @@ $storefrontNavLinks = [
     ['products', '/productos-destacados', 'Productos', 'sparkles'],
 ];
 ?>
-<div class="storefront-topbar"><span><i data-lucide="truck" width="14"></i> Envío gratis en Guayas</span><span><i data-lucide="headphones" width="14"></i> Atención experta · Lun a Vie 9:00 a 18:00</span></div>
+<div class="storefront-topbar"><span><i data-lucide="truck" width="14"></i> Envío gratis en Guayas</span><span><i data-lucide="headphones" width="14"></i> Atención experta · Lun a Vie 9:00 a 18:00</span><span><i data-lucide="map-pin" width="14"></i> CC. ATRIO PLAZA · Daule, Ecuador</span></div>
 <header class="storefront-header">
   <a class="storefront-logo logo" href="/" title="SmartISP Tienda Online">SmartISP</a>
   <form class="storefront-search" action="/tienda.html" method="get" role="search">
