@@ -235,12 +235,39 @@
       collectForm();
       return {zone:activeZone,campaign:state.campaign,slides:state.slides,chips:zoneConfig().isPrimary?state.chips:[]};
     }
+    async function fetchZoneState(zone) {
+      const result=await api(`admin-store-campaigns?zone=${encodeURIComponent(zone)}`); const c=result.campaign;
+      const savedMode=c?.display_mode;
+      const zc=ZONE_CONFIG[zone]||ZONE_CONFIG['store-secondary'];
+      const campaign={name:c?.name||zc.defaultName,rotation_seconds:Number(c?.rotation_seconds||7),is_active:c?String(c.is_active)==='1':true,display_mode:zc.restrictCarouselSingle&&['carousel','single'].includes(savedMode)?'split':(savedMode||zc.defaultMode),hero_height_pct:Math.max(60,Math.min(100,Number(c?.hero_height_pct)||100)),mobile_swipe:String(c?.mobile_swipe)==='1',starts_at:c?.starts_at||'',ends_at:c?.ends_at||''};
+      const slides=(result.slides||[]).map(slide=>({...slide,_editorKey:String(slide.id),card_layout:slide.card_layout==='side'?'side':'full',copy_background_color:/^#[0-9a-fA-F]{6}$/.test(slide.copy_background_color||'')?slide.copy_background_color:'#ffffff',image_width_pct:Number(slide.image_width_pct??55),is_active:String(slide.is_active)==='1',button_visible:String(slide.button_visible)!=='0',button2_visible:String(slide.button2_visible)==='1',images:Array.isArray(slide.images)?slide.images.map(image=>({...image,focal_x:Number(image.focal_x??50),focal_y:Number(image.focal_y??50),zoom_pct:Number(image.zoom_pct??100),is_primary:String(image.is_primary)==='1'||image.is_primary===true})):[]}));
+      const chips=(result.chips||[]).map(chip=>({...chip,is_active:String(chip.is_active)==='1'}));
+      return {campaign,slides,chips};
+    }
+    // Dos pestañas pueden editar la misma zona a la vez: antes de publicar, se vuelve a
+    // consultar el servidor y se compara contra lo que esta pestaña sabía la última vez que
+    // sincronizó (lastPublished). Si alguien más publicó cambios mientras tanto, se bloquea
+    // el publish en lugar de sobrescribirlos en silencio (bug reportado: una pestaña vieja
+    // borraba visualmente lo que otra acababa de publicar).
+    async function checkPublishConflict() {
+      if(!lastPublished) return false;
+      try {
+        const fresh=await fetchZoneState(activeZone);
+        const freshKey=JSON.stringify({campaign:fresh.campaign,slides:fresh.slides,chips:fresh.chips});
+        const lastKey=JSON.stringify({campaign:lastPublished.campaign,slides:lastPublished.slides,chips:lastPublished.chips});
+        return freshKey!==lastKey;
+      } catch { return false; }
+    }
     async function publish() {
       const buttons=[$('#save'),$('#saveTop')]; buttons.forEach(button=>button.disabled=true);
       try {
+        if(await checkPublishConflict()){
+          message('Alguien más publicó cambios en esta zona desde otra pestaña/sesión mientras editabas. Recarga la página para ver lo último antes de publicar, o tus cambios sobrescribirían los suyos.',true);
+          return;
+        }
         const payload=payloadForSave();
         await api(`admin-store-campaigns?zone=${encodeURIComponent(activeZone)}`,{method:'POST',body:JSON.stringify(payload)});
-        lastPublished=snapshot(); isDirty=false; localStorage.removeItem(draftKey()); message('Publicado. Los cambios de esta zona ya están guardados.');
+        lastPublished=await fetchZoneState(activeZone); isDirty=false; localStorage.removeItem(draftKey()); message('Publicado. Los cambios de esta zona ya están guardados.');
       } catch(error) {
         message(error.message,true);
         const slideMatch=/^Banner #(\d+)/.exec(error.message||'');
@@ -253,13 +280,12 @@
     }
     async function load() {
       try {
-        const result=await api(`admin-store-campaigns?zone=${encodeURIComponent(activeZone)}`); const c=result.campaign;
-        const savedMode=c?.display_mode;
+        const fresh=await fetchZoneState(activeZone);
+        Object.assign(state.campaign,fresh.campaign);
+        state.slides=fresh.slides;
+        state.chips=fresh.chips;
         const zc=zoneConfig();
-        Object.assign(state.campaign,{name:c?.name||zc.defaultName,rotation_seconds:Number(c?.rotation_seconds||7),is_active:c?String(c.is_active)==='1':true,display_mode:zc.restrictCarouselSingle&&['carousel','single'].includes(savedMode)?'split':(savedMode||zc.defaultMode),hero_height_pct:Math.max(60,Math.min(100,Number(c?.hero_height_pct)||100)),mobile_swipe:String(c?.mobile_swipe)==='1',starts_at:c?.starts_at||'',ends_at:c?.ends_at||''});
-        state.slides=(result.slides||[]).map(slide=>({...slide,_editorKey:String(slide.id),card_layout:slide.card_layout==='side'?'side':'full',copy_background_color:/^#[0-9a-fA-F]{6}$/.test(slide.copy_background_color||'')?slide.copy_background_color:'#ffffff',image_width_pct:Number(slide.image_width_pct??55),is_active:String(slide.is_active)==='1',button_visible:String(slide.button_visible)!=='0',button2_visible:String(slide.button2_visible)==='1',images:Array.isArray(slide.images)?slide.images.map(image=>({...image,focal_x:Number(image.focal_x??50),focal_y:Number(image.focal_y??50),zoom_pct:Number(image.zoom_pct??100),is_primary:String(image.is_primary)==='1'||image.is_primary===true})):[]}));
-        state.chips=(result.chips||[]).map(chip=>({...chip,is_active:String(chip.is_active)==='1'}));
-        lastPublished=snapshot();
+        lastPublished=JSON.parse(JSON.stringify(fresh));
         fillForm();
         const draft=JSON.parse(localStorage.getItem(draftKey())||'null');
         if(draft?.state&&draft.saved_at>Date.now()-7*24*60*60*1000&&confirm('Hay un borrador local de esta zona. ¿Quieres recuperarlo?')) restoreDraft(draft.state);
