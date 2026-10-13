@@ -25,6 +25,18 @@
     let draftTimer = 0;
     const draftKey = () => `smartisp.store-campaign-draft.v2.${activeZone}`;
     const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    // Reemplaza confirm() nativo (se ve feo, es del navegador) por un <dialog> propio con el
+    // mismo estilo del resto del editor. Devuelve una promesa: true si el admin confirma.
+    function confirmDialog(text, { okText = 'Continuar', cancelText = 'Cancelar', danger = false } = {}) {
+      return new Promise(resolve => {
+        const dialog = document.createElement('dialog');
+        dialog.className = 'confirm-dialog';
+        dialog.innerHTML = `<form method="dialog"><p>${escapeHtml(text)}</p><div class="confirm-actions"><button value="cancel" class="button secondary" type="submit">${escapeHtml(cancelText)}</button><button value="ok" class="button${danger ? ' danger' : ''}" type="submit">${escapeHtml(okText)}</button></div></form>`;
+        document.body.append(dialog);
+        dialog.addEventListener('close', () => { resolve(dialog.returnValue === 'ok'); dialog.remove(); }, { once: true });
+        dialog.showModal();
+      });
+    }
     const isAdmin = user => ['admin','administrator','administrador'].includes(String(user?.role || '').trim().toLowerCase());
     const modeValue = () => document.querySelector('input[name="displayMode"]:checked')?.value || 'carousel';
     const layoutWidthValue = () => document.querySelector('input[name="layoutWidth"]:checked')?.value || 'contained';
@@ -290,7 +302,7 @@
         lastPublished=JSON.parse(JSON.stringify(fresh));
         fillForm();
         const draft=JSON.parse(localStorage.getItem(draftKey())||'null');
-        if(draft?.state&&draft.saved_at>Date.now()-7*24*60*60*1000&&confirm('Hay un borrador local de esta zona. ¿Quieres recuperarlo?')) restoreDraft(draft.state);
+        if(draft?.state&&draft.saved_at>Date.now()-7*24*60*60*1000&&await confirmDialog('Hay un borrador local de esta zona. ¿Quieres recuperarlo?',{okText:'Recuperar borrador',cancelText:'Descartar'})) restoreDraft(draft.state);
         else if(draft) localStorage.removeItem(draftKey());
         $('#zoneTitle').textContent=zc.title;
         $('#campaignName').closest('label').firstChild.textContent=zc.nameLabel;
@@ -312,7 +324,7 @@
     document.querySelectorAll('input[name="layoutWidth"]').forEach(input=>input.addEventListener('change',()=>{collectForm();markDirty();}));
     document.querySelectorAll('input[name="campaignZone"]').forEach(input=>input.addEventListener('change',async()=>{
       if(input.value===activeZone)return;
-      if(isDirty&&!confirm('Hay cambios sin publicar en esta zona. Se guardará un borrador local antes de cambiar. ¿Continuar?')){
+      if(isDirty&&!await confirmDialog('Hay cambios sin publicar en esta zona. Se guardará un borrador local antes de cambiar. ¿Continuar?')){
         document.querySelector(`input[name="campaignZone"][value="${activeZone}"]`).checked=true;return;
       }
       if(isDirty)saveDraft();
@@ -445,8 +457,16 @@
     $('#addChip').addEventListener('click',()=>{if(state.chips.length>=8)return message('Puedes publicar hasta 8 accesos.',true);state.chips.push({label:'',icon:'tag',target_url:'/tienda.html#catalogo',is_active:true});renderChips();markDirty();});
     document.querySelectorAll('#save,#saveTop').forEach(button=>button.addEventListener('click',publish));
     $('#saveDraft').addEventListener('click',saveDraft);
-    $('#cancelEditor').addEventListener('click',()=>{if(isDirty&&!confirm('¿Descartar los cambios no publicados y volver a la última versión guardada?'))return;restorePublished();message('Cambios descartados.');});
-    document.addEventListener('click',event=>{const link=event.target.closest('a[href]');if(!link||!isDirty)return;saveDraft();if(!confirm('Hay cambios no publicados. Se guardó un borrador en este navegador. ¿Quieres salir de esta pantalla?'))event.preventDefault();else isDirty=false;});
+    $('#cancelEditor').addEventListener('click',async()=>{if(isDirty&&!await confirmDialog('¿Descartar los cambios no publicados y volver a la última versión guardada?',{okText:'Descartar cambios',cancelText:'Seguir editando',danger:true}))return;restorePublished();message('Cambios descartados.');});
+    document.addEventListener('click',event=>{
+      const link=event.target.closest('a[href]');
+      if(!link||!isDirty)return;
+      event.preventDefault();
+      saveDraft();
+      confirmDialog('Hay cambios no publicados. Se guardó un borrador en este navegador. ¿Quieres salir de esta pantalla?',{okText:'Salir',cancelText:'Quedarme'}).then(ok=>{
+        if(ok){isDirty=false;window.open(link.href,link.target||'_self');}
+      });
+    });
     window.addEventListener('beforeunload',event=>{if(isDirty){event.preventDefault();event.returnValue='';}});
     window.lucide?.createIcons();authenticate();
   })();
