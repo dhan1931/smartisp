@@ -125,7 +125,7 @@ foreach ($products as $idx => $product) {
   <meta name="robots" content="index, follow, max-image-preview:large">
   <link rel="canonical" href="<?= $siteUrl ?>/productos-destacados">
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
-  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=public-admin-access-20261009">
+  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=header-unify-20261013">
   <script src="/assets/js/public-brand.js?v=admin-brand-20261011" defer></script>
   <script src="/assets/vendor/lucide.min.js?v=1.55.0"></script>
   <script type="application/ld+json">
