@@ -1623,6 +1623,8 @@
             .store-sidebar { width: min(80vw, 440px) !important; max-width: 440px !important; background: #fff !important; }
         }
         .store-campaign-area { padding: 14px 1.7vw 0; }
+        .store-campaign-area.is-full-width { width: 100vw; max-width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); padding-left: 0; padding-right: 0; }
+        .store-campaign-area.is-full-width .store-campaign { border-left: 0; border-right: 0; border-radius: 0; }
         .store-campaign { position: relative; display: none; width: 100%; min-height: 270px; aspect-ratio: var(--hero-ar, 2.4); overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: #e8f3f7; isolation: isolate; }
         .store-campaign.is-visible { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; }
         .store-campaign-media { position: absolute; inset: 0; z-index: -2; }
@@ -4095,6 +4097,7 @@
 				const mode = ['split','triple','grid','cards'].includes(data.display_mode) ? data.display_mode : 'split';
 				const limit = { split: 2, triple: 3, grid: 4 }[mode] || secondaryCampaignSlides.length;
 				host.className = `store-campaign is-layout is-${mode}${data.mobile_swipe ? ' is-mobile-swipe' : ''}`;
+				section.classList.toggle('is-full-width', data.layout_width === 'full');
 				const secondarySliceForRender = secondaryCampaignSlides.slice(0, limit);
 				host.innerHTML = secondarySliceForRender.map((slide, index) => renderCampaignCard(slide, index)).join('');
 				section.hidden = false;
@@ -4117,6 +4120,7 @@
 				storefrontDisplayMode = ['carousel', 'single', 'split', 'triple', 'grid', 'cards'].includes(data.display_mode) ? data.display_mode : 'carousel';
 				const heroHeightPct = Math.max(60, Math.min(100, Number(data.hero_height_pct) || 100));
 				document.querySelector('#storeCampaign')?.style.setProperty('--hero-ar', (240 / heroHeightPct).toFixed(3));
+				document.querySelector('.store-campaign-area')?.classList.toggle('is-full-width', data.layout_width === 'full');
 				storefrontPromoChips = Array.isArray(data.chips) ? data.chips : [];
 				storefrontFeaturedProducts = Array.isArray(data.products) ? data.products.map(product => ({
 					...product,
