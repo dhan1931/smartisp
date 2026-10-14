@@ -49,6 +49,47 @@
   };
   const campaignTitleHtml = slide => `<span${slide.title_color ? ` style="color:${escapeHtml(slide.title_color)}"` : ''}>${escapeHtml(slide.title || '')}</span>${slide.title_line2 ? `<br><span${slide.title_line2_color ? ` style="color:${escapeHtml(slide.title_line2_color)}"` : ''}>${escapeHtml(slide.title_line2)}</span>` : ''}`;
   const campaignEyebrowHtml = slide => `${escapeHtml(slide.eyebrow || '')}${slide.eyebrow_line2 ? `<br>${escapeHtml(slide.eyebrow_line2)}` : ''}`;
+
+  // Franja de confianza (Productos/Clientes/Proyectos ejecutados/Soporte): Productos siempre se
+  // calcula en vivo desde el catalogo; los otros 3 usan el override del banner o, si no hay, el
+  // default global guardado en Configuracion (settings_rows, via los endpoints publicos que ya
+  // existian). Un solo fetch compartido por carga de pagina, cacheado en el modulo.
+  let trustStatsDataPromise = null;
+  const loadTrustStatsData = () => {
+    if (trustStatsDataPromise) return trustStatsDataPromise;
+    trustStatsDataPromise = Promise.all([
+      fetch('/api/auth/landing-content', { cache: 'no-store' }).then(r => r.ok ? r.json() : { content: [] }).catch(() => ({ content: [] })),
+      fetch('/api/auth/catalog?page=1&limit=1', { cache: 'no-store' }).then(r => r.ok ? r.json() : { total: 0 }).catch(() => ({ total: 0 })),
+    ]).then(([landing, catalog]) => {
+      const map = {};
+      (landing.content || []).forEach(row => { map[row.key] = row.value; });
+      return {
+        clients: map.trust_stats_clients_default || '',
+        projects: map.trust_stats_projects_default || '',
+        support: map.trust_stats_support_default || '',
+        productsCount: Number(catalog.total) || 0,
+      };
+    });
+    return trustStatsDataPromise;
+  };
+  const renderTrustStats = (slide, statsEl) => {
+    if (!statsEl) return;
+    if (!slide.show_trust_stats) { statsEl.hidden = true; statsEl.innerHTML = ''; return; }
+    loadTrustStatsData().then(defaults => {
+      const clients = slide.trust_stats_clients_override || defaults.clients;
+      const projects = slide.trust_stats_projects_override || defaults.projects;
+      const support = slide.trust_stats_support_override || defaults.support;
+      const items = [
+        { icon: 'package', text: `${defaults.productsCount}+ Productos` },
+        clients ? { icon: 'users', text: clients } : null,
+        projects ? { icon: 'badge-check', text: projects } : null,
+        support ? { icon: 'headphones', text: support } : null,
+      ].filter(Boolean);
+      statsEl.innerHTML = items.map(item => `<span class="store-campaign-stat"><i data-lucide="${item.icon}"></i>${escapeHtml(item.text)}</span>`).join('');
+      statsEl.hidden = !items.length;
+      window.lucide?.createIcons();
+    });
+  };
   const campaignBulletMarkup = (style, color) => {
     if (style === 'check') return `<i data-lucide="check" width="14" style="color:${escapeHtml(color)}"></i>`;
     if (style === 'check-circle') return `<span class="store-campaign-bullet-mark store-campaign-bullet-check-circle" style="background:${escapeHtml(color)}"><i data-lucide="check"></i></span>`;
@@ -156,6 +197,7 @@
       applyCampaignFontScale(eyebrowEl, slide.eyebrow_size);
       applyCampaignFontScale(titleEl, slide.title_size);
       applyCampaignFontScale(subtitleEl, slide.subtitle_size);
+      renderTrustStats(slide, banner.querySelector('#storeCampaignStats'));
       window.lucide?.createIcons();
       banner.querySelector('#storeCampaignButton').textContent = slide.button_text || 'Explorar';
       const link1 = banner.querySelector('#storeCampaignLink');
