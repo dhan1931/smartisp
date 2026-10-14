@@ -78,6 +78,23 @@ if ($action === 'upload-campaign-image' && $method === 'POST') {
 // wirear el fetch/render en esa pagina publica (ver tienda.html/nosotros.html/servicios.html
 // para el patron) es todo lo que hace falta -- no requiere cambios de esquema.
 const STOREFRONT_CAMPAIGN_ZONES = ['store-home', 'store-secondary', 'nosotros', 'servicios', 'servicios-proyectos', 'servicios-especializados', 'categorias'];
+// Insignias cortas (icono + frase) del banner: lista cerrada de iconos permitidos, debe
+// coincidir con las <option> del selector en campanas-page.js.
+const FEATURE_BADGE_ICONS = ['trophy', 'settings', 'shield-check', 'headphones', 'truck', 'clock', 'star', 'heart', 'zap', 'award', 'thumbs-up', 'users', 'check-circle', 'box', 'wrench', 'rocket', 'badge-check', 'gem'];
+function sanitizeFeatureBadges($raw): ?string {
+    $items = is_array($raw) ? $raw : (is_string($raw) ? json_decode($raw, true) : null);
+    if (!is_array($items)) return null;
+    $clean = [];
+    foreach (array_slice($items, 0, 4) as $item) {
+        if (!is_array($item)) continue;
+        $text = storefrontCampaignText((string)($item['text'] ?? ''), 60);
+        if ($text === '') continue;
+        $icon = in_array(($item['icon'] ?? ''), FEATURE_BADGE_ICONS, true) ? $item['icon'] : 'star';
+        $color = preg_match('/^#[0-9a-fA-F]{6}$/', (string)($item['color'] ?? '')) ? $item['color'] : null;
+        $clean[] = ['icon' => $icon, 'text' => $text, 'color' => $color];
+    }
+    return $clean ? json_encode($clean) : null;
+}
 
 if ($action === 'admin-store-campaigns') {
     requireAdminAuth();
@@ -116,7 +133,7 @@ if ($action === 'admin-store-campaigns') {
             echo json_encode(['campaign' => null, 'slides' => [], 'products' => [], 'chips' => [], 'featured_page' => $featuredPage, 'featured_category_ids' => $featuredCategoryIds]);
             exit;
         }
-        $slides = $pdo->prepare('SELECT id, eyebrow, title, subtitle, button_text, button_visible, button2_text, button2_url, button2_visible, target_url, image_url, image_alt, image_fit, image_width_pct, card_layout, copy_background_color, bullet_style, bullet_color, title_color, subtitle_color, eyebrow_size, title_size, subtitle_size, title_line2, title_line2_color, eyebrow_line2, eyebrow_color, show_trust_stats, trust_stats_clients_override, trust_stats_projects_override, trust_stats_support_override, is_active, starts_at, ends_at, badge_label, badge_tone, image_opacity, overlay_opacity, image_interval_seconds, image_transition_ms, promo_chip_label, promo_chip_icon, promo_chip_target_url FROM storefront_campaign_slides WHERE campaign_id = :id ORDER BY sort_order, id');
+        $slides = $pdo->prepare('SELECT id, eyebrow, title, subtitle, button_text, button_visible, button2_text, button2_url, button2_visible, target_url, image_url, image_alt, image_fit, image_width_pct, card_layout, copy_background_color, bullet_style, bullet_color, title_color, subtitle_color, eyebrow_size, title_size, subtitle_size, title_line2, title_line2_color, eyebrow_line2, eyebrow_color, show_trust_stats, trust_stats_clients_override, trust_stats_projects_override, trust_stats_support_override, feature_badges, is_active, starts_at, ends_at, badge_label, badge_tone, image_opacity, overlay_opacity, image_interval_seconds, image_transition_ms, promo_chip_label, promo_chip_icon, promo_chip_target_url FROM storefront_campaign_slides WHERE campaign_id = :id ORDER BY sort_order, id');
         $slides->execute([':id' => $campaign['id']]);
         $slideRows = $slides->fetchAll(PDO::FETCH_ASSOC);
         if ($slideRows) {
@@ -125,9 +142,13 @@ if ($action === 'admin-store-campaigns') {
             $gallery->execute(array_column($slideRows, 'id'));
             $imagesBySlide = [];
             foreach ($gallery->fetchAll(PDO::FETCH_ASSOC) as $image) $imagesBySlide[(string)$image['slide_id']][] = $image;
-            foreach ($slideRows as &$slide) $slide['images'] = $imagesBySlide[(string)$slide['id']] ?? [[
-                'image_url' => $slide['image_url'], 'image_alt' => $slide['image_alt'], 'sort_order' => 0, 'is_primary' => 1
-            ]];
+            foreach ($slideRows as &$slide) {
+                $slide['images'] = $imagesBySlide[(string)$slide['id']] ?? [[
+                    'image_url' => $slide['image_url'], 'image_alt' => $slide['image_alt'], 'sort_order' => 0, 'is_primary' => 1
+                ]];
+                $decodedBadges = json_decode((string)($slide['feature_badges'] ?? ''), true);
+                $slide['feature_badges'] = is_array($decodedBadges) ? $decodedBadges : [];
+            }
             unset($slide);
         }
         $productRows = [];
@@ -321,7 +342,7 @@ if ($action === 'admin-store-campaigns') {
             if ($touchesSlides) $pdo->prepare('DELETE FROM storefront_campaign_slides WHERE campaign_id = ?')->execute([$campaignId]);
             if ($touchesProducts) $pdo->prepare('DELETE FROM storefront_campaign_products WHERE campaign_id = ?')->execute([$campaignId]);
             if ($isPrimaryZone && array_key_exists('chips', $body)) $pdo->prepare('DELETE FROM storefront_promo_chips')->execute();
-            $slideInsert = $pdo->prepare('INSERT INTO storefront_campaign_slides (campaign_id, eyebrow, title, subtitle, button_text, button_visible, button2_text, button2_url, button2_visible, target_url, image_url, image_alt, image_fit, image_width_pct, card_layout, copy_background_color, bullet_style, bullet_color, title_color, subtitle_color, eyebrow_size, title_size, subtitle_size, title_line2, title_line2_color, eyebrow_line2, eyebrow_color, show_trust_stats, trust_stats_clients_override, trust_stats_projects_override, trust_stats_support_override, sort_order, is_active, starts_at, ends_at, badge_label, badge_tone, image_opacity, overlay_opacity, image_interval_seconds, image_transition_ms, promo_chip_label, promo_chip_icon, promo_chip_target_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+            $slideInsert = $pdo->prepare('INSERT INTO storefront_campaign_slides (campaign_id, eyebrow, title, subtitle, button_text, button_visible, button2_text, button2_url, button2_visible, target_url, image_url, image_alt, image_fit, image_width_pct, card_layout, copy_background_color, bullet_style, bullet_color, title_color, subtitle_color, eyebrow_size, title_size, subtitle_size, title_line2, title_line2_color, eyebrow_line2, eyebrow_color, show_trust_stats, trust_stats_clients_override, trust_stats_projects_override, trust_stats_support_override, feature_badges, sort_order, is_active, starts_at, ends_at, badge_label, badge_tone, image_opacity, overlay_opacity, image_interval_seconds, image_transition_ms, promo_chip_label, promo_chip_icon, promo_chip_target_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
             $galleryInsert = $pdo->prepare('INSERT INTO storefront_campaign_slide_images (slide_id, image_url, image_alt, sort_order, is_primary, focal_x, focal_y, zoom_pct) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
             foreach ($slides as $index => $slide) {
                 $images = is_array($slide['images'] ?? null) ? array_slice($slide['images'], 0, 12) : [];
@@ -361,6 +382,7 @@ if ($action === 'admin-store-campaigns') {
                     storefrontCampaignText((string)($slide['trust_stats_clients_override'] ?? ''), 100) ?: null,
                     storefrontCampaignText((string)($slide['trust_stats_projects_override'] ?? ''), 100) ?: null,
                     storefrontCampaignText((string)($slide['trust_stats_support_override'] ?? ''), 100) ?: null,
+                    sanitizeFeatureBadges($slide['feature_badges'] ?? null),
                     $index,
                     !array_key_exists('is_active', $slide) || !empty($slide['is_active']) ? 1 : 0,
                     storefrontCampaignDate($slide['starts_at'] ?? null),
@@ -414,7 +436,7 @@ if ($action === 'store-campaigns' && $method === 'GET') {
         echo json_encode(['slides' => [], 'products' => [], 'chips' => $chips, 'featured_category_ids' => $featuredCategoryIds]);
         exit;
     }
-    $slideStmt = $pdo->prepare('SELECT id, eyebrow, title, subtitle, button_text, button_visible, button2_text, button2_url, button2_visible, target_url, image_url, image_alt, image_fit, image_width_pct, card_layout, copy_background_color, bullet_style, bullet_color, title_color, subtitle_color, eyebrow_size, title_size, subtitle_size, title_line2, title_line2_color, eyebrow_line2, eyebrow_color, show_trust_stats, trust_stats_clients_override, trust_stats_projects_override, trust_stats_support_override, starts_at, ends_at, badge_label, badge_tone, image_opacity, overlay_opacity, image_interval_seconds, image_transition_ms, promo_chip_label, promo_chip_icon, promo_chip_target_url FROM storefront_campaign_slides WHERE campaign_id = :id AND is_active = 1 AND (starts_at IS NULL OR starts_at <= UTC_TIMESTAMP()) AND (ends_at IS NULL OR ends_at > UTC_TIMESTAMP()) ORDER BY sort_order, id');
+    $slideStmt = $pdo->prepare('SELECT id, eyebrow, title, subtitle, button_text, button_visible, button2_text, button2_url, button2_visible, target_url, image_url, image_alt, image_fit, image_width_pct, card_layout, copy_background_color, bullet_style, bullet_color, title_color, subtitle_color, eyebrow_size, title_size, subtitle_size, title_line2, title_line2_color, eyebrow_line2, eyebrow_color, show_trust_stats, trust_stats_clients_override, trust_stats_projects_override, trust_stats_support_override, feature_badges, starts_at, ends_at, badge_label, badge_tone, image_opacity, overlay_opacity, image_interval_seconds, image_transition_ms, promo_chip_label, promo_chip_icon, promo_chip_target_url FROM storefront_campaign_slides WHERE campaign_id = :id AND is_active = 1 AND (starts_at IS NULL OR starts_at <= UTC_TIMESTAMP()) AND (ends_at IS NULL OR ends_at > UTC_TIMESTAMP()) ORDER BY sort_order, id');
     $slideStmt->execute([':id' => $campaign['id']]);
     $publicSlides = $slideStmt->fetchAll(PDO::FETCH_ASSOC);
     if ($publicSlides) {
@@ -423,9 +445,13 @@ if ($action === 'store-campaigns' && $method === 'GET') {
         $gallery->execute(array_column($publicSlides, 'id'));
         $imagesBySlide = [];
         foreach ($gallery->fetchAll(PDO::FETCH_ASSOC) as $image) $imagesBySlide[(string)$image['slide_id']][] = $image;
-        foreach ($publicSlides as &$slide) $slide['images'] = $imagesBySlide[(string)$slide['id']] ?? [[
-            'image_url' => $slide['image_url'], 'image_alt' => $slide['image_alt'], 'sort_order' => 0, 'is_primary' => 1
-        ]];
+        foreach ($publicSlides as &$slide) {
+            $slide['images'] = $imagesBySlide[(string)$slide['id']] ?? [[
+                'image_url' => $slide['image_url'], 'image_alt' => $slide['image_alt'], 'sort_order' => 0, 'is_primary' => 1
+            ]];
+            $decodedBadges = json_decode((string)($slide['feature_badges'] ?? ''), true);
+            $slide['feature_badges'] = is_array($decodedBadges) ? $decodedBadges : [];
+        }
         unset($slide);
     }
     $products = [];

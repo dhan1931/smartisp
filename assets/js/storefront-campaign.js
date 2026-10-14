@@ -95,6 +95,20 @@
       statsEl.hidden = !items.length;
     });
   };
+
+  // Insignias cortas (icono + frase), 1 a 4, separadas por una linea vertical. A diferencia de
+  // la franja de confianza, no tienen un default global: si el banner no trae ninguna, no se
+  // muestra nada.
+  const renderFeatureBadges = (slide, el) => {
+    if (!el) return;
+    const items = Array.isArray(slide.feature_badges) ? slide.feature_badges.filter(b => b && b.text) : [];
+    el.innerHTML = items.map(item => {
+      const color = /^#[0-9a-fA-F]{6}$/.test(item.color || '') ? item.color : '#087fa5';
+      return `<div class="store-campaign-feature"><span class="store-campaign-feature-icon" style="--fb-color:${color}"><i data-lucide="${escapeHtml(item.icon || 'star')}"></i></span><span class="store-campaign-feature-text">${escapeHtml(item.text)}</span></div>`;
+    }).join('');
+    el.hidden = !items.length;
+    if (items.length) window.lucide?.createIcons();
+  };
   const campaignBulletMarkup = (style, color) => {
     if (style === 'check') return `<i data-lucide="check" width="14" style="color:${escapeHtml(color)}"></i>`;
     if (style === 'check-circle') return `<span class="store-campaign-bullet-mark store-campaign-bullet-check-circle" style="background:${escapeHtml(color)}"><i data-lucide="check"></i></span>`;
@@ -203,6 +217,7 @@
       applyCampaignFontScale(titleEl, slide.title_size);
       applyCampaignFontScale(subtitleEl, slide.subtitle_size);
       renderTrustStats(slide, banner.querySelector('#storeCampaignStats'));
+      renderFeatureBadges(slide, banner.querySelector('#storeCampaignFeatures'));
       window.lucide?.createIcons();
       banner.querySelector('#storeCampaignButton').textContent = slide.button_text || 'Explorar';
       const link1 = banner.querySelector('#storeCampaignLink');
