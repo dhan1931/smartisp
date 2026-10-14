@@ -50,10 +50,11 @@
   const campaignTitleHtml = slide => `<span${slide.title_color ? ` style="color:${escapeHtml(slide.title_color)}"` : ''}>${escapeHtml(slide.title || '')}</span>${slide.title_line2 ? `<br><span${slide.title_line2_color ? ` style="color:${escapeHtml(slide.title_line2_color)}"` : ''}>${escapeHtml(slide.title_line2)}</span>` : ''}`;
   const campaignEyebrowHtml = slide => `${escapeHtml(slide.eyebrow || '')}${slide.eyebrow_line2 ? `<br>${escapeHtml(slide.eyebrow_line2)}` : ''}`;
 
-  // Franja de confianza (Productos/Clientes/Proyectos ejecutados/Soporte): Productos siempre se
-  // calcula en vivo desde el catalogo; los otros 3 usan el override del banner o, si no hay, el
-  // default global guardado en Configuracion (settings_rows, via los endpoints publicos que ya
-  // existian). Un solo fetch compartido por carga de pagina, cacheado en el modulo.
+  // Franja de confianza (Productos/Clientes/Proyectos ejecutados/Soporte): tarjeta flotante
+  // esquina inferior izquierda, cada item con un valor grande arriba y una etiqueta chica abajo
+  // (ej. "+2.700" / "Productos disponibles"), como el mock. Productos siempre se calcula en vivo
+  // desde el catalogo; los otros 3 usan el override del banner (texto de 2 lineas: valor\netiqueta)
+  // o, si no hay, el default global guardado en Configuracion. Un solo fetch por carga de pagina.
   let trustStatsDataPromise = null;
   const loadTrustStatsData = () => {
     if (trustStatsDataPromise) return trustStatsDataPromise;
@@ -67,27 +68,31 @@
         clients: map.trust_stats_clients_default || '',
         projects: map.trust_stats_projects_default || '',
         support: map.trust_stats_support_default || '',
+        productsLabel: map.trust_stats_products_label_default || 'Productos disponibles',
         productsCount: Number(catalog.total) || 0,
       };
     });
     return trustStatsDataPromise;
   };
+  const trustStatPair = text => {
+    const [value, label] = String(text || '').split('\n');
+    return { value: (value || '').trim(), label: (label || '').trim() };
+  };
   const renderTrustStats = (slide, statsEl) => {
     if (!statsEl) return;
     if (!slide.show_trust_stats) { statsEl.hidden = true; statsEl.innerHTML = ''; return; }
     loadTrustStatsData().then(defaults => {
-      const clients = slide.trust_stats_clients_override || defaults.clients;
-      const projects = slide.trust_stats_projects_override || defaults.projects;
-      const support = slide.trust_stats_support_override || defaults.support;
+      const clients = trustStatPair(slide.trust_stats_clients_override || defaults.clients);
+      const projects = trustStatPair(slide.trust_stats_projects_override || defaults.projects);
+      const support = trustStatPair(slide.trust_stats_support_override || defaults.support);
       const items = [
-        { icon: 'package', text: `${defaults.productsCount}+ Productos` },
-        clients ? { icon: 'users', text: clients } : null,
-        projects ? { icon: 'badge-check', text: projects } : null,
-        support ? { icon: 'headphones', text: support } : null,
+        { value: `+${defaults.productsCount.toLocaleString('es-EC')}`, label: defaults.productsLabel },
+        clients.value ? clients : null,
+        projects.value ? projects : null,
+        support.value ? support : null,
       ].filter(Boolean);
-      statsEl.innerHTML = items.map(item => `<span class="store-campaign-stat"><i data-lucide="${item.icon}"></i>${escapeHtml(item.text)}</span>`).join('');
+      statsEl.innerHTML = items.map(item => `<div class="store-campaign-stat"><strong>${escapeHtml(item.value)}</strong>${item.label ? `<span>${escapeHtml(item.label)}</span>` : ''}</div>`).join('');
       statsEl.hidden = !items.length;
-      window.lucide?.createIcons();
     });
   };
   const campaignBulletMarkup = (style, color) => {

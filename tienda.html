@@ -1925,11 +1925,14 @@
         .store-campaign::after { z-index:1; background:linear-gradient(90deg,rgba(248,252,254,.94),rgba(248,252,254,.52) 48%,rgba(248,252,254,0)); opacity:var(--campaign-overlay-opacity,.18); }
         .store-campaign-copy { position:relative; z-index:2; }
         .store-campaign.is-photo-background::after { background:linear-gradient(90deg,rgba(6,24,40,.88) 0%,rgba(6,24,40,.68) 38%,rgba(6,24,40,.14) 76%,transparent 100%); }
-        .store-campaign.is-photo-background .store-campaign-eyebrow,.store-campaign.is-photo-background .store-campaign-title,.store-campaign.is-photo-background .store-campaign-subtitle,.store-campaign.is-photo-background .store-campaign-stat { color:#fff; }
-        .store-campaign-stats { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 14px; }
+        .store-campaign.is-photo-background .store-campaign-eyebrow,.store-campaign.is-photo-background .store-campaign-title,.store-campaign.is-photo-background .store-campaign-subtitle { color:#fff; }
+        .store-campaign-stats { position: absolute; z-index: 4; left: 16px; bottom: 16px; display: flex; background: rgba(8, 22, 36, .74); backdrop-filter: blur(6px); border-radius: 10px; overflow: hidden; max-width: calc(100% - 32px); }
         .store-campaign-stats[hidden] { display: none; }
-        .store-campaign-stat { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; }
-        .store-campaign-stat i,.store-campaign-stat svg { width: 16px; height: 16px; flex: 0 0 auto; }
+        .store-campaign-stat { display: flex; min-width: 84px; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 10px 16px; border-right: 1px solid rgba(255, 255, 255, .18); text-align: center; }
+        .store-campaign-stat:last-child { border-right: 0; }
+        .store-campaign-stat strong { color: #fff; font-size: 19px; font-weight: 800; line-height: 1.1; white-space: nowrap; }
+        .store-campaign-stat span { color: #b9c9d6; font-size: 10px; line-height: 1.3; }
+        @media(max-width: 520px) { .store-campaign-stats { left: 8px; bottom: 8px; max-width: calc(100% - 16px); } .store-campaign-stat { min-width: 0; flex: 1; padding: 7px 8px; } .store-campaign-stat strong { font-size: 14px; } .store-campaign-stat span { font-size: 8.5px; } }
         .store-campaign.is-photo-background .store-campaign-subtitle { text-shadow:0 1px 2px rgba(0,0,0,.3); }
         .store-campaign.is-copy-panel .store-campaign-media { inset:0 0 0 auto; width:var(--campaign-image-width,55%); z-index:0; }
         .store-campaign.is-copy-panel::after { inset:0 auto 0 calc(100% - var(--campaign-image-width,55%) - 8%); width:16%; background:linear-gradient(90deg,var(--copy-background,#fff),transparent); }
@@ -2057,7 +2060,7 @@
 		<div class="store-campaign" id="storeCampaign" aria-roledescription="carrusel" aria-label="Campañas de la tienda" aria-live="polite">
 			<div class="store-campaign-media"><img id="storeCampaignImage" width="1600" height="560" alt="" fetchpriority="high"></div>
 			<span class="store-campaign-badge" id="storeCampaignBadge" hidden></span>
-			<div class="store-campaign-copy"><div class="store-campaign-eyebrow" id="storeCampaignEyebrow"></div><h1 class="store-campaign-title" id="storeCampaignTitle"></h1><div class="store-campaign-subtitle" id="storeCampaignSubtitle"></div><div class="store-campaign-actions"><a class="store-campaign-cta" id="storeCampaignLink" href="/tienda.html#catalogo"><span id="storeCampaignButton"></span><i data-lucide="arrow-right" width="16"></i></a><a class="store-campaign-cta is-outline" id="storeCampaignLink2" href="/tienda.html#catalogo" hidden><span id="storeCampaignButton2"></span></a></div><div class="store-campaign-stats" id="storeCampaignStats" hidden></div><a class="store-campaign-promo" id="storeCampaignPromo" hidden></a></div>
+			<div class="store-campaign-copy"><div class="store-campaign-eyebrow" id="storeCampaignEyebrow"></div><h1 class="store-campaign-title" id="storeCampaignTitle"></h1><div class="store-campaign-subtitle" id="storeCampaignSubtitle"></div><div class="store-campaign-actions"><a class="store-campaign-cta" id="storeCampaignLink" href="/tienda.html#catalogo"><span id="storeCampaignButton"></span><i data-lucide="arrow-right" width="16"></i></a><a class="store-campaign-cta is-outline" id="storeCampaignLink2" href="/tienda.html#catalogo" hidden><span id="storeCampaignButton2"></span></a></div><a class="store-campaign-promo" id="storeCampaignPromo" hidden></a></div><div class="store-campaign-stats" id="storeCampaignStats" hidden></div>
 			<div class="store-campaign-controls" id="storeCampaignControls" hidden><button class="store-campaign-control" id="storeCampaignPrev" type="button" aria-label="Banner anterior"><i data-lucide="chevron-left"></i></button><div class="store-campaign-dots" id="storeCampaignDots"></div><button class="store-campaign-control" id="storeCampaignNext" type="button" aria-label="Banner siguiente"><i data-lucide="chevron-right"></i></button></div>
 		</div>
 	</section>
@@ -4053,27 +4056,31 @@
 					clients: map.trust_stats_clients_default || '',
 					projects: map.trust_stats_projects_default || '',
 					support: map.trust_stats_support_default || '',
+					productsLabel: map.trust_stats_products_label_default || 'Productos disponibles',
 					productsCount: Number(catalog.total) || 0,
 				};
 			});
 			return trustStatsDataPromise;
 		};
+		const trustStatPair = text => {
+			const [value, label] = String(text || '').split('\n');
+			return { value: (value || '').trim(), label: (label || '').trim() };
+		};
 		const renderTrustStats = (slide, statsEl) => {
 			if (!statsEl) return;
 			if (!slide.show_trust_stats) { statsEl.hidden = true; statsEl.innerHTML = ''; return; }
 			loadTrustStatsData().then(defaults => {
-				const clients = slide.trust_stats_clients_override || defaults.clients;
-				const projects = slide.trust_stats_projects_override || defaults.projects;
-				const support = slide.trust_stats_support_override || defaults.support;
+				const clients = trustStatPair(slide.trust_stats_clients_override || defaults.clients);
+				const projects = trustStatPair(slide.trust_stats_projects_override || defaults.projects);
+				const support = trustStatPair(slide.trust_stats_support_override || defaults.support);
 				const items = [
-					{ icon: 'package', text: `${defaults.productsCount}+ Productos` },
-					clients ? { icon: 'users', text: clients } : null,
-					projects ? { icon: 'badge-check', text: projects } : null,
-					support ? { icon: 'headphones', text: support } : null,
+					{ value: `+${defaults.productsCount.toLocaleString('es-EC')}`, label: defaults.productsLabel },
+					clients.value ? clients : null,
+					projects.value ? projects : null,
+					support.value ? support : null,
 				].filter(Boolean);
-				statsEl.innerHTML = items.map(item => `<span class="store-campaign-stat"><i data-lucide="${item.icon}"></i>${escapeHtml(item.text)}</span>`).join('');
+				statsEl.innerHTML = items.map(item => `<div class="store-campaign-stat"><strong>${escapeHtml(item.value)}</strong>${item.label ? `<span>${escapeHtml(item.label)}</span>` : ''}</div>`).join('');
 				statsEl.hidden = !items.length;
-				window.lucide?.createIcons();
 			});
 		};
 		const renderCampaignCard = (slide, index) => {
