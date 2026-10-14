@@ -52,6 +52,8 @@
 .store-campaign-bullets i[data-lucide] { flex: 0 0 auto; }
 .store-campaign-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .store-campaign-cta { display: inline-flex; align-items: center; gap: 9px; padding: 14px 22px; border-radius: 6px; background: var(--sd-blue, #087ea4); color: white; font-size: 14px; font-weight: 800; text-decoration: none; }
+.store-campaign-cta-icon { display: inline-flex; }
+.store-campaign-cta-icon svg { width: 16px; height: 16px; }
 .store-campaign-cta[hidden] { display: none; }
 .store-campaign-cta.is-outline { background: transparent; border: 1.5px solid currentColor; }
 .store-campaign-cta.is-outline:hover { background: rgba(255,255,255,.12); }

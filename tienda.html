@@ -1643,6 +1643,8 @@
         .store-campaign-bullet-check-circle svg { width: 9px; height: 9px; color: #fff; }
         .store-campaign-bullets i[data-lucide] { flex: 0 0 auto; }
         .store-campaign-cta { display: inline-flex; align-items: center; gap: 9px; padding: 14px 22px; border-radius: 6px; background: var(--blue); color: white; font-size: 14px; font-weight: 800; }
+        .store-campaign-cta-icon { display: inline-flex; }
+        .store-campaign-cta-icon svg { width: 16px; height: 16px; }
         .store-campaign-cta[hidden] { display: none; }
         .store-campaign-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
         .store-campaign-cta.is-outline { background: transparent; border: 1.5px solid currentColor; }
@@ -3923,11 +3925,13 @@
 			const campaignLink = document.querySelector('#storeCampaignLink');
 			setCampaignLink(campaignLink, slide.target_url);
 			campaignLink.hidden = !campaignButtonVisible(slide);
+			applyButtonIcon(slide, 'button_icon', campaignLink, document.querySelector('#storeCampaignButton'));
 			const campaignLink2 = document.querySelector('#storeCampaignLink2');
 			campaignLink2.hidden = !campaignButton2Visible(slide);
 			if (!campaignLink2.hidden) {
 				document.querySelector('#storeCampaignButton2').textContent = slide.button2_text;
 				setCampaignLink(campaignLink2, slide.button2_url || slide.target_url);
+				applyButtonIcon(slide, 'button2_icon', campaignLink2, document.querySelector('#storeCampaignButton2'));
 			}
 			const badge = document.querySelector('#storeCampaignBadge');
 			badge.textContent = slide.badge_label || '';
@@ -4069,6 +4073,8 @@
 					support: map.trust_stats_support_default || '',
 					productsLabel: map.trust_stats_products_label_default || 'Productos disponibles',
 					productsCount: Number(catalog.total) || 0,
+					whatsapp: String(map.footer_whatsapp || '').replace(/\D/g, ''),
+					email: String(map.footer_email || '').trim(),
 				};
 			});
 			return trustStatsDataPromise;
@@ -4076,6 +4082,32 @@
 		const trustStatPair = text => {
 			const [value, label] = String(text || '').split('\n');
 			return { value: (value || '').trim(), label: (label || '').trim() };
+		};
+		const BUTTON_CONTACT_ICON_SVG = { whatsapp: 'message-circle', instagram: 'camera', email: 'mail', other: 'globe' };
+		const applyButtonIcon = (slide, iconField, linkEl, textEl) => {
+			const icon = slide[iconField];
+			if (!icon || !BUTTON_CONTACT_ICON_SVG[icon] || !linkEl) return;
+			let iconEl = linkEl.querySelector('.store-campaign-cta-icon');
+			if (!iconEl) {
+				iconEl = document.createElement('i');
+				iconEl.className = 'store-campaign-cta-icon';
+				linkEl.insertBefore(iconEl, textEl || linkEl.firstChild);
+			}
+			iconEl.dataset.lucide = BUTTON_CONTACT_ICON_SVG[icon];
+			if (icon === 'whatsapp' || icon === 'email') {
+				loadTrustStatsData().then(defaults => {
+					if (icon === 'whatsapp' && defaults.whatsapp) {
+						linkEl.href = `https://wa.me/${defaults.whatsapp}?text=${encodeURIComponent('Hola SmartISP, tengo una consulta general.')}`;
+						linkEl.target = '_blank'; linkEl.rel = 'noopener noreferrer';
+					} else if (icon === 'email' && defaults.email) {
+						linkEl.href = `mailto:${defaults.email}`;
+						linkEl.removeAttribute('target'); linkEl.removeAttribute('rel');
+					}
+					window.lucide?.createIcons();
+				});
+			} else {
+				window.lucide?.createIcons();
+			}
 		};
 		const renderTrustStats = (slide, statsEl) => {
 			if (!statsEl) return;

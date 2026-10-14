@@ -81,6 +81,13 @@ const STOREFRONT_CAMPAIGN_ZONES = ['store-home', 'store-secondary', 'nosotros', 
 // Insignias cortas (icono + frase) del banner: lista cerrada de iconos permitidos, debe
 // coincidir con las <option> del selector en campanas-page.js.
 const FEATURE_BADGE_ICONS = ['trophy', 'settings', 'shield-check', 'headphones', 'truck', 'clock', 'star', 'heart', 'zap', 'award', 'thumbs-up', 'users', 'check-circle', 'box', 'wrench', 'rocket', 'badge-check', 'gem'];
+// Icono opcional de contacto/red social en un boton del banner. "whatsapp" tiene efecto en el
+// destino del boton (ver store-campaigns GET); los demas son solo decorativos.
+const BUTTON_CONTACT_ICONS = ['whatsapp', 'instagram', 'email', 'other'];
+function sanitizeButtonIcon($raw): ?string {
+    $value = trim((string)$raw);
+    return in_array($value, BUTTON_CONTACT_ICONS, true) ? $value : null;
+}
 function sanitizeFeatureBadges($raw): ?string {
     $items = is_array($raw) ? $raw : (is_string($raw) ? json_decode($raw, true) : null);
     if (!is_array($items)) return null;
@@ -133,7 +140,7 @@ if ($action === 'admin-store-campaigns') {
             echo json_encode(['campaign' => null, 'slides' => [], 'products' => [], 'chips' => [], 'featured_page' => $featuredPage, 'featured_category_ids' => $featuredCategoryIds]);
             exit;
         }
-        $slides = $pdo->prepare('SELECT id, eyebrow, title, subtitle, button_text, button_visible, button2_text, button2_url, button2_visible, target_url, image_url, image_alt, image_fit, image_width_pct, card_layout, copy_background_color, bullet_style, bullet_color, title_color, subtitle_color, eyebrow_size, title_size, subtitle_size, title_line2, title_line2_color, eyebrow_line2, eyebrow_color, show_trust_stats, trust_stats_clients_override, trust_stats_projects_override, trust_stats_support_override, feature_badges, is_active, starts_at, ends_at, badge_label, badge_tone, image_opacity, overlay_opacity, image_interval_seconds, image_transition_ms, promo_chip_label, promo_chip_icon, promo_chip_target_url FROM storefront_campaign_slides WHERE campaign_id = :id ORDER BY sort_order, id');
+        $slides = $pdo->prepare('SELECT id, eyebrow, title, subtitle, button_text, button_visible, button2_text, button2_url, button2_visible, target_url, image_url, image_alt, image_fit, image_width_pct, card_layout, copy_background_color, bullet_style, bullet_color, title_color, subtitle_color, eyebrow_size, title_size, subtitle_size, title_line2, title_line2_color, eyebrow_line2, eyebrow_color, show_trust_stats, trust_stats_clients_override, trust_stats_projects_override, trust_stats_support_override, feature_badges, button_icon, button2_icon, is_active, starts_at, ends_at, badge_label, badge_tone, image_opacity, overlay_opacity, image_interval_seconds, image_transition_ms, promo_chip_label, promo_chip_icon, promo_chip_target_url FROM storefront_campaign_slides WHERE campaign_id = :id ORDER BY sort_order, id');
         $slides->execute([':id' => $campaign['id']]);
         $slideRows = $slides->fetchAll(PDO::FETCH_ASSOC);
         if ($slideRows) {
@@ -342,7 +349,7 @@ if ($action === 'admin-store-campaigns') {
             if ($touchesSlides) $pdo->prepare('DELETE FROM storefront_campaign_slides WHERE campaign_id = ?')->execute([$campaignId]);
             if ($touchesProducts) $pdo->prepare('DELETE FROM storefront_campaign_products WHERE campaign_id = ?')->execute([$campaignId]);
             if ($isPrimaryZone && array_key_exists('chips', $body)) $pdo->prepare('DELETE FROM storefront_promo_chips')->execute();
-            $slideInsert = $pdo->prepare('INSERT INTO storefront_campaign_slides (campaign_id, eyebrow, title, subtitle, button_text, button_visible, button2_text, button2_url, button2_visible, target_url, image_url, image_alt, image_fit, image_width_pct, card_layout, copy_background_color, bullet_style, bullet_color, title_color, subtitle_color, eyebrow_size, title_size, subtitle_size, title_line2, title_line2_color, eyebrow_line2, eyebrow_color, show_trust_stats, trust_stats_clients_override, trust_stats_projects_override, trust_stats_support_override, feature_badges, sort_order, is_active, starts_at, ends_at, badge_label, badge_tone, image_opacity, overlay_opacity, image_interval_seconds, image_transition_ms, promo_chip_label, promo_chip_icon, promo_chip_target_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+            $slideInsert = $pdo->prepare('INSERT INTO storefront_campaign_slides (campaign_id, eyebrow, title, subtitle, button_text, button_visible, button2_text, button2_url, button2_visible, target_url, image_url, image_alt, image_fit, image_width_pct, card_layout, copy_background_color, bullet_style, bullet_color, title_color, subtitle_color, eyebrow_size, title_size, subtitle_size, title_line2, title_line2_color, eyebrow_line2, eyebrow_color, show_trust_stats, trust_stats_clients_override, trust_stats_projects_override, trust_stats_support_override, feature_badges, button_icon, button2_icon, sort_order, is_active, starts_at, ends_at, badge_label, badge_tone, image_opacity, overlay_opacity, image_interval_seconds, image_transition_ms, promo_chip_label, promo_chip_icon, promo_chip_target_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
             $galleryInsert = $pdo->prepare('INSERT INTO storefront_campaign_slide_images (slide_id, image_url, image_alt, sort_order, is_primary, focal_x, focal_y, zoom_pct) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
             foreach ($slides as $index => $slide) {
                 $images = is_array($slide['images'] ?? null) ? array_slice($slide['images'], 0, 12) : [];
@@ -383,6 +390,8 @@ if ($action === 'admin-store-campaigns') {
                     storefrontCampaignText((string)($slide['trust_stats_projects_override'] ?? ''), 100) ?: null,
                     storefrontCampaignText((string)($slide['trust_stats_support_override'] ?? ''), 100) ?: null,
                     sanitizeFeatureBadges($slide['feature_badges'] ?? null),
+                    sanitizeButtonIcon($slide['button_icon'] ?? ''),
+                    sanitizeButtonIcon($slide['button2_icon'] ?? ''),
                     $index,
                     !array_key_exists('is_active', $slide) || !empty($slide['is_active']) ? 1 : 0,
                     storefrontCampaignDate($slide['starts_at'] ?? null),
@@ -436,7 +445,7 @@ if ($action === 'store-campaigns' && $method === 'GET') {
         echo json_encode(['slides' => [], 'products' => [], 'chips' => $chips, 'featured_category_ids' => $featuredCategoryIds]);
         exit;
     }
-    $slideStmt = $pdo->prepare('SELECT id, eyebrow, title, subtitle, button_text, button_visible, button2_text, button2_url, button2_visible, target_url, image_url, image_alt, image_fit, image_width_pct, card_layout, copy_background_color, bullet_style, bullet_color, title_color, subtitle_color, eyebrow_size, title_size, subtitle_size, title_line2, title_line2_color, eyebrow_line2, eyebrow_color, show_trust_stats, trust_stats_clients_override, trust_stats_projects_override, trust_stats_support_override, feature_badges, starts_at, ends_at, badge_label, badge_tone, image_opacity, overlay_opacity, image_interval_seconds, image_transition_ms, promo_chip_label, promo_chip_icon, promo_chip_target_url FROM storefront_campaign_slides WHERE campaign_id = :id AND is_active = 1 AND (starts_at IS NULL OR starts_at <= UTC_TIMESTAMP()) AND (ends_at IS NULL OR ends_at > UTC_TIMESTAMP()) ORDER BY sort_order, id');
+    $slideStmt = $pdo->prepare('SELECT id, eyebrow, title, subtitle, button_text, button_visible, button2_text, button2_url, button2_visible, target_url, image_url, image_alt, image_fit, image_width_pct, card_layout, copy_background_color, bullet_style, bullet_color, title_color, subtitle_color, eyebrow_size, title_size, subtitle_size, title_line2, title_line2_color, eyebrow_line2, eyebrow_color, show_trust_stats, trust_stats_clients_override, trust_stats_projects_override, trust_stats_support_override, feature_badges, button_icon, button2_icon, starts_at, ends_at, badge_label, badge_tone, image_opacity, overlay_opacity, image_interval_seconds, image_transition_ms, promo_chip_label, promo_chip_icon, promo_chip_target_url FROM storefront_campaign_slides WHERE campaign_id = :id AND is_active = 1 AND (starts_at IS NULL OR starts_at <= UTC_TIMESTAMP()) AND (ends_at IS NULL OR ends_at > UTC_TIMESTAMP()) ORDER BY sort_order, id');
     $slideStmt->execute([':id' => $campaign['id']]);
     $publicSlides = $slideStmt->fetchAll(PDO::FETCH_ASSOC);
     if ($publicSlides) {

@@ -70,6 +70,8 @@
         support: map.trust_stats_support_default || '',
         productsLabel: map.trust_stats_products_label_default || 'Productos disponibles',
         productsCount: Number(catalog.total) || 0,
+        whatsapp: String(map.footer_whatsapp || '').replace(/\D/g, ''),
+        email: String(map.footer_email || '').trim(),
       };
     });
     return trustStatsDataPromise;
@@ -77,6 +79,35 @@
   const trustStatPair = text => {
     const [value, label] = String(text || '').split('\n');
     return { value: (value || '').trim(), label: (label || '').trim() };
+  };
+  // Icono opcional de contacto en un boton del banner. WhatsApp/Correo redirigen al numero/
+  // correo configurados en el pie de pagina (footer_whatsapp/footer_email), con un mensaje de
+  // consulta general -- no el destino normal del boton. Instagram/Otra red son decorativos.
+  const BUTTON_CONTACT_ICON_SVG = { whatsapp: 'message-circle', instagram: 'camera', email: 'mail', other: 'globe' };
+  const applyButtonIcon = (slide, iconField, linkEl, textEl) => {
+    const icon = slide[iconField];
+    if (!icon || !BUTTON_CONTACT_ICON_SVG[icon] || !linkEl) return;
+    let iconEl = linkEl.querySelector('.store-campaign-cta-icon');
+    if (!iconEl) {
+      iconEl = document.createElement('i');
+      iconEl.className = 'store-campaign-cta-icon';
+      linkEl.insertBefore(iconEl, textEl || linkEl.firstChild);
+    }
+    iconEl.dataset.lucide = BUTTON_CONTACT_ICON_SVG[icon];
+    if (icon === 'whatsapp' || icon === 'email') {
+      loadTrustStatsData().then(defaults => {
+        if (icon === 'whatsapp' && defaults.whatsapp) {
+          linkEl.href = `https://wa.me/${defaults.whatsapp}?text=${encodeURIComponent('Hola SmartISP, tengo una consulta general.')}`;
+          linkEl.target = '_blank'; linkEl.rel = 'noopener noreferrer';
+        } else if (icon === 'email' && defaults.email) {
+          linkEl.href = `mailto:${defaults.email}`;
+          linkEl.removeAttribute('target'); linkEl.removeAttribute('rel');
+        }
+        window.lucide?.createIcons();
+      });
+    } else {
+      window.lucide?.createIcons();
+    }
   };
   const renderTrustStats = (slide, statsEl) => {
     if (!statsEl) return;
@@ -223,11 +254,13 @@
       const link1 = banner.querySelector('#storeCampaignLink');
       setCampaignLink(link1, slide.target_url, fallbackUrl);
       link1.hidden = !campaignButtonVisible(slide);
+      applyButtonIcon(slide, 'button_icon', link1, banner.querySelector('#storeCampaignButton'));
       const link2 = banner.querySelector('#storeCampaignLink2');
       link2.hidden = !campaignButton2Visible(slide);
       if (!link2.hidden) {
         banner.querySelector('#storeCampaignButton2').textContent = slide.button2_text;
         setCampaignLink(link2, slide.button2_url || slide.target_url, fallbackUrl);
+        applyButtonIcon(slide, 'button2_icon', link2, banner.querySelector('#storeCampaignButton2'));
       }
       const badge = banner.querySelector('#storeCampaignBadge');
       badge.textContent = slide.badge_label || '';
