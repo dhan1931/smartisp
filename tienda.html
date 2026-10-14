@@ -1925,7 +1925,11 @@
         .store-campaign::after { z-index:1; background:linear-gradient(90deg,rgba(248,252,254,.94),rgba(248,252,254,.52) 48%,rgba(248,252,254,0)); opacity:var(--campaign-overlay-opacity,.18); }
         .store-campaign-copy { position:relative; z-index:2; }
         .store-campaign.is-photo-background::after { background:linear-gradient(90deg,rgba(6,24,40,.88) 0%,rgba(6,24,40,.68) 38%,rgba(6,24,40,.14) 76%,transparent 100%); }
-        .store-campaign.is-photo-background .store-campaign-eyebrow,.store-campaign.is-photo-background .store-campaign-title,.store-campaign.is-photo-background .store-campaign-subtitle { color:#fff; }
+        .store-campaign.is-photo-background .store-campaign-eyebrow,.store-campaign.is-photo-background .store-campaign-title,.store-campaign.is-photo-background .store-campaign-subtitle,.store-campaign.is-photo-background .store-campaign-stat { color:#fff; }
+        .store-campaign-stats { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 14px; }
+        .store-campaign-stats[hidden] { display: none; }
+        .store-campaign-stat { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; }
+        .store-campaign-stat i,.store-campaign-stat svg { width: 16px; height: 16px; flex: 0 0 auto; }
         .store-campaign.is-photo-background .store-campaign-subtitle { text-shadow:0 1px 2px rgba(0,0,0,.3); }
         .store-campaign.is-copy-panel .store-campaign-media { inset:0 0 0 auto; width:var(--campaign-image-width,55%); z-index:0; }
         .store-campaign.is-copy-panel::after { inset:0 auto 0 calc(100% - var(--campaign-image-width,55%) - 8%); width:16%; background:linear-gradient(90deg,var(--copy-background,#fff),transparent); }
@@ -2053,7 +2057,7 @@
 		<div class="store-campaign" id="storeCampaign" aria-roledescription="carrusel" aria-label="Campañas de la tienda" aria-live="polite">
 			<div class="store-campaign-media"><img id="storeCampaignImage" width="1600" height="560" alt="" fetchpriority="high"></div>
 			<span class="store-campaign-badge" id="storeCampaignBadge" hidden></span>
-			<div class="store-campaign-copy"><div class="store-campaign-eyebrow" id="storeCampaignEyebrow"></div><h1 class="store-campaign-title" id="storeCampaignTitle"></h1><div class="store-campaign-subtitle" id="storeCampaignSubtitle"></div><div class="store-campaign-actions"><a class="store-campaign-cta" id="storeCampaignLink" href="/tienda.html#catalogo"><span id="storeCampaignButton"></span><i data-lucide="arrow-right" width="16"></i></a><a class="store-campaign-cta is-outline" id="storeCampaignLink2" href="/tienda.html#catalogo" hidden><span id="storeCampaignButton2"></span></a></div><a class="store-campaign-promo" id="storeCampaignPromo" hidden></a></div>
+			<div class="store-campaign-copy"><div class="store-campaign-eyebrow" id="storeCampaignEyebrow"></div><h1 class="store-campaign-title" id="storeCampaignTitle"></h1><div class="store-campaign-subtitle" id="storeCampaignSubtitle"></div><div class="store-campaign-actions"><a class="store-campaign-cta" id="storeCampaignLink" href="/tienda.html#catalogo"><span id="storeCampaignButton"></span><i data-lucide="arrow-right" width="16"></i></a><a class="store-campaign-cta is-outline" id="storeCampaignLink2" href="/tienda.html#catalogo" hidden><span id="storeCampaignButton2"></span></a></div><div class="store-campaign-stats" id="storeCampaignStats" hidden></div><a class="store-campaign-promo" id="storeCampaignPromo" hidden></a></div>
 			<div class="store-campaign-controls" id="storeCampaignControls" hidden><button class="store-campaign-control" id="storeCampaignPrev" type="button" aria-label="Banner anterior"><i data-lucide="chevron-left"></i></button><div class="store-campaign-dots" id="storeCampaignDots"></div><button class="store-campaign-control" id="storeCampaignNext" type="button" aria-label="Banner siguiente"><i data-lucide="chevron-right"></i></button></div>
 		</div>
 	</section>
@@ -3899,6 +3903,7 @@
 			applyCampaignFontScale(eyebrowEl, slide.eyebrow_size);
 			applyCampaignFontScale(titleEl, slide.title_size);
 			applyCampaignFontScale(subtitleEl, slide.subtitle_size);
+			renderTrustStats(slide, document.querySelector('#storeCampaignStats'));
 			window.lucide?.createIcons();
 			document.querySelector('#storeCampaignButton').textContent = slide.button_text || 'Explorar';
 			const campaignLink = document.querySelector('#storeCampaignLink');
@@ -4035,6 +4040,42 @@
 		};
 		const campaignTitleHtml = slide => `<span${slide.title_color ? ` style="color:${escapeHtml(slide.title_color)}"` : ''}>${escapeHtml(slide.title || '')}</span>${slide.title_line2 ? `<br><span${slide.title_line2_color ? ` style="color:${escapeHtml(slide.title_line2_color)}"` : ''}>${escapeHtml(slide.title_line2)}</span>` : ''}`;
 		const campaignEyebrowHtml = slide => `${escapeHtml(slide.eyebrow || '')}${slide.eyebrow_line2 ? `<br>${escapeHtml(slide.eyebrow_line2)}` : ''}`;
+		let trustStatsDataPromise = null;
+		const loadTrustStatsData = () => {
+			if (trustStatsDataPromise) return trustStatsDataPromise;
+			trustStatsDataPromise = Promise.all([
+				fetch('/api/auth/landing-content', { cache: 'no-store' }).then(r => r.ok ? r.json() : { content: [] }).catch(() => ({ content: [] })),
+				fetch('/api/auth/catalog?page=1&limit=1', { cache: 'no-store' }).then(r => r.ok ? r.json() : { total: 0 }).catch(() => ({ total: 0 })),
+			]).then(([landing, catalog]) => {
+				const map = {};
+				(landing.content || []).forEach(row => { map[row.key] = row.value; });
+				return {
+					clients: map.trust_stats_clients_default || '',
+					projects: map.trust_stats_projects_default || '',
+					support: map.trust_stats_support_default || '',
+					productsCount: Number(catalog.total) || 0,
+				};
+			});
+			return trustStatsDataPromise;
+		};
+		const renderTrustStats = (slide, statsEl) => {
+			if (!statsEl) return;
+			if (!slide.show_trust_stats) { statsEl.hidden = true; statsEl.innerHTML = ''; return; }
+			loadTrustStatsData().then(defaults => {
+				const clients = slide.trust_stats_clients_override || defaults.clients;
+				const projects = slide.trust_stats_projects_override || defaults.projects;
+				const support = slide.trust_stats_support_override || defaults.support;
+				const items = [
+					{ icon: 'package', text: `${defaults.productsCount}+ Productos` },
+					clients ? { icon: 'users', text: clients } : null,
+					projects ? { icon: 'badge-check', text: projects } : null,
+					support ? { icon: 'headphones', text: support } : null,
+				].filter(Boolean);
+				statsEl.innerHTML = items.map(item => `<span class="store-campaign-stat"><i data-lucide="${item.icon}"></i>${escapeHtml(item.text)}</span>`).join('');
+				statsEl.hidden = !items.length;
+				window.lucide?.createIcons();
+			});
+		};
 		const renderCampaignCard = (slide, index) => {
 			const images = campaignSlideImages(slide);
 			const image = images[0] || {};
