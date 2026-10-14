@@ -43,10 +43,12 @@
     el.style.fontSize = (current * scale).toFixed(1) + 'px';
   };
   const campaignTextColorStyle = slide => {
-    const title = /^#[0-9a-fA-F]{6}$/.test(slide.title_color || '') ? `color:${slide.title_color};` : '';
     const subtitle = /^#[0-9a-fA-F]{6}$/.test(slide.subtitle_color || '') ? `color:${slide.subtitle_color};` : '';
-    return { title, subtitle };
+    const eyebrow = /^#[0-9a-fA-F]{6}$/.test(slide.eyebrow_color || '') ? `color:${slide.eyebrow_color};` : '';
+    return { subtitle, eyebrow };
   };
+  const campaignTitleHtml = slide => `<span${slide.title_color ? ` style="color:${escapeHtml(slide.title_color)}"` : ''}>${escapeHtml(slide.title || '')}</span>${slide.title_line2 ? `<br><span${slide.title_line2_color ? ` style="color:${escapeHtml(slide.title_line2_color)}"` : ''}>${escapeHtml(slide.title_line2)}</span>` : ''}`;
+  const campaignEyebrowHtml = slide => `${escapeHtml(slide.eyebrow || '')}${slide.eyebrow_line2 ? `<br>${escapeHtml(slide.eyebrow_line2)}` : ''}`;
   const campaignBulletMarkup = (style, color) => {
     if (style === 'check') return `<i data-lucide="check" width="14" style="color:${escapeHtml(color)}"></i>`;
     if (style === 'check-circle') return `<span class="store-campaign-bullet-mark store-campaign-bullet-check-circle" style="background:${escapeHtml(color)}"><i data-lucide="check"></i></span>`;
@@ -144,11 +146,11 @@
       banner.style.setProperty('--campaign-overlay-opacity', String(isCopyPanel ? overlayOpacity : Math.max(.55, overlayOpacity)));
       startImageRotation(image, slide);
       const eyebrowEl = banner.querySelector('#storeCampaignEyebrow');
-      eyebrowEl.textContent = slide.eyebrow || '';
+      eyebrowEl.innerHTML = campaignEyebrowHtml(slide);
       eyebrowEl.hidden = !slide.eyebrow;
       const titleEl = banner.querySelector('#storeCampaignTitle'), subtitleEl = banner.querySelector('#storeCampaignSubtitle');
       const textColor = campaignTextColorStyle(slide);
-      titleEl.textContent = slide.title || ''; titleEl.style.cssText = textColor.title;
+      titleEl.innerHTML = campaignTitleHtml(slide); eyebrowEl.style.cssText = textColor.eyebrow;
       subtitleEl.innerHTML = campaignSubtitleHtml(slide); subtitleEl.style.cssText = textColor.subtitle;
       subtitleEl.hidden = !slide.subtitle;
       applyCampaignFontScale(eyebrowEl, slide.eyebrow_size);
@@ -195,7 +197,7 @@
       const focus = campaignImageFocus(image);
       const mediaStyle = `object-position:${focus.x}% ${focus.y}%;transform:scale(${focus.zoom});transform-origin:${focus.x}% ${focus.y}%`;
       const textColor = campaignTextColorStyle(slide);
-      return `<article class="store-campaign-card${isSide ? ' is-layout-side' : ' is-layout-full'}" data-campaign-card="${index}"><img class="store-campaign-card-media" data-campaign-image data-slide-index="${index}" src="${escapeHtml(image.image_url || '')}" alt="${escapeHtml(image.image_alt || slide.title || '')}" style="${mediaStyle}"><span class="store-campaign-card-overlay"></span><a class="store-campaign-card-main" href="${escapeHtml(target)}" ${campaignExternal(target) ? 'target="_blank" rel="noopener noreferrer"' : ''}><span class="store-campaign-card-copy"><span class="store-campaign-eyebrow" ${slide.eyebrow ? '' : 'hidden'}>${escapeHtml(slide.eyebrow || '')}</span><span class="store-campaign-title" style="${textColor.title}">${escapeHtml(slide.title || '')}</span><span class="store-campaign-subtitle" style="${textColor.subtitle}" ${slide.subtitle ? '' : 'hidden'}>${campaignSubtitleHtml(slide)}</span><span class="store-campaign-cta" ${campaignButtonVisible(slide) ? '' : 'hidden'}>${escapeHtml(slide.button_text || 'Explorar')} →</span></span></a>${slide.badge_label ? `<span class="store-campaign-badge store-campaign-card-badge ${tone}">${escapeHtml(slide.badge_label)}</span>` : ''}${slide.promo_chip_label ? `<a class="store-campaign-card-promo" href="${escapeHtml(promoTarget)}" ${campaignExternal(promoTarget) ? 'target="_blank" rel="noopener noreferrer"' : ''}><i data-lucide="${icon}" width="14"></i>${escapeHtml(slide.promo_chip_label)}</a>` : ''}</article>`;
+      return `<article class="store-campaign-card${isSide ? ' is-layout-side' : ' is-layout-full'}" data-campaign-card="${index}"><img class="store-campaign-card-media" data-campaign-image data-slide-index="${index}" src="${escapeHtml(image.image_url || '')}" alt="${escapeHtml(image.image_alt || slide.title || '')}" style="${mediaStyle}"><span class="store-campaign-card-overlay"></span><a class="store-campaign-card-main" href="${escapeHtml(target)}" ${campaignExternal(target) ? 'target="_blank" rel="noopener noreferrer"' : ''}><span class="store-campaign-card-copy"><span class="store-campaign-eyebrow" style="${textColor.eyebrow}" ${slide.eyebrow ? '' : 'hidden'}>${campaignEyebrowHtml(slide)}</span><span class="store-campaign-title">${campaignTitleHtml(slide)}</span><span class="store-campaign-subtitle" style="${textColor.subtitle}" ${slide.subtitle ? '' : 'hidden'}>${campaignSubtitleHtml(slide)}</span><span class="store-campaign-cta" ${campaignButtonVisible(slide) ? '' : 'hidden'}>${escapeHtml(slide.button_text || 'Explorar')} →</span></span></a>${slide.badge_label ? `<span class="store-campaign-badge store-campaign-card-badge ${tone}">${escapeHtml(slide.badge_label)}</span>` : ''}${slide.promo_chip_label ? `<a class="store-campaign-card-promo" href="${escapeHtml(promoTarget)}" ${campaignExternal(promoTarget) ? 'target="_blank" rel="noopener noreferrer"' : ''}><i data-lucide="${icon}" width="14"></i>${escapeHtml(slide.promo_chip_label)}</a>` : ''}</article>`;
     };
 
     const startLayoutImageRotations = () => {
