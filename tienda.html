@@ -1624,9 +1624,15 @@
         }
         .store-campaign-area { padding: 14px 1.7vw 0; }
         .store-campaign-area.is-full-width { width: 100vw; max-width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); padding-left: 0; padding-right: 0; }
-        .store-campaign-area.is-full-width .store-campaign { border-left: 0; border-right: 0; border-radius: 0; }
-        .store-campaign { position: relative; display: none; width: 100%; min-height: 270px; aspect-ratio: var(--hero-ar, 2.4); overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: #e8f3f7; isolation: isolate; }
+        .store-campaign-area.is-full-width .store-campaign, .store-campaign-area.is-full-width .store-campaign-skeleton { border-left: 0; border-right: 0; border-radius: 0; }
+        .store-campaign { position: relative; display: none; width: 100%; min-height: 270px; aspect-ratio: var(--hero-ar, 2.4); overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: #e8f3f7; isolation: isolate; opacity: 0; transition: opacity .4s ease; }
         .store-campaign.is-visible { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; }
+        .store-campaign.is-visible.is-faded-in { opacity: 1; }
+        .store-campaign-skeleton { width: 100%; min-height: 270px; aspect-ratio: var(--hero-ar, 2.4); border: 1px solid var(--line); border-radius: 9px; background: linear-gradient(90deg, #e4eef3 25%, #eef6f9 37%, #e4eef3 63%); background-size: 400% 100%; animation: storeCampaignShimmer 1.4s ease infinite; opacity: 1; transition: opacity .3s ease; }
+        .store-campaign-skeleton[hidden] { display: none; }
+        .store-campaign-skeleton.is-fading { opacity: 0; }
+        @keyframes storeCampaignShimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @media (prefers-reduced-motion: reduce) { .store-campaign-skeleton { animation: none; } }
         .store-campaign-media { position: absolute; inset: 0; z-index: -2; }
         .store-campaign-media img { width: 100%; height: 100%; object-fit: cover; }
         .store-campaign::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(244,250,252,.98) 0%, rgba(244,250,252,.92) 38%, rgba(244,250,252,.25) 72%, rgba(244,250,252,0) 100%); }
@@ -2068,7 +2074,8 @@
 		<a href="/servicios"><i data-lucide="settings" width="16"></i>Servicios</a>
 		<a href="/productos-destacados"><i data-lucide="sparkles" width="16"></i>Productos</a>
 	</nav>
-	<section class="store-campaign-area" aria-label="Promociones SmartISP" hidden>
+	<section class="store-campaign-area" aria-label="Promociones SmartISP">
+		<div class="store-campaign-skeleton" id="storeCampaignSkeleton" aria-hidden="true"></div>
 		<div class="store-campaign" id="storeCampaign" aria-roledescription="carrusel" aria-label="Campañas de la tienda" aria-live="polite">
 			<div class="store-campaign-media"><img id="storeCampaignImage" width="1600" height="560" alt="" fetchpriority="high"></div>
 			<span class="store-campaign-badge" id="storeCampaignBadge" hidden></span>
@@ -4136,6 +4143,21 @@
 			el.hidden = !items.length;
 			if (items.length) window.lucide?.createIcons();
 		};
+		// Esqueleto del hero principal: visible por defecto (reserva espacio, sin salto de
+		// layout), se desvanece cuando hay banners reales; si la zona no tiene nada, se colapsa
+		// toda el area, igual que el comportamiento de siempre.
+		const storeCampaignCollapse = () => { const area = document.querySelector('.store-campaign-area'); if (area) area.hidden = true; };
+		const storeCampaignReveal = () => {
+			const area = document.querySelector('.store-campaign-area');
+			if (area) area.hidden = false;
+			const skeletonEl = document.querySelector('#storeCampaignSkeleton');
+			if (skeletonEl && !skeletonEl.hidden) {
+				skeletonEl.classList.add('is-fading');
+				setTimeout(() => { skeletonEl.hidden = true; }, 300);
+			}
+			const banner = document.querySelector('#storeCampaign');
+			requestAnimationFrame(() => requestAnimationFrame(() => banner?.classList.add('is-faded-in')));
+		};
 		const renderCampaignCard = (slide, index) => {
 			const images = campaignSlideImages(slide);
 			const image = images[0] || {};
@@ -4215,7 +4237,7 @@
 			loadSecondaryCampaigns();
 			try {
 				const response = await fetch(`/api/auth/store-campaigns?_t=${Date.now()}`, { cache: 'no-store' });
-				if (!response.ok) return;
+				if (!response.ok) { storeCampaignCollapse(); return; }
 				const data = await response.json();
 				storefrontFeaturedCategoryIds = Array.isArray(data.featured_category_ids) ? data.featured_category_ids.map(String) : [];
 				renderMiniCategories();
@@ -4234,7 +4256,6 @@
 					specs: []
 				})) : [];
 				if (storefrontSlides.length) {
-					document.querySelector('.store-campaign-area').hidden = false;
 					const banner = document.querySelector('#storeCampaign');
 					banner.classList.remove('is-single','is-contain','is-triple','is-layout','is-split','is-grid','is-cards');
 					if (['split','triple','grid','cards'].includes(storefrontDisplayMode)) {
@@ -4270,6 +4291,9 @@
 					banner.addEventListener('focusin',stopStorefrontRotation);
 					banner.addEventListener('focusout',resumeStorefrontAnimations);
 					document.addEventListener('visibilitychange',()=>document.hidden?stopStorefrontRotation():resumeStorefrontAnimations());
+					storeCampaignReveal();
+				} else {
+					storeCampaignCollapse();
 				}
 				const chipsHost = document.querySelector('#storePromoChips');
 				if (chipsHost && storefrontPromoChips.length) {
@@ -4280,6 +4304,7 @@
 				renderStorefrontFeatured();
 			} catch (error) {
 				console.warn('No se pudieron cargar las campañas de la tienda:', error);
+				storeCampaignCollapse();
 			}
 		};
 		document.querySelector('#campaignProductsGrid')?.addEventListener('click', event => {
