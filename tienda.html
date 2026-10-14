@@ -1925,7 +1925,17 @@
         .store-campaign::after { z-index:1; background:linear-gradient(90deg,rgba(248,252,254,.94),rgba(248,252,254,.52) 48%,rgba(248,252,254,0)); opacity:var(--campaign-overlay-opacity,.18); }
         .store-campaign-copy { position:relative; z-index:2; }
         .store-campaign.is-photo-background::after { background:linear-gradient(90deg,rgba(6,24,40,.88) 0%,rgba(6,24,40,.68) 38%,rgba(6,24,40,.14) 76%,transparent 100%); }
-        .store-campaign.is-photo-background .store-campaign-eyebrow,.store-campaign.is-photo-background .store-campaign-title,.store-campaign.is-photo-background .store-campaign-subtitle { color:#fff; }
+        .store-campaign.is-photo-background .store-campaign-eyebrow,.store-campaign.is-photo-background .store-campaign-title,.store-campaign.is-photo-background .store-campaign-subtitle,.store-campaign.is-photo-background .store-campaign-feature-text { color:#fff; }
+        .store-campaign-features { display: flex; flex-wrap: wrap; margin-top: 14px; }
+        .store-campaign-features[hidden] { display: none; }
+        .store-campaign-feature { display: flex; align-items: center; gap: 9px; padding: 0 16px; border-right: 1px solid rgba(255, 255, 255, .25); }
+        .store-campaign-feature:first-child { padding-left: 0; }
+        .store-campaign-feature:last-child { border-right: 0; }
+        .store-campaign.is-copy-panel .store-campaign-feature { border-right-color: rgba(16, 44, 61, .18); }
+        .store-campaign-feature-icon { display: grid; place-items: center; width: 34px; height: 34px; flex: 0 0 auto; border: 2px solid var(--fb-color, #087fa5); border-radius: 50%; color: var(--fb-color, #087fa5); }
+        .store-campaign-feature-icon svg { width: 16px; height: 16px; }
+        .store-campaign-feature-text { max-width: 120px; font-size: 12px; font-weight: 700; line-height: 1.3; }
+        @media(max-width: 760px) { .store-campaign-feature { padding: 0 10px; } .store-campaign-feature-icon { width: 28px; height: 28px; } .store-campaign-feature-icon svg { width: 13px; height: 13px; } .store-campaign-feature-text { max-width: 90px; font-size: 10.5px; } }
         .store-campaign-stats { position: absolute; z-index: 4; left: 16px; bottom: 16px; display: flex; background: rgba(8, 22, 36, .74); backdrop-filter: blur(6px); border-radius: 10px; overflow: hidden; max-width: calc(100% - 32px); }
         .store-campaign-stats[hidden] { display: none; }
         .store-campaign-stat { display: flex; min-width: 84px; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 10px 16px; border-right: 1px solid rgba(255, 255, 255, .18); text-align: center; }
@@ -2060,7 +2070,7 @@
 		<div class="store-campaign" id="storeCampaign" aria-roledescription="carrusel" aria-label="Campañas de la tienda" aria-live="polite">
 			<div class="store-campaign-media"><img id="storeCampaignImage" width="1600" height="560" alt="" fetchpriority="high"></div>
 			<span class="store-campaign-badge" id="storeCampaignBadge" hidden></span>
-			<div class="store-campaign-copy"><div class="store-campaign-eyebrow" id="storeCampaignEyebrow"></div><h1 class="store-campaign-title" id="storeCampaignTitle"></h1><div class="store-campaign-subtitle" id="storeCampaignSubtitle"></div><div class="store-campaign-actions"><a class="store-campaign-cta" id="storeCampaignLink" href="/tienda.html#catalogo"><span id="storeCampaignButton"></span><i data-lucide="arrow-right" width="16"></i></a><a class="store-campaign-cta is-outline" id="storeCampaignLink2" href="/tienda.html#catalogo" hidden><span id="storeCampaignButton2"></span></a></div><a class="store-campaign-promo" id="storeCampaignPromo" hidden></a></div><div class="store-campaign-stats" id="storeCampaignStats" hidden></div>
+			<div class="store-campaign-copy"><div class="store-campaign-eyebrow" id="storeCampaignEyebrow"></div><h1 class="store-campaign-title" id="storeCampaignTitle"></h1><div class="store-campaign-subtitle" id="storeCampaignSubtitle"></div><div class="store-campaign-actions"><a class="store-campaign-cta" id="storeCampaignLink" href="/tienda.html#catalogo"><span id="storeCampaignButton"></span><i data-lucide="arrow-right" width="16"></i></a><a class="store-campaign-cta is-outline" id="storeCampaignLink2" href="/tienda.html#catalogo" hidden><span id="storeCampaignButton2"></span></a></div><div class="store-campaign-features" id="storeCampaignFeatures" hidden></div><a class="store-campaign-promo" id="storeCampaignPromo" hidden></a></div><div class="store-campaign-stats" id="storeCampaignStats" hidden></div>
 			<div class="store-campaign-controls" id="storeCampaignControls" hidden><button class="store-campaign-control" id="storeCampaignPrev" type="button" aria-label="Banner anterior"><i data-lucide="chevron-left"></i></button><div class="store-campaign-dots" id="storeCampaignDots"></div><button class="store-campaign-control" id="storeCampaignNext" type="button" aria-label="Banner siguiente"><i data-lucide="chevron-right"></i></button></div>
 		</div>
 	</section>
@@ -3907,6 +3917,7 @@
 			applyCampaignFontScale(titleEl, slide.title_size);
 			applyCampaignFontScale(subtitleEl, slide.subtitle_size);
 			renderTrustStats(slide, document.querySelector('#storeCampaignStats'));
+			renderFeatureBadges(slide, document.querySelector('#storeCampaignFeatures'));
 			window.lucide?.createIcons();
 			document.querySelector('#storeCampaignButton').textContent = slide.button_text || 'Explorar';
 			const campaignLink = document.querySelector('#storeCampaignLink');
@@ -4082,6 +4093,16 @@
 				statsEl.innerHTML = items.map(item => `<div class="store-campaign-stat"><strong>${escapeHtml(item.value)}</strong>${item.label ? `<span>${escapeHtml(item.label)}</span>` : ''}</div>`).join('');
 				statsEl.hidden = !items.length;
 			});
+		};
+		const renderFeatureBadges = (slide, el) => {
+			if (!el) return;
+			const items = Array.isArray(slide.feature_badges) ? slide.feature_badges.filter(b => b && b.text) : [];
+			el.innerHTML = items.map(item => {
+				const color = /^#[0-9a-fA-F]{6}$/.test(item.color || '') ? item.color : '#087fa5';
+				return `<div class="store-campaign-feature"><span class="store-campaign-feature-icon" style="--fb-color:${color}"><i data-lucide="${escapeHtml(item.icon || 'star')}"></i></span><span class="store-campaign-feature-text">${escapeHtml(item.text)}</span></div>`;
+			}).join('');
+			el.hidden = !items.length;
+			if (items.length) window.lucide?.createIcons();
 		};
 		const renderCampaignCard = (slide, index) => {
 			const images = campaignSlideImages(slide);
