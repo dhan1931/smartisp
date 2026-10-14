@@ -310,13 +310,25 @@
       } else startLayoutImageRotations();
     };
 
+    // Esqueleto: visible por defecto (reserva espacio, sin salto de layout). Se desvanece una
+    // vez que hay banners reales; si la zona no tiene nada, se colapsa toda el area (igual que
+    // el comportamiento de siempre quando no hay campaña), no se deja un esqueleto sin fin.
+    const skeletonEl = root.querySelector('.store-campaign-skeleton');
+    const collapseArea = () => { root.hidden = true; };
+    const revealBanner = () => {
+      if (skeletonEl && !skeletonEl.hidden) {
+        skeletonEl.classList.add('is-fading');
+        setTimeout(() => { skeletonEl.hidden = true; }, 300);
+      }
+      requestAnimationFrame(() => requestAnimationFrame(() => banner.classList.add('is-faded-in')));
+    };
     const load = async () => {
       try {
         const response = await fetch(`/api/auth/store-campaigns?zone=${encodeURIComponent(zone)}&_t=${Date.now()}`, { cache: 'no-store' });
-        if (!response.ok) return;
+        if (!response.ok) { collapseArea(); return; }
         const data = await response.json();
         slides = Array.isArray(data.slides) ? data.slides : [];
-        if (!slides.length) return;
+        if (!slides.length) { collapseArea(); return; }
         displayMode = ['carousel', 'single', 'split', 'triple', 'grid', 'cards'].includes(data.display_mode) ? data.display_mode : 'carousel';
         options.rotationSeconds = data.rotation_seconds;
         const heroHeightPct = Math.max(60, Math.min(100, Number(data.hero_height_pct) || 100));
@@ -346,6 +358,7 @@
           renderSlide(0);
           startRotation(data.rotation_seconds);
         }
+        revealBanner();
         banner.addEventListener('mouseenter', stopRotation);
         banner.addEventListener('mouseleave', resumeAnimations);
         banner.addEventListener('focusin', stopRotation);
@@ -353,6 +366,7 @@
         document.addEventListener('visibilitychange', () => document.hidden ? stopRotation() : resumeAnimations());
       } catch (error) {
         console.warn('No se pudo cargar el banner de la página:', error);
+        collapseArea();
       }
     };
     load();

@@ -58,7 +58,8 @@
   </nav>
   <nav class="storefront-mobile-bar" aria-label="Accesos rápidos"><a href="/tienda.html"><i data-lucide="store" width="19"></i><span>Tienda</span></a><a href="/categorias-destacadas"><i data-lucide="layout-grid" width="19"></i><span>Categorías</span></a><a href="/tienda.html#catalogo"><i data-lucide="search" width="19"></i><span>Buscar</span></a><a href="/tienda.html?openCart=1" data-open-cart><i data-lucide="shopping-cart" width="19"></i><span>Carrito</span></a><a href="/tienda.html?openAccount=1"><i data-lucide="user" width="19"></i><span>Cuenta</span></a></nav>
   <main>
-    <section class="store-campaign-area" aria-label="Servicios SmartISP" hidden>
+    <section class="store-campaign-area" aria-label="Servicios SmartISP">
+      <div class="store-campaign-skeleton" id="storeCampaignSkeleton" aria-hidden="true"></div>
       <div class="store-campaign" id="storeCampaign" aria-roledescription="carrusel" aria-label="Banner Servicios" aria-live="polite">
         <div class="store-campaign-media"><img id="storeCampaignImage" width="1600" height="560" alt="" fetchpriority="high"></div>
         <span class="store-campaign-badge" id="storeCampaignBadge" hidden></span>
@@ -101,8 +102,8 @@
   </main>
   <footer>SmartISP Ecuador · Servicios, catalogo y asesoria tecnologica.</footer>
   <script src="/assets/js/brands-section.js?v=1"></script>
-  <link rel="stylesheet" href="/assets/css/storefront-campaign.css?v=button-icons-20261013">
-  <script src="/assets/js/storefront-campaign.js?v=button-icons-20261013"></script>
+  <link rel="stylesheet" href="/assets/css/storefront-campaign.css?v=skeleton-fade-20261014">
+  <script src="/assets/js/storefront-campaign.js?v=skeleton-fade-20261014"></script>
   <script>
   window.initStorefrontCampaignHero('servicios');
   document.querySelector('#quoteForm').addEventListener('submit', event => {
