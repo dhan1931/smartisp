@@ -206,8 +206,14 @@ try {
   assert.equal((await request('admin-orders-stats')).status, 403, 'La sesión debe perder permisos al revocarse el rol en la BD');
 
   const pages = ['admin.html', 'pedidos.html', 'categorias.html', 'configuracion.html', 'editor-catalogo.html'];
+  // Paginas cuyo <script> inline se extrajo a un archivo externo (DEV-20261015): las revisiones de
+  // contenido de abajo deben mirar tambien ese archivo, no solo el HTML que quedo.
+  const extractedScripts = { 'editor-catalogo.html': 'assets/js/editor-catalogo-page.js' };
   for (const page of pages) {
-    const source = await readFile(path.join(root, page), 'utf8');
+    let source = await readFile(path.join(root, page), 'utf8');
+    if (extractedScripts[page]) {
+      source += await readFile(path.join(root, extractedScripts[page]), 'utf8');
+    }
     assert.ok(!source.includes('acercado28@gmail.com'), `${page} no debe contener identidad admin fija`);
     assert.ok(!source.includes('X-Admin-Email'), `${page} no debe enviar identidad privilegiada del navegador`);
     assert.ok(!source.includes('getStoredAdminUser'), `${page} no debe inventar sesión local`);
