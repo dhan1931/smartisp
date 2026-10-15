@@ -72,15 +72,15 @@ con límites legibles; estadísticas y reportes deben mostrar datos reales y se 
 
 ## Now
 
-- [ ] **DEV-20261005-001** `critical` `security` — Rotar credenciales de MySQL y eliminar fallbacks con secretos (SEC-004, SEC-014)
-- [ ] **DEV-20261005-002** `critical` `security` — Migrar admin y editores a sesión sin cabecera X-Admin-Email (previo a SEC-001)
-- [ ] **DEV-20261005-003** `critical` `security` — Eliminar el bypass de admin por X-Admin-Email del backend (SEC-001)
-- [ ] **DEV-20261005-004** `critical` `security` — Eliminar la contraseña universal de administrador (SEC-002)
+- [x] **DEV-20261005-001** `critical` `security` — Rotar credenciales de MySQL y eliminar fallbacks con secretos (SEC-004, SEC-014) — verificado 2026-10-14: `api/config.php` lee solo de env/`.env` (gitignorado), falla con error claro si falta algo; commit `78d00fb`.
+- [x] **DEV-20261005-002** `critical` `security` — Migrar admin y editores a sesión sin cabecera X-Admin-Email (previo a SEC-001) — verificado 2026-10-14: sin referencias a `X-Admin-Email` en `api/*.php` fuera del test que afirma que no debe existir.
+- [x] **DEV-20261005-003** `critical` `security` — Eliminar el bypass de admin por X-Admin-Email del backend (SEC-001) — verificado 2026-10-14, junto con -002 (mismo cambio).
+- [x] **DEV-20261005-004** `critical` `security` — Eliminar la contraseña universal de administrador (SEC-002) — verificado 2026-10-14: `api/router.php` documenta la eliminación de la lista de emails hardcodeada y la contraseña universal asociada; el rol vive solo en `users_rows.role`.
 - [ ] **DEV-20261005-005** `critical` `security` — Mover la clave de firma de tokens a configuración y rotarla (SEC-003)
-- [ ] **DEV-20261005-006** `critical` `security` — Migrar contraseñas a password_hash y retirar texto plano, MD5 y SHA1 (SEC-012)
-- [ ] **DEV-20261005-007** `critical` `security` — Confirmar y cerrar la exposición de claves SMTP/Resend en /api/auth/catalog (SEC-010)
+- [x] **DEV-20261005-006** `critical` `security` — Migrar contraseñas a password_hash y retirar texto plano, MD5 y SHA1 (SEC-012) — verificado 2026-10-14: `api/handlers/auth.php` usa `password_verify`/`password_hash(PASSWORD_BCRYPT)` con upgrade automático del hash en el próximo login exitoso; sin comparaciones en texto plano ni md5/sha1 para contraseñas.
+- [x] **DEV-20261005-007** `critical` `security` — Confirmar y cerrar la exposición de claves SMTP/Resend en /api/auth/catalog (SEC-010) — verificado 2026-10-14: el SELECT de `api/handlers/products.php` solo trae un whitelist de `settings_rows` (sin smtp_*/resend_api_key), mas un blocklist explícito por si acaso.
 - [ ] **DEV-20261005-008** `high` `security` — Verificar TLS en correo, Postgres y script de importación (SEC-013)
-- [ ] **DEV-20261005-009** `high` `security` — Eliminar el SESSION_SECRET por defecto (SEC-005)
+- [x] **DEV-20261005-009** `high` `security` — Eliminar el SESSION_SECRET por defecto (SEC-005) — verificado 2026-10-14: `getenv('SESSION_SECRET') ?: ''` + `throw` si queda vacío, sin valor por defecto inseguro.
 - [ ] **DEV-20261005-010** `medium` `security` — Proteger archivos internos expuestos desde la raíz web (SEC-011)
 - [ ] **DEV-20261005-011** `medium` `security` — Deshabilitar o proteger los endpoints de diagnóstico públicos
 
