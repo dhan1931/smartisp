@@ -268,11 +268,15 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
     <meta name="twitter:description" content="<?= $metaDesc ?>">
     <meta name="twitter:image" content="<?= htmlspecialchars($imgSrc, ENT_QUOTES, 'UTF-8') ?>">
 
-    <?php if ($product): ?>
-    <!-- Microdatos Schema.org Product para Google Search & Google Shopping -->
+    <?php if ($product && isset($productSchema['offers'])): ?>
+    <!-- Microdatos Schema.org Product para Google Search & Google Shopping. Sin 'offers' (producto
+    sin precio valido) Search Console lo marca como error critico "offers/review/aggregateRating" --
+    mejor no emitir el schema que emitirlo incompleto. -->
     <script type="application/ld+json">
     <?= json_encode($productSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
     </script>
+    <?php endif; ?>
+    <?php if ($product): ?>
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
