@@ -1937,7 +1937,7 @@
 				if (!section || !host || !secondaryCampaignSlides.length) return;
 				const mode = ['split','triple','grid','cards'].includes(data.display_mode) ? data.display_mode : 'split';
 				const limit = { split: 2, triple: 3, grid: 4 }[mode] || secondaryCampaignSlides.length;
-				host.className = `store-campaign is-layout is-${mode}${data.mobile_swipe ? ' is-mobile-swipe' : ''}`;
+				host.className = `store-campaign is-layout is-visible is-${mode}${data.mobile_swipe ? ' is-mobile-swipe' : ''}`;
 				section.classList.toggle('is-full-width', data.layout_width === 'full');
 				const secondarySliceForRender = secondaryCampaignSlides.slice(0, limit);
 				host.innerHTML = secondarySliceForRender.map((slide, index) => renderCampaignCard(slide, index)).join('');
@@ -1945,6 +1945,9 @@
 				applyCampaignCardFontScales(host, secondarySliceForRender);
 				startSecondaryImageRotations();
 				window.lucide?.createIcons();
+				// No tiene esqueleto propio (altura variable segun modo, uno fijo no serviria):
+				// se revela directo, sin el fade con doble rAF que usa el banner principal.
+				requestAnimationFrame(() => host.classList.add('is-faded-in'));
 			} catch (error) {
 				console.warn('No se pudieron cargar los banners secundarios:', error);
 			}
