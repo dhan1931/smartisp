@@ -25,6 +25,7 @@
 		button { cursor: pointer; }
 		.topbar { background: var(--navy); color: #d9efff; font-size: 12px; letter-spacing: .02em; padding: 9px 5vw; display: flex; justify-content: space-between; }
 		.topbar span { display: flex; align-items: center; gap: 7px; }
+		.public-nav-strip { display: none; }
 		.nav { background: var(--white); border-bottom: 1px solid var(--line); padding: 16px 5vw; display: grid; grid-template-columns: minmax(120px, 220px) minmax(0, 680px) minmax(190px, 1fr); align-items: center; gap: 20px; position: sticky; top: 0; z-index: 1000; }
 		.logo { font-family: 'Space Grotesk', sans-serif; font-size: 23px; font-weight: 700; color: var(--navy); white-space: nowrap; letter-spacing: -.06em; display: inline-flex; align-items: center; text-decoration: none; }
 		html:not(.public-brand-ready) .logo { opacity: 0; }
@@ -811,6 +812,33 @@
 			}
 			.topbar span {
 				flex: 0 0 auto;
+			}
+			.public-nav-strip {
+				display: flex !important;
+				gap: 20px;
+				overflow-x: auto;
+				padding: 10px 14px;
+				background: var(--navy);
+				border-top: 1px solid rgba(255,255,255,.1);
+				white-space: nowrap;
+				scrollbar-width: none;
+			}
+			.public-nav-strip::-webkit-scrollbar {
+				display: none;
+			}
+			.public-nav-strip a {
+				display: inline-flex;
+				align-items: center;
+				gap: 6px;
+				flex: 0 0 auto;
+				color: #fff;
+				font-weight: 800;
+				font-size: 13px;
+				opacity: .9;
+			}
+			.public-nav-strip a[aria-current="page"] {
+				color: #7dd3fc;
+				opacity: 1;
 			}
 			.public-menu-btn {
 				display: inline-flex !important;
