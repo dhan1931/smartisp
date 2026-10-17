@@ -1303,15 +1303,35 @@
 		};
 		updateStickyNavOffset();
 		window.addEventListener('resize', updateStickyNavOffset);
+		const closePublicNav = () => {
+			publicNav.classList.remove('is-open');
+			publicMenuBtn?.setAttribute('aria-expanded', 'false');
+			if (publicMenuBtn) publicMenuBtn.innerHTML = '<i data-lucide="menu" width="20"></i>';
+			lucide?.createIcons();
+		};
 		if (publicMenuBtn && publicNav) {
 			publicMenuBtn.addEventListener('click', () => {
-				if (document.body.classList.contains('category-drawer-open')) closeCategoryDrawer();
-				else openCategoryDrawer();
-				const isOpen = document.body.classList.contains('category-drawer-open');
+				// En catalogo (busqueda, /categorias-destacadas, filtro activo) el hamburguesa abre
+				// el panel de categorias del catalogo que ya se esta viendo; en la portada curada
+				// (sin catalogo visible) abre el menu de secciones (Tienda/Nosotros/Servicios/...),
+				// que antes de este fix no tenia ningun disparador en movil.
+				if (window.isCategoriasView) {
+					if (document.body.classList.contains('category-drawer-open')) closeCategoryDrawer();
+					else openCategoryDrawer();
+					const isOpen = document.body.classList.contains('category-drawer-open');
+					publicMenuBtn.innerHTML = isOpen ? '<i data-lucide="x" width="20"></i>' : '<i data-lucide="menu" width="20"></i>';
+					lucide?.createIcons();
+					return;
+				}
+				const isOpen = publicNav.classList.toggle('is-open');
+				publicMenuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
 				publicMenuBtn.innerHTML = isOpen ? '<i data-lucide="x" width="20"></i>' : '<i data-lucide="menu" width="20"></i>';
 				lucide?.createIcons();
 			});
-			publicMenuClose?.addEventListener('click', closeCategoryDrawer);
+			publicMenuClose?.addEventListener('click', () => {
+				if (window.isCategoriasView) closeCategoryDrawer();
+				else closePublicNav();
+			});
 		}
 		const publicCategoryMenu = document.querySelector('#publicCategoryMenu');
 		const publicCategoryTrigger = document.querySelector('#publicCategoryTrigger');
