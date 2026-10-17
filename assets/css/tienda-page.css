@@ -799,7 +799,18 @@
 				display: flex !important;
 			}
 			.topbar {
-				display: none !important;
+				justify-content: flex-start !important;
+				overflow-x: auto !important;
+				gap: 18px !important;
+				padding: 9px 14px !important;
+				white-space: nowrap !important;
+				scrollbar-width: none !important;
+			}
+			.topbar::-webkit-scrollbar {
+				display: none;
+			}
+			.topbar span {
+				flex: 0 0 auto;
 			}
 			.public-menu-btn {
 				display: inline-flex !important;
