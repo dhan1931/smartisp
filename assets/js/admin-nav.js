@@ -34,6 +34,7 @@
   var LINKS = [
     { key: 'inicio', group: 'general', href: '/admin.html', label: 'Inicio', icon: 'home' },
     { key: 'pedidos', group: 'operacion', href: '/pedidos.html', label: 'Pedidos', icon: 'receipt' },
+    { key: 'cotizaciones', group: 'operacion', href: '/cotizaciones.html', label: 'Cotizaciones', icon: 'file-text' },
     { key: 'clientes', group: 'operacion', href: '/clientes.html', label: 'Clientes', icon: 'users' },
     { key: 'productos', group: 'catalogo', href: '/editor-catalogo.html', label: 'Productos', icon: 'package' },
     { key: 'categorias', group: 'catalogo', href: '/categorias.html', label: 'Categorías', icon: 'folder' },
