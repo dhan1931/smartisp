@@ -431,7 +431,9 @@ if ($action === 'store-campaigns' && $method === 'GET') {
     $publicCode = in_array($zoneInput, STOREFRONT_CAMPAIGN_ZONES, true) ? $zoneInput : 'store-home';
     $isPrimaryZonePublic = $publicCode === 'store-home';
     $featuredCategoryIds = [];
-    if ($isPrimaryZonePublic) {
+    // Las categorias destacadas se eligen una sola vez en el admin (Portada) y se muestran igual
+    // en la portada y en /categorias-destacadas (zona "categorias") -- no solo en store-home.
+    if ($isPrimaryZonePublic || $publicCode === 'categorias') {
         $savedCategoryIds = $pdo->query("SELECT setting_value FROM settings_rows WHERE setting_key = 'store_featured_category_ids' LIMIT 1")->fetchColumn();
         $decodedCategoryIds = json_decode((string)$savedCategoryIds, true);
         if (is_array($decodedCategoryIds)) $featuredCategoryIds = array_values(array_map('strval', $decodedCategoryIds));
