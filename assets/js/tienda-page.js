@@ -1952,6 +1952,56 @@
 				console.warn('No se pudieron cargar los banners secundarios:', error);
 			}
 		};
+		// Pinta el hero rico (#storeCampaign: carousel/single/split/triple/grid/cards, con badges,
+		// features y stats) a partir de la respuesta de /api/auth/store-campaigns, sin importar la
+		// zona pedida -- usado tanto por la portada de la tienda como por /categorias-destacadas.
+		const renderStorefrontHero = data => {
+			storefrontSlides = Array.isArray(data.slides) ? data.slides : [];
+			storefrontDisplayMode = ['carousel', 'single', 'split', 'triple', 'grid', 'cards'].includes(data.display_mode) ? data.display_mode : 'carousel';
+			const heroHeightPct = Math.max(60, Math.min(100, Number(data.hero_height_pct) || 100));
+			document.querySelector('#storeCampaign')?.style.setProperty('--hero-ar', (240 / heroHeightPct).toFixed(3));
+			document.querySelector('.store-campaign-area')?.classList.toggle('is-full-width', data.layout_width === 'full');
+			if (storefrontSlides.length) {
+				const banner = document.querySelector('#storeCampaign');
+				banner.classList.remove('is-single','is-contain','is-triple','is-layout','is-split','is-grid','is-cards');
+				if (['split','triple','grid','cards'].includes(storefrontDisplayMode)) {
+					banner.classList.add('is-layout', `is-${storefrontDisplayMode}`);
+					const limit = { split:2, triple:3, grid:4 }[storefrontDisplayMode] || storefrontSlides.length;
+					const primarySliceForRender = storefrontSlides.slice(0,limit);
+					banner.innerHTML = primarySliceForRender.map((slide,index)=>renderCampaignCard(slide,index)).join('');
+					banner.classList.add('is-visible');
+					applyCampaignCardFontScales(banner, primarySliceForRender);
+					startLayoutImageRotations();
+					window.lucide?.createIcons();
+				} else {
+					banner.classList.toggle('is-single', storefrontDisplayMode === 'single');
+					const dots = document.querySelector('#storeCampaignDots');
+					dots.innerHTML = storefrontDisplayMode === 'carousel' ? storefrontSlides.map((slide,index)=>`<button class="store-campaign-dot" type="button" aria-label="Mostrar banner ${index+1}: ${escapeHtml(slide.title)}" aria-current="${index===0?'true':'false'}" data-campaign-slide="${index}"></button>`).join('') : '';
+					const controls = document.querySelector('#storeCampaignControls');
+					if (controls) controls.hidden = storefrontDisplayMode !== 'carousel' || storefrontSlides.length < 2;
+					document.querySelector('#storeCampaignPrev')?.addEventListener('click',()=>{renderStorefrontSlide(storefrontSlideIndex-1);startStorefrontRotation(data.rotation_seconds);});
+					document.querySelector('#storeCampaignNext')?.addEventListener('click',()=>{renderStorefrontSlide(storefrontSlideIndex+1);startStorefrontRotation(data.rotation_seconds);});
+					dots.addEventListener('click',event=>{const dot=event.target.closest('[data-campaign-slide]');if(dot){renderStorefrontSlide(Number(dot.dataset.campaignSlide));startStorefrontRotation(data.rotation_seconds);}});
+					renderStorefrontSlide(0);
+					startStorefrontRotation(data.rotation_seconds);
+				}
+				const resumeStorefrontAnimations = () => {
+					if (['carousel','single'].includes(storefrontDisplayMode)) {
+						startStorefrontImageRotation(document.querySelector('#storeCampaignImage'),storefrontSlides[storefrontSlideIndex]);
+						startStorefrontRotation(data.rotation_seconds);
+					} else startLayoutImageRotations();
+					startSecondaryImageRotations();
+				};
+				banner.addEventListener('mouseenter',stopStorefrontRotation);
+				banner.addEventListener('mouseleave',resumeStorefrontAnimations);
+				banner.addEventListener('focusin',stopStorefrontRotation);
+				banner.addEventListener('focusout',resumeStorefrontAnimations);
+				document.addEventListener('visibilitychange',()=>document.hidden?stopStorefrontRotation():resumeStorefrontAnimations());
+				storeCampaignReveal();
+			} else {
+				storeCampaignCollapse();
+			}
+		};
 		const loadStorefrontCampaigns = async () => {
 			loadSecondaryCampaigns();
 			try {
@@ -1960,11 +2010,6 @@
 				const data = await response.json();
 				storefrontFeaturedCategoryIds = Array.isArray(data.featured_category_ids) ? data.featured_category_ids.map(String) : [];
 				renderMiniCategories();
-				storefrontSlides = Array.isArray(data.slides) ? data.slides : [];
-				storefrontDisplayMode = ['carousel', 'single', 'split', 'triple', 'grid', 'cards'].includes(data.display_mode) ? data.display_mode : 'carousel';
-				const heroHeightPct = Math.max(60, Math.min(100, Number(data.hero_height_pct) || 100));
-				document.querySelector('#storeCampaign')?.style.setProperty('--hero-ar', (240 / heroHeightPct).toFixed(3));
-				document.querySelector('.store-campaign-area')?.classList.toggle('is-full-width', data.layout_width === 'full');
 				storefrontPromoChips = Array.isArray(data.chips) ? data.chips : [];
 				storefrontFeaturedProducts = Array.isArray(data.products) ? data.products.map(product => ({
 					...product,
@@ -1974,46 +2019,7 @@
 					tag: '',
 					specs: []
 				})) : [];
-				if (storefrontSlides.length) {
-					const banner = document.querySelector('#storeCampaign');
-					banner.classList.remove('is-single','is-contain','is-triple','is-layout','is-split','is-grid','is-cards');
-					if (['split','triple','grid','cards'].includes(storefrontDisplayMode)) {
-						banner.classList.add('is-layout', `is-${storefrontDisplayMode}`);
-						const limit = { split:2, triple:3, grid:4 }[storefrontDisplayMode] || storefrontSlides.length;
-						const primarySliceForRender = storefrontSlides.slice(0,limit);
-						banner.innerHTML = primarySliceForRender.map((slide,index)=>renderCampaignCard(slide,index)).join('');
-						banner.classList.add('is-visible');
-						applyCampaignCardFontScales(banner, primarySliceForRender);
-						startLayoutImageRotations();
-						window.lucide?.createIcons();
-					} else {
-						banner.classList.toggle('is-single', storefrontDisplayMode === 'single');
-						const dots = document.querySelector('#storeCampaignDots');
-						dots.innerHTML = storefrontDisplayMode === 'carousel' ? storefrontSlides.map((slide,index)=>`<button class="store-campaign-dot" type="button" aria-label="Mostrar banner ${index+1}: ${escapeHtml(slide.title)}" aria-current="${index===0?'true':'false'}" data-campaign-slide="${index}"></button>`).join('') : '';
-						const controls = document.querySelector('#storeCampaignControls');
-						if (controls) controls.hidden = storefrontDisplayMode !== 'carousel' || storefrontSlides.length < 2;
-						document.querySelector('#storeCampaignPrev')?.addEventListener('click',()=>{renderStorefrontSlide(storefrontSlideIndex-1);startStorefrontRotation(data.rotation_seconds);});
-						document.querySelector('#storeCampaignNext')?.addEventListener('click',()=>{renderStorefrontSlide(storefrontSlideIndex+1);startStorefrontRotation(data.rotation_seconds);});
-						dots.addEventListener('click',event=>{const dot=event.target.closest('[data-campaign-slide]');if(dot){renderStorefrontSlide(Number(dot.dataset.campaignSlide));startStorefrontRotation(data.rotation_seconds);}});
-						renderStorefrontSlide(0);
-						startStorefrontRotation(data.rotation_seconds);
-					}
-					const resumeStorefrontAnimations = () => {
-						if (['carousel','single'].includes(storefrontDisplayMode)) {
-							startStorefrontImageRotation(document.querySelector('#storeCampaignImage'),storefrontSlides[storefrontSlideIndex]);
-							startStorefrontRotation(data.rotation_seconds);
-						} else startLayoutImageRotations();
-						startSecondaryImageRotations();
-					};
-					banner.addEventListener('mouseenter',stopStorefrontRotation);
-					banner.addEventListener('mouseleave',resumeStorefrontAnimations);
-					banner.addEventListener('focusin',stopStorefrontRotation);
-					banner.addEventListener('focusout',resumeStorefrontAnimations);
-					document.addEventListener('visibilitychange',()=>document.hidden?stopStorefrontRotation():resumeStorefrontAnimations());
-					storeCampaignReveal();
-				} else {
-					storeCampaignCollapse();
-				}
+				renderStorefrontHero(data);
 				const chipsHost = document.querySelector('#storePromoChips');
 				if (chipsHost && storefrontPromoChips.length) {
 					chipsHost.innerHTML = storefrontPromoChips.map(chip => `<a class="store-promo-chip" href="${escapeHtml(chip.target_url)}"><i data-lucide="${escapeHtml(chip.icon || 'tag')}" width="17"></i>${escapeHtml(chip.label)}</a>`).join('');
@@ -2133,7 +2139,9 @@
 
 		const applyCategoriasViewMode = () => {
 			if (!window.isCategoriasView) return;
-			document.querySelectorAll('.store-campaign-area, #storePromoChips, #campaignFeatured, .store-trust-row, #storeBrandsRow').forEach(el => { el.hidden = true; });
+			// El hero (.store-campaign-area) SI se muestra en modo catalogo -- usa el mismo
+			// componente rico que la portada, solo que con la zona "categorias" (ver mas abajo).
+			document.querySelectorAll('#storePromoChips, #campaignFeatured, .store-trust-row, #storeBrandsRow').forEach(el => { el.hidden = true; });
 		};
 		applyCategoriasViewMode();
 
@@ -2145,31 +2153,20 @@
 		render();
 		window.lucide && window.lucide.createIcons();
 		applyRemoteSite();
-		// En modo catalogo (/categorias-destacadas) el hero y los banners secundarios estan ocultos
-		// (ver applyCategoriasViewMode) -- pedir esos endpoints de campañas ahi no sirve de nada.
-		// Las categorias destacadas SI se muestran ahi (igual que en portada), asi que se pide nada
-		// mas la lista de ids destacados en vez de llamar a loadStorefrontCampaigns() completo.
+		// En modo catalogo (/categorias-destacadas) los banners secundarios y productos destacados
+		// de la portada siguen ocultos (ver applyCategoriasViewMode), pero el hero principal SI se
+		// pinta ahi -- con la zona "categorias" en vez de la zona por defecto de la tienda -- para
+		// que se vea igual de rico (badges, features, marcas) que el de la portada.
 		if (window.isCategoriasView) {
-			fetch(`/api/auth/store-campaigns?_t=${Date.now()}`, { cache: 'no-store' })
-				.then(response => response.ok ? response.json() : null)
-				.then(data => {
-					if (!data) return;
-					storefrontFeaturedCategoryIds = Array.isArray(data.featured_category_ids) ? data.featured_category_ids.map(String) : [];
-					renderMiniCategories();
-				})
-				.catch(() => {});
 			fetch(`/api/auth/store-campaigns?zone=categorias&_t=${Date.now()}`, { cache: 'no-store' })
 				.then(response => response.ok ? response.json() : null)
 				.then(data => {
-					const slide = Array.isArray(data?.slides) ? data.slides.find(s => String(s.is_active) !== '0') : null;
-					if (!slide) return;
-					const image = Array.isArray(slide.images) && slide.images.length ? (slide.images.find(i => String(i.is_primary) === '1') || slide.images[0]) : null;
-					const imageUrl = image?.image_url || slide.image_url;
-					if (!imageUrl) return;
-					categoriasPageBanner = { image: imageUrl, alt: image?.image_alt || slide.title || '', title: slide.title || 'Categorías de productos', subtitle: slide.subtitle || '' };
-					render();
+					if (!data) { storeCampaignCollapse(); return; }
+					storefrontFeaturedCategoryIds = Array.isArray(data.featured_category_ids) ? data.featured_category_ids.map(String) : [];
+					renderMiniCategories();
+					renderStorefrontHero(data);
 				})
-				.catch(() => {});
+				.catch(() => storeCampaignCollapse());
 		} else {
 			loadStorefrontCampaigns().then(applyCategoriasViewMode);
 		}
