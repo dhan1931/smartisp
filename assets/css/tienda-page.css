@@ -1579,9 +1579,11 @@
         .store-campaign-card .store-campaign-title { margin:8px 0; font-size:24px; }
         .store-campaign-card .store-campaign-subtitle { margin-bottom:13px; font-size:13px; }
         .store-promo-chips { display:flex; gap:10px; overflow-x:auto; padding:12px 1.7vw 0; }
+        .store-promo-chips[hidden] { display:none; }
         .store-promo-chip { display:inline-flex; flex:0 0 auto; align-items:center; gap:8px; padding:10px 15px; border:1px solid #d8e7ed; border-radius:7px; background:#fff; color:var(--navy); font-weight:700; }
         .store-promo-chip:hover { border-color:#64b9db; color:var(--blue); }
         .category-hero { position: relative; margin: 18px 1.7vw; min-height: 170px; display: flex; align-items: flex-end; border-radius: 12px; overflow: hidden; background: var(--navy); }
+        .category-hero[hidden] { display: none; }
         .category-hero-media { position: absolute; inset: 0; }
         .category-hero-media img { width: 100%; height: 100%; object-fit: cover; }
         .category-hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8,24,37,.1), rgba(8,24,37,.82)); }
