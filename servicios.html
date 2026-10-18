@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
   <script src="/assets/js/public-brand.js?v=admin-brand-20261011" defer></script>
-  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=mobile-topbar-20261017">
+  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=nav-strip-rollout-20261017">
   <script src="/assets/vendor/lucide.min.js?v=1.55.0"></script>
   <script type="application/ld+json">
   {
@@ -51,6 +51,9 @@
     <form class="storefront-search" action="/tienda.html" method="get" role="search"><input type="search" name="q" placeholder="¿Qué estás buscando hoy?" aria-label="Buscar productos" required><button type="submit" aria-label="Buscar"><i data-lucide="search" width="18"></i></button></form>
     <div class="storefront-actions"><a href="/tienda.html?openAccount=1" aria-label="Mi cuenta"><i data-lucide="user" width="18"></i><span>Mi cuenta</span></a><a class="storefront-cart" href="/tienda.html?openCart=1" aria-label="Carrito"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="store-product-cart-count" hidden>0</b></a><button class="storefront-menu-button" type="button" aria-label="Abrir categorías" aria-expanded="false" aria-controls="storefrontNavigation"><i data-lucide="menu" width="20"></i></button></div>
   </header>
+  <nav class="storefront-nav-strip" aria-label="Secciones principales (franja)">
+    <a href="/tienda.html"><i data-lucide="house" width="14"></i>Tienda</a><a href="/categorias-destacadas"><i data-lucide="layout-grid" width="14"></i>Categorías</a><a href="/nosotros"><i data-lucide="users" width="14"></i>Nosotros</a><a href="/servicios" aria-current="page"><i data-lucide="settings" width="14"></i>Servicios</a><a href="/productos-destacados"><i data-lucide="sparkles" width="14"></i>Productos</a>
+  </nav>
   <button class="storefront-menu-backdrop" type="button" aria-label="Cerrar categorías" hidden></button>
   <nav class="storefront-navigation" id="storefrontNavigation" aria-label="Secciones principales">
     <div class="storefront-drawer-head"><a class="storefront-drawer-logo logo" href="/" aria-label="SmartISP inicio">SmartISP</a><button class="storefront-menu-close" type="button" aria-label="Cerrar categorías"><i data-lucide="x" width="25"></i></button></div>
