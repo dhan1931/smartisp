@@ -16,6 +16,22 @@ function storefrontCampaignSafeUrl(string $url, bool $image = false): bool {
     return filter_var($url, FILTER_VALIDATE_URL) !== false && strtolower((string)parse_url($url, PHP_URL_SCHEME)) === 'https';
 }
 
+// Reencodea una imagen subida (jpg/png/webp) a WebP via GD. Devuelve null si GD no soporta
+// WebP en este entorno o si la imagen esta corrupta, para que el caller conserve el archivo
+// original en ese caso.
+function storefrontImageToWebp(string $data, int $quality = 82): ?string {
+    if (!function_exists('imagecreatefromstring') || !function_exists('imagewebp')) return null;
+    $source = @imagecreatefromstring($data);
+    if ($source === false) return null;
+    imagealphablending($source, false);
+    imagesavealpha($source, true);
+    ob_start();
+    $encoded = imagewebp($source, null, $quality);
+    $webpData = ob_get_clean();
+    imagedestroy($source);
+    return ($encoded && is_string($webpData) && $webpData !== '') ? $webpData : null;
+}
+
 function getDbConnection() {
     static $pdo = null;
     if ($pdo !== null) {
