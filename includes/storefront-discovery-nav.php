@@ -21,6 +21,11 @@ $storefrontNavLinks = [
     <button class="storefront-menu-button" type="button" aria-label="Abrir categorías" aria-expanded="false" aria-controls="storefrontNavigation"><i data-lucide="menu" width="20"></i></button>
   </div>
 </header>
+<nav class="storefront-nav-strip" aria-label="Secciones principales (franja)">
+  <?php foreach ($storefrontNavLinks as [$key, $href, $label, $icon]): ?>
+    <a href="<?= htmlspecialchars($href, ENT_QUOTES, 'UTF-8') ?>"<?= $storefrontActivePage === $key ? ' aria-current="page"' : '' ?>><i data-lucide="<?= htmlspecialchars($icon, ENT_QUOTES, 'UTF-8') ?>" width="14"></i><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></a>
+  <?php endforeach; ?>
+</nav>
 <button class="storefront-menu-backdrop" type="button" aria-label="Cerrar categorías" hidden></button>
 <nav class="storefront-navigation" id="storefrontNavigation" aria-label="Secciones principales">
   <div class="storefront-drawer-head"><a class="storefront-drawer-logo logo" href="/" aria-label="SmartISP inicio">SmartISP</a><button class="storefront-menu-close" type="button" aria-label="Cerrar categorías"><i data-lucide="x" width="25"></i></button></div>
