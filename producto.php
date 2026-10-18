@@ -435,7 +435,7 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
         .toast { position: fixed; bottom: 24px; right: 24px; background: #0f172a; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); display: none; align-items: center; gap: 8px; z-index: 100; animation: slideUp .3s ease; }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
-    <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=nav-strip-rollout-20261017">
+    <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=header-icons-cart-badge-20261018">
     <style>header { position: relative !important; top: auto !important; }.storefront-logo img { height: auto; max-height: 140px; border-radius: 0; }</style>
 </head>
 <body>
