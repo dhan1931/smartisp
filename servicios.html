@@ -251,9 +251,9 @@
       const cards = slides.map(slide => {
         const image = Array.isArray(slide.images) && slide.images.length ? (slide.images.find(i => String(i.is_primary) === '1') || slide.images[0]) : null;
         const imageUrl = image?.image_url || slide.image_url || '';
-        if (!imageUrl || !slide.title) return '';
+        if (!imageUrl) return '';
         const link = slide.target_url && slide.button_text ? `<a href="${esc(slide.target_url)}">${esc(slide.button_text)} →</a>` : '';
-        return `<article class="card has-image"><img src="${esc(imageUrl)}" alt="${esc(image?.image_alt || slide.title)}" loading="lazy"><div class="card-body"><strong>${esc(slide.title)}</strong>${slide.subtitle ? `<p>${esc(slide.subtitle)}</p>` : ''}${link}</div></article>`;
+        return `<article class="card has-image"><img src="${esc(imageUrl)}" alt="${esc(image?.image_alt || slide.title || '')}" loading="lazy"><div class="card-body">${slide.title ? `<strong>${esc(slide.title)}</strong>` : ''}${slide.subtitle ? `<p>${esc(slide.subtitle)}</p>` : ''}${link}</div></article>`;
       }).filter(Boolean);
       if (cards.length) document.querySelector('#servicesGrid').innerHTML = cards.join('');
     } catch (error) { console.warn('No se pudieron cargar los servicios especializados:', error); }
