@@ -1735,7 +1735,7 @@
 				: [];
 			const displayItems = chosen.length ? chosen.map(cat => ({ id:cat.id, name:cat.name, icon:cat.icon || cat.macroGroupIcon || 'package', topCategory:cat.name, image:cat.iconImageUrl || '', alt:cat.name, description:cat.description || '' })) : sorted.slice(0, 7);
 			const cardsHtml = displayItems.map(g => {
-				const href = g.topCategory ? `/categoria/${encodeURIComponent(slugifyText(g.topCategory))}/` : '/categorias-destacadas';
+				const href = g.topCategory ? `/categorias-destacadas?category=${encodeURIComponent(g.topCategory)}` : '/categorias-destacadas';
 				return `<a class="mini-category-card" href="${escapeHtml(href)}">
 					<span class="mini-category-visual">${g.image ? `<img src="${escapeHtml(g.image)}" alt="${escapeHtml(g.alt)}" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><i data-lucide="${escapeHtml(g.icon)}" width="24" hidden></i>` : `<i data-lucide="${escapeHtml(g.icon)}" width="24"></i>`}</span>
 					<span class="mini-category-name">${escapeHtml(g.name)}</span>
