@@ -62,8 +62,16 @@ if ($action === 'upload-campaign-image' && $method === 'POST') {
         echo json_encode(['error' => 'No se pudo preparar el almacenamiento de imágenes.']);
         exit;
     }
-    $filename = 'campaign_' . bin2hex(random_bytes(12)) . '.' . $extensions[$mime];
-    if (!move_uploaded_file($file['tmp_name'], $dir . '/' . $filename)) {
+    $base = 'campaign_' . bin2hex(random_bytes(12));
+    $webpData = $mime === 'image/webp' ? null : storefrontImageToWebp((string)file_get_contents($file['tmp_name']));
+    if ($webpData !== null) {
+        $filename = $base . '.webp';
+        $saved = @file_put_contents($dir . '/' . $filename, $webpData) !== false;
+    } else {
+        $filename = $base . '.' . $extensions[$mime];
+        $saved = move_uploaded_file($file['tmp_name'], $dir . '/' . $filename);
+    }
+    if (!$saved) {
         http_response_code(500);
         echo json_encode(['error' => 'No se pudo guardar la imagen.']);
         exit;
