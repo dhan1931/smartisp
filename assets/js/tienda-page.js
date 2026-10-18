@@ -660,7 +660,7 @@
 		};
 		const buildPaginationHtml = (current, total) => {
 			if (total <= 1) return '';
-			const pages = new Set([1, 2, 3, total - 2, total - 1, total, current]);
+			const pages = new Set([1, 2, 3, total - 2, total - 1, total, current - 2, current - 1, current, current + 1, current + 2]);
 			const items = [...pages].filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
 			let html = '<div class="pagination-wrap">';
 			html += '<nav class="pagination" aria-label="Paginación de productos">';
