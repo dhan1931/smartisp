@@ -635,6 +635,8 @@
 		.order-item { display: block; }
 		.order-head { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
 		.profile-action { display: flex; align-items: center; gap: 9px; padding: 14px; border: 1px solid var(--line); border-radius: 9px; color: var(--navy); background: white; text-align: left; cursor: pointer; transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease, background .2s ease; text-decoration: none; }
+		.profile-action > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-weight: 800; font-size: 14px; }
+		.profile-action > span small { color: var(--muted); font-weight: 400; font-size: 12px; }
 		.profile-action:hover { border-color: #9acfc2; box-shadow: 0 8px 20px rgba(16,44,61,.08); transform: translateY(-2px); }
 		.profile-action.is-active { border-color: var(--blue, #087ea4); background: #f0faf8; box-shadow: 0 0 0 2px rgba(8,126,164,.18); }
 		.profile-action.is-active i { color: var(--blue, #087ea4); }
