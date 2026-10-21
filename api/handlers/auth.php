@@ -78,6 +78,37 @@ if ($action === 'update-profile' && $method === 'POST') {
 // -------------------------------------------------------------
 
 if ($action === 'login' && $method === 'POST') {
+    // Rate limiting por IP (mismo patron que request-password-reset / QA-034): sin esto, un
+    // ataque de diccionario contra un correo de admin conocido puede mandar intentos sin limite.
+    $clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+    if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+        $clientIp = $_SERVER['HTTP_CF_CONNECTING_IP'];
+    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $clientIp = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
+    }
+    $loginRateFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'login_' . md5($clientIp) . '.json';
+    $loginRateNow = time();
+    $loginRateWindow = 900; // 15 minutos
+    $loginMaxAttempts = 8;
+    $loginAttempts = [];
+    if (file_exists($loginRateFile)) {
+        $loginData = json_decode(@file_get_contents($loginRateFile), true);
+        if (is_array($loginData)) {
+            $loginAttempts = array_values(array_filter($loginData, fn($t) => ($loginRateNow - (int)$t) < $loginRateWindow));
+        }
+    }
+    if (count($loginAttempts) >= $loginMaxAttempts) {
+        http_response_code(429);
+        header('Retry-After: ' . $loginRateWindow);
+        echo json_encode([
+            'error' => 'Demasiados intentos de inicio de sesión. Por favor intenta de nuevo en 15 minutos.',
+            'retry_after' => $loginRateWindow
+        ]);
+        exit;
+    }
+    $loginAttempts[] = $loginRateNow;
+    @file_put_contents($loginRateFile, json_encode($loginAttempts));
+
     try {
         $uTable = getUsersTableName($pdo);
         $email = trim(strtolower($body['email'] ?? ''));
