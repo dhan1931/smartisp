@@ -314,7 +314,7 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-    <script src="/assets/vendor/lucide.min.js?v=1.55.0"></script>
+    <script src="/assets/vendor/lucide.min.js?v=1.55.0" defer onload="window.lucide && window.lucide.createIcons()"></script>
 
     <style>
         :root {
@@ -682,8 +682,6 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
     </div>
 
     <script>
-        lucide.createIcons();
-
         // Galería: clic en una miniatura cambia la imagen principal
         document.querySelectorAll('.product-thumb').forEach(thumb => {
             thumb.addEventListener('click', () => {
