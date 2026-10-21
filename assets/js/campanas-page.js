@@ -199,7 +199,7 @@
     }
     function renderSlides() {
       const wasRendered=$('#slides').childElementCount>0;
-      const expandedKeys=new Set([...$('#slides').querySelectorAll('.slide details[open]')].map(details=>details.closest('.slide')?.dataset.editorKey).filter(Boolean));
+      const expandedKeys=new Set([...$('#slides').querySelectorAll('.slide > details[open]')].map(details=>details.closest('.slide')?.dataset.editorKey).filter(Boolean));
       state.slides.forEach(slide=>{if(!slide._editorKey)slide._editorKey=String(slide.id||`local-${++slideKeyCounter}`);});
       if(preferredExpandedKey)expandedKeys.add(preferredExpandedKey);
       if(!wasRendered&&state.slides[0])expandedKeys.add(state.slides[0]._editorKey);
