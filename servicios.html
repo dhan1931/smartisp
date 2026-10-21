@@ -207,12 +207,16 @@
   document.querySelector('#quoteForm').addEventListener('submit', event => {
     event.preventDefault();
     const form = event.currentTarget;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn?.disabled) return;
+    if (submitBtn) submitBtn.disabled = true;
     const data = Object.fromEntries(new FormData(form));
     fetch('/api/auth/service-quote-requests', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     }).catch(() => {});
+    if (submitBtn) setTimeout(() => { submitBtn.disabled = false; }, 4000);
     const lines = [
       'Hola, quiero solicitar una cotización.',
       `Tipo de cliente: ${data.clientType}`,
