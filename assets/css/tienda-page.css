@@ -9,6 +9,7 @@
 			--orange: #ff9f43;
 			--white: #fff;
 		}
+		body { overflow-x: hidden; }
 		body.dark-mode, body[data-account-theme="night"] { --pale: #0b1927; --white: #12283b; --ink: #e1f2fc; --navy: #071722; --muted: #9bb3c3; --line: #294557; --sky: #183b52; background: var(--pale); color: var(--ink); }
 		body.dark-mode .nav, body.dark-mode footer, body.dark-mode .product, body.dark-mode .category, body.dark-mode .select, body.dark-mode .modal-panel, body.dark-mode .drawer-panel, body.dark-mode .search, body.dark-mode .heart,
 		body[data-account-theme="night"] .nav, body[data-account-theme="night"] footer, body[data-account-theme="night"] .product, body[data-account-theme="night"] .category, body[data-account-theme="night"] .select, body[data-account-theme="night"] .modal-panel, body[data-account-theme="night"] .drawer-panel, body[data-account-theme="night"] .search, body[data-account-theme="night"] .heart, body[data-account-theme="night"] .mobile-bottom-nav, body[data-account-theme="night"] .account-card, body[data-account-theme="night"] .account-sidebar { background: var(--white); color: var(--ink); }
