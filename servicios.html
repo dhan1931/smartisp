@@ -200,19 +200,23 @@
   <link rel="stylesheet" href="/assets/css/site-footer.css?v=1">
   <script src="/assets/js/site-footer.js?v=1" defer></script>
   <script src="/assets/js/brands-section.js?v=1"></script>
-  <link rel="stylesheet" href="/assets/css/storefront-campaign.css?v=trust-stats-bottom-right-20261019">
+  <link rel="stylesheet" href="/assets/css/storefront-campaign.css?v=trust-stats-and-arrows-20261019">
   <script src="/assets/js/storefront-campaign.js?v=skeleton-fade-20261014"></script>
   <script>
   window.initStorefrontCampaignHero('servicios');
   document.querySelector('#quoteForm').addEventListener('submit', event => {
     event.preventDefault();
     const form = event.currentTarget;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn?.disabled) return;
+    if (submitBtn) submitBtn.disabled = true;
     const data = Object.fromEntries(new FormData(form));
     fetch('/api/auth/service-quote-requests', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     }).catch(() => {});
+    if (submitBtn) setTimeout(() => { submitBtn.disabled = false; }, 4000);
     const lines = [
       'Hola, quiero solicitar una cotización.',
       `Tipo de cliente: ${data.clientType}`,
