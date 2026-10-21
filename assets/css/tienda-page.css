@@ -1629,7 +1629,7 @@
         .category-hero-media img { width: 100%; height: 100%; object-fit: cover; }
         .category-hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8,24,37,.1), rgba(8,24,37,.82)); }
         .category-hero-copy { position: relative; z-index: 1; padding: 22px 26px; color: #fff; }
-        .category-hero-copy h1 { margin: 0 0 6px; font-size: 24px; }
+        .category-hero-copy h2 { margin: 0 0 6px; font-size: 24px; }
         .category-hero-copy p { margin: 0; max-width: 620px; font-size: 13.5px; color: #dbe9f2; line-height: 1.5; }
         .mini-categories { display: none; padding: 22px 1.7vw 0; }
         .mini-categories.is-visible { display: block; }

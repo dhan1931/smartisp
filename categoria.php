@@ -213,7 +213,13 @@ $metaDesc = $categoryName !== ''
         ? 'Encuentra equipos de audio y video para entretenimiento, reuniones y creación de contenido.'
         : 'Explora ' . $categoryName . ' y compara opciones del catálogo para encontrar lo que necesitas.'))
     : 'Categoria no encontrada en el catalogo de SmartISP Ecuador.';
-$robots = $categoryName !== '' ? 'index, follow, max-image-preview:large' : 'noindex, follow';
+// El canonical siempre apunta a la categoria "limpia" (sin filtros, pagina 1): paginas 2+ y
+// vistas filtradas/ordenadas serian contenido casi duplicado si se indexaran por separado, asi
+// que se marcan noindex (pero follow, para no cortar el rastreo de los productos que enlazan).
+$hasActiveFilters = $selectedSubcategory !== '' || $selectedPriceMin !== '' || $selectedPriceMax !== '' || $filterInStock || $sortOrder !== 'relevancia';
+$robots = $categoryName !== ''
+    ? (($currentPage <= 1 && !$hasActiveFilters) ? 'index, follow, max-image-preview:large' : 'noindex, follow')
+    : 'noindex, follow';
 $relatedNames = array_slice(array_keys($allCategoryNames), 0, 12);
 $productItemList = [];
 foreach ($products as $idx => $product) {
@@ -239,7 +245,7 @@ foreach ($products as $idx => $product) {
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
   <script src="/assets/js/public-brand.js?v=admin-brand-20261011" defer></script>
   <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=header-icons-cart-badge-20261018">
-  <script src="/assets/vendor/lucide.min.js?v=1.55.0"></script>
+  <script src="/assets/vendor/lucide.min.js?v=1.55.0" defer></script>
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="SmartISP Ecuador">
   <meta property="og:title" content="<?= escapeCategoryPage($pageTitle) ?>">
