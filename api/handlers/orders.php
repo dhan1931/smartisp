@@ -28,6 +28,14 @@ if ($action === 'orders' || $action === 'customer-orders') {
         $hasPrice = false;
         $validItems = [];
 
+        // El precio y el stock SIEMPRE se verifican contra la base de datos -- nunca se confia
+        // en lo que manda el navegador, que cualquiera puede alterar desde la consola (ej. bajar
+        // el precio a $0.01 antes de enviar el formulario).
+        $pTable = getProductsTableName($pdo);
+        $hasInventoryTable = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'product_inventory'")->fetchColumn() > 0;
+        $productStmt = $pdo->prepare("SELECT * FROM `$pTable` WHERE id = :id LIMIT 1");
+        $inventoryStmt = $hasInventoryTable ? $pdo->prepare('SELECT GREATEST(quantity_available - quantity_reserved, 0) AS available_qty FROM product_inventory WHERE product_id = :id LIMIT 1') : null;
+
         foreach ($rawItems as $it) {
             $qty = (int)($it['quantity'] ?? 1);
             if ($qty < 1 || $qty > 99) {
@@ -36,7 +44,36 @@ if ($action === 'orders' || $action === 'customer-orders') {
                 exit;
             }
             $totalUnits += $qty;
-            $prc = max(0, (float)($it['price'] ?? 0));
+
+            $productId = trim((string)($it['id'] ?? ''));
+            $productRow = null;
+            if ($productId !== '') {
+                $productStmt->execute([':id' => $productId]);
+                $productRow = $productStmt->fetch(PDO::FETCH_ASSOC);
+            }
+            if (!$productRow) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Uno o más productos de tu carrito ya no están disponibles. Actualiza la página e intenta de nuevo.']);
+                exit;
+            }
+            $product = normalizeProductRow($productRow);
+            if (!$product['visible']) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Uno o más productos de tu carrito ya no están disponibles. Actualiza la página e intenta de nuevo.']);
+                exit;
+            }
+
+            if ($inventoryStmt) {
+                $inventoryStmt->execute([':id' => $productId]);
+                $availableQty = $inventoryStmt->fetchColumn();
+                if ($availableQty !== false && (int)$availableQty < $qty) {
+                    http_response_code(400);
+                    echo json_encode(['error' => 'No hay stock suficiente de "' . $product['name'] . '" (disponible: ' . (int)$availableQty . ').']);
+                    exit;
+                }
+            }
+
+            $prc = max(0, (float)$product['price']);
             if ($prc > 0) {
                 $hasPrice = true;
             }
@@ -52,10 +89,10 @@ if ($action === 'orders' || $action === 'customer-orders') {
             exit;
         }
 
-        $total = (float)($body['total'] ?? 0);
-        if ($total <= 0 && $calculatedTotal > 0) {
-            $total = $calculatedTotal;
-        }
+        // El total del pedido es siempre el calculado con los precios reales de la base
+        // (ver bucle arriba) -- nunca el que manda el body, que ya probamos que se puede
+        // falsificar sin tocar los items.
+        $total = $calculatedTotal;
 
         $isQuote = !$hasPrice || $total <= 0;
         $orderStatus = $isQuote ? 'quote_requested' : 'pending';
@@ -199,7 +236,10 @@ if ($action === 'orders' || $action === 'customer-orders') {
             echo json_encode(['orders' => $orders]);
             exit;
         } catch (Throwable $e) {
-            echo json_encode(['orders' => []]);
+            // No devolver 200 con lista vacia: para el cliente eso es indistinguible de "nunca
+            // has comprado nada", cuando en realidad fallo la consulta (ej. timeout de la base).
+            http_response_code(503);
+            echo json_encode(['orders' => [], 'error' => 'No se pudo cargar tu historial de pedidos. Intenta de nuevo en un momento.']);
             exit;
         }
     }

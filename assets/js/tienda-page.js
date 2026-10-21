@@ -2416,7 +2416,7 @@
 			compact: localStorage.getItem('smartisp.compact') === 'true'
 		};
 
-		const customerData = { wishlist: [], orders: [] };
+		const customerData = { wishlist: [], orders: [], ordersError: false };
 
 		const toUtf8Base64 = str => {
 			try {
@@ -2555,7 +2555,7 @@
 			const countEl = accountProfileView.querySelector('[data-orders-count]');
 			if (countEl) countEl.textContent = `${customerData.orders.length} pedido${customerData.orders.length === 1 ? '' : 's'}`;
 			if (!list) return;
-			list.innerHTML = customerData.orders.length ? customerData.orders.map(order => `
+			list.innerHTML = customerData.ordersError ? '<div class="hub-empty">No se pudo cargar tu historial de pedidos. Intenta de nuevo en un momento.</div>' : customerData.orders.length ? customerData.orders.map(order => `
 				<div class="hub-item order-item">
 					<div class="order-head">
 						<strong>Pedido #${String(order.id).slice(0, 8)}</strong>
@@ -2568,22 +2568,30 @@
 		};
 
 		const loadCustomerData = async () => {
-			try {
-				const [wishlist, orders] = await Promise.all([
-					customerApi('customer-wishlist'),
-					customerApi('customer-orders')
-				]);
-				customerData.wishlist = wishlist.wishlist || [];
-				customerData.orders = orders.orders || [];
+			// allSettled (no Promise.all): si falla el pedido de ordenes, la wishlist igual se
+			// carga y viceversa -- antes un solo fallo vaciaba ambas listas en silencio, sin
+			// distinguir "nunca has comprado nada" de "fallo la consulta".
+			const [wishlistResult, ordersResult] = await Promise.allSettled([
+				customerApi('customer-wishlist'),
+				customerApi('customer-orders')
+			]);
+			if (wishlistResult.status === 'fulfilled') {
+				customerData.wishlist = wishlistResult.value.wishlist || [];
 				wishlistIds = new Set(customerData.wishlist.map(item => String(item.productId)));
-				renderWishlist();
-				renderOrders();
-				render();
-				syncWishlistButtons();
-			} catch (error) {
+			} else {
 				customerData.wishlist = [];
-				customerData.orders = [];
 			}
+			if (ordersResult.status === 'fulfilled') {
+				customerData.orders = ordersResult.value.orders || [];
+				customerData.ordersError = false;
+			} else {
+				customerData.orders = [];
+				customerData.ordersError = true;
+			}
+			renderWishlist();
+			renderOrders();
+			render();
+			syncWishlistButtons();
 		};
 
 		// Enlazar toggleWishlist con API backend
