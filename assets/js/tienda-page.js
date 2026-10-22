@@ -1806,7 +1806,7 @@
 			if (trustStatsDataPromise) return trustStatsDataPromise;
 			trustStatsDataPromise = Promise.all([
 				fetch('/api/auth/landing-content', { cache: 'no-store' }).then(r => r.ok ? r.json() : { content: [] }).catch(() => ({ content: [] })),
-				fetch('/api/auth/catalog?page=1&limit=1', { cache: 'no-store' }).then(r => r.ok ? r.json() : { total: 0 }).catch(() => ({ total: 0 })),
+				fetch('/api/auth/catalog?page=1&limit=1', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null),
 			]).then(([landing, catalog]) => {
 				const map = {};
 				(landing.content || []).forEach(row => { map[row.key] = row.value; });
@@ -1815,7 +1815,8 @@
 					projects: map.trust_stats_projects_default || '',
 					support: map.trust_stats_support_default || '',
 					productsLabel: map.trust_stats_products_label_default || 'Productos disponibles',
-					productsCount: Number(catalog.total) || 0,
+					// null (no "+0" fantasma) si fallo el fetch del catalogo.
+					productsCount: catalog && Number(catalog.total) > 0 ? Number(catalog.total) : null,
 					whatsapp: String(map.footer_whatsapp || '').replace(/\D/g, ''),
 					email: String(map.footer_email || '').trim(),
 				};
@@ -1860,7 +1861,7 @@
 				const projects = trustStatPair(slide.trust_stats_projects_override || defaults.projects);
 				const support = trustStatPair(slide.trust_stats_support_override || defaults.support);
 				const items = [
-					{ value: `+${defaults.productsCount.toLocaleString('es-EC')}`, label: defaults.productsLabel },
+					defaults.productsCount ? { value: `+${defaults.productsCount.toLocaleString('es-EC')}`, label: defaults.productsLabel } : null,
 					clients.value ? clients : null,
 					projects.value ? projects : null,
 					support.value ? support : null,
