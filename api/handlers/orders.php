@@ -16,6 +16,14 @@ if ($action === 'orders' || $action === 'customer-orders') {
         $customerCity = trim($body['city'] ?? ($shipping['city'] ?? ''));
         $customerNotes = trim($body['notes'] ?? ($shipping['notes'] ?? ''));
 
+        // El correo es a donde se envía el comprobante: sin uno válido el pedido queda sin
+        // contacto y el mailer intentaría enviar a cualquier texto que llegue.
+        if ($customerName === '' || !filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Ingresa tu nombre y un correo electrónico válido.']);
+            exit;
+        }
+
         $rawItems = is_array($body['items'] ?? null) ? $body['items'] : [];
         if (empty($rawItems)) {
             http_response_code(400);
@@ -80,6 +88,10 @@ if ($action === 'orders' || $action === 'customer-orders') {
             $calculatedTotal += ($qty * $prc);
             $it['quantity'] = $qty;
             $it['price'] = $prc;
+            // Igual que el precio: el nombre y el SKU que quedan en el pedido y en los correos
+            // salen de la base, no de lo que diga el carrito.
+            $it['name'] = $product['name'];
+            if ($product['sku'] !== '') $it['sku'] = $product['sku'];
             $validItems[] = $it;
         }
 
@@ -121,7 +133,9 @@ if ($action === 'orders' || $action === 'customer-orders') {
         ];
 
         if (in_array('user_id', $existingCols, true)) {
-            $insertData['user_id'] = $_SESSION['user']['id'] ?? null;
+            // El historial del cliente se filtra solo por user_id: tomarlo de la sesión validada
+            // contra la base, no de $_SESSION a secas (puede ser de un usuario ya borrado).
+            $insertData['user_id'] = getAuthUser()['id'] ?? null;
         }
         if (in_array('items', $existingCols, true)) {
             $insertData['items'] = json_encode($validItems, JSON_UNESCAPED_UNICODE);
@@ -196,31 +210,23 @@ if ($action === 'orders' || $action === 'customer-orders') {
             $colsStmt = $pdo->query("SHOW COLUMNS FROM orders_rows");
             $existingCols = array_map(fn($c) => $c['Field'], $colsStmt ? $colsStmt->fetchAll() : []);
 
-            $userId = $user['id'] ?? '';
-            $userEmail = $user['email'] ?? '';
+            $userId = (string)($user['id'] ?? '');
+
+            // El id (PED-XXXXXX) es aleatorio: ordenar por él mezclaba el historial.
+            $orderBy = in_array('created_at', $existingCols, true) ? 'created_at DESC, id DESC' : 'id DESC';
 
             if (isAdminUser($user)) {
-                $stmt = $pdo->query("SELECT * FROM orders_rows ORDER BY id DESC LIMIT 100");
+                $stmt = $pdo->query("SELECT * FROM orders_rows ORDER BY $orderBy LIMIT 100");
                 $rows = $stmt ? $stmt->fetchAll() : [];
+            } elseif (in_array('user_id', $existingCols, true) && $userId !== '') {
+                // Solo por user_id. Antes también se cruzaba por customer_email, pero el registro
+                // no verifica el correo: cualquiera que se registrara con el correo de otra persona
+                // veía sus pedidos de invitado (dirección y teléfono incluidos).
+                $stmt = $pdo->prepare("SELECT * FROM orders_rows WHERE user_id = :uid ORDER BY $orderBy LIMIT 50");
+                $stmt->execute([':uid' => $userId]);
+                $rows = $stmt->fetchAll();
             } else {
-                $where = [];
-                $params = [];
-                if (in_array('user_id', $existingCols, true) && !empty($userId)) {
-                    $where[] = "user_id = :uid";
-                    $params[':uid'] = $userId;
-                }
-                if (in_array('customer_email', $existingCols, true) && !empty($userEmail)) {
-                    $where[] = "customer_email = :email";
-                    $params[':email'] = $userEmail;
-                }
-
-                if (!empty($where)) {
-                    $stmt = $pdo->prepare("SELECT * FROM orders_rows WHERE (" . implode(' OR ', $where) . ") ORDER BY id DESC LIMIT 50");
-                    $stmt->execute($params);
-                    $rows = $stmt ? $stmt->fetchAll() : [];
-                } else {
-                    $rows = [];
-                }
+                $rows = [];
             }
 
             $orders = array_map(function($r) {

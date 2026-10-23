@@ -5,6 +5,27 @@
 // cuando este archivo se incluye. Cada bloque se autogestiona con 'if ($action === ...) { ... exit; }',
 // igual que antes; solo cambio donde vive el codigo, no la logica.
 
+// IP para los límites de intentos. Solo REMOTE_ADDR: X-Forwarded-For y CF-Connecting-IP los
+// escribe el cliente, y con cambiarlos en cada petición el límite no se aplicaba nunca.
+function smartispClientIp(): string {
+    return (string)($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
+}
+
+// Verifica una contraseña contra lo guardado: hash moderno, o formatos heredados (texto plano,
+// MD5, SHA1) que se migran al iniciar sesión. El texto plano solo se acepta si lo guardado no es
+// un hash moderno; si no, enviar el hash bcrypt tal cual (p. ej. filtrado de un respaldo)
+// abría la cuenta.
+function smartispPasswordMatches(string $password, string $stored): bool {
+    if ($stored === '' || $password === '') return false;
+    if (password_verify($password, $stored)) return true;
+    // Por prefijo y no con password_get_info(): esa solo reconoce $2y$, y los hashes $2a$ que
+    // genera bcryptjs (server.js, tests) pasarían por la comparación en texto plano.
+    if (preg_match('/^\$(2[abxy]|argon2id?)\$/', $stored)) return false;
+    return hash_equals($stored, $password)
+        || hash_equals($stored, md5($password))
+        || hash_equals($stored, sha1($password));
+}
+
 if ($action === 'update-profile' && $method === 'POST') {
     $user = getAuthUser();
     if (!$user) {
@@ -27,6 +48,11 @@ if ($action === 'update-profile' && $method === 'POST') {
         }
 
         if ($email && $email !== strtolower($user['email'] ?? '')) {
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Ingresa un correo electrónico válido.']);
+                exit;
+            }
             $check = $pdo->prepare("SELECT id FROM `$uTable` WHERE LOWER(email) = :email AND id != :id LIMIT 1");
             $check->execute([':email' => $email, ':id' => $user['id']]);
             if ($check->fetch()) {
@@ -67,8 +93,9 @@ if ($action === 'update-profile' && $method === 'POST') {
         ]);
         exit;
     } catch (Throwable $e) {
+        error_log('SmartISP update-profile error: ' . $e->getMessage());
         http_response_code(500);
-        echo json_encode(['error' => 'Error al actualizar perfil: ' . $e->getMessage()]);
+        echo json_encode(['error' => 'No se pudo actualizar tu perfil. Inténtalo nuevamente.']);
         exit;
     }
 }
@@ -80,13 +107,7 @@ if ($action === 'update-profile' && $method === 'POST') {
 if ($action === 'login' && $method === 'POST') {
     // Rate limiting por IP (mismo patron que request-password-reset / QA-034): sin esto, un
     // ataque de diccionario contra un correo de admin conocido puede mandar intentos sin limite.
-    $clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
-    if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
-        $clientIp = $_SERVER['HTTP_CF_CONNECTING_IP'];
-    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-        $clientIp = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
-    }
-    $loginRateFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'login_' . md5($clientIp) . '.json';
+    $loginRateFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'login_' . md5(smartispClientIp()) . '.json';
     $loginRateNow = time();
     $loginRateWindow = 900; // 15 minutos
     $loginMaxAttempts = 8;
@@ -151,15 +172,7 @@ if ($action === 'login' && $method === 'POST') {
 
         $storedPass = (string)($user[$passCol] ?? '');
         $modernHashValid = password_verify($password, $storedPass);
-        $match = $modernHashValid;
-
-        if (!$match && $storedPass === $password) {
-            $match = true;
-        } elseif (!$match && md5($password) === $storedPass) {
-            $match = true;
-        } elseif (!$match && sha1($password) === $storedPass) {
-            $match = true;
-        }
+        $match = $modernHashValid || smartispPasswordMatches($password, $storedPass);
 
         if ($match) {
             if (!$modernHashValid && !empty($user['id'])) {
@@ -213,7 +226,7 @@ if ($action === 'register' && $method === 'POST') {
         $phone = trim($body['phone'] ?? '');
         $password = (string)($body['password'] ?? '');
 
-        if (!$email || strlen($password) < 6) {
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($password) < 6) {
             http_response_code(400);
             echo json_encode(['error' => 'Ingresa un correo válido y una contraseña de al menos 6 caracteres.']);
             exit;
@@ -243,8 +256,15 @@ if ($action === 'register' && $method === 'POST') {
         $_SESSION['user'] = $regUser;
         echo json_encode(['user' => $regUser]);
     } catch (Throwable $e) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Error al registrar usuario: ' . $e->getMessage()]);
+        // No devolver el mensaje de MySQL: incluía la fila duplicada ("Duplicate entry '<correo>'").
+        if ($e instanceof PDOException && ($e->errorInfo[1] ?? null) === 1062) {
+            http_response_code(409);
+            echo json_encode(['error' => 'Ya existe una cuenta con ese correo. Inicia sesión o recupera tu contraseña.']);
+        } else {
+            error_log('SmartISP register error: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['error' => 'No se pudo crear la cuenta. Inténtalo nuevamente.']);
+        }
     }
     exit;
 }
@@ -280,13 +300,7 @@ if ($action === 'logout') {
 
 if ($action === 'request-password-reset' && $method === 'POST') {
     // QA-034: Rate Limiting estricto por IP (máximo 3 solicitudes por ventana de 15 minutos)
-    $clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
-    if (!empty($_SERVER['HTTP_CF_CONNECTING_IP'])) {
-        $clientIp = $_SERVER['HTTP_CF_CONNECTING_IP'];
-    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-        $clientIp = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
-    }
-    $rateKey = 'pwd_reset_' . md5($clientIp);
+    $rateKey = 'pwd_reset_' . md5(smartispClientIp());
     $rateFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $rateKey . '.json';
     $now = time();
     $window = 900; // 15 minutos
@@ -493,19 +507,11 @@ if ($action === 'reset-password' && $method === 'POST') {
 
 if (($action === 'change-password' || $action === 'change_password') && $method === 'POST') {
     try {
+        // Solo con sesión. Antes, sin sesión, bastaba mandar 'email' para buscar la cuenta: eso
+        // permitía probar contraseñas de cualquier cuenta aquí, sin el límite de intentos del login.
         $user = getAuthUser();
-        $reqEmail = strtolower(trim((string)($body['email'] ?? '')));
-        if (!$user && !empty($reqEmail)) {
-            $uTable = getUsersTableName($pdo);
-            $stmt = $pdo->prepare("SELECT * FROM `$uTable` WHERE LOWER(TRIM(email)) = :email LIMIT 1");
-            $stmt->execute([':email' => $reqEmail]);
-            $found = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($found) {
-                $user = $found;
-            }
-        }
 
-        if (!$user || (empty($user['id']) && empty($user['email']))) {
+        if (!$user || empty($user['id'])) {
             http_response_code(401);
             echo json_encode(['error' => 'Debes iniciar sesión para cambiar tu contraseña.']);
             exit;
@@ -533,73 +539,29 @@ if (($action === 'change-password' || $action === 'change_password') && $method 
             exit;
         }
 
-        $uTable = getUsersTableName($pdo);
-        $colsStmt = $pdo->query("SHOW COLUMNS FROM `$uTable`");
-        $cols = $colsStmt ? $colsStmt->fetchAll(PDO::FETCH_COLUMN) : [];
-        $emailCol = 'email';
-        foreach (['email', 'correo', 'mail', 'COL 2', 'col 2', 'COL_2', 'col_2'] as $c) {
-            if (in_array($c, $cols, true)) { $emailCol = $c; break; }
-        }
-        $passCol = 'password_hash';
-        foreach (['password_hash', 'password', 'clave', 'pass', 'hash', 'COL 3', 'col 3', 'COL_3', 'col_3'] as $c) {
-            if (in_array($c, $cols, true)) { $passCol = $c; break; }
-        }
-        if (!$passCol && isset($cols[2])) $passCol = $cols[2];
-        if (!$passCol) $passCol = 'password_hash';
+        // getAuthUser() ya validó la cuenta contra users_rows (id/email/password_hash, ver
+        // migración 004): no hace falta volver a adivinar la tabla ni las columnas.
+        $stmt = $pdo->prepare('SELECT password_hash FROM users_rows WHERE id = :id LIMIT 1');
+        $stmt->execute([':id' => $user['id']]);
+        $storedPass = $stmt->fetchColumn();
 
-        $userEmail = strtolower(trim((string)($user[$emailCol] ?? ($user['email'] ?? $reqEmail))));
-        $userId = $user['id'] ?? null;
-
-        $dbUser = null;
-        if ($userId) {
-            $stmt = $pdo->prepare("SELECT * FROM `$uTable` WHERE id = :id LIMIT 1");
-            $stmt->execute([':id' => $userId]);
-            $dbUser = $stmt->fetch(PDO::FETCH_ASSOC);
-        }
-        if (empty($dbUser) && $userEmail) {
-            $stmt = $pdo->prepare("SELECT * FROM `$uTable` WHERE LOWER(`$emailCol`) = :email LIMIT 1");
-            $stmt->execute([':email' => $userEmail]);
-            $dbUser = $stmt->fetch(PDO::FETCH_ASSOC);
-        }
-
-        if (!$dbUser) {
+        if ($storedPass === false) {
             http_response_code(404);
             echo json_encode(['error' => 'No se encontró la cuenta de usuario.']);
             exit;
         }
 
-        $storedPass = (string)($dbUser[$passCol] ?? '');
-        $match = false;
-
-        if (password_verify($currentPassword, $storedPass)) {
-            $match = true;
-        } elseif ($storedPass === $currentPassword) {
-            $match = true;
-        } elseif (md5($currentPassword) === $storedPass) {
-            $match = true;
-        } elseif (sha1($currentPassword) === $storedPass) {
-            $match = true;
-        }
-
-        if (!$match) {
+        if (!smartispPasswordMatches($currentPassword, (string)$storedPass)) {
             http_response_code(401);
             echo json_encode(['error' => 'La contraseña actual no es correcta.']);
             exit;
         }
 
-        $newHash = password_hash($newPassword, PASSWORD_BCRYPT);
-        $updateStmt = $pdo->prepare("UPDATE `$uTable` SET `$passCol` = :hash WHERE id = :id OR LOWER(`$emailCol`) = :email");
+        $updateStmt = $pdo->prepare('UPDATE users_rows SET password_hash = :hash WHERE id = :id');
         $updateStmt->execute([
-            ':hash'  => $newHash,
-            ':id'    => $dbUser['id'] ?? ($userId ?? ''),
-            ':email' => $userEmail
+            ':hash' => password_hash($newPassword, PASSWORD_BCRYPT),
+            ':id'   => $user['id']
         ]);
-
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            if (isset($_SESSION['user']) && is_array($_SESSION['user'])) {
-                $_SESSION['user']['password_hash'] = $newHash;
-            }
-        }
 
         echo json_encode([
             'ok'      => true,
@@ -607,8 +569,9 @@ if (($action === 'change-password' || $action === 'change_password') && $method 
         ]);
         exit;
     } catch (Throwable $e) {
+        error_log('SmartISP change-password error: ' . $e->getMessage());
         http_response_code(500);
-        echo json_encode(['error' => 'Error al cambiar la contraseña: ' . $e->getMessage()]);
+        echo json_encode(['error' => 'No se pudo cambiar la contraseña. Inténtalo nuevamente.']);
         exit;
     }
 }

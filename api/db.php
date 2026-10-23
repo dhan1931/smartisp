@@ -56,7 +56,16 @@ function getDbConnection() {
 
     try {
         $pdo = new PDO($dsn, $config['username'], $config['password'], $options);
-        ensureAuxiliaryTables($pdo);
+        // Las reparaciones/CREATE de ensureAuxiliaryTables son idempotentes pero cuestan ~7
+        // consultas (DESCRIBE, CREATE TABLE IF NOT EXISTS...) en CADA petición web. Basta con
+        // correrlas una vez por base: se deja un marcador en el tmp del servidor. En CLI
+        // (migrate.php, tests) se corren siempre, porque ahí la base puede haberse recreado.
+        // Subir el sufijo de versión si se cambia ensureAuxiliaryTables.
+        $marker = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'smartisp_schema_v1_'
+            . md5($config['host'] . '|' . $config['port'] . '|' . $config['database']);
+        if (PHP_SAPI === 'cli' || !is_file($marker)) {
+            if (ensureAuxiliaryTables($pdo) && PHP_SAPI !== 'cli') @touch($marker);
+        }
         return $pdo;
     } catch (PDOException $e) {
         error_log('Error de conexión a MySQL: ' . $e->getMessage());
@@ -130,8 +139,9 @@ function fixImportedTableColumns(PDO $pdo, string $tableName) {
     }
 }
 
-// Crea las tablas complementarias si no existen todavía
-function ensureAuxiliaryTables(PDO $pdo) {
+// Crea las tablas complementarias si no existen todavía. Devuelve false si algo falló, para
+// que getDbConnection no la marque como hecha y la reintente en la siguiente petición.
+function ensureAuxiliaryTables(PDO $pdo): bool {
     try {
         // Corregir tablas importadas con COL 1, COL 2...
         fixImportedTableColumns($pdo, 'users_rows');
@@ -182,8 +192,10 @@ function ensureAuxiliaryTables(PDO $pdo) {
             INDEX idx_token (token),
             INDEX idx_email (email)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+        return true;
     } catch (Throwable $e) {
         error_log('ensureAuxiliaryTables warning: ' . $e->getMessage());
+        return false;
     }
 }
 
@@ -378,16 +390,8 @@ function getSmartispUploadsDir(string $category): string {
 // ver migracion 017). Se usa tanto desde getDynamicCategoriesList() (para anotar cada
 // categoria con su familia) como desde el admin (para gestionarlas directamente).
 function getCategoryMacroGroups(PDO $pdo): array {
-    try {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS `category_macro_groups` (
-            `id` VARCHAR(100) NOT NULL PRIMARY KEY,
-            `name` VARCHAR(255) NOT NULL,
-            `icon` VARCHAR(64) NOT NULL DEFAULT 'package',
-            `sort_order` INT NOT NULL DEFAULT 0,
-            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-    } catch (Throwable $e) {}
+    // La tabla (con image_url y visible) la crean las migraciones 017 en adelante. Aquí había un
+    // CREATE TABLE IF NOT EXISTS sin esas columnas que corría en cada carga del catálogo público.
     $stmt = $pdo->query("SELECT id, name, icon, image_url, sort_order, visible FROM category_macro_groups ORDER BY sort_order, name");
     $groups = [];
     foreach (($stmt ? $stmt->fetchAll() : []) as $g) {
@@ -431,23 +435,7 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
         }
     }
 
-    try {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS `categories_rows` (
-            `id` VARCHAR(100) NOT NULL PRIMARY KEY,
-            `name` VARCHAR(255) NOT NULL,
-            `subcategories` LONGTEXT NULL,
-            `banner_image_url` VARCHAR(500) NULL,
-            `banner_alt` VARCHAR(200) NULL,
-            `description` VARCHAR(500) NULL,
-            `icon` VARCHAR(64) NOT NULL DEFAULT 'package',
-            `keywords` LONGTEXT NULL,
-            `macro_group_id` VARCHAR(100) NULL,
-            `parent_category_id` VARCHAR(100) NULL,
-            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-    } catch (Throwable $e) {}
-
+    // categories_rows la crea ensureAuxiliaryTables y la completan las migraciones.
     $macroGroups = [];
     foreach (getCategoryMacroGroups($pdo) as $g) {
         $macroGroups[$g['id']] = $g;
