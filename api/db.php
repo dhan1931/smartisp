@@ -56,21 +56,33 @@ function getDbConnection() {
 
     try {
         $pdo = new PDO($dsn, $config['username'], $config['password'], $options);
-        // Las reparaciones/CREATE de ensureAuxiliaryTables son idempotentes pero cuestan ~7
-        // consultas (DESCRIBE, CREATE TABLE IF NOT EXISTS...) en CADA petición web. Basta con
-        // correrlas una vez por base: se deja un marcador en el tmp del servidor. En CLI
-        // (migrate.php, tests) se corren siempre, porque ahí la base puede haberse recreado.
-        // Subir el sufijo de versión si se cambia ensureAuxiliaryTables.
-        $marker = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'smartisp_schema_v1_'
-            . md5($config['host'] . '|' . $config['port'] . '|' . $config['database']);
-        if (PHP_SAPI === 'cli' || !is_file($marker)) {
-            if (ensureAuxiliaryTables($pdo) && PHP_SAPI !== 'cli') @touch($marker);
-        }
+        smartispSchemaMarker('', $config);
+        smartispRunSchemaOnce('schema_v1', fn() => ensureAuxiliaryTables($pdo));
         return $pdo;
     } catch (PDOException $e) {
         error_log('Error de conexión a MySQL: ' . $e->getMessage());
         return null;
     }
+}
+
+// Las reparaciones de esquema (ensureAuxiliaryTables, ensureProductTableColumns) son
+// idempotentes pero cuestan varias consultas, incluso DDL (ALTER ... ADD INDEX IF NOT EXISTS),
+// y se llamaban en CADA petición, también en páginas públicas. Basta con correrlas una vez por
+// base: si terminan bien se deja un marcador en el tmp del servidor. En CLI (migrate.php, tests)
+// se corren siempre, porque ahí la base puede haberse recreado. Para forzar que vuelvan a
+// correr tras cambiar una de ellas, subir el sufijo de versión de su nombre.
+function smartispSchemaMarker(string $name, ?array $config = null): string {
+    static $dbKey = '';
+    if ($config !== null) {
+        $dbKey = md5($config['host'] . '|' . $config['port'] . '|' . $config['database']);
+    }
+    return sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'smartisp_' . $name . '_' . $dbKey;
+}
+
+function smartispRunSchemaOnce(string $name, callable $repair): void {
+    $marker = smartispSchemaMarker($name);
+    if (PHP_SAPI !== 'cli' && is_file($marker)) return;
+    if ($repair() && PHP_SAPI !== 'cli') @touch($marker);
 }
 
 // Repara tablas que fueron importadas desde Excel/CSV con nombres genéricos COL 1, COL 2...
@@ -229,10 +241,15 @@ function getProductsTableName(PDO $pdo) {
 function ensureProductTableColumns(PDO $pdo, string $tableName): void {
     static $ensured = [];
     if (!empty($ensured[$tableName])) return;
+    $ensured[$tableName] = true;
+    smartispRunSchemaOnce('product_cols_v1_' . $tableName, fn() => repairProductTableColumns($pdo, $tableName));
+}
+
+function repairProductTableColumns(PDO $pdo, string $tableName): bool {
     try {
         $stmt = $pdo->query("DESCRIBE `$tableName`");
         $cols = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
-        if (empty($cols)) return;
+        if (empty($cols)) return false;
 
         $needed = [
             'id'           => 'VARCHAR(191) NOT NULL PRIMARY KEY',
@@ -261,10 +278,10 @@ function ensureProductTableColumns(PDO $pdo, string $tableName): void {
         } catch (Throwable $e) {
             error_log('ensureProductTableColumns (indice) warning: ' . $e->getMessage());
         }
-
-        $ensured[$tableName] = true;
+        return true;
     } catch (Throwable $e) {
         error_log('ensureProductTableColumns warning: ' . $e->getMessage());
+        return false;
     }
 }
 
@@ -287,6 +304,27 @@ function getUsersTableName(PDO $pdo) {
 
     $tbl = 'users_rows';
     return $tbl;
+}
+
+// ¿Existe la tabla? Se consulta una vez por petición (antes cada handler y cada página PHP
+// preguntaba a information_schema por su cuenta, a veces dos veces en la misma página).
+function smartispTableExists(PDO $pdo, string $table): bool {
+    static $cache = [];
+    if (!array_key_exists($table, $cache)) {
+        $stmt = $pdo->prepare('SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table LIMIT 1');
+        $stmt->execute([':table' => $table]);
+        $cache[$table] = (bool)$stmt->fetchColumn();
+    }
+    return $cache[$table];
+}
+
+// Columnas reales de una tabla cuyo esquema varía entre bases (orders_rows), una vez por petición.
+function smartispTableColumns(PDO $pdo, string $table): array {
+    static $cache = [];
+    if (!isset($cache[$table])) {
+        $cache[$table] = $pdo->query("SHOW COLUMNS FROM `$table`")->fetchAll(PDO::FETCH_COLUMN);
+    }
+    return $cache[$table];
 }
 
 // Verifica si una URL proviene de distribuidores externos (Intcomex, Siglo 21, 1worldsync, etc.)

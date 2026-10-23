@@ -139,7 +139,7 @@ if ($product) {
         // el resto del sitio para productos sin inventario registrado: visible = a la venta).
         $availability = 'https://schema.org/InStock';
         try {
-            $hasInventoryTable = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'product_inventory'")->fetchColumn() > 0;
+            $hasInventoryTable = smartispTableExists($pdo, 'product_inventory');
             if ($hasInventoryTable) {
                 $invStmt = $pdo->prepare('SELECT GREATEST(quantity_available - quantity_reserved, 0) AS available_qty FROM product_inventory WHERE product_id = :id LIMIT 1');
                 $invStmt->execute([':id' => $product['id']]);
@@ -199,7 +199,7 @@ if ($product && $waNumber !== '') {
 $stockStatus = null; // null = sin dato real; 'in' = disponible; 'out' = agotado
 if ($product && $pdo) {
     try {
-        $hasInventoryTable = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'product_inventory'")->fetchColumn() > 0;
+        $hasInventoryTable = smartispTableExists($pdo, 'product_inventory');
         if ($hasInventoryTable) {
             $invStmt = $pdo->prepare('SELECT GREATEST(quantity_available - quantity_reserved, 0) AS available_qty FROM product_inventory WHERE product_id = :id LIMIT 1');
             $invStmt->execute([':id' => $product['id']]);

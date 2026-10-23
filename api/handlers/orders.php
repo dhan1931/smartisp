@@ -40,7 +40,7 @@ if ($action === 'orders' || $action === 'customer-orders') {
         // en lo que manda el navegador, que cualquiera puede alterar desde la consola (ej. bajar
         // el precio a $0.01 antes de enviar el formulario).
         $pTable = getProductsTableName($pdo);
-        $hasInventoryTable = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'product_inventory'")->fetchColumn() > 0;
+        $hasInventoryTable = smartispTableExists($pdo, 'product_inventory');
         $productStmt = $pdo->prepare("SELECT * FROM `$pTable` WHERE id = :id LIMIT 1");
         $inventoryStmt = $hasInventoryTable ? $pdo->prepare('SELECT GREATEST(quantity_available - quantity_reserved, 0) AS available_qty FROM product_inventory WHERE product_id = :id LIMIT 1') : null;
 
@@ -109,10 +109,6 @@ if ($action === 'orders' || $action === 'customer-orders') {
         $isQuote = !$hasPrice || $total <= 0;
         $orderStatus = $isQuote ? 'quote_requested' : 'pending';
 
-        // Generar un ID legible de pedido, ej: PED-A1B2C3
-        $cleanShort = strtoupper(substr(md5(uniqid((string)microtime(true), true)), 0, 6));
-        $orderId = 'PED-' . $cleanShort;
-
         $shippingData = [
             'name'    => $customerName,
             'email'   => $customerEmail,
@@ -123,11 +119,10 @@ if ($action === 'orders' || $action === 'customer-orders') {
         ];
 
         // Obtener columnas reales de orders_rows para inserción 100% compatible
-        $colsStmt = $pdo->query("SHOW COLUMNS FROM orders_rows");
-        $existingCols = $colsStmt ? $colsStmt->fetchAll(PDO::FETCH_COLUMN) : [];
+        $existingCols = smartispTableColumns($pdo, 'orders_rows');
 
         $insertData = [
-            'id'     => $orderId,
+            'id'     => '',
             'status' => $orderStatus,
             'total'  => $total
         ];
@@ -167,9 +162,22 @@ if ($action === 'orders' || $action === 'customer-orders') {
 
         $fields = array_keys($insertData);
         $placeholders = array_map(fn($f) => ':' . $f, $fields);
-        $sql = "INSERT INTO orders_rows (" . implode(', ', $fields) . ") VALUES (" . implode(', ', $placeholders) . ")";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($insertData);
+        $stmt = $pdo->prepare("INSERT INTO orders_rows (" . implode(', ', $fields) . ") VALUES (" . implode(', ', $placeholders) . ")");
+
+        // ID legible de pedido, ej: PED-A1B2C3. Son 6 hex (16M combinaciones): un choque con un
+        // pedido existente es improbable pero posible, y antes terminaba en un 500 con el pedido
+        // perdido. Ante clave duplicada se genera otro.
+        for ($attempt = 1; ; $attempt++) {
+            $cleanShort = strtoupper(bin2hex(random_bytes(3)));
+            $orderId = 'PED-' . $cleanShort;
+            $insertData['id'] = $orderId;
+            try {
+                $stmt->execute($insertData);
+                break;
+            } catch (PDOException $e) {
+                if ($attempt >= 5 || ($e->errorInfo[1] ?? null) !== 1062) throw $e;
+            }
+        }
 
         // Despachar correos automáticos (Comprobante al cliente y Alerta con WhatsApp al admin)
         $orderDataForMail = [
@@ -207,8 +215,7 @@ if ($action === 'orders' || $action === 'customer-orders') {
         }
 
         try {
-            $colsStmt = $pdo->query("SHOW COLUMNS FROM orders_rows");
-            $existingCols = array_map(fn($c) => $c['Field'], $colsStmt ? $colsStmt->fetchAll() : []);
+            $existingCols = smartispTableColumns($pdo, 'orders_rows');
 
             $userId = (string)($user['id'] ?? '');
 
@@ -287,7 +294,7 @@ if ($action === 'admin-orders') {
         $params[':status'] = $status;
     }
     if ($q !== '') {
-        $columns = $pdo->query('SHOW COLUMNS FROM orders_rows')->fetchAll(PDO::FETCH_COLUMN);
+        $columns = smartispTableColumns($pdo, 'orders_rows');
         $searchColumns = array_values(array_intersect(['id', 'customer_name', 'customer_email', 'customer_phone', 'shipping'], $columns));
         if (!$searchColumns) $searchColumns = ['id'];
         $where[] = '(' . implode(' OR ', array_map(static fn($column) => "`$column` LIKE :q", $searchColumns)) . ')';
@@ -477,9 +484,7 @@ if ($action === 'admin-order-delete' && $method === 'POST') {
         exit;
     }
 
-    $tableStmt = $pdo->prepare('SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table LIMIT 1');
-    $tableStmt->execute([':table' => 'order_payments']);
-    if ($tableStmt->fetchColumn()) {
+    if (smartispTableExists($pdo, 'order_payments')) {
         $payments = $pdo->prepare('SELECT COUNT(*) FROM order_payments WHERE order_id = :id');
         $payments->execute([':id' => $id]);
         if ((int)$payments->fetchColumn() > 0) {
@@ -526,6 +531,8 @@ if ($action === 'customer-wishlist') {
 
         if (!empty($prodId)) {
             array_unshift($_SESSION[$uKey], $item);
+            // Vive en la sesión (un archivo por visitante): sin tope, crecía con lo que mandara el cliente.
+            $_SESSION[$uKey] = array_slice($_SESSION[$uKey], 0, 100);
         }
 
         echo json_encode(['ok' => true, 'wishlist' => array_values($_SESSION[$uKey])]);

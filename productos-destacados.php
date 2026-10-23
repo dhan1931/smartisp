@@ -46,7 +46,7 @@ if ($pdo) {
         }
         $pTable = getProductsTableName($pdo);
         ensureProductTableColumns($pdo, $pTable);
-        $hasInventory = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'product_inventory'")->fetchColumn() > 0;
+        $hasInventory = smartispTableExists($pdo, 'product_inventory');
         $stockSelect = $hasInventory ? ', (SELECT GREATEST(quantity_available - quantity_reserved, 0) FROM product_inventory WHERE product_id = p.id LIMIT 1) AS available_qty' : ', NULL AS available_qty';
         $selectedStmt = $pdo->query("SELECT p.*$stockSelect FROM storefront_campaign_products cp JOIN storefront_campaigns c ON c.id = cp.campaign_id JOIN `$pTable` p ON p.id = cp.product_id WHERE c.code = 'store-home' AND p.visible = 1 ORDER BY cp.sort_order, p.name LIMIT 12");
         $selectedRows = $selectedStmt->fetchAll(PDO::FETCH_ASSOC);

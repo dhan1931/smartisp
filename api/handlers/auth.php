@@ -26,6 +26,54 @@ function smartispPasswordMatches(string $password, string $stored): bool {
         || hash_equals($stored, sha1($password));
 }
 
+// Límite de intentos por IP con ventana deslizante, guardado en el tmp del servidor. Corta la
+// petición con 429 si ya se alcanzó; si no, registra este intento. El flock evita que dos
+// peticiones simultáneas lean el mismo conteo y ambas pasen.
+function smartispEnforceRateLimit(string $bucket, int $maxAttempts, int $windowSeconds, string $message): void {
+    $file = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $bucket . '_' . md5(smartispClientIp()) . '.json';
+    $handle = @fopen($file, 'c+');
+    if (!$handle) return; // Sin tmp escribible no se bloquea el login; queda en el log.
+    flock($handle, LOCK_EX);
+    $now = time();
+    $attempts = json_decode((string)stream_get_contents($handle), true);
+    $attempts = array_values(array_filter(is_array($attempts) ? $attempts : [], fn($t) => ($now - (int)$t) < $windowSeconds));
+    $limited = count($attempts) >= $maxAttempts;
+    if (!$limited) {
+        $attempts[] = $now;
+        ftruncate($handle, 0);
+        rewind($handle);
+        fwrite($handle, json_encode($attempts));
+    }
+    flock($handle, LOCK_UN);
+    fclose($handle);
+
+    if ($limited) {
+        http_response_code(429);
+        header('Retry-After: ' . $windowSeconds);
+        echo json_encode(['ok' => false, 'error' => $message, 'retry_after' => $windowSeconds]);
+        exit;
+    }
+}
+
+// Base de los enlaces que salen por correo (recuperar contraseña). Nunca de Origin/Referer: los
+// pone quien hace la petición, y con eso un atacante podía pedir el reset de otra cuenta y
+// hacer que el correo legítimo llevara el token a su propio dominio. SITE_URL (.env) manda; si
+// no está, solo se acepta el Host si es un dominio conocido o local.
+function smartispPublicBaseUrl(): string {
+    $configured = trim((string)(getenv('SITE_URL') ?: ''));
+    if ($configured !== '') return rtrim($configured, '/');
+
+    $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+    $hostname = preg_replace('/:\d+$/', '', $host);
+    if (in_array($hostname, ['localhost', '127.0.0.1'], true)) {
+        return 'http://' . $host;
+    }
+    if (in_array($hostname, ['smart-isp.com.ec', 'www.smart-isp.com.ec'], true)) {
+        return 'https://' . $hostname;
+    }
+    return 'https://smart-isp.com.ec';
+}
+
 if ($action === 'update-profile' && $method === 'POST') {
     $user = getAuthUser();
     if (!$user) {
@@ -35,7 +83,7 @@ if ($action === 'update-profile' && $method === 'POST') {
     }
 
     try {
-        $uTable = getUsersTableName($pdo);
+        $uTable = 'users_rows';
         $name = trim($body['name'] ?? ($user['name'] ?? ''));
         $surname = trim($body['surname'] ?? ($user['surname'] ?? ''));
         $phone = trim($body['phone'] ?? ($user['phone'] ?? ''));
@@ -77,8 +125,6 @@ if ($action === 'update-profile' && $method === 'POST') {
         $user['surname'] = $surname;
         $user['phone'] = $phone;
         $user['email'] = $email;
-        $_SESSION['auth_user_name'] = $name;
-        $_SESSION['auth_user_email'] = $email;
 
         echo json_encode([
             'ok'   => true,
@@ -101,37 +147,17 @@ if ($action === 'update-profile' && $method === 'POST') {
 }
 
 // -------------------------------------------------------------
-// LISTA DE DESEOS IDEMPOTENTE (/api/auth/customer-wishlist) (QA-022, QA-023)
+// INICIO DE SESIÓN (/api/auth/login)
 // -------------------------------------------------------------
+// users_rows tiene columnas fijas desde la migración 004 (id, email único, password_hash, name,
+// surname, phone, role): getAuthUser() y el registro ya las usaban así. Antes login/reset las
+// volvían a adivinar con DESCRIBE en cada intento (email|correo|COL 2...).
 
 if ($action === 'login' && $method === 'POST') {
-    // Rate limiting por IP (mismo patron que request-password-reset / QA-034): sin esto, un
-    // ataque de diccionario contra un correo de admin conocido puede mandar intentos sin limite.
-    $loginRateFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'login_' . md5(smartispClientIp()) . '.json';
-    $loginRateNow = time();
-    $loginRateWindow = 900; // 15 minutos
-    $loginMaxAttempts = 8;
-    $loginAttempts = [];
-    if (file_exists($loginRateFile)) {
-        $loginData = json_decode(@file_get_contents($loginRateFile), true);
-        if (is_array($loginData)) {
-            $loginAttempts = array_values(array_filter($loginData, fn($t) => ($loginRateNow - (int)$t) < $loginRateWindow));
-        }
-    }
-    if (count($loginAttempts) >= $loginMaxAttempts) {
-        http_response_code(429);
-        header('Retry-After: ' . $loginRateWindow);
-        echo json_encode([
-            'error' => 'Demasiados intentos de inicio de sesión. Por favor intenta de nuevo en 15 minutos.',
-            'retry_after' => $loginRateWindow
-        ]);
-        exit;
-    }
-    $loginAttempts[] = $loginRateNow;
-    @file_put_contents($loginRateFile, json_encode($loginAttempts));
+    // Sin límite, un ataque de diccionario contra un correo de admin conocido no tiene freno.
+    smartispEnforceRateLimit('login', 8, 900, 'Demasiados intentos de inicio de sesión. Por favor intenta de nuevo en 15 minutos.');
 
     try {
-        $uTable = getUsersTableName($pdo);
         $email = trim(strtolower($body['email'] ?? ''));
         $password = (string)($body['password'] ?? '');
         $adminOnly = filter_var($body['adminOnly'] ?? false, FILTER_VALIDATE_BOOLEAN);
@@ -142,71 +168,44 @@ if ($action === 'login' && $method === 'POST') {
             exit;
         }
 
-        // Descubrir columnas de la tabla de usuarios
-        $colsStmt = $pdo->query("DESCRIBE `$uTable`");
-        $cols = $colsStmt ? $colsStmt->fetchAll(PDO::FETCH_COLUMN) : [];
-
-        $emailCol = null;
-        foreach (['email', 'correo', 'mail', 'user_email', 'username', 'usuario', 'COL 2', 'col 2', 'COL_2', 'col_2'] as $c) {
-            if (in_array($c, $cols, true)) { $emailCol = $c; break; }
-        }
-        if (!$emailCol && isset($cols[1])) $emailCol = $cols[1];
-        if (!$emailCol) $emailCol = 'email';
-
-        $passCol = null;
-        foreach (['password_hash', 'password', 'clave', 'pass', 'hash', 'COL 3', 'col 3', 'COL_3', 'col_3'] as $c) {
-            if (in_array($c, $cols, true)) { $passCol = $c; break; }
-        }
-        if (!$passCol && isset($cols[2])) $passCol = $cols[2];
-        if (!$passCol) $passCol = 'password_hash';
-
-        $stmt = $pdo->prepare("SELECT * FROM `$uTable` WHERE `$emailCol` = :email LIMIT 1");
+        $stmt = $pdo->prepare('SELECT id, email, password_hash, name, surname, phone, role FROM users_rows WHERE email = :email LIMIT 1');
         $stmt->execute([':email' => $email]);
         $user = $stmt->fetch();
 
-        if (!$user) {
+        $storedPass = (string)($user['password_hash'] ?? '');
+        $modernHashValid = $user && password_verify($password, $storedPass);
+        if (!$user || (!$modernHashValid && !smartispPasswordMatches($password, $storedPass))) {
             http_response_code(401);
             echo json_encode(['error' => 'Correo o contraseña incorrectos.']);
             exit;
         }
 
-        $storedPass = (string)($user[$passCol] ?? '');
-        $modernHashValid = password_verify($password, $storedPass);
-        $match = $modernHashValid || smartispPasswordMatches($password, $storedPass);
-
-        if ($match) {
-            if (!$modernHashValid && !empty($user['id'])) {
-                $upgrade = $pdo->prepare("UPDATE `$uTable` SET `$passCol` = :hash WHERE id = :id");
-                $upgrade->execute([':hash' => password_hash($password, PASSWORD_DEFAULT), ':id' => $user['id']]);
-            }
-            unset($user[$passCol]);
-            if (isset($user['password'])) unset($user['password']);
-            if (isset($user['password_hash'])) unset($user['password_hash']);
-
-            $normUser = [
-                'id'      => (string)($user['id'] ?? ($user['COL 1'] ?? uniqid('usr_'))),
-                'name'    => (string)($user['name'] ?? ($user['nombre'] ?? ($user['COL 4'] ?? 'Usuario'))),
-                'surname' => (string)($user['surname'] ?? ($user['apellido'] ?? ($user['COL 5'] ?? ''))),
-                'email'   => (string)($user[$emailCol] ?? ($user['COL 2'] ?? $email)),
-                'phone'   => (string)($user['phone'] ?? ($user['telefono'] ?? ($user['COL 6'] ?? ''))),
-                'role'    => smartispNormalizeRole($user['role'] ?? ($user['rol'] ?? ($user['COL 8'] ?? 'customer')))
-            ];
-            if ($adminOnly && !isAdminUser($normUser)) {
-                http_response_code(403);
-                echo json_encode(['error' => 'Esta cuenta no tiene acceso al panel administrativo.']);
-                exit;
-            }
-            if (session_status() === PHP_SESSION_ACTIVE) session_regenerate_id(true);
-            $_SESSION['user'] = $normUser;
-            $token = null;
-            if (isAdminUser($normUser)) {
-                try { $token = generateAdminAuthToken($normUser); } catch (Throwable $e) { $token = null; }
-            }
-            echo json_encode(['user' => $normUser, 'token' => $token]);
-        } else {
-            http_response_code(401);
-            echo json_encode(['error' => 'Correo o contraseña incorrectos.']);
+        if (!$modernHashValid) {
+            // Formato heredado (texto plano/MD5/SHA1): se migra a hash moderno en este login.
+            $upgrade = $pdo->prepare('UPDATE users_rows SET password_hash = :hash WHERE id = :id');
+            $upgrade->execute([':hash' => password_hash($password, PASSWORD_DEFAULT), ':id' => $user['id']]);
         }
+
+        $normUser = [
+            'id'      => (string)$user['id'],
+            'name'    => (string)($user['name'] ?? 'Usuario'),
+            'surname' => (string)($user['surname'] ?? ''),
+            'email'   => (string)$user['email'],
+            'phone'   => (string)($user['phone'] ?? ''),
+            'role'    => smartispNormalizeRole($user['role'] ?? 'customer')
+        ];
+        if ($adminOnly && !isAdminUser($normUser)) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Esta cuenta no tiene acceso al panel administrativo.']);
+            exit;
+        }
+        if (session_status() === PHP_SESSION_ACTIVE) session_regenerate_id(true);
+        $_SESSION['user'] = $normUser;
+        $token = null;
+        if (isAdminUser($normUser)) {
+            try { $token = generateAdminAuthToken($normUser); } catch (Throwable $e) { $token = null; }
+        }
+        echo json_encode(['user' => $normUser, 'token' => $token]);
     } catch (Throwable $e) {
         error_log('SmartISP login error: ' . $e->getMessage());
         http_response_code(500);
@@ -218,7 +217,6 @@ if ($action === 'login' && $method === 'POST') {
 
 if ($action === 'register' && $method === 'POST') {
     try {
-        $uTable = getUsersTableName($pdo);
         $id = uniqid('usr_');
         $name = trim($body['name'] ?? '');
         $surname = trim($body['surname'] ?? '');
@@ -233,7 +231,7 @@ if ($action === 'register' && $method === 'POST') {
         }
 
         $hash = password_hash($password, PASSWORD_BCRYPT);
-        $stmt = $pdo->prepare("INSERT INTO `$uTable` (id, email, password_hash, name, surname, phone, role)
+        $stmt = $pdo->prepare("INSERT INTO users_rows (id, email, password_hash, name, surname, phone, role)
                                VALUES (:id, :email, :hash, :name, :surname, :phone, 'customer')");
         $stmt->execute([
             ':id'      => $id,
@@ -278,7 +276,7 @@ if ($action === 'me' && $method === 'GET') {
         exit;
     }
     $token = null;
-    if ($user && is_array($user) && isAdminUser($user)) {
+    if (isAdminUser($user)) {
         try { $token = generateAdminAuthToken($user); } catch (Throwable $e) { $token = null; }
     }
     echo json_encode(['user' => $user, 'token' => $token]);
@@ -299,118 +297,53 @@ if ($action === 'logout') {
 
 
 if ($action === 'request-password-reset' && $method === 'POST') {
-    // QA-034: Rate Limiting estricto por IP (máximo 3 solicitudes por ventana de 15 minutos)
-    $rateKey = 'pwd_reset_' . md5(smartispClientIp());
-    $rateFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $rateKey . '.json';
-    $now = time();
-    $window = 900; // 15 minutos
-    $maxAttempts = 3;
-    $history = [];
-    if (file_exists($rateFile)) {
-        $data = json_decode(@file_get_contents($rateFile), true);
-        if (is_array($data)) {
-            $history = array_filter($data, fn($t) => ($now - (int)$t) < $window);
-        }
-    }
-    if (count($history) >= $maxAttempts) {
-        http_response_code(429);
-        header('Retry-After: ' . $window);
-        echo json_encode([
-            'ok' => false,
-            'error' => 'Has excedido el límite de solicitudes de recuperación de contraseña. Por favor intenta de nuevo en 15 minutos.',
-            'retry_after' => $window
-        ]);
-        exit;
-    }
-    $history[] = $now;
-    @file_put_contents($rateFile, json_encode(array_values($history)));
+    // QA-034: máximo 3 solicitudes por IP cada 15 minutos.
+    smartispEnforceRateLimit('pwd_reset', 3, 900, 'Has excedido el límite de solicitudes de recuperación de contraseña. Por favor intenta de nuevo en 15 minutos.');
+
+    $genericOk = [
+        'ok' => true,
+        'message' => 'Si el correo está registrado, recibirás un enlace para recuperar tu contraseña.'
+    ];
 
     try {
         $email = trim(strtolower($body['email'] ?? ''));
-        if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             http_response_code(400);
             echo json_encode(['error' => 'Por favor ingresa un correo electrónico válido.']);
             exit;
         }
 
-        $uTable = getUsersTableName($pdo);
-        $colsStmt = $pdo->query("DESCRIBE `$uTable`");
-        $cols = $colsStmt ? $colsStmt->fetchAll(PDO::FETCH_COLUMN) : [];
-        $emailCol = null;
-        foreach (['email', 'correo', 'mail', 'user_email', 'username', 'usuario', 'COL 2', 'col 2', 'COL_2', 'col_2'] as $c) {
-            if (in_array($c, $cols, true)) { $emailCol = $c; break; }
-        }
-        if (!$emailCol && isset($cols[1])) $emailCol = $cols[1];
-        if (!$emailCol) $emailCol = 'email';
-
-        $stmt = $pdo->prepare("SELECT * FROM `$uTable` WHERE LOWER(`$emailCol`) = :email LIMIT 1");
+        $stmt = $pdo->prepare('SELECT id FROM users_rows WHERE email = :email LIMIT 1');
         $stmt->execute([':email' => $email]);
-        $user = $stmt->fetch();
 
-        // Para evitar enumeración maliciosa de cuentas, si no existe devolvemos ok: true
-        if (!$user) {
-            echo json_encode([
-                'ok' => true,
-                'message' => 'Si el correo está registrado, recibirás un enlace para recuperar tu contraseña.'
-            ]);
+        // Para evitar enumeración de cuentas, si no existe se responde igual que si existiera.
+        if (!$stmt->fetchColumn()) {
+            echo json_encode($genericOk);
             exit;
         }
 
-        // Generar token criptográfico seguro
         $token = bin2hex(random_bytes(32));
-        $expiresAt = date('Y-m-d H:i:s', time() + 3600); // 1 hora de validez
-
-        // Eliminar tokens previos de este correo
-        try {
-            $delStmt = $pdo->prepare("DELETE FROM password_resets WHERE LOWER(email) = :email");
-            $delStmt->execute([':email' => $email]);
-        } catch (Throwable $e) {}
-
-        // Guardar nuevo token en password_resets
-        $insStmt = $pdo->prepare("INSERT INTO password_resets (email, token, expires_at) VALUES (:email, :token, :expires_at)");
-        $insStmt->execute([
+        $pdo->prepare('DELETE FROM password_resets WHERE email = :email')->execute([':email' => $email]);
+        $pdo->prepare('INSERT INTO password_resets (email, token, expires_at) VALUES (:email, :token, :expires_at)')->execute([
             ':email'      => $email,
             ':token'      => $token,
-            ':expires_at' => $expiresAt
+            ':expires_at' => date('Y-m-d H:i:s', time() + 3600) // 1 hora de validez
         ]);
 
-        // Construir URL base dinámica
-        $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443) || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'] ?? 'smart-isp.com.ec';
-        if (!empty($_SERVER['HTTP_ORIGIN'])) {
-            $baseUrl = rtrim($_SERVER['HTTP_ORIGIN'], '/');
-        } elseif (!empty($_SERVER['HTTP_REFERER'])) {
-            $parsed = parse_url($_SERVER['HTTP_REFERER']);
-            if (!empty($parsed['scheme']) && !empty($parsed['host'])) {
-                $baseUrl = $parsed['scheme'] . '://' . $parsed['host'] . (!empty($parsed['port']) && !in_array((int)$parsed['port'], [80, 443], true) ? ':' . $parsed['port'] : '');
-            } else {
-                $baseUrl = "$proto://$host";
-            }
-        } else {
-            $baseUrl = "$proto://$host";
-        }
-
-        $resetUrl = "$baseUrl/reset-password.html?token=" . urlencode($token);
-        $resetHtml = buildPasswordResetHtml($email, $resetUrl);
-
-        $mailRes = sendSmartEmail($pdo, $email, '🔐 Restablece tu contraseña - SmartISP', $resetHtml);
+        $resetUrl = smartispPublicBaseUrl() . '/reset-password.html?token=' . urlencode($token);
+        $mailRes = sendSmartEmail($pdo, $email, '🔐 Restablece tu contraseña - SmartISP', buildPasswordResetHtml($email, $resetUrl));
         if (!$mailRes['ok']) {
             error_log("Fallo al enviar correo de recuperación a $email: " . ($mailRes['error'] ?? ''));
             http_response_code(500);
-            echo json_encode([
-                'ok'    => false,
-                'error' => 'No se pudo enviar el correo de recuperación: ' . ($mailRes['error'] ?? 'Error de despacho SMTP/mail.')
-            ]);
+            echo json_encode(['ok' => false, 'error' => 'No se pudo enviar el correo de recuperación. Inténtalo más tarde.']);
             exit;
         }
 
-        echo json_encode([
-            'ok'      => true,
-            'message' => 'Si el correo está registrado, recibirás un enlace para recuperar tu contraseña.'
-        ]);
+        echo json_encode($genericOk);
     } catch (Throwable $e) {
+        error_log('SmartISP request-password-reset error: ' . $e->getMessage());
         http_response_code(500);
-        echo json_encode(['error' => 'Error al procesar la solicitud: ' . $e->getMessage()]);
+        echo json_encode(['error' => 'No se pudo procesar la solicitud. Inténtalo nuevamente.']);
     }
     exit;
 }
@@ -440,8 +373,7 @@ if ($action === 'reset-password' && $method === 'POST') {
             exit;
         }
 
-        // Buscar token en password_resets
-        $stmt = $pdo->prepare("SELECT * FROM password_resets WHERE token = :token LIMIT 1");
+        $stmt = $pdo->prepare('SELECT email, expires_at FROM password_resets WHERE token = :token LIMIT 1');
         $stmt->execute([':token' => $token]);
         $resetRow = $stmt->fetch();
 
@@ -451,55 +383,33 @@ if ($action === 'reset-password' && $method === 'POST') {
             exit;
         }
 
-        // Verificar expiración
-        $expiresAt = strtotime($resetRow['expires_at'] ?? '2000-01-01');
-        if ($expiresAt < time()) {
+        if (strtotime($resetRow['expires_at'] ?? '2000-01-01') < time()) {
             http_response_code(400);
             echo json_encode(['error' => 'El enlace de recuperación ha expirado. Por favor solicita uno nuevo.']);
             exit;
         }
 
         $email = strtolower(trim($resetRow['email']));
-        $uTable = getUsersTableName($pdo);
-        $colsStmt = $pdo->query("DESCRIBE `$uTable`");
-        $cols = $colsStmt ? $colsStmt->fetchAll(PDO::FETCH_COLUMN) : [];
-
-        $emailCol = null;
-        foreach (['email', 'correo', 'mail', 'user_email', 'username', 'usuario', 'COL 2', 'col 2', 'COL_2', 'col_2'] as $c) {
-            if (in_array($c, $cols, true)) { $emailCol = $c; break; }
-        }
-        if (!$emailCol && isset($cols[1])) $emailCol = $cols[1];
-        if (!$emailCol) $emailCol = 'email';
-
-        $passCol = null;
-        foreach (['password_hash', 'password', 'clave', 'pass', 'hash', 'COL 3', 'col 3', 'COL_3', 'col_3'] as $c) {
-            if (in_array($c, $cols, true)) { $passCol = $c; break; }
-        }
-        if (!$passCol && isset($cols[2])) $passCol = $cols[2];
-        if (!$passCol) $passCol = 'password_hash';
-
-        // Actualizar contraseña con BCRYPT
-        $hash = password_hash($password, PASSWORD_BCRYPT);
-        $updateStmt = $pdo->prepare("UPDATE `$uTable` SET `$passCol` = :hash WHERE LOWER(`$emailCol`) = :email");
-        $updateStmt->execute([
-            ':hash'  => $hash,
+        $pdo->prepare('UPDATE users_rows SET password_hash = :hash WHERE email = :email')->execute([
+            ':hash'  => password_hash($password, PASSWORD_BCRYPT),
             ':email' => $email
         ]);
 
-        // Consumir token para que no se pueda reutilizar
-        $delStmt = $pdo->prepare("DELETE FROM password_resets WHERE token = :token OR LOWER(email) = :email");
-        $delStmt->execute([':token' => $token, ':email' => $email]);
+        // Consumir el token (y cualquier otro de ese correo) para que no se pueda reutilizar.
+        $pdo->prepare('DELETE FROM password_resets WHERE token = :token OR email = :email')->execute([':token' => $token, ':email' => $email]);
 
         echo json_encode([
             'ok'      => true,
             'message' => 'Contraseña actualizada exitosamente. Ya puedes iniciar sesión con tu nueva contraseña.'
         ]);
     } catch (Throwable $e) {
+        error_log('SmartISP reset-password error: ' . $e->getMessage());
         http_response_code(500);
-        echo json_encode(['error' => 'Error al restablecer la contraseña: ' . $e->getMessage()]);
+        echo json_encode(['error' => 'No se pudo restablecer la contraseña. Inténtalo nuevamente.']);
     }
     exit;
 }
+
 
 // -------------------------------------------------------------
 // CAMBIO DE CONTRASEÑA DE USUARIO (/api/auth/change-password)

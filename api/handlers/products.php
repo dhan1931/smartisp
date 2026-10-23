@@ -103,50 +103,13 @@ if ($action === 'catalog' && $method === 'GET') {
         $stmt->execute();
         $products = array_map('normalizeProductRow', $stmt->fetchAll());
 
-        $stmtContent = $pdo->query("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows
+        // Solo esta lista fija de ajustes públicos: ni logos pesados (van por site-content) ni
+        // nada de correo. Antes había además un filtro por prefijos/claves sensibles que, con
+        // esta lista, nunca descartaba nada.
+        $content = $pdo->query("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows
             WHERE setting_key IN ('hero_title', 'hero_text', 'primary_color', 'footer_text', 'catalog_visible', 'hero_visible', 'benefits_visible',
                 'footer_whatsapp', 'footer_email', 'footer_address',
-                'footer_social_instagram', 'footer_social_facebook', 'footer_social_youtube', 'footer_social_linkedin')");
-        $allContent = $stmtContent ? $stmtContent->fetchAll() : [];
-        $content = [];
-        $excludePrefixes = [
-            'solutions_grid_html', 'advantages_grid_html', 'about_visual_html', 'stats_grid_html',
-            'landing_logo_dark_image', 'about_', 'contact_', 'mission_', 'vision_', 'value', 'sol', 'adv', 'stat'
-        ];
-        $sensitiveKeys = [
-            'admin_email', 'smtp_provider', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass',
-            'smtp_secure', 'smtp_from', 'resend_api_key', 'email_from'
-        ];
-        foreach ($allContent as $item) {
-            $k = (string)($item['key'] ?? '');
-            $normalizedKey = strtolower($k);
-            // La marca se carga por site-content. logo_image puede ser un PNG base64 de ~1 MB;
-            // incluirlo aquí retrasaba la primera página de productos y duplicaba la descarga.
-            if (in_array($normalizedKey, [
-                'logo_image', 'landing_logo_image', 'logo_dark_image', 'landing_logo_dark_image',
-                'logo_text', 'landing_logo_text', 'brand_name', 'logo_type', 'landing_logo_type',
-                'logo_height', 'landing_logo_height', 'logo_dark_height', 'landing_logo_dark_height',
-                'logo_dark_invert', 'landing_logo_dark_invert'
-            ], true)) {
-                continue;
-            }
-            if (in_array($normalizedKey, $sensitiveKeys, true)
-                || str_contains($normalizedKey, 'pass')
-                || str_contains($normalizedKey, 'secret')
-                || str_contains($normalizedKey, 'api_key')) {
-                continue;
-            }
-            $shouldExclude = false;
-            foreach ($excludePrefixes as $prefix) {
-                if (str_starts_with($k, $prefix)) {
-                    $shouldExclude = true;
-                    break;
-                }
-            }
-            if (!$shouldExclude) {
-                $content[] = $item;
-            }
-        }
+                'footer_social_instagram', 'footer_social_facebook', 'footer_social_youtube', 'footer_social_linkedin')")->fetchAll();
 
         $categories = $page === 1 ? getDynamicCategoriesList($pdo, true) : [];
 
@@ -177,11 +140,7 @@ if ($action === 'catalog' && $method === 'GET') {
 if ($action === 'admin-dashboard-insights') {
     requireAdminAuth();
 
-    $tableExists = static function (string $table) use ($pdo): bool {
-        $stmt = $pdo->prepare('SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table LIMIT 1');
-        $stmt->execute([':table' => $table]);
-        return (bool)$stmt->fetchColumn();
-    };
+    $tableExists = static fn(string $table): bool => smartispTableExists($pdo, $table);
 
     $products = [];
     $hasOrderItems = $tableExists('order_items');

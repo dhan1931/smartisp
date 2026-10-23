@@ -62,7 +62,7 @@ if ($pdo && $slug !== '') {
     try {
         $pTable = getProductsTableName($pdo);
         ensureProductTableColumns($pdo, $pTable);
-        $hasInventoryTable = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'product_inventory'")->fetchColumn() > 0;
+        $hasInventoryTable = smartispTableExists($pdo, 'product_inventory');
         $stmt = $pdo->query("
             SELECT TRIM(category) AS category, TRIM(subcategory) AS subcategory, COUNT(*) AS product_count
             FROM `$pTable`
