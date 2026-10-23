@@ -78,7 +78,7 @@
 <body>
   <link rel="stylesheet" href="/assets/css/admin-nav.css?v=admin-brand-20261011">
   <div id="smartisp-admin-nav" class="is-loading" data-active="pedidos"></div>
-  <script src="/assets/js/admin-nav.js?v=admin-cotizaciones-link-20261017" defer></script>
+  <script src="/assets/js/admin-nav.js?v=admin-inventario-20261023" defer></script>
   <header class="top"><div><h1>SmartISP Administracion</h1><span>Centro de pedidos</span></div></header>
   <main class="shell">
     <section id="accessDeniedPanel" class="login hidden">
@@ -159,11 +159,13 @@
         <strong>Total</strong>
         <strong id="modalTotal" style="color:var(--blue);font-size:16px;"></strong>
       </div>
+      <div id="modalPayment" style="margin:-10px 0 18px;color:var(--muted);font-size:12.5px;"></div>
 
       <form id="statusForm">
         <label>Cambiar estado
           <select id="statusSelect" name="status"></select>
         </label>
+        <div id="statusHint" style="margin:-4px 0 12px;color:var(--muted);font-size:12.5px;line-height:1.45;"></div>
         <label>Nota interna / mensaje al cliente (opcional)
           <textarea id="statusNote" name="note" rows="2" placeholder="Se incluye en el correo que recibe el cliente si lo completas."></textarea>
         </label>
@@ -353,9 +355,17 @@
 
     let currentModalOrder = null;
     let updatingStatus = false;
+    // Qué hace cada estado además de avisar al cliente (pago e inventario, ver api/shop.php).
+    const STATUS_EFFECTS = {
+      paid: 'Registra el pago como cobrado: el pedido pasa a contar en las ventas del dashboard.',
+      shipped: 'Descuenta del inventario las unidades de los productos con stock controlado.',
+      delivered: 'Descuenta del inventario las unidades de los productos con stock controlado.',
+      cancelled: 'Libera el stock apartado (o lo devuelve al inventario si ya se había enviado).',
+    };
     const syncStatusSubmitButton = () => {
       const selectedStatus = String($('#statusSelect').value || '').toLowerCase();
       const currentStatus = String(currentModalOrder?.status || '').toLowerCase();
+      $('#statusHint').textContent = selectedStatus !== currentStatus ? (STATUS_EFFECTS[selectedStatus] || '') : '';
       $('#statusSubmitBtn').disabled = updatingStatus || !currentModalOrder || selectedStatus === currentStatus;
     };
 
@@ -386,6 +396,8 @@
             </div>`).join('')
           : '<div style="color:var(--muted);font-size:13px;">Sin items registrados.</div>';
         $('#modalTotal').textContent = money(o.total);
+        const PAYMENT_LABELS = { paid: 'Cobrado', confirmed: 'Cobrado', pending: 'Pendiente de cobro', quote_pending: 'Cotización (sin cobro)', failed: 'Fallido', refunded: 'Reembolsado' };
+        $('#modalPayment').textContent = o.payment_status ? `Pago: ${PAYMENT_LABELS[o.payment_status] || o.payment_status}${o.payment_provider ? ' · ' + o.payment_provider : ''}` : '';
 
         const select = $('#statusSelect');
         select.innerHTML = STATUS_FLOW.concat(STATUS_META[o.status] && !STATUS_FLOW.includes(o.status) ? [o.status] : [])

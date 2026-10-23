@@ -5,6 +5,7 @@ const required = [
   'index.html', 'tienda.html', 'nosotros.html', 'servicios.html', 'checkout.html',
   'admin.html', 'configuracion.html', 'campanas.html', 'pedidos.html', 'cotizaciones.html', 'clientes.html', 'categorias.html',
   'editor-catalogo.html', 'editor-landing.html', 'login.html', 'reset-password.html',
+  'inventario.html', 'estadisticas.html', 'reportes.html', 'assets/js/admin-page.js', 'assets/css/admin-page.css', 'api/shop.php',
   '.htaccess', 'robots.txt', 'sitemap.xml', 'sitemap-main.xml',
   'producto.php', 'categoria.php', 'productos-destacados.php', 'categorias-destacadas.php',
   'sitemap-products.php', 'sitemap-categories.php', 'api/router.php', 'api/config.php',

@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SmartISP | Reportes</title>
+  <link rel="icon" href="/assets/favicons/favicon.ico">
+  <link rel="stylesheet" href="/assets/css/admin-nav.css?v=admin-brand-20261011">
+  <link rel="stylesheet" href="/assets/css/admin-page.css?v=20261023">
+  <script src="/assets/vendor/lucide.min.js?v=1.55.0" defer></script>
+  <script src="/assets/js/admin-nav.js?v=admin-inventario-20261023" defer></script>
+  <script src="/assets/js/admin-page.js?v=20261023" defer></script>
+  <style>
+    .reports { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .report { display: flex; flex-direction: column; gap: 14px; }
+    .report-head { display: flex; gap: 12px; align-items: flex-start; }
+    .report-icon { display: grid; flex: none; place-items: center; width: 40px; height: 40px; border-radius: 8px; background: var(--blue-wash); color: var(--blue-dark); }
+    .report-icon svg { width: 20px; height: 20px; }
+    .report h2 { margin: 0 0 4px; font-size: 16px; }
+    .report p { margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+    .report-columns { color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .report-columns strong { color: var(--ink); }
+    .range { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .range input { height: 38px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); }
+    .report footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+    .report footer small { color: var(--muted); }
+    .tip { margin-top: 16px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+    @media (max-width: 950px) { .reports { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div id="smartisp-admin-nav" class="is-loading" data-active="reportes"></div>
+  <main class="shell" id="app" hidden>
+    <header class="page-head">
+      <div><h1>Reportes</h1><p>Descarga los datos de la tienda en CSV para abrirlos en Excel o Google Sheets.</p></div>
+      <div class="head-actions"><a class="button" href="/estadisticas.html"><i data-lucide="bar-chart-3"></i> Ver estadísticas</a></div>
+    </header>
+
+    <div class="reports">
+      <section class="card report">
+        <div class="report-head"><span class="report-icon"><i data-lucide="receipt"></i></span><div><h2>Pedidos</h2><p>Cada pedido del periodo con su cliente, dirección, artículos y total. Útil para contabilidad y conciliación de pagos.</p></div></div>
+        <div class="range">
+          <div class="segmented" id="orderPresets" role="group" aria-label="Periodo de pedidos">
+            <button type="button" data-days="7">7 días</button>
+            <button type="button" data-days="30" class="is-active">30 días</button>
+            <button type="button" data-days="90">90 días</button>
+            <button type="button" data-month="current">Este mes</button>
+            <button type="button" data-month="previous">Mes anterior</button>
+          </div>
+          <label class="muted">Desde <input type="date" id="ordersFrom"></label>
+          <label class="muted">hasta <input type="date" id="ordersTo"></label>
+        </div>
+        <div class="report-columns"><strong>Columnas:</strong> pedido, fecha, estado, pago, cliente, correo, teléfono, ciudad, dirección, artículos, unidades, total.</div>
+        <footer><small id="ordersRangeText"></small><button class="button primary" type="button" data-export="orders"><i data-lucide="download"></i> Descargar pedidos</button></footer>
+      </section>
+
+      <section class="card report">
+        <div class="report-head"><span class="report-icon"><i data-lucide="package"></i></span><div><h2>Catálogo de productos</h2><p>Todos los productos con SKU, categoría, precio y si están visibles en la tienda.</p></div></div>
+        <div class="report-columns"><strong>Columnas:</strong> ID, SKU, nombre, categoría, subcategoría, precio, visible, imagen.</div>
+        <footer><small>Estado actual del catálogo</small><button class="button primary" type="button" data-export="products"><i data-lucide="download"></i> Descargar productos</button></footer>
+      </section>
+
+      <section class="card report">
+        <div class="report-head"><span class="report-icon"><i data-lucide="users"></i></span><div><h2>Clientes registrados</h2><p>Cuentas de clientes con sus datos de contacto, cantidad de pedidos y valor comprado.</p></div></div>
+        <div class="report-columns"><strong>Columnas:</strong> ID, nombre, apellido, correo, teléfono, registrado, pedidos, valor no anulado, último pedido.</div>
+        <footer><small>No incluye compradores invitados</small><button class="button primary" type="button" data-export="customers"><i data-lucide="download"></i> Descargar clientes</button></footer>
+      </section>
+
+      <section class="card report">
+        <div class="report-head"><span class="report-icon"><i data-lucide="boxes"></i></span><div><h2>Inventario</h2><p>Stock de cada producto: disponible, reservado por pedidos en curso y libre para vender.</p></div></div>
+        <div class="report-columns"><strong>Columnas:</strong> ID, SKU, nombre, categoría, stock controlado, disponible, reservado, libre.</div>
+        <footer><small>Estado actual del inventario</small><button class="button primary" type="button" data-export="inventory"><i data-lucide="download"></i> Descargar inventario</button></footer>
+      </section>
+    </div>
+    <p class="tip">Los archivos usan punto y coma (;) como separador y codificación UTF-8, el formato que Excel abre directamente con la configuración regional de Ecuador. Contienen datos personales de clientes: guárdalos en un lugar seguro.</p>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => {
+      const { $, download, toast } = SmartAdmin;
+      const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const fmt = value => new Date(value + 'T12:00:00').toLocaleDateString('es-EC', { day: 'numeric', month: 'short', year: 'numeric' });
+
+      const setRange = (from, to) => {
+        $('#ordersFrom').value = iso(from);
+        $('#ordersTo').value = iso(to);
+        updateText();
+      };
+      const updateText = () => {
+        const from = $('#ordersFrom').value, to = $('#ordersTo').value;
+        $('#ordersRangeText').textContent = from && to ? `${fmt(from)} – ${fmt(to)}` : '';
+      };
+      const lastDays = days => { const to = new Date(), from = new Date(); from.setDate(to.getDate() - (days - 1)); setRange(from, to); };
+
+      $('#orderPresets').addEventListener('click', event => {
+        const button = event.target.closest('button');
+        if (!button) return;
+        $('#orderPresets').querySelectorAll('button').forEach(b => b.classList.toggle('is-active', b === button));
+        if (button.dataset.days) { lastDays(Number(button.dataset.days)); return; }
+        const now = new Date();
+        const offset = button.dataset.month === 'previous' ? 1 : 0;
+        const from = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+        const to = offset ? new Date(now.getFullYear(), now.getMonth(), 0) : now;
+        setRange(from, to);
+      });
+      ['#ordersFrom', '#ordersTo'].forEach(id => $(id).addEventListener('change', () => {
+        $('#orderPresets').querySelectorAll('button').forEach(b => b.classList.remove('is-active'));
+        updateText();
+      }));
+
+      document.querySelectorAll('[data-export]').forEach(button => button.addEventListener('click', async () => {
+        const type = button.dataset.export;
+        let query = `admin-export?type=${type}`;
+        if (type === 'orders') {
+          const from = $('#ordersFrom').value, to = $('#ordersTo').value;
+          if (!from || !to || from > to) { toast('Elige un rango de fechas válido.', true); return; }
+          query += `&from=${from}&to=${to}`;
+        }
+        button.disabled = true;
+        try { await download(query); toast('Reporte descargado.'); }
+        catch (error) { toast(error.message, true); }
+        finally { button.disabled = false; }
+      }));
+
+      lastDays(30);
+    }));
+  </script>
+</body>
+</html>

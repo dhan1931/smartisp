@@ -141,7 +141,7 @@ if ($product) {
         try {
             $hasInventoryTable = smartispTableExists($pdo, 'product_inventory');
             if ($hasInventoryTable) {
-                $invStmt = $pdo->prepare('SELECT GREATEST(quantity_available - quantity_reserved, 0) AS available_qty FROM product_inventory WHERE product_id = :id LIMIT 1');
+                $invStmt = $pdo->prepare('SELECT GREATEST(CAST(quantity_available AS SIGNED) - CAST(quantity_reserved AS SIGNED), 0) AS available_qty FROM product_inventory WHERE product_id = :id LIMIT 1');
                 $invStmt->execute([':id' => $product['id']]);
                 $availableQty = $invStmt->fetchColumn();
                 if ($availableQty !== false && (int)$availableQty <= 0) {
@@ -201,7 +201,7 @@ if ($product && $pdo) {
     try {
         $hasInventoryTable = smartispTableExists($pdo, 'product_inventory');
         if ($hasInventoryTable) {
-            $invStmt = $pdo->prepare('SELECT GREATEST(quantity_available - quantity_reserved, 0) AS available_qty FROM product_inventory WHERE product_id = :id LIMIT 1');
+            $invStmt = $pdo->prepare('SELECT GREATEST(CAST(quantity_available AS SIGNED) - CAST(quantity_reserved AS SIGNED), 0) AS available_qty FROM product_inventory WHERE product_id = :id LIMIT 1');
             $invStmt->execute([':id' => $product['id']]);
             $availableQty = $invStmt->fetchColumn();
             if ($availableQty !== false) {

@@ -166,7 +166,7 @@ if ($pdo && $slug !== '') {
             elseif ($sortOrder === 'precio_desc') $orderBySql = '(price <= 0) ASC, price DESC, name ASC';
             elseif ($sortOrder === 'nombre') $orderBySql = 'name ASC';
             $stmtProducts = $pdo->prepare("
-                SELECT p.*" . ($hasInventoryTable ? ", (SELECT GREATEST(quantity_available - quantity_reserved, 0) FROM product_inventory WHERE product_id = p.id LIMIT 1) AS available_qty" : ", NULL AS available_qty") . "
+                SELECT p.*" . ($hasInventoryTable ? ", (SELECT GREATEST(CAST(quantity_available AS SIGNED) - CAST(quantity_reserved AS SIGNED), 0) FROM product_inventory WHERE product_id = p.id LIMIT 1) AS available_qty" : ", NULL AS available_qty") . "
                 FROM `$pTable` p
                 WHERE $where
                 ORDER BY $orderBySql

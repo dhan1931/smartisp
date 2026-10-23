@@ -29,6 +29,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/shop.php';
 require_once __DIR__ . '/mailer.php';
 require_once __DIR__ . '/roles.php';
 
@@ -267,6 +268,8 @@ require __DIR__ . '/handlers/content.php';
 require __DIR__ . '/handlers/orders.php';
 require __DIR__ . '/handlers/customers.php';
 require __DIR__ . '/handlers/quotes.php';
+require __DIR__ . '/handlers/inventory.php';
+require __DIR__ . '/handlers/analytics.php';
 require __DIR__ . '/handlers/auth.php';
 
 // Acción no encontrada
