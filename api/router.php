@@ -14,6 +14,57 @@ set_exception_handler(function (Throwable $e) {
     exit;
 });
 
+$requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+$earlyAction = trim(explode('?', str_replace('auth/', '', (string)($_GET['action'] ?? ($_GET['route'] ?? ''))))[0], '/');
+
+require_once __DIR__ . '/db.php';
+
+// -------------------------------------------------------------
+// Archivos subidos (banners de campañas, fotos de producto) que viven fuera de public_html (ver
+// getSmartispUploadsDir en db.php) y por eso pasan por PHP. Se atienden ANTES de abrir sesión y
+// base: antes cada imagen de la portada abría ambas sin usarlas. Los nombres son aleatorios por
+// subida (un archivo nuevo = nombre nuevo), así que se pueden cachear como inmutables, y con
+// ETag/Last-Modified el navegador revalida con un 304 en vez de volver a bajar la imagen.
+if ($earlyAction === 'serve-upload' && in_array($requestMethod, ['GET', 'HEAD'], true)) {
+    $category = (string)($_GET['category'] ?? '');
+    $file = (string)($_GET['file'] ?? '');
+    $path = in_array($category, ['campaigns', 'products', 'categories', 'brands'], true) && preg_match('/^[A-Za-z0-9._-]+$/', $file)
+        ? getSmartispUploadsDir($category) . '/' . $file
+        : '';
+    if ($path === '' || !is_file($path)) {
+        http_response_code(404);
+        echo json_encode(['error' => 'Imagen no encontrada.']);
+        exit;
+    }
+    $mtime = (int)filemtime($path);
+    $size = (int)filesize($path);
+    $etag = '"' . dechex($mtime) . '-' . dechex($size) . '"';
+    header_remove('Pragma');
+    header_remove('Expires');
+    header('Cache-Control: public, max-age=31536000, immutable');
+    header('ETag: ' . $etag);
+    header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $mtime) . ' GMT');
+    $ifNoneMatch = trim((string)($_SERVER['HTTP_IF_NONE_MATCH'] ?? ''));
+    $ifModifiedSince = strtotime((string)($_SERVER['HTTP_IF_MODIFIED_SINCE'] ?? '')) ?: 0;
+    if (($ifNoneMatch !== '' && $ifNoneMatch === $etag) || ($ifNoneMatch === '' && $ifModifiedSince >= $mtime)) {
+        http_response_code(304);
+        exit;
+    }
+    $ext = strtolower((string)pathinfo($path, PATHINFO_EXTENSION));
+    header('Content-Type: ' . (['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp', 'gif' => 'image/gif'][$ext] ?? 'application/octet-stream'));
+    header('Content-Length: ' . $size);
+    if ($requestMethod !== 'HEAD') readfile($path);
+    exit;
+}
+
+// Las peticiones de lectura (GET) leen la sesión y sueltan su bloqueo al instante
+// (read_and_close). Con sesiones en archivo, PHP atiende de a una las peticiones de un mismo
+// usuario mientras alguna tenga la sesión abierta: el dashboard dispara 6 consultas en paralelo
+// y la tienda varias, y esperaban en fila. Lo único que un GET escribía en la sesión era el
+// refresco del usuario (se relee de la base en cada petición) y el carrito de deseos vacío
+// inicial; login, registro, logout y la lista de deseos escriben por POST/DELETE.
+define('SMARTISP_SESSION_READONLY', in_array($requestMethod, ['GET', 'HEAD'], true) && $earlyAction !== 'logout');
+
 if (session_status() === PHP_SESSION_NONE) {
     if (!headers_sent()) {
         @session_set_cookie_params([
@@ -25,10 +76,9 @@ if (session_status() === PHP_SESSION_NONE) {
             'samesite' => 'Lax'
         ]);
     }
-    @session_start();
+    @session_start(SMARTISP_SESSION_READONLY ? ['read_and_close' => true] : []);
 }
 
-require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/shop.php';
 require_once __DIR__ . '/mailer.php';
 require_once __DIR__ . '/roles.php';
@@ -82,7 +132,8 @@ function getAuthUser(): ?array {
 }
 
 function resolveAuthUser(): ?array {
-    if (session_status() === PHP_SESSION_NONE) {
+    // En modo lectura la sesión ya se leyó y se cerró a propósito: no reabrirla (volvería a bloquear).
+    if (session_status() === PHP_SESSION_NONE && !SMARTISP_SESSION_READONLY) {
         @session_start();
     }
     $user = $_SESSION['user'] ?? null;
@@ -206,35 +257,7 @@ if (strpos($action, '?') !== false) {
     parse_str($queryPart, $extraGet);
     $_GET = array_merge($_GET, $extraGet);
 }
-$method = $_SERVER['REQUEST_METHOD'];
-
-// -------------------------------------------------------------
-// Sirve archivos subidos en tiempo real (banners de campañas, fotos de producto) que viven
-// fuera de public_html (ver getSmartispUploadsDir en db.php) y por lo tanto no tienen un
-// archivo estático real que Apache pueda servir directo tras un deploy. No requiere sesión:
-// son imágenes públicas de la tienda. No usa $pdo, por eso va antes de ese chequeo.
-if ($action === 'serve-upload' && $method === 'GET') {
-    $category = (string)($_GET['category'] ?? '');
-    $file = (string)($_GET['file'] ?? '');
-    if (!in_array($category, ['campaigns', 'products', 'categories', 'brands'], true) || !preg_match('/^[A-Za-z0-9._-]+$/', $file)) {
-        http_response_code(404);
-        echo json_encode(['error' => 'Imagen no encontrada.']);
-        exit;
-    }
-    $path = getSmartispUploadsDir($category) . '/' . $file;
-    if (!is_file($path)) {
-        http_response_code(404);
-        echo json_encode(['error' => 'Imagen no encontrada.']);
-        exit;
-    }
-    $ext = strtolower((string)pathinfo($path, PATHINFO_EXTENSION));
-    $mime = ['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp', 'gif' => 'image/gif'][$ext] ?? 'application/octet-stream';
-    header('Content-Type: ' . $mime);
-    header('Content-Length: ' . (string)filesize($path));
-    header('Cache-Control: public, max-age=604800');
-    readfile($path);
-    exit;
-}
+$method = $requestMethod;
 
 // -------------------------------------------------------------
 // Handlers por dominio (DEV-20261005-015). Cada require comprueba $action internamente y
