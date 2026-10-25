@@ -6,10 +6,10 @@
   <title>SmartISP | Inventario</title>
   <link rel="icon" href="/assets/favicons/favicon.ico">
   <link rel="stylesheet" href="/assets/css/admin-nav.css?v=admin-brand-20261011">
-  <link rel="stylesheet" href="/assets/css/admin-page.css?v=20261023">
+  <link rel="stylesheet" href="/assets/css/admin-page.css?v=20261025">
   <script src="/assets/vendor/lucide.min.js?v=1.55.0" defer></script>
   <script src="/assets/js/admin-nav.js?v=admin-inventario-20261023" defer></script>
-  <script src="/assets/js/admin-page.js?v=20261023" defer></script>
+  <script src="/assets/js/admin-page.js?v=20261025" defer></script>
   <style>
     .product-cell { display: flex; align-items: center; gap: 11px; min-width: 240px; }
     .thumb { flex: none; width: 42px; height: 42px; border: 1px solid var(--line-soft); border-radius: 6px; background: #f6f9fa center / contain no-repeat; }
@@ -89,7 +89,9 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => {
       const { $, esc, number, api, post, toast, icons } = SmartAdmin;
-      const state = { page: 1, limit: 25, totalPages: 1, q: '', filter: 'all', low: 5 };
+      const initialFilter = new URLSearchParams(location.search).get('filter');
+      const state = { page: 1, limit: 25, totalPages: 1, q: '', filter: ['tracked', 'untracked', 'low', 'out'].includes(initialFilter) ? initialFilter : 'all', low: 5 };
+      $('#filter').value = state.filter;
 
       const statusBadge = item => {
         if (!item.tracked) return '<span class="badge">Venta libre</span>';

@@ -10,7 +10,7 @@
  *     document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => { ... }));
  *   </script>
  *
- * boot() comprueba la sesión (/api/auth/me). Si no hay sesión muestra un login; si la cuenta
+ * boot() comprueba la sesión (/api/auth/me). Si no hay sesión lleva a /login.html; si la cuenta
  * no es administradora, un aviso. Solo con un admin muestra #app y llama a onReady.
  */
 (function () {
@@ -127,55 +127,50 @@
     return !!user && ['admin', 'administrator', 'administrador'].indexOf(String(user.role || '').trim().toLowerCase()) !== -1;
   }
 
-  function gateHtml() {
-    return '' +
-      '<section class="notice" id="smartadmin-login" hidden>' +
-        '<h2>Acceso administrativo</h2><p>Inicia sesión con una cuenta administradora para continuar.</p>' +
-        '<form id="smartadmin-login-form">' +
-          '<label>Correo electrónico<input name="email" type="email" required autocomplete="username"></label>' +
-          '<label>Contraseña<input name="password" type="password" required autocomplete="current-password"></label>' +
-          '<button class="button primary" type="submit">Entrar</button><div role="status"></div>' +
-        '</form>' +
-      '</section>' +
-      '<section class="notice" id="smartadmin-denied" hidden>' +
-        '<h2>Acceso restringido</h2><p>Esta sección está disponible únicamente para administradores.</p>' +
-        '<a class="button" href="/tienda.html">Volver a la tienda</a>' +
-      '</section>';
+  // Sin sesión se va al login central (el mismo que usa el resto del panel), que vuelve aquí.
+  function goToLogin() {
+    window.location.replace('/login.html?admin=1&redirect=' + encodeURIComponent(window.location.pathname + window.location.search));
   }
 
+  async function switchAccount() {
+    try { await post('logout'); } catch (e) { /* la sesión ya no existía */ }
+    try {
+      ['smartisp.adminToken', 'smartisp.accountUser', 'smartisp.accountRemembered'].forEach(function (k) {
+        localStorage.removeItem(k); sessionStorage.removeItem(k);
+      });
+    } catch (e) { /* almacenamiento bloqueado */ }
+    goToLogin();
+  }
+
+  function deniedHtml(email) {
+    return '<section class="notice" id="smartadmin-denied">' +
+      '<h2>Acceso restringido</h2>' +
+      '<p>Iniciaste sesión como <strong>' + esc(email || 'cliente') + '</strong>. Esta sección está disponible únicamente para administradores.</p>' +
+      '<div class="head-actions"><a class="button" href="/tienda.html">Ir a la tienda</a>' +
+      '<button class="button primary" type="button" id="smartadmin-switch">Cambiar de cuenta</button></div>' +
+    '</section>';
+  }
+
+  // Comprueba la sesión y solo con un administrador muestra #app y llama a onReady.
   function boot(onReady) {
     var start = async function () {
-      document.body.insertAdjacentHTML('beforeend', gateHtml());
       var app = $('#app');
-      var view = function (name) {
-        app.hidden = name !== 'app';
-        $('#smartadmin-login').hidden = name !== 'login';
-        $('#smartadmin-denied').hidden = name !== 'denied';
-      };
-      var ready = async function () { view('app'); icons(); await onReady(); icons(); };
-
-      $('#smartadmin-login-form').addEventListener('submit', async function (event) {
-        event.preventDefault();
-        var status = event.currentTarget.querySelector('[role=status]');
-        status.textContent = '';
-        try {
-          var data = Object.fromEntries(new FormData(event.currentTarget));
-          data.adminOnly = true;
-          var result = await post('login', data);
-          if (!isAdmin(result.user)) { view('denied'); return; }
-          await ready();
-        } catch (error) {
-          status.textContent = error.message;
-        }
-      });
-
       try {
         var me = await api('me');
-        if (!isAdmin(me.user)) { view('denied'); return; }
-        await ready();
+        if (!isAdmin(me.user)) {
+          // Se quita el panel del DOM (no solo se oculta), como hacía admin.html (QA-027).
+          app.remove();
+          document.body.insertAdjacentHTML('beforeend', deniedHtml(me.user && me.user.email));
+          $('#smartadmin-switch').addEventListener('click', switchAccount);
+          return;
+        }
+        app.hidden = false;
+        icons();
+        await onReady(me.user);
+        icons();
       } catch (error) {
-        if (error.status === 401) { view('login'); return; }
-        view('app');
+        if (error.status === 401) { goToLogin(); return; }
+        app.hidden = false;
         toast(error.message, true);
       }
     };

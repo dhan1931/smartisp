@@ -91,14 +91,45 @@ tbody tr:hover { background: #fbfdfe; }
 .toast { position: fixed; right: 20px; bottom: 20px; z-index: 400; max-width: 360px; padding: 12px 16px; border-radius: 7px; background: var(--ink); color: #fff; box-shadow: 0 10px 30px #0a223040; font-weight: 700; }
 .toast.error { background: var(--red); }
 
-/* Puerta de acceso (login / sin permisos) que inyecta admin-page.js */
+/* Encabezado de tarjeta con título a la izquierda y acción a la derecha */
+.card-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+.card-head h2 { margin: 0 0 4px; font-size: 16px; }
+.card-head p { margin: 0; color: var(--muted); font-size: 12.5px; }
+.card-head a:not(.button) { color: var(--blue); font-size: 12.5px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.card-head a:not(.button):hover { text-decoration: underline; }
+.link-button { padding: 0; border: 0; background: none; color: var(--blue); font-weight: 700; cursor: pointer; }
+
+/* Gráficos (assets/js/admin-charts.js): una serie, un eje, columnas de <= 24px con extremo redondeado */
+.chart { --series: #087ea4; position: relative; height: 270px; }
+.chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.chart .tick { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.chart .grid-line { stroke: #e6edf0; stroke-width: 1; }
+.chart .baseline { stroke: #c9d6dc; stroke-width: 1; }
+.chart .col { fill: var(--series); }
+.chart .hit { fill: transparent; cursor: pointer; outline: none; }
+.chart .hit:hover + .col, .chart .hit:focus + .col { fill: #2a97ba; }
+.chart-empty { display: grid; place-items: center; height: 100%; color: var(--muted); text-align: center; }
+.tooltip { position: absolute; z-index: 5; min-width: 140px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 7px; background: #fff; box-shadow: 0 8px 24px #0a22301f; pointer-events: none; font-size: 12px; }
+.tooltip strong { display: block; font-size: 15px; }
+.tooltip span { color: var(--muted); }
+.data-table { margin-top: 12px; max-height: 300px; overflow: auto; border: 1px solid var(--line-soft); border-radius: 6px; }
+.data-table td, .data-table th { padding: 8px 12px; }
+
+/* Barras horizontales (ranking) */
+.bars { display: grid; gap: 11px; }
+.bar-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; color: inherit; text-decoration: none; }
+a.bar-row:hover .label { color: var(--blue); }
+.bar-row .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; font-size: 13px; }
+.bar-row .value { font-variant-numeric: tabular-nums; font-size: 12px; text-align: right; white-space: nowrap; }
+.bar-row .value small { color: var(--muted); }
+.bar-track { grid-column: 1 / -1; height: 8px; }
+.bar-fill { height: 100%; min-width: 4px; border-radius: 0 4px 4px 0; background: #087ea4; }
+
+/* Aviso de acceso restringido que inyecta admin-page.js */
 .notice { max-width: 530px; margin: 72px auto; padding: 26px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
 .notice h2 { margin: 0 0 8px; }
 .notice p { color: var(--muted); line-height: 1.5; }
-.notice label { display: block; margin: 14px 0 5px; font-weight: 700; }
-.notice input { width: 100%; height: 40px; margin-top: 5px; padding: 0 10px; border: 1px solid var(--line); border-radius: 5px; }
-.notice button { width: 100%; margin-top: 14px; }
-.notice [role=status] { margin-top: 10px; color: var(--red); }
+.notice .head-actions { margin-top: 16px; }
 
 /* Mientras se recargan datos, se conserva lo anterior atenuado (sin saltos de layout). */
 .is-refreshing { opacity: .55; transition: opacity .15s; pointer-events: none; }

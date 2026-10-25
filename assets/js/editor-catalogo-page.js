@@ -1926,7 +1926,18 @@
       if (requestedTab && document.getElementById(requestedTab)) {
         switchTab(requestedTab);
       }
+      // Enlaces directos desde el dashboard: ?photo=without_photo, ?visible=hidden, ?price=quote.
+      let presetFilter = false;
+      [['photo', 'filterPhoto'], ['visible', 'filterVisibility'], ['price', 'filterPrice']].forEach(([param, id]) => {
+        const select = document.getElementById(id);
+        const value = urlParams.get(param);
+        if (select && value && [...select.options].some(o => o.value === value)) { select.value = value; presetFilter = true; }
+      });
       const initialCat = urlParams.get('category') || urlParams.get('macro');
+      if (presetFilter && !initialCat) {
+        if (!requestedTab) switchTab('tab-products');
+        loadProductsPage(1);
+      }
       if (initialCat) {
         if (!requestedTab) switchTab('tab-products');
         const filterMacro = document.getElementById('filterMacroCat');
