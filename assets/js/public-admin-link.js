@@ -38,7 +38,7 @@
     if (token) headers.Authorization = `Bearer ${token}`;
   } catch {}
 
-  fetch('/api/auth/me', { credentials: 'include', cache: 'no-store', headers })
+  fetch('/api/auth/session', { credentials: 'include', cache: 'no-store', headers })
     .then(response => response.ok ? response.json() : null)
     .then(data => {
       const role = String(data?.user?.role || '').trim().toLowerCase();

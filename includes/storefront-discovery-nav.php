@@ -17,7 +17,7 @@ $storefrontNavLinks = [
   </form>
   <div class="storefront-actions">
     <a href="/tienda.html?openAccount=1" aria-label="Mi cuenta"><i data-lucide="user" width="18"></i><span>Mi cuenta</span></a>
-    <a class="storefront-cart" href="/tienda.html?openCart=1" aria-label="Carrito"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="store-product-cart-count" hidden>0</b></a>
+    <a class="storefront-cart" href="/tienda.html?openCart=1"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="store-product-cart-count" hidden>0</b></a>
     <button class="storefront-menu-button" type="button" aria-label="Abrir categorías" aria-expanded="false" aria-controls="storefrontNavigation"><i data-lucide="menu" width="20"></i></button>
   </div>
 </header>
@@ -49,7 +49,7 @@ $storefrontNavLinks = [
   </div>
 </nav>
 <link rel="stylesheet" href="/assets/css/storefront-cart.css?v=shared-cart-drawer-20261009">
-<script src="/assets/js/public-admin-link.js?v=public-admin-access-20261009" defer></script>
+<script src="/assets/js/public-admin-link.js?v=seo2-20261025" defer></script>
 <script src="/assets/js/storefront-cart.js?v=shared-cart-drawer-20261009" defer></script>
 <nav class="storefront-mobile-bar" aria-label="Accesos rápidos">
   <a href="/tienda.html"><i data-lucide="store" width="19"></i><span>Tienda</span></a>

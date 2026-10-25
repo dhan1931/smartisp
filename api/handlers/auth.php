@@ -268,6 +268,12 @@ if ($action === 'register' && $method === 'POST') {
 }
 
 
+if ($action === 'session' && $method === 'GET') {
+    echo json_encode(['user' => getAuthUser()]);
+    exit;
+}
+
+
 if ($action === 'me' && $method === 'GET') {
     $user = getAuthUser();
     if (!$user) {

@@ -1,12 +1,6 @@
 /**
- * Gráficos del panel en SVG/HTML plano (sin Chart.js): columnas con tooltip por columna y
- * barras horizontales. Una serie por gráfico y un solo eje: para comparar dos medidas se cambia
- * la medida con un selector, nunca dos escalas en el mismo gráfico.
- * Estilos en admin-page.css (.chart, .bars). Requiere admin-page.js (SmartAdmin.esc).
- *
- *   SmartCharts.columns(box, points, { key, format, axis, label, detail })
- *     points: [{ label, title, <key>: number, ... }]
- *     format(v) valor del tooltip · axis(v) texto del eje · detail(p) línea extra del tooltip
+ * Gráficos del panel en SVG (una serie y un eje por gráfico). Estilos en admin-page.css.
+ *   SmartCharts.columns(box, points, { key, format, axis, label, detail, emptyText })
  *   SmartCharts.bars(rows, emptyText) -> HTML; rows: [{ label, value, valueText, extra, href }]
  */
 (function () {

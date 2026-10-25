@@ -8,7 +8,7 @@
 
 header('Content-Type: application/xml; charset=utf-8');
 
-$cacheFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'smartisp_sitemap_products.xml';
+$cacheFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'smartisp_sitemap_products_v2.xml';
 $cacheTime = 21600; // 6 horas de caché
 
 if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < $cacheTime) && filesize($cacheFile) > 1000) {
@@ -19,13 +19,7 @@ if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < $cacheTime) && 
 require_once __DIR__ . '/api/db.php';
 
 function slugifySitemap(string $text): string {
-    $clean = @iconv('UTF-8', 'ASCII//TRANSLIT', $text);
-    if (!$clean) $clean = $text;
-    $clean = preg_replace('~[^\\pL\\d]+~u', '-', $clean);
-    $clean = trim($clean, '-');
-    $clean = preg_replace('~-+~', '-', $clean);
-    $clean = strtolower($clean);
-    return !empty($clean) ? substr($clean, 0, 80) : 'articulo';
+    return smartispSlug($text, 80, 'articulo');
 }
 
 $pdo = getDbConnection();
@@ -53,7 +47,7 @@ try {
         $slug = $id . '-' . slugifySitemap($name);
         $loc = $siteUrl . '/producto/' . rawurlencode($slug);
         
-        $updatedAt = !empty($row['updated_at']) ? date('Y-m-d', strtotime($row['updated_at'])) : date('Y-m-d');
+        $updatedAt = !empty($row['updated_at']) && strtotime((string)$row['updated_at']) ? date('Y-m-d', strtotime($row['updated_at'])) : '';
         
         $rawImg = (string)($row['image_url'] ?? '');
         $imgLoc = '';
@@ -67,7 +61,7 @@ try {
 
         echo "  <url>\n";
         echo "    <loc>" . htmlspecialchars($loc, ENT_XML1, 'UTF-8') . "</loc>\n";
-        echo "    <lastmod>{$updatedAt}</lastmod>\n";
+        if ($updatedAt !== '') echo "    <lastmod>{$updatedAt}</lastmod>\n";
         echo "    <changefreq>weekly</changefreq>\n";
         echo "    <priority>0.8</priority>\n";
         if (!empty($imgLoc)) {

@@ -19,12 +19,7 @@ $earlyAction = trim(explode('?', str_replace('auth/', '', (string)($_GET['action
 
 require_once __DIR__ . '/db.php';
 
-// -------------------------------------------------------------
-// Archivos subidos (banners de campañas, fotos de producto) que viven fuera de public_html (ver
-// getSmartispUploadsDir en db.php) y por eso pasan por PHP. Se atienden ANTES de abrir sesión y
-// base: antes cada imagen de la portada abría ambas sin usarlas. Los nombres son aleatorios por
-// subida (un archivo nuevo = nombre nuevo), así que se pueden cachear como inmutables, y con
-// ETag/Last-Modified el navegador revalida con un 304 en vez de volver a bajar la imagen.
+// Archivos subidos: se sirven antes de abrir sesión y base, cacheables (nombres únicos por subida).
 if ($earlyAction === 'serve-upload' && in_array($requestMethod, ['GET', 'HEAD'], true)) {
     $category = (string)($_GET['category'] ?? '');
     $file = (string)($_GET['file'] ?? '');
@@ -57,12 +52,21 @@ if ($earlyAction === 'serve-upload' && in_array($requestMethod, ['GET', 'HEAD'],
     exit;
 }
 
-// Las peticiones de lectura (GET) leen la sesión y sueltan su bloqueo al instante
-// (read_and_close). Con sesiones en archivo, PHP atiende de a una las peticiones de un mismo
-// usuario mientras alguna tenga la sesión abierta: el dashboard dispara 6 consultas en paralelo
-// y la tienda varias, y esperaban en fila. Lo único que un GET escribía en la sesión era el
-// refresco del usuario (se relee de la base en cada petición) y el carrito de deseos vacío
-// inicial; login, registro, logout y la lista de deseos escriben por POST/DELETE.
+// Archivo de verificación de IndexNow.
+if ($earlyAction === 'indexnow-key') {
+    require_once __DIR__ . '/shop.php';
+    $key = smartispIndexNowKey();
+    if ($key === '' || !hash_equals($key, (string)($_GET['key'] ?? ''))) {
+        http_response_code(404);
+        exit;
+    }
+    header('Content-Type: text/plain; charset=utf-8');
+    header('Cache-Control: public, max-age=86400');
+    echo $key;
+    exit;
+}
+
+// En GET la sesión se lee y se libera al instante para no serializar peticiones paralelas.
 define('SMARTISP_SESSION_READONLY', in_array($requestMethod, ['GET', 'HEAD'], true) && $earlyAction !== 'logout');
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -93,13 +97,7 @@ $pdo = getDbConnection();
 // y para decidir el rol otra vez después de autenticar. Todo eso se eliminó.
 
 function slugify(string $text): string {
-    $clean = @iconv('UTF-8', 'ASCII//TRANSLIT', $text);
-    if (!$clean) $clean = $text;
-    $clean = preg_replace('~[^\\pL\\d]+~u', '-', $clean);
-    $clean = trim($clean, '-');
-    $clean = preg_replace('~-+~', '-', $clean);
-    $clean = strtolower($clean);
-    return !empty($clean) ? substr($clean, 0, 80) : 'articulo';
+    return smartispSlug($text, 80, 'articulo');
 }
 
 function generateAdminAuthToken(array $user): string {

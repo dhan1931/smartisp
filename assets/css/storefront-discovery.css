@@ -1,4 +1,4 @@
-:root{--sd-navy:#102c3d;--sd-blue:#087ea4;--sd-ink:#17324d;--sd-muted:#60798f;--sd-line:#d8e5e7;--sd-pale:#f3f7f8;--sd-white:#fff;--sd-gold:#f5a524}
+:root{--sd-navy:#102c3d;--sd-blue:#087ea4;--sd-ink:#17324d;--sd-muted:#556d82;--sd-line:#d8e5e7;--sd-pale:#f3f7f8;--sd-white:#fff;--sd-gold:#f5a524}
 *{box-sizing:border-box}
 body{margin:0;background:var(--sd-pale);color:var(--sd-ink);font-family:'DM Sans',system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5}
 a{color:inherit;text-decoration:none}
@@ -8,7 +8,7 @@ svg{width:1em;height:1em;vertical-align:-.14em}
 .storefront-topbar span{display:flex;align-items:center;gap:7px}
 .storefront-nav-strip{display:none}
 .storefront-header{position:relative;z-index:1001;display:grid;grid-template-columns:minmax(150px,220px) minmax(240px,680px) auto;align-items:center;gap:22px;padding:12px 5vw;background:#fff;border-bottom:1px solid var(--sd-line);box-shadow:0 5px 18px rgba(16,44,61,.06)}
-.storefront-logo{display:inline-flex;align-items:center;min-width:0;color:var(--sd-navy);font-size:23px;font-weight:900}
+.storefront-logo{display:inline-flex;align-items:center;min-width:0;min-height:46px;color:var(--sd-navy);font-size:23px;font-weight:900}
 html:not(.public-brand-ready) .storefront-logo{opacity:0}.public-brand-ready .storefront-logo{opacity:1;transition:opacity .12s ease}.storefront-logo img{display:block;width:auto;max-width:100%;object-fit:contain}
 .storefront-search{display:flex;min-width:0;height:48px;overflow:hidden;border:2px solid #d8e8f1;border-radius:10px;background:#fff;box-shadow:0 8px 20px rgba(16,44,61,.06)}
 .storefront-search:focus-within{border-color:var(--sd-blue);box-shadow:0 0 0 4px rgba(8,126,164,.12)}
@@ -59,7 +59,7 @@ main.storefront-page,footer.storefront-footer{width:min(1680px,calc(100% - 48px)
 .store-product-add{display:flex;align-items:center;justify-content:center;gap:8px;min-height:38px;margin-top:9px;border:1px solid #72c9e3;border-radius:6px;background:#e9f8fc;color:#087ea4;font-size:13px;font-weight:850;cursor:pointer}
 .store-product-add:hover{background:#d7f2fa;border-color:#1798be}.store-product-add.is-added{border-color:#8dc9a8;background:#eff9f2;color:#217448}
 .store-product-add:disabled{border-color:#d4dee3;background:#f2f5f6;color:#71828b;cursor:not-allowed}
-.store-product-stock{margin-top:4px;color:#667b87;font-size:11px}.store-product-stock.is-available{color:#198244;font-weight:750}
+.store-product-stock{margin-top:4px;color:#5d717a;font-size:11px}.store-product-stock.is-available{color:#198244;font-weight:750}
 .store-product-cart-count{position:absolute;top:0;right:0;display:grid;place-items:center;min-width:16px;height:16px;padding:0 3px;border-radius:99px;background:var(--sd-gold);color:#17324d;font-size:10px;font-weight:900}
 .storefront-footer{padding:24px 0 36px;border-top:1px solid var(--sd-line);color:var(--sd-muted);font-size:13px}
 @media(max-width:1000px){.storefront-header{grid-template-columns:minmax(120px,170px) minmax(180px,1fr) auto;gap:12px}.storefront-navigation{gap:18px}}
@@ -113,3 +113,5 @@ main.storefront-page,footer.storefront-footer{width:min(1680px,calc(100% - 48px)
    no usa este archivo, no se ve afectado. La barra inferior de accesos rapidos (.storefront-mobile-bar)
    ya no se oculta: su CSS (linea 67) esta completa y funcional. */
 .storefront-category-menu{display:none !important}
+.about-us .eyebrow,.why-us .eyebrow,.services-grid-head .eyebrow,.services-grid-head>a,nav.breadcrumbs a{color:#0f6cb6}
+main .category-breadcrumb a,.category-sidebar-title .category-active-badge,summary .featured-filter-count,.store-product-add:not(.is-added):not(:disabled){color:#06708f}

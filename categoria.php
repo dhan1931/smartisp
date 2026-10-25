@@ -9,18 +9,7 @@
 require_once __DIR__ . '/api/db.php';
 
 function slugifyCategoryPage(string $text): string {
-    // iconv('UTF-8','ASCII//TRANSLIT', ...) es inconsistente entre builds/locales de PHP (en el
-    // hosting real deja apostrofes en vez de quitar el acento limpio, p. ej. "inform-aticos" en
-    // vez de "informaticos"), asi que los acentos del espanol se reemplazan primero a mano.
-    $accentMap = ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','ñ'=>'n','ü'=>'u','Á'=>'A','É'=>'E','Í'=>'I','Ó'=>'O','Ú'=>'U','Ñ'=>'N','Ü'=>'U'];
-    $clean = strtr($text, $accentMap);
-    $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT', $clean);
-    if ($ascii !== false) $clean = $ascii;
-    $clean = preg_replace('~[^\\pL\\d]+~u', '-', $clean);
-    $clean = trim($clean, '-');
-    $clean = preg_replace('~-+~', '-', $clean);
-    $clean = strtolower($clean);
-    return !empty($clean) ? substr($clean, 0, 90) : 'categoria';
+    return smartispSlug($text, 90, 'categoria');
 }
 
 function productSlugForCategoryPage(array $product): string {
@@ -86,6 +75,18 @@ if ($pdo && $slug !== '') {
                 $allCategoryNames[$name] = true;
                 if (slugifyCategoryPage($name) === $slug) {
                     $subcategoryMatches[$name][$parent] = ($subcategoryMatches[$name][$parent] ?? 0) + (int)$row['product_count'];
+                }
+            }
+        }
+
+        // Slugs del sitemap anterior (iconv): 301 a la URL actual.
+        if (!$categoryMatches && !$subcategoryMatches && !headers_sent()) {
+            foreach (array_keys($allCategoryNames) as $knownName) {
+                $legacy = @iconv('UTF-8', 'ASCII//TRANSLIT', (string)$knownName) ?: (string)$knownName;
+                $legacy = substr(strtolower(preg_replace('~-+~', '-', trim(preg_replace('~[^\pL\d]+~u', '-', $legacy), '-'))), 0, 90);
+                if ($legacy !== '' && $legacy === $slug && slugifyCategoryPage((string)$knownName) !== $slug) {
+                    header('Location: /categoria/' . rawurlencode(slugifyCategoryPage((string)$knownName)) . '/', true, 301);
+                    exit;
                 }
             }
         }
@@ -243,11 +244,12 @@ foreach ($products as $idx => $product) {
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
   <link rel="icon" type="image/svg+xml" href="/assets/favicons/favicon.svg">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
-  <script src="/assets/js/public-brand.js?v=admin-brand-20261011" defer></script>
-  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=mobile-bottom-bar-restore-20261019">
+  <script src="/assets/js/public-brand.js?v=seo2-20261025" defer></script>
+  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=seo2-20261025">
   <script src="/assets/vendor/lucide-icons.min.js?v=8707c619" defer></script>
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="SmartISP Ecuador">
+  <meta property="og:locale" content="es_EC">
   <meta property="og:title" content="<?= escapeCategoryPage($pageTitle) ?>">
   <meta property="og:description" content="<?= escapeCategoryPage($metaDesc) ?>">
   <meta property="og:url" content="<?= escapeCategoryPage($canonicalUrl) ?>">
@@ -278,7 +280,7 @@ foreach ($products as $idx => $product) {
   </script>
   <?php endif; ?>
   <style>
-    .category-breadcrumb{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:22px 0 12px;color:#60798f;font-size:13px}
+    .category-breadcrumb{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:22px 0 12px;color:#556d82;font-size:13px}
     .category-breadcrumb a{color:#087ea4}.category-breadcrumb a:hover{text-decoration:underline}
     .category-breadcrumb [aria-current=page]{overflow-wrap:anywhere;color:#17324d;font-weight:700}
     .category-breadcrumb-separator{color:#91a6b5}
@@ -288,7 +290,7 @@ foreach ($products as $idx => $product) {
     .category-banner{display:block;width:100%;min-width:0;max-height:200px;aspect-ratio:2.6;object-fit:cover;object-position:center;border:1px solid rgba(255,255,255,.8);border-radius:8px;background:#fff;box-shadow:0 14px 30px rgba(16,44,61,.12)}
     .category-eyebrow{color:#087ea4;font-size:11px;font-weight:850;text-transform:uppercase}
     .category-hero h1{margin:5px 0 7px;color:#102c3d;font-size:clamp(24px,2.6vw,32px);line-height:1.1;letter-spacing:0}
-    .category-hero p{max-width:760px;margin:0;color:#60798f;font-size:15px}
+    .category-hero p{max-width:760px;margin:0;color:#556d82;font-size:15px}
     .category-chips-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
     .category-chips-row span{display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border:1px solid rgba(8,126,164,.18);border-radius:8px;background:rgba(255,255,255,.8);color:#17324d;font-size:12px;font-weight:750;white-space:nowrap}
     .category-chips-row span i{color:#087ea4;flex-shrink:0}
@@ -298,20 +300,20 @@ foreach ($products as $idx => $product) {
     .category-sidebar-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 4px}
     .category-sidebar-title strong{color:#102c3d;font-size:15px}
     .category-active-badge{padding:3px 9px;border-radius:99px;background:#e8f5fa;color:#087ea4;font-size:10px;font-weight:850;white-space:nowrap}
-    .category-sidebar-subtitle{margin:0 0 12px;color:#60798f;font-size:12px;line-height:1.5}
+    .category-sidebar-subtitle{margin:0 0 12px;color:#556d82;font-size:12px;line-height:1.5}
     .category-sidebar-search{display:flex;align-items:center;gap:7px;margin-bottom:14px;padding:8px 10px;border:1px solid #c5d7e0;border-radius:6px;background:#f5f9fb}
     .category-sidebar-search input{flex:1;min-width:0;border:0;background:transparent;outline:0;font-size:12px;color:#17324d}
-    .category-sidebar-search i{color:#60798f;flex:0 0 auto}
+    .category-sidebar-search i{color:#556d82;flex:0 0 auto}
     .category-sidebar details{border-top:1px solid #d8e5e7}
     .category-sidebar details:first-of-type{border-top:0}
     .category-sidebar summary{display:flex;align-items:center;justify-content:space-between;padding:12px 2px;color:#102c3d;font-size:13px;font-weight:800;cursor:pointer;list-style:none}
     .category-sidebar summary::-webkit-details-marker{display:none}
-    .category-sidebar summary::after{content:"";width:8px;height:8px;border-right:2px solid #60798f;border-bottom:2px solid #60798f;transform:rotate(45deg);transition:transform .15s ease}
+    .category-sidebar summary::after{content:"";width:8px;height:8px;border-right:2px solid #556d82;border-bottom:2px solid #556d82;transform:rotate(45deg);transition:transform .15s ease}
     .category-sidebar details[open] summary::after{transform:rotate(-135deg)}
     .category-subcategory-list{display:grid;max-height:320px;overflow:auto;margin-bottom:8px}
     .category-subcategory-list a{display:flex;justify-content:space-between;gap:8px;padding:9px 2px;border-bottom:1px solid #eef2f4;color:#17324d;font-size:12px;font-weight:700}
     .category-subcategory-list a[aria-current=true]{color:#087ea4}
-    .category-subcategory-list small{color:#60798f}
+    .category-subcategory-list small{color:#556d82}
     .category-filter-form{display:grid;gap:10px;padding-bottom:4px}
     .category-filter-form label{display:grid;gap:4px;color:#17324d;font-size:12px;font-weight:750}
     .category-filter-form input[type=number]{width:100%;min-width:0;padding:9px;border:1px solid #bdced8;border-radius:5px}
@@ -324,14 +326,14 @@ foreach ($products as $idx => $product) {
     .category-results-main{min-width:0}
     .category-list-heading{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-top:0;flex-wrap:wrap}
     .category-list-heading h2{margin:0;color:#102c3d;font-size:22px}
-    .category-list-heading p{margin:3px 0 0;color:#60798f;font-size:13px}
+    .category-list-heading p{margin:3px 0 0;color:#556d82;font-size:13px}
     .category-sort{display:flex;align-items:center;gap:7px;font-size:12px;color:#17324d;font-weight:700}
     .category-sort select{padding:8px 10px;border:1px solid #bdced8;border-radius:6px;background:#fff;color:#17324d;font-size:12px;font-weight:750}
     .category-filters{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0 4px}
     .category-filters a{display:inline-flex;align-items:center;gap:8px;padding:8px 11px;border:1px solid #d8e5e7;border-radius:6px;background:#fff;color:#17324d;font-size:12px;font-weight:750}
     .category-filters a:hover,.category-filters a[aria-current=true]{border-color:#64bad3;background:#e8f5fa;color:#087ea4}
-    .category-filters small{color:#60798f;font-size:11px}
-    .category-pagination{display:flex;justify-content:center;align-items:center;gap:14px;margin:8px 0 30px;color:#60798f;font-size:13px}
+    .category-filters small{color:#556d82;font-size:11px}
+    .category-pagination{display:flex;justify-content:center;align-items:center;gap:14px;margin:8px 0 30px;color:#556d82;font-size:13px}
     .category-pagination a{padding:8px 12px;border:1px solid #d8e5e7;border-radius:6px;background:#fff;color:#087ea4;font-weight:750}
     .category-pagination a:focus-visible,.category-filters a:focus-visible,.category-breadcrumb a:focus-visible{outline:3px solid #71c6df;outline-offset:2px}
     .category-pagination span{min-width:96px;text-align:center}
@@ -512,12 +514,12 @@ foreach ($products as $idx => $product) {
       <span><i data-lucide="headphones" width="18"></i> Soporte técnico</span>
       <span><i data-lucide="handshake" width="18"></i> Asesoría especializada</span>
       <div class="site-footer-payments"><small>Métodos de pago:</small>
-        <span class="payment-badge" aria-label="Visa"><svg viewBox="0 0 48 30" width="40" height="26" role="img"><rect width="48" height="30" fill="#fff"/><text x="24" y="20" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="900" font-style="italic" fill="#1434CB" text-anchor="middle">VISA</text></svg></span>
-        <span class="payment-badge" aria-label="Mastercard"><svg viewBox="0 0 48 30" width="40" height="26" role="img"><rect width="48" height="30" fill="#fff"/><circle cx="20" cy="15" r="9" fill="#EB001B"/><circle cx="28" cy="15" r="9" fill="#F79E1B" fill-opacity=".92"/></svg></span>
-        <span class="payment-badge" aria-label="American Express"><svg viewBox="0 0 48 30" width="40" height="26" role="img"><rect width="48" height="30" fill="#006FCF"/><text x="24" y="19" font-family="Arial, Helvetica, sans-serif" font-size="9.5" font-weight="800" fill="#fff" text-anchor="middle">AMEX</text></svg></span>
-        <span class="payment-badge" aria-label="Diners Club"><svg viewBox="0 0 48 30" width="40" height="26" role="img"><rect width="48" height="30" fill="#fff"/><circle cx="24" cy="15" r="10" fill="#0079BE"/><path d="M24 7a8 8 0 0 0 0 16z" fill="#fff"/></svg></span>
-        <span class="payment-badge" aria-label="Banco Pichincha"><svg viewBox="0 0 48 30" width="40" height="26" role="img"><rect width="48" height="30" fill="#FFCB05"/><text x="24" y="18" font-family="Arial, Helvetica, sans-serif" font-size="7" font-weight="900" fill="#0A3D62" text-anchor="middle">PICHINCHA</text></svg></span>
-        <span class="payment-badge" aria-label="PayPhone"><svg viewBox="0 0 48 30" width="40" height="26" role="img"><rect width="48" height="30" fill="#00B4A6"/><text x="24" y="19" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="800" fill="#fff" text-anchor="middle">PayPhone</text></svg></span>
+        <span class="payment-badge" role="img" aria-label="Visa"><svg viewBox="0 0 48 30" width="40" height="26" aria-hidden="true"><rect width="48" height="30" fill="#fff"/><text x="24" y="20" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="900" font-style="italic" fill="#1434CB" text-anchor="middle">VISA</text></svg></span>
+        <span class="payment-badge" role="img" aria-label="Mastercard"><svg viewBox="0 0 48 30" width="40" height="26" aria-hidden="true"><rect width="48" height="30" fill="#fff"/><circle cx="20" cy="15" r="9" fill="#EB001B"/><circle cx="28" cy="15" r="9" fill="#F79E1B" fill-opacity=".92"/></svg></span>
+        <span class="payment-badge" role="img" aria-label="American Express"><svg viewBox="0 0 48 30" width="40" height="26" aria-hidden="true"><rect width="48" height="30" fill="#006FCF"/><text x="24" y="19" font-family="Arial, Helvetica, sans-serif" font-size="9.5" font-weight="800" fill="#fff" text-anchor="middle">AMEX</text></svg></span>
+        <span class="payment-badge" role="img" aria-label="Diners Club"><svg viewBox="0 0 48 30" width="40" height="26" aria-hidden="true"><rect width="48" height="30" fill="#fff"/><circle cx="24" cy="15" r="10" fill="#0079BE"/><path d="M24 7a8 8 0 0 0 0 16z" fill="#fff"/></svg></span>
+        <span class="payment-badge" role="img" aria-label="Banco Pichincha"><svg viewBox="0 0 48 30" width="40" height="26" aria-hidden="true"><rect width="48" height="30" fill="#FFCB05"/><text x="24" y="18" font-family="Arial, Helvetica, sans-serif" font-size="7" font-weight="900" fill="#0A3D62" text-anchor="middle">PICHINCHA</text></svg></span>
+        <span class="payment-badge" role="img" aria-label="PayPhone"><svg viewBox="0 0 48 30" width="40" height="26" aria-hidden="true"><rect width="48" height="30" fill="#00B4A6"/><text x="24" y="19" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="800" fill="#fff" text-anchor="middle">PayPhone</text></svg></span>
       </div>
     </div>
     <div class="site-footer-bottom">

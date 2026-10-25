@@ -1710,9 +1710,17 @@
 				</article>`;
 			}).join('');
 			section.classList.add('is-visible');
+			section.classList.remove('is-pending');
 			window.lucide?.createIcons();
 		};
+		let storefrontCampaignsSettled = false;
+		const settleStorefrontPlaceholders = () => {
+			if (storefrontCampaignsSettled) document.querySelector('#campaignFeatured')?.classList.remove('is-pending');
+			if (storefrontCampaignsSettled && !isCatalogLoading) document.querySelector('#miniCategories')?.classList.remove('is-pending');
+		};
+		setTimeout(() => { storefrontCampaignsSettled = true; document.querySelectorAll('#campaignFeatured, #miniCategories').forEach(el => el.classList.remove('is-pending')); }, 5000);
 		const renderMiniCategories = () => {
+			settleStorefrontPlaceholders();
 			const section = document.querySelector('#miniCategories');
 			const grid = document.querySelector('#miniCategoriesGrid');
 			if (!section || !grid || !catalogCategoryRows.length) return;
@@ -1748,6 +1756,7 @@
 			</a>`;
 			grid.innerHTML = cardsHtml + moreHtml;
 			section.classList.add('is-visible');
+			section.classList.remove('is-pending');
 			window.lucide?.createIcons();
 		};
 		const stopStorefrontRotation = () => { if (storefrontRotationTimer) clearInterval(storefrontRotationTimer); storefrontRotationTimer = 0; clearStorefrontImageTimers(); };
@@ -1888,10 +1897,7 @@
 			const area = document.querySelector('.store-campaign-area');
 			if (area) area.hidden = false;
 			const skeletonEl = document.querySelector('#storeCampaignSkeleton');
-			if (skeletonEl && !skeletonEl.hidden) {
-				skeletonEl.classList.add('is-fading');
-				setTimeout(() => { skeletonEl.hidden = true; }, 300);
-			}
+			if (skeletonEl) skeletonEl.hidden = true;
 			const banner = document.querySelector('#storeCampaign');
 			requestAnimationFrame(() => requestAnimationFrame(() => banner?.classList.add('is-faded-in')));
 		};
@@ -2051,6 +2057,9 @@
 			} catch (error) {
 				console.warn('No se pudieron cargar las campañas de la tienda:', error);
 				storeCampaignCollapse();
+			} finally {
+				storefrontCampaignsSettled = true;
+				settleStorefrontPlaceholders();
 			}
 		};
 		document.querySelector('#campaignProductsGrid')?.addEventListener('click', event => {
@@ -2162,7 +2171,7 @@
 			if (!window.isCategoriasView) return;
 			// El hero (.store-campaign-area) SI se muestra en modo catalogo -- usa el mismo
 			// componente rico que la portada, solo que con la zona "categorias" (ver mas abajo).
-			document.querySelectorAll('#storePromoChips, #campaignFeatured, .store-trust-row, #storeBrandsRow').forEach(el => { el.hidden = true; });
+			document.querySelectorAll('#storePromoChips, #campaignFeatured, .store-trust-row, #storeBrandsRow').forEach(el => { el.hidden = true; el.classList.remove('is-pending'); });
 		};
 		applyCategoriasViewMode();
 
@@ -2955,7 +2964,7 @@
 		}
 
 		// Validar y sincronizar sesión activa con backend
-		fetch('/api/auth/me', { credentials: 'include' })
+		fetch('/api/auth/session', { credentials: 'include' })
 			.then(async response => {
 				if (!response.ok) throw new Error('No hay sesión activa.');
 				return response.json();

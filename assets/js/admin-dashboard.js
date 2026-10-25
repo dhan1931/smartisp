@@ -1,11 +1,4 @@
-/**
- * Dashboard del panel (admin.html). Antes vivía inline en admin.html junto con ~1100 líneas de
- * código de pantallas que ya no estaban en esa página (importador de Excel, buscador de imágenes,
- * formularios de correo...): se conservó solo lo que el dashboard usa.
- *
- * Criterios iguales a Estadísticas: "ventas cobradas" = pago confirmado; "valor de pedidos" =
- * todo lo pedido sin anulados. Requiere admin-page.js y admin-charts.js.
- */
+// Dashboard del panel (admin.html). Requiere admin-page.js y admin-charts.js.
 document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async user => {
   const { $, esc, money, compact, number, api, icons, toast } = SmartAdmin;
 

@@ -44,7 +44,7 @@ export default defineConfig({
         const filesToCopy = [
           '.htaccess', 'robots.txt', 'sitemap.xml', 'sitemap-main.xml',
           'producto.php', 'categoria.php', 'sitemap-products.php', 'sitemap-categories.php',
-          'productos-destacados.php', 'categorias-destacadas.php'
+          'productos-destacados.php', 'categorias-destacadas.php', 'llms.php'
         ];
         for (const file of filesToCopy) {
           if (fs.existsSync(file)) {

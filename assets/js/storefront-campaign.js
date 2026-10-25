@@ -316,12 +316,12 @@
     // vez que hay banners reales; si la zona no tiene nada, se colapsa toda el area (igual que
     // el comportamiento de siempre quando no hay campaña), no se deja un esqueleto sin fin.
     const skeletonEl = root.querySelector('.store-campaign-skeleton');
+    const zoneKey = `smartisp.zoneBanner.${zone}`;
+    const rememberZone = hasBanner => { try { localStorage.setItem(zoneKey, hasBanner ? '1' : '0'); } catch (e) {} };
+    try { if (localStorage.getItem(zoneKey) === '0') root.hidden = true; } catch (e) {}
     const collapseArea = () => { root.hidden = true; };
     const revealBanner = () => {
-      if (skeletonEl && !skeletonEl.hidden) {
-        skeletonEl.classList.add('is-fading');
-        setTimeout(() => { skeletonEl.hidden = true; }, 300);
-      }
+      if (skeletonEl) skeletonEl.hidden = true;
       requestAnimationFrame(() => requestAnimationFrame(() => banner.classList.add('is-faded-in')));
     };
     const load = async () => {
@@ -330,7 +330,8 @@
         if (!response.ok) { collapseArea(); return; }
         const data = await response.json();
         slides = Array.isArray(data.slides) ? data.slides : [];
-        if (!slides.length) { collapseArea(); return; }
+        if (!slides.length) { collapseArea(); rememberZone(false); return; }
+        rememberZone(true);
         displayMode = ['carousel', 'single', 'split', 'triple', 'grid', 'cards'].includes(data.display_mode) ? data.display_mode : 'carousel';
         options.rotationSeconds = data.rotation_seconds;
         const heroHeightPct = Math.max(60, Math.min(100, Number(data.hero_height_pct) || 100));
