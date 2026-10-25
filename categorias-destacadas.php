@@ -161,7 +161,7 @@ foreach ($categories as $idx => $category) {
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
   <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=mobile-bottom-bar-restore-20261019">
   <script src="/assets/js/public-brand.js?v=admin-brand-20261011" defer></script>
-  <script src="/assets/vendor/lucide.min.js?v=1.55.0"></script>
+  <script src="/assets/vendor/lucide-icons.min.js?v=8707c619"></script>
   <script type="application/ld+json">
   <?= json_encode([
       '@context' => 'https://schema.org',

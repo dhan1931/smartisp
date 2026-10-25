@@ -6,7 +6,7 @@ const required = [
   'admin.html', 'configuracion.html', 'campanas.html', 'pedidos.html', 'cotizaciones.html', 'clientes.html', 'categorias.html',
   'editor-catalogo.html', 'editor-landing.html', 'login.html', 'reset-password.html',
   'inventario.html', 'estadisticas.html', 'reportes.html', 'assets/js/admin-page.js', 'assets/css/admin-page.css', 'api/shop.php',
-  'assets/js/admin-charts.js', 'assets/js/admin-dashboard.js', 'assets/css/admin-dashboard.css',
+  'assets/vendor/lucide-icons.min.js', 'assets/vendor/lucide.min.js', 'assets/js/admin-charts.js', 'assets/js/admin-dashboard.js', 'assets/css/admin-dashboard.css',
   '.htaccess', 'robots.txt', 'sitemap.xml', 'sitemap-main.xml',
   'producto.php', 'categoria.php', 'productos-destacados.php', 'categorias-destacadas.php',
   'sitemap-products.php', 'sitemap-categories.php', 'api/router.php', 'api/config.php',
