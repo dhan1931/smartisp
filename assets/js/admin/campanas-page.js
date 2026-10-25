@@ -253,22 +253,35 @@
     function collectForm() {
       state.campaign={...state.campaign,name:$('#campaignName').value.trim(),rotation_seconds:Number($('#rotation').value)||7,is_active:$('#active').checked,display_mode:modeValue(),layout_width:layoutWidthValue(),hero_height_pct:Number($('#heroHeightPct').value)||100,mobile_swipe:$('#mobileSwipe').checked,starts_at:$('#campaignStarts').value||'',ends_at:$('#campaignEnds').value||''};
     }
-    function saveDraft() {
+    // Forma comparable: el servidor devuelve fechas, números y booleanos en otro formato que el formulario.
+    const canon = value => {
+      if (Array.isArray(value)) return value.map(canon);
+      if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).filter(key=>!key.startsWith('_')).sort().map(key=>[key,key.endsWith('_at')?localDate(value[key]):canon(value[key])]).filter(([,item])=>item!==''));
+      if (typeof value === 'boolean') return value ? '1' : '0';
+      return value == null ? '' : String(value);
+    };
+    const stateKey = source => JSON.stringify(canon({campaign:source.campaign,slides:source.slides,chips:zoneConfig().isPrimary?source.chips:[]}));
+    const differsFromPublished = () => !lastPublished || stateKey(state) !== stateKey(lastPublished);
+    function dropDraft() { clearTimeout(draftTimer); try { localStorage.removeItem(draftKey()); } catch {} }
+    function saveDraft(manual = true) {
       collectForm();
-      try { localStorage.setItem(draftKey(),JSON.stringify({saved_at:Date.now(),state})); message('Borrador guardado en este navegador. Todavía no está publicado.'); return true; }
+      if (!differsFromPublished()) { isDirty=false; dropDraft(); if(manual===true)message('No hay cambios respecto a lo publicado.'); return true; }
+      try { localStorage.setItem(draftKey(),JSON.stringify({saved_at:Date.now(),state})); if(manual===true)message('Borrador guardado en este navegador. Todavía no está publicado.'); return true; }
       catch { message('No se pudo guardar el borrador local. Publica los cambios para no perderlos.',true); return false; }
     }
     function markDirty() {
-      isDirty=true; clearTimeout(draftTimer); draftTimer=setTimeout(saveDraft,700); renderPreview();
+      collectForm(); isDirty=differsFromPublished(); clearTimeout(draftTimer);
+      if(isDirty) draftTimer=setTimeout(()=>saveDraft(false),700); else dropDraft();
+      renderPreview();
     }
     function restorePublished() {
       if(!lastPublished)return;
       Object.keys(state).forEach(key=>delete state[key]); Object.assign(state,JSON.parse(JSON.stringify(lastPublished)));
-      isDirty=false; localStorage.removeItem(draftKey()); fillForm();
+      isDirty=false; dropDraft(); fillForm();
     }
     function restoreDraft(draft) {
       Object.keys(state).forEach(key=>delete state[key]); Object.assign(state,JSON.parse(JSON.stringify(draft)));
-      isDirty=true; fillForm();
+      fillForm(); isDirty=differsFromPublished();
     }
     function payloadForSave() {
       collectForm();
@@ -306,7 +319,7 @@
         }
         const payload=payloadForSave();
         await api(`admin-store-campaigns?zone=${encodeURIComponent(activeZone)}`,{method:'POST',body:JSON.stringify(payload)});
-        lastPublished=await fetchZoneState(activeZone); isDirty=false; localStorage.removeItem(draftKey()); message('Publicado. Los cambios de esta zona ya están guardados.');
+        lastPublished=await fetchZoneState(activeZone); isDirty=false; dropDraft(); message('Publicado. Los cambios de esta zona ya están guardados.');
       } catch(error) {
         message(error.message,true);
         const slideMatch=/^Banner #(\d+)/.exec(error.message||'');
@@ -326,9 +339,10 @@
         const zc=zoneConfig();
         lastPublished=JSON.parse(JSON.stringify(fresh));
         fillForm();
-        const draft=JSON.parse(localStorage.getItem(draftKey())||'null');
-        if(draft?.state&&draft.saved_at>Date.now()-7*24*60*60*1000&&await confirmDialog('Hay un borrador local de esta zona. ¿Quieres recuperarlo?',{okText:'Recuperar borrador',cancelText:'Descartar'})) restoreDraft(draft.state);
-        else if(draft) localStorage.removeItem(draftKey());
+        let draft=null; try { draft=JSON.parse(localStorage.getItem(draftKey())||'null'); } catch {}
+        const usefulDraft=draft?.state&&draft.saved_at>Date.now()-7*24*60*60*1000&&stateKey(draft.state)!==stateKey(lastPublished);
+        if(usefulDraft&&await confirmDialog(`Hay un borrador sin publicar de esta zona (guardado el ${new Date(draft.saved_at).toLocaleString('es-EC',{dateStyle:'short',timeStyle:'short'})}). ¿Quieres recuperarlo?`,{okText:'Recuperar borrador',cancelText:'Descartar'})) restoreDraft(draft.state);
+        else if(draft) dropDraft();
         $('#zoneTitle').textContent=zc.title;
         $('#campaignName').closest('label').firstChild.textContent=zc.nameLabel;
         $('#chips').closest('.panel').classList.toggle('hidden',!zc.isPrimary);
@@ -352,8 +366,8 @@
       if(isDirty&&!await confirmDialog('Hay cambios sin publicar en esta zona. Se guardará un borrador local antes de cambiar. ¿Continuar?')){
         document.querySelector(`input[name="campaignZone"][value="${activeZone}"]`).checked=true;return;
       }
-      if(isDirty)saveDraft();
-      activeZone=input.value;isDirty=false;clearTimeout(draftTimer);
+      if(isDirty)saveDraft(false);
+      clearTimeout(draftTimer);activeZone=input.value;isDirty=false;
       const zc=zoneConfig();
       state.campaign={name:zc.defaultName,rotation_seconds:7,is_active:true,display_mode:zc.defaultMode,layout_width:zc.defaultLayoutWidth||'contained',hero_height_pct:100,starts_at:'',ends_at:''};
       state.slides=[];state.chips=[];
@@ -516,13 +530,13 @@
     $('#chips').addEventListener('click',event=>{const button=event.target.closest('[data-remove-chip]');if(!button)return;state.chips.splice(Number(button.closest('[data-chip]').dataset.chip),1);renderChips();markDirty();});
     $('#addChip').addEventListener('click',()=>{if(state.chips.length>=8)return message('Puedes publicar hasta 8 accesos.',true);state.chips.push({label:'',icon:'tag',target_url:'/tienda.html#catalogo',is_active:true});renderChips();markDirty();});
     document.querySelectorAll('#save,#saveTop').forEach(button=>button.addEventListener('click',publish));
-    $('#saveDraft').addEventListener('click',saveDraft);
+    $('#saveDraft').addEventListener('click',()=>saveDraft(true));
     $('#cancelEditor').addEventListener('click',async()=>{if(isDirty&&!await confirmDialog('¿Descartar los cambios no publicados y volver a la última versión guardada?',{okText:'Descartar cambios',cancelText:'Seguir editando',danger:true}))return;restorePublished();message('Cambios descartados.');});
     document.addEventListener('click',event=>{
       const link=event.target.closest('a[href]');
       if(!link||!isDirty)return;
       event.preventDefault();
-      saveDraft();
+      saveDraft(false);
       confirmDialog('Hay cambios no publicados. Se guardó un borrador en este navegador. ¿Quieres salir de esta pantalla?',{okText:'Salir',cancelText:'Quedarme'}).then(ok=>{
         if(ok){isDirty=false;window.open(link.href,link.target||'_self');}
       });

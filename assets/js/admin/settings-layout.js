@@ -29,7 +29,7 @@
   const mailHeading=mail.querySelector('.section-heading');
   mailHeading.querySelector('span')?.replaceChildren(document.createTextNode('Cuenta de envío y destinatario de las alertas de pedidos.'));
   $('#testEmailButton').textContent='Enviar correo de prueba';
-  const drafts={brand:false,contact:false,catalog:false,mail:false};let active='brand';
+  const drafts={brand:false,contact:false,catalog:false,mail:false},baselines={};let active='brand';
   const belongs=(key,group)=>group==='contact'?key.startsWith('footer_'):group==='brand'?/^logo_|^brand_name$|^primary_color$/.test(key):group==='legacy'?key.startsWith('hero_')||key==='primary_color':true;
   window.smartispSettingsPayload=(form,values)=>form===content?Object.fromEntries(Object.entries(values).filter(([key])=>belongs(key,active))):values;
   function refresh(){
@@ -47,13 +47,17 @@
   nav.addEventListener('click',event=>{const button=event.target.closest('[data-settings-tab]');if(button)select(button.dataset.settingsTab);});
   legacy.addEventListener('toggle',()=>{legacy.querySelectorAll('[name]').forEach(input=>input.disabled=true);});
   const reset=$('#resetContentButton');reset.title='Prepara los valores predeterminados de esta sección. Revisa y guarda para aplicar.';
-  for(const form of [content,$('#visibilityForm'),$('#notificationsForm')]){
-    const group=()=>form===content?active:form.id==='visibilityForm'?'catalog':'mail';
-    form.addEventListener('input',()=>{drafts[group()]=true;refresh();});form.addEventListener('change',()=>{drafts[group()]=true;refresh();});
-    form.addEventListener('image-applied',()=>{drafts[group()]=true;refresh();});
-    form.addEventListener('settings-saved',()=>{drafts[group()]=false;refresh();});
+  const forms={brand:content,contact:content,catalog:$('#visibilityForm'),mail:$('#notificationsForm')};
+  // Pendiente solo si los valores difieren de los cargados o guardados, no por haber tocado un campo.
+  const snapshot=group=>JSON.stringify([...forms[group].querySelectorAll('[name]')].filter(input=>input.type!=='file'&&(forms[group]!==content||belongs(input.name,group))).map(input=>[input.name,input.type==='checkbox'||input.type==='radio'?input.checked:String(input.value??'').trim()]));
+  const rebase=group=>{baselines[group]=snapshot(group);drafts[group]=false;};
+  const check=group=>{if(group in baselines)drafts[group]=snapshot(group)!==baselines[group];refresh();};
+  document.addEventListener('settings-loaded',()=>{Object.keys(forms).forEach(rebase);refresh();});
+  for(const form of new Set(Object.values(forms))){
+    const groups=()=>form===content?['brand','contact']:[form.id==='visibilityForm'?'catalog':'mail'];
+    for(const type of ['input','change','image-applied'])form.addEventListener(type,()=>groups().forEach(check));
+    form.addEventListener('settings-saved',()=>{form===content?rebase(active):groups().forEach(rebase);refresh();});
   }
-  const observer=new MutationObserver(()=>{const message=$('#notificationsMessage');if(message.classList.contains('show')&&!message.classList.contains('error')&&message.textContent==='Configuración de correo guardada correctamente.'){drafts.mail=false;refresh();}});observer.observe($('#notificationsMessage'),{attributes:true,childList:true});
   window.addEventListener('beforeunload',event=>{if(Object.values(drafts).some(Boolean)){event.preventDefault();event.returnValue='';}});
   const destination=$('#notificationsForm [name="admin_email"]');destination.closest('label').firstChild.textContent='Recibir alertas en';
   const help=destination.closest('div').querySelector('small');if(help)help.textContent='Aquí llegan las alertas de pedidos. Este correo no cambia los permisos de acceso al admin.';
