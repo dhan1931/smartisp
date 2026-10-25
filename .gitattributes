@@ -1,1 +1,4 @@
 assets/vendor/* -text
+*.sh text eol=lf
+scripts/hooks/* text eol=lf
+scripts/ci/Dockerfile text eol=lf
