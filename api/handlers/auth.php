@@ -18,8 +18,7 @@ function smartispClientIp(): string {
 function smartispPasswordMatches(string $password, string $stored): bool {
     if ($stored === '' || $password === '') return false;
     if (password_verify($password, $stored)) return true;
-    // Por prefijo y no con password_get_info(): esa solo reconoce $2y$, y los hashes $2a$ que
-    // genera bcryptjs (server.js, tests) pasarían por la comparación en texto plano.
+    // password_get_info() solo reconoce $2y$; los $2a$ (bcryptjs) también son hashes modernos.
     if (preg_match('/^\$(2[abxy]|argon2id?)\$/', $stored)) return false;
     return hash_equals($stored, $password)
         || hash_equals($stored, md5($password))

@@ -1,13 +1,13 @@
 /**
  * Carrito compartido para paginas publicas que no son tienda.html. Lee/escribe el mismo
- * localStorage('smartisp.cart') que assets/js/storefront-product-card.js (los botones
+ * localStorage('smartisp.cart') que assets/js/store/storefront-product-card.js (los botones
  * "Agregar" de las tarjetas de producto) -- aqui se agrega el drawer para verlo/editarlo,
  * que antes solo existia dentro de tienda.html. No se carga en tienda.html (tiene su propio
  * carrito mas integrado con wishlist/toast); si en el futuro se unifican, este archivo es el
  * punto de partida.
  *
- * Uso: <link rel="stylesheet" href="/assets/css/storefront-cart.css">
- *      <script src="/assets/js/storefront-cart.js" defer></script>
+ * Uso: <link rel="stylesheet" href="/assets/css/store/storefront-cart.css">
+ *      <script src="/assets/js/store/storefront-cart.js" defer></script>
  * Requiere que exista un link/boton con [data-open-cart] en la pagina (ya lo trae
  * includes/storefront-discovery-nav.php via .storefront-cart).
  */

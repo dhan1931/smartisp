@@ -9,7 +9,7 @@ if (is_file($cacheFile) && time() - filemtime($cacheFile) < 21600 && filesize($c
     exit;
 }
 
-require_once __DIR__ . '/api/db.php';
+require_once __DIR__ . '/api/lib/db.php';
 
 $siteUrl = rtrim((string)(getenv('SITE_URL') ?: 'https://smart-isp.com.ec'), '/');
 $categories = [];

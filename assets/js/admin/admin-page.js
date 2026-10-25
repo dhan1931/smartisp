@@ -4,7 +4,7 @@
  *
  * Uso:
  *   <main class="shell" id="app" hidden>...</main>
- *   <script src="/assets/js/admin-page.js" defer></script>
+ *   <script src="/assets/js/admin/admin-page.js" defer></script>
  *   <script>
  *     // Los scripts defer corren antes de DOMContentLoaded: ahí SmartAdmin ya existe.
  *     document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => { ... }));

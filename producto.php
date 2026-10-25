@@ -6,7 +6,7 @@
  * etiquetas Open Graph, Twitter Cards y soporte para compra/carrito directo.
  */
 
-require_once __DIR__ . '/api/db.php';
+require_once __DIR__ . '/api/lib/db.php';
 
 $pdo = getDbConnection();
 $pTable = $pdo ? getProductsTableName($pdo) : 'products_rows';
@@ -241,7 +241,7 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
     <link rel="icon" type="image/png" sizes="192x192" href="<?= $siteUrl ?>/assets/favicons/favicon-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="<?= $siteUrl ?>/assets/favicons/apple-touch-icon.png">
     <meta name="theme-color" content="#102a43">
-    <script src="/assets/js/public-brand.js?v=seo2-20261025" defer></script>
+    <script src="/assets/js/store/public-brand.js?v=seo2-20261025" defer></script>
 
     <!-- Open Graph / Redes Sociales (Facebook, WhatsApp, LinkedIn) -->
     <meta property="og:type" content="product">
@@ -430,7 +430,7 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
         .toast { position: fixed; bottom: 24px; right: 24px; background: #0f172a; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); display: none; align-items: center; gap: 8px; z-index: 100; animation: slideUp .3s ease; }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
-    <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=seo2-20261025">
+    <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=seo2-20261025">
     <style>header { position: relative !important; top: auto !important; }.storefront-logo img { height: auto; max-height: 140px; border-radius: 0; }</style>
 </head>
 <body>
@@ -667,8 +667,8 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
       <div><a href="#">Términos y Condiciones</a><a href="#">Política de Privacidad</a><a href="#">Políticas de Garantía</a></div>
     </div>
   </footer>
-  <link rel="stylesheet" href="/assets/css/site-footer.css?v=1">
-  <script src="/assets/js/site-footer.js?v=1" defer></script>
+  <link rel="stylesheet" href="/assets/css/store/site-footer.css?v=1">
+  <script src="/assets/js/store/site-footer.js?v=1" defer></script>
 
     <!-- Notificación Toast -->
     <div id="toastMessage" class="toast">
@@ -774,6 +774,6 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
             });
         }
     </script>
-    <script src="/assets/js/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
+    <script src="/assets/js/store/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
 </body>
 </html>

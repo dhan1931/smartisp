@@ -17,7 +17,7 @@ set_exception_handler(function (Throwable $e) {
 $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $earlyAction = trim(explode('?', str_replace('auth/', '', (string)($_GET['action'] ?? ($_GET['route'] ?? ''))))[0], '/');
 
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/lib/db.php';
 
 // Archivos subidos: se sirven antes de abrir sesión y base, cacheables (nombres únicos por subida).
 if ($earlyAction === 'serve-upload' && in_array($requestMethod, ['GET', 'HEAD'], true)) {
@@ -54,7 +54,7 @@ if ($earlyAction === 'serve-upload' && in_array($requestMethod, ['GET', 'HEAD'],
 
 // Archivo de verificación de IndexNow.
 if ($earlyAction === 'indexnow-key') {
-    require_once __DIR__ . '/shop.php';
+    require_once __DIR__ . '/lib/shop.php';
     $key = smartispIndexNowKey();
     if ($key === '' || !hash_equals($key, (string)($_GET['key'] ?? ''))) {
         http_response_code(404);
@@ -83,9 +83,9 @@ if (session_status() === PHP_SESSION_NONE) {
     @session_start(SMARTISP_SESSION_READONLY ? ['read_and_close' => true] : []);
 }
 
-require_once __DIR__ . '/shop.php';
-require_once __DIR__ . '/mailer.php';
-require_once __DIR__ . '/roles.php';
+require_once __DIR__ . '/lib/shop.php';
+require_once __DIR__ . '/lib/mailer.php';
+require_once __DIR__ . '/lib/roles.php';
 
 $pdo = getDbConnection();
 

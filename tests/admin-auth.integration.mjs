@@ -208,7 +208,7 @@ try {
   const pages = ['admin.html', 'pedidos.html', 'categorias.html', 'configuracion.html', 'editor-catalogo.html'];
   // Paginas cuyo <script> inline se extrajo a un archivo externo (DEV-20261015): las revisiones de
   // contenido de abajo deben mirar tambien ese archivo, no solo el HTML que quedo.
-  const extractedScripts = { 'editor-catalogo.html': 'assets/js/editor-catalogo-page.js' };
+  const extractedScripts = { 'editor-catalogo.html': 'assets/js/admin/editor-catalogo-page.js' };
   for (const page of pages) {
     let source = await readFile(path.join(root, page), 'utf8');
     if (extractedScripts[page]) {

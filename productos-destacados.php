@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/api/db.php';
+require_once __DIR__ . '/api/lib/db.php';
 
 function seoSlugFeatured(string $text): string {
     $clean = @iconv('UTF-8', 'ASCII//TRANSLIT', $text);
@@ -136,8 +136,8 @@ foreach ($products as $idx => $product) {
   <meta name="twitter:description" content="<?= escFeatured($featuredPage['description']) ?>">
   <meta name="twitter:image" content="https://smart-isp.com.ec/assets/favicons/favicon-512x512.png">
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
-  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=seo2-20261025">
-  <script src="/assets/js/public-brand.js?v=seo2-20261025" defer></script>
+  <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=seo2-20261025">
+  <script src="/assets/js/store/public-brand.js?v=seo2-20261025" defer></script>
   <script src="/assets/vendor/lucide-icons.min.js?v=8707c619"></script>
   <script type="application/ld+json">
   <?= json_encode([
@@ -299,11 +299,11 @@ foreach ($products as $idx => $product) {
       <div><a href="#">Términos y Condiciones</a><a href="#">Política de Privacidad</a><a href="#">Políticas de Garantía</a></div>
     </div>
   </footer>
-  <link rel="stylesheet" href="/assets/css/site-footer.css?v=1">
-  <script src="/assets/js/site-footer.js?v=1" defer></script>
-  <script src="/assets/js/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
-  <script src="/assets/js/public-account.js" defer></script>
-  <script src="/assets/js/storefront-product-card.js" defer></script>
+  <link rel="stylesheet" href="/assets/css/store/site-footer.css?v=1">
+  <script src="/assets/js/store/site-footer.js?v=1" defer></script>
+  <script src="/assets/js/store/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
+  <script src="/assets/js/store/public-account.js" defer></script>
+  <script src="/assets/js/store/storefront-product-card.js" defer></script>
   <script>
     const featuredFilterPanel = document.getElementById('featuredFilterPanel');
     if (featuredFilterPanel && window.matchMedia('(max-width: 760px)').matches) featuredFilterPanel.open = false;

@@ -2,7 +2,7 @@
 
 Fecha: 2026-10-05 · Método: análisis estático con `devflow auditar` (36 hallazgos: 4 críticos, 12 altos, 13 medios, 6 bajos, 1 de pruebas) más revisión manual del código.
 Sin mediciones en producción: lo que depende del servidor real está marcado `[Inferencia]`.
-Las propuestas de mejora están en [ARQUITECTURA-Y-DEUDA.md](ARQUITECTURA-Y-DEUDA.md); el detalle de seguridad, en [../ops/SECURITY.md](../ops/SECURITY.md).
+Las propuestas de mejora están en [ARQUITECTURA-Y-DEUDA.md](ARQUITECTURA-Y-DEUDA.md); el detalle de seguridad, en [../ops/SECURITY.md](../../ops/SECURITY.md).
 
 Score actual: Project Health 49.0 (topado por críticos de seguridad), Stack Fit 87.8, Evidence Confidence 44.2.
 

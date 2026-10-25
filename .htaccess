@@ -10,7 +10,7 @@ DirectoryIndex tienda.html index.html index.htm index.php
     RewriteRule ^api/(?!router\.php$).+\.php$ - [F,L]
     RewriteRule ^(?:package\.json|server\.js|vite\.config\.js|README\.md|CHANGELOG\.md|.*\.sql(?:\.gz)?)$ - [F,L,NC]
 
-    # La raiz publica es la tienda; la presentacion queda archivada como index-presentacion.html.
+    # La raiz publica es la tienda.
     RewriteRule ^index\.html$ / [R=301,L]
 
     # Rutas amigables SEO para productos individuales y sitemaps
@@ -65,7 +65,7 @@ DirectoryIndex tienda.html index.html index.htm index.php
 
 <IfModule mod_headers.c>
     # Panel y checkout fuera de los buscadores
-    <FilesMatch "^(admin|pedidos|cotizaciones|clientes|configuracion|categorias|editor-catalogo|editor-landing|portada|campanas|inventario|estadisticas|reportes|login|checkout|reset-password|index-presentacion)\.html$">
+    <FilesMatch "^(admin|pedidos|cotizaciones|clientes|configuracion|categorias|editor-catalogo|editor-landing|portada|campanas|inventario|estadisticas|reportes|login|checkout|reset-password)\.html$">
         Header set X-Robots-Tag "noindex, nofollow"
     </FilesMatch>
 

@@ -16,7 +16,7 @@ if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < $cacheTime) && 
     exit;
 }
 
-require_once __DIR__ . '/api/db.php';
+require_once __DIR__ . '/api/lib/db.php';
 
 function slugifyCategorySitemap(string $text): string {
     return smartispSlug($text, 90, 'categoria');

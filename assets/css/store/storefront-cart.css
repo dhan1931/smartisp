@@ -2,7 +2,7 @@
    destacados, categoria, categorias-destacadas...). tienda.html tiene su propio carrito mas
    integrado (wishlist, toast, etc.) y no carga este archivo -- aqui es deliberadamente mas
    simple: ver items, cambiar cantidad, quitar, ir a checkout.html. Mismos datos (localStorage
-   'smartisp.cart') que ya escribe assets/js/storefront-product-card.js en los botones
+   'smartisp.cart') que ya escribe assets/js/store/storefront-product-card.js en los botones
    "Agregar", asi que el conteo y el contenido quedan sincronizados entre todas las paginas. */
 .storefront-cart-drawer{position:fixed;inset:0;z-index:10000;background:rgba(16,42,67,.35);visibility:hidden;opacity:0;transition:.2s}
 .storefront-cart-drawer.open{visibility:visible;opacity:1}

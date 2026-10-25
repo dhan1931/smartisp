@@ -6,7 +6,7 @@
  * descubrir familias de productos y seguir enlaces canonicos a fichas.
  */
 
-require_once __DIR__ . '/api/db.php';
+require_once __DIR__ . '/api/lib/db.php';
 
 function slugifyCategoryPage(string $text): string {
     return smartispSlug($text, 90, 'categoria');
@@ -244,8 +244,8 @@ foreach ($products as $idx => $product) {
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
   <link rel="icon" type="image/svg+xml" href="/assets/favicons/favicon.svg">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
-  <script src="/assets/js/public-brand.js?v=seo2-20261025" defer></script>
-  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=seo2-20261025">
+  <script src="/assets/js/store/public-brand.js?v=seo2-20261025" defer></script>
+  <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=seo2-20261025">
   <script src="/assets/vendor/lucide-icons.min.js?v=8707c619" defer></script>
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="SmartISP Ecuador">
@@ -527,10 +527,10 @@ foreach ($products as $idx => $product) {
       <div><a href="#">Términos y Condiciones</a><a href="#">Política de Privacidad</a><a href="#">Políticas de Garantía</a></div>
     </div>
   </footer>
-  <link rel="stylesheet" href="/assets/css/site-footer.css?v=1">
-  <script src="/assets/js/site-footer.js?v=1" defer></script>
-  <script src="/assets/js/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
-  <script src="/assets/js/storefront-product-card.js" defer></script>
+  <link rel="stylesheet" href="/assets/css/store/site-footer.css?v=1">
+  <script src="/assets/js/store/site-footer.js?v=1" defer></script>
+  <script src="/assets/js/store/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
+  <script src="/assets/js/store/storefront-product-card.js" defer></script>
   <?php if ($categoryName !== '' && $totalProducts > 0): ?>
   <script>
     (() => {

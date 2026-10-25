@@ -2,7 +2,7 @@
 
 Inicio: lunes 2026-10-05 · Capacidad: 3 h/día, 10–12 h/semana · Sprint = 1 semana (lunes a domingo).
 Las horas son **estimaciones mías** sobre el código actual, con un margen de ±30 %. Se planifica a ~11 h por sprint.
-Los IDs `DEV-…` son las tareas de [ops/BACKLOG.md](../ops/BACKLOG.md). Origen: [DIAGNOSTICO.md](DIAGNOSTICO.md), [ARQUITECTURA-Y-DEUDA.md](ARQUITECTURA-Y-DEUDA.md) y [PROPUESTAS-DE-VALOR.md](PROPUESTAS-DE-VALOR.md).
+Los IDs `DEV-…` son las tareas de [ops/BACKLOG.md](../../ops/BACKLOG.md). Origen: [DIAGNOSTICO.md](DIAGNOSTICO.md), [ARQUITECTURA-Y-DEUDA.md](ARQUITECTURA-Y-DEUDA.md) y [PROPUESTAS-DE-VALOR.md](PROPUESTAS-DE-VALOR.md).
 
 ## Resumen
 

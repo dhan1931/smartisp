@@ -38,7 +38,6 @@ Disallow: /reportes.html
 Disallow: /login.html
 Disallow: /checkout.html
 Disallow: /reset-password.html
-Disallow: /index-presentacion.html
 Disallow: /api/
 
 Sitemap: https://smart-isp.com.ec/sitemap.xml

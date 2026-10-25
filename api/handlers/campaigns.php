@@ -1,6 +1,6 @@
 <?php
 // API de campanas editoriales del storefront y productos destacados.
-// storefrontCampaignSafeUrl() vive en api/db.php (helper compartido, siempre cargado) porque
+// storefrontCampaignSafeUrl() vive en api/lib/db.php (helper compartido, siempre cargado) porque
 // products.php (macro-groups, brands) tambien la necesita y no siempre se incluye campaigns.php.
 
 function storefrontCampaignText(string $value, int $limit): string {
