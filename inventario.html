@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SmartISP | Inventario</title>
+  <link rel="icon" href="/assets/favicons/favicon.ico">
+  <link rel="stylesheet" href="/assets/css/admin-nav.css?v=admin-brand-20261011">
+  <link rel="stylesheet" href="/assets/css/admin-page.css?v=20261023">
+  <script src="/assets/vendor/lucide.min.js?v=1.55.0" defer></script>
+  <script src="/assets/js/admin-nav.js?v=admin-inventario-20261023" defer></script>
+  <script src="/assets/js/admin-page.js?v=20261023" defer></script>
+  <style>
+    .product-cell { display: flex; align-items: center; gap: 11px; min-width: 240px; }
+    .thumb { flex: none; width: 42px; height: 42px; border: 1px solid var(--line-soft); border-radius: 6px; background: #f6f9fa center / contain no-repeat; }
+    .product-name { font-weight: 700; line-height: 1.3; }
+    .product-sku { display: block; margin-top: 3px; color: #82939b; font-size: 11px; }
+    .stock-edit { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+    .stock-edit input { width: 86px; height: 34px; padding: 0 8px; border: 1px solid var(--line); border-radius: 5px; text-align: right; font-variant-numeric: tabular-nums; }
+    .stock-edit input:focus { outline: 2px solid var(--blue-wash); border-color: var(--blue); }
+    .stock-edit input.is-dirty { border-color: var(--blue); background: var(--blue-wash); }
+    .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+    .migration-note { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 16px; padding: 12px 14px; border: 1px solid #f1d7a6; border-radius: 7px; background: var(--amber-wash); color: #6b3f05; font-size: 13px; line-height: 1.45; }
+    .migration-note svg { flex: none; width: 18px; height: 18px; margin-top: 1px; }
+    .help { margin: 0 0 16px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+    @media (max-width: 950px) { .table-wrap table { min-width: 900px; } }
+    /* En el teléfono cada producto es una tarjeta: el campo de stock queda a mano sin desplazar la tabla. */
+    @media (max-width: 620px) {
+      .table-wrap table { min-width: 0; }
+      .table-wrap thead { display: none; }
+      #rows tr { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 14px; border-bottom: 1px solid var(--line-soft); }
+      #rows td { padding: 0; border: 0; }
+      #rows td:nth-child(1) { flex-basis: 100%; }
+      #rows td:nth-child(2) { display: none; }
+      #rows td:nth-child(4) { margin-left: auto; }
+      #rows td[data-label]::before { content: attr(data-label) ' '; color: var(--muted); font-size: 11px; font-weight: 400; }
+      #rows td:nth-child(7) { flex-basis: 100%; }
+      #rows td:nth-child(7) .row-actions { justify-content: flex-start; }
+      #rows td:nth-child(7):not(:has(button:not([hidden]))) { display: none; }
+      .product-cell { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div id="smartisp-admin-nav" class="is-loading" data-active="inventario"></div>
+  <main class="shell" id="app" hidden>
+    <header class="page-head">
+      <div><h1>Inventario</h1><p>Stock por producto. Solo se limita la venta de los productos con stock controlado.</p></div>
+      <div class="head-actions">
+        <a class="button" href="/reportes.html"><i data-lucide="download"></i> Exportar</a>
+        <button class="button" id="refresh" type="button"><i data-lucide="rotate-cw"></i> Actualizar</button>
+      </div>
+    </header>
+
+    <div class="migration-note" id="migrationNote" hidden><i data-lucide="triangle-alert"></i><div>Los pedidos todavía no apartan stock: falta aplicar la migración <strong>037_order_stock_state.sql</strong> (<code>php scripts/migrate.php</code>). Mientras tanto se valida la disponibilidad al comprar, pero no se descuenta.</div></div>
+
+    <section class="stats" id="stats" aria-label="Resumen de inventario"></section>
+    <p class="help"><strong>Disponible</strong> es lo que hay en almacén. <strong>Reservado</strong> lo apartan pedidos en curso y se descuenta al marcarlos como enviados o entregados; al cancelar un pedido vuelve a quedar libre. <strong>Libre</strong> = disponible − reservado, es lo que se puede vender.</p>
+
+    <section class="workspace" aria-label="Productos e inventario">
+      <div class="toolbar">
+        <label class="search"><i data-lucide="search"></i><input id="search" type="search" placeholder="Buscar por nombre, SKU o ID" autocomplete="off"></label>
+        <select id="filter" aria-label="Filtrar por estado de stock">
+          <option value="all">Todos los productos</option>
+          <option value="tracked">Con stock controlado</option>
+          <option value="untracked">Sin control (venta libre)</option>
+          <option value="low">Stock bajo</option>
+          <option value="out">Agotados</option>
+        </select>
+        <select id="low" aria-label="Umbral de stock bajo">
+          <option value="3">Bajo: 3 o menos</option>
+          <option value="5" selected>Bajo: 5 o menos</option>
+          <option value="10">Bajo: 10 o menos</option>
+          <option value="20">Bajo: 20 o menos</option>
+        </select>
+        <span class="result-count" id="count"></span>
+      </div>
+      <div class="table-wrap" id="tableWrap">
+        <table>
+          <thead><tr><th>Producto</th><th>Categoría</th><th>Estado</th><th class="num">Disponible</th><th class="num">Reservado</th><th class="num">Libre</th><th></th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="empty" hidden>No hay productos que coincidan con el filtro.</div>
+      <footer class="pager"><button class="button small" id="prev" type="button">Anterior</button><span id="pageInfo"></span><button class="button small" id="next" type="button">Siguiente</button></footer>
+    </section>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => {
+      const { $, esc, number, api, post, toast, icons } = SmartAdmin;
+      const state = { page: 1, limit: 25, totalPages: 1, q: '', filter: 'all', low: 5 };
+
+      const statusBadge = item => {
+        if (!item.tracked) return '<span class="badge">Venta libre</span>';
+        if (item.free <= 0) return '<span class="badge bad"><i data-lucide="circle-x"></i>Agotado</span>';
+        if (item.free <= state.low) return '<span class="badge warn"><i data-lucide="triangle-alert"></i>Stock bajo</span>';
+        return '<span class="badge ok"><i data-lucide="circle-check"></i>Disponible</span>';
+      };
+
+      const rowHtml = item => `
+        <tr data-id="${esc(item.id)}">
+          <td><div class="product-cell"><span class="thumb" ${item.imageUrl ? `style="background-image:url('${esc(item.imageUrl)}')"` : ''}></span><div><span class="product-name">${esc(item.name)}</span><span class="product-sku">${item.sku ? 'SKU ' + esc(item.sku) : 'ID ' + esc(item.id)}${item.visible ? '' : ' · oculto en tienda'}</span></div></div></td>
+          <td class="muted">${esc(item.category || '—')}</td>
+          <td>${statusBadge(item)}</td>
+          <td><div class="stock-edit"><input type="number" min="0" max="1000000" step="1" inputmode="numeric" aria-label="Stock disponible de ${esc(item.name)}" value="${item.tracked ? item.available : ''}" placeholder="${item.tracked ? '' : '—'}" title="${item.tracked ? 'Unidades en almacén' : 'Escribe una cantidad para empezar a controlar el stock'}" data-original="${item.tracked ? item.available : ''}"></div></td>
+          <td class="num" data-label="Reservado">${item.tracked ? number(item.reserved) : '—'}</td>
+          <td class="num" data-label="Libre"><strong>${item.tracked ? number(item.free) : '—'}</strong></td>
+          <td><div class="row-actions">
+            <button class="button small primary" type="button" data-save hidden>Guardar</button>
+            ${item.tracked ? '<button class="button small" type="button" data-untrack title="El producto vuelve a venderse sin límite">Quitar control</button>' : ''}
+          </div></td>
+        </tr>`;
+
+      const load = async () => {
+        const query = new URLSearchParams({ page: state.page, limit: state.limit, q: state.q, filter: state.filter, low: state.low });
+        $('#tableWrap').classList.add('is-refreshing');
+        try {
+          const data = await api(`admin-inventory?${query}`);
+          const s = data.stats || {};
+          state.totalPages = data.totalPages || 1;
+          $('#migrationNote').hidden = !!data.stockByOrders;
+          const tiles = [
+            ['tracked', 'Con stock controlado', number(s.tracked), `${number((s.products || 0) - (s.tracked || 0))} en venta libre`],
+            ['out', 'Agotados', number(s.out_of_stock), 'Libre = 0', (s.out_of_stock || 0) > 0],
+            ['low', 'Stock bajo', number(s.low_stock), `${state.low} unidades o menos`],
+            ['all', 'Unidades libres', number(s.free_units), `${number(s.reserved_units)} reservadas por pedidos`],
+          ];
+          $('#stats').innerHTML = tiles.map(([filter, label, value, hint, alert]) =>
+            `<button type="button" class="stat ${alert ? 'is-alert' : ''} ${state.filter === filter && filter !== 'all' ? 'is-active' : ''}" data-filter="${filter}"><span>${label}</span><strong>${value}</strong><small>${hint}</small></button>`).join('');
+          $('#rows').innerHTML = (data.items || []).map(rowHtml).join('');
+          $('#empty').hidden = (data.items || []).length > 0;
+          $('#tableWrap').hidden = (data.items || []).length === 0;
+          $('#count').textContent = `${number(data.total)} producto${data.total === 1 ? '' : 's'}`;
+          $('#pageInfo').textContent = `Página ${data.page} de ${state.totalPages}`;
+          $('#prev').disabled = state.page <= 1;
+          $('#next').disabled = state.page >= state.totalPages;
+          icons();
+        } catch (error) {
+          toast(error.message, true);
+        } finally {
+          $('#tableWrap').classList.remove('is-refreshing');
+        }
+      };
+
+      const save = async row => {
+        const input = row.querySelector('input');
+        if (input.value.trim() === '') { toast('Escribe la cantidad disponible.', true); input.focus(); return; }
+        try {
+          await post('admin-inventory', { product_id: row.dataset.id, available: Number(input.value) });
+          toast('Stock actualizado.');
+          await load();
+        } catch (error) { toast(error.message, true); }
+      };
+
+      $('#rows').addEventListener('input', event => {
+        const input = event.target.closest('input');
+        if (!input) return;
+        const dirty = input.value !== input.dataset.original;
+        input.classList.toggle('is-dirty', dirty);
+        input.closest('tr').querySelector('[data-save]').hidden = !dirty;
+      });
+      $('#rows').addEventListener('keydown', event => {
+        if (event.key === 'Enter' && event.target.matches('input')) save(event.target.closest('tr'));
+        if (event.key === 'Escape' && event.target.matches('input')) {
+          event.target.value = event.target.dataset.original;
+          event.target.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      });
+      $('#rows').addEventListener('click', async event => {
+        const row = event.target.closest('tr');
+        if (event.target.closest('[data-save]')) save(row);
+        if (event.target.closest('[data-untrack]')) {
+          if (!confirm('¿Quitar el control de stock? El producto se podrá vender sin límite.')) return;
+          try { await post('admin-inventory', { product_id: row.dataset.id, track: false }); toast('Control de stock quitado.'); await load(); }
+          catch (error) { toast(error.message, true); }
+        }
+      });
+      $('#stats').addEventListener('click', event => {
+        const tile = event.target.closest('[data-filter]');
+        if (!tile) return;
+        state.filter = tile.dataset.filter === state.filter ? 'all' : tile.dataset.filter;
+        $('#filter').value = state.filter;
+        state.page = 1;
+        load();
+      });
+      let debounce;
+      $('#search').addEventListener('input', event => { clearTimeout(debounce); debounce = setTimeout(() => { state.q = event.target.value.trim(); state.page = 1; load(); }, 300); });
+      $('#filter').addEventListener('change', event => { state.filter = event.target.value; state.page = 1; load(); });
+      $('#low').addEventListener('change', event => { state.low = Number(event.target.value); state.page = 1; load(); });
+      $('#refresh').addEventListener('click', load);
+      $('#prev').addEventListener('click', () => { if (state.page > 1) { state.page--; load(); } });
+      $('#next').addEventListener('click', () => { if (state.page < state.totalPages) { state.page++; load(); } });
+
+      await load();
+    }));
+  </script>
+</body>
+</html>

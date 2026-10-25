@@ -103,50 +103,13 @@ if ($action === 'catalog' && $method === 'GET') {
         $stmt->execute();
         $products = array_map('normalizeProductRow', $stmt->fetchAll());
 
-        $stmtContent = $pdo->query("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows
+        // Solo esta lista fija de ajustes públicos: ni logos pesados (van por site-content) ni
+        // nada de correo. Antes había además un filtro por prefijos/claves sensibles que, con
+        // esta lista, nunca descartaba nada.
+        $content = $pdo->query("SELECT setting_key as `key`, setting_value as `value` FROM settings_rows
             WHERE setting_key IN ('hero_title', 'hero_text', 'primary_color', 'footer_text', 'catalog_visible', 'hero_visible', 'benefits_visible',
                 'footer_whatsapp', 'footer_email', 'footer_address',
-                'footer_social_instagram', 'footer_social_facebook', 'footer_social_youtube', 'footer_social_linkedin')");
-        $allContent = $stmtContent ? $stmtContent->fetchAll() : [];
-        $content = [];
-        $excludePrefixes = [
-            'solutions_grid_html', 'advantages_grid_html', 'about_visual_html', 'stats_grid_html',
-            'landing_logo_dark_image', 'about_', 'contact_', 'mission_', 'vision_', 'value', 'sol', 'adv', 'stat'
-        ];
-        $sensitiveKeys = [
-            'admin_email', 'smtp_provider', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass',
-            'smtp_secure', 'smtp_from', 'resend_api_key', 'email_from'
-        ];
-        foreach ($allContent as $item) {
-            $k = (string)($item['key'] ?? '');
-            $normalizedKey = strtolower($k);
-            // La marca se carga por site-content. logo_image puede ser un PNG base64 de ~1 MB;
-            // incluirlo aquí retrasaba la primera página de productos y duplicaba la descarga.
-            if (in_array($normalizedKey, [
-                'logo_image', 'landing_logo_image', 'logo_dark_image', 'landing_logo_dark_image',
-                'logo_text', 'landing_logo_text', 'brand_name', 'logo_type', 'landing_logo_type',
-                'logo_height', 'landing_logo_height', 'logo_dark_height', 'landing_logo_dark_height',
-                'logo_dark_invert', 'landing_logo_dark_invert'
-            ], true)) {
-                continue;
-            }
-            if (in_array($normalizedKey, $sensitiveKeys, true)
-                || str_contains($normalizedKey, 'pass')
-                || str_contains($normalizedKey, 'secret')
-                || str_contains($normalizedKey, 'api_key')) {
-                continue;
-            }
-            $shouldExclude = false;
-            foreach ($excludePrefixes as $prefix) {
-                if (str_starts_with($k, $prefix)) {
-                    $shouldExclude = true;
-                    break;
-                }
-            }
-            if (!$shouldExclude) {
-                $content[] = $item;
-            }
-        }
+                'footer_social_instagram', 'footer_social_facebook', 'footer_social_youtube', 'footer_social_linkedin')")->fetchAll();
 
         $categories = $page === 1 ? getDynamicCategoriesList($pdo, true) : [];
 
@@ -163,8 +126,9 @@ if ($action === 'catalog' && $method === 'GET') {
             'categories' => $categories
         ]);
     } catch (Exception $e) {
+        error_log('SmartISP catalog error: ' . $e->getMessage());
         http_response_code(500);
-        echo json_encode(['error' => $e->getMessage(), 'products' => [], 'content' => [], 'categories' => []]);
+        echo json_encode(['error' => 'No se pudo cargar el catálogo. Inténtalo nuevamente.', 'products' => [], 'content' => [], 'categories' => []]);
     }
     exit;
 }
@@ -176,84 +140,13 @@ if ($action === 'catalog' && $method === 'GET') {
 if ($action === 'admin-dashboard-insights') {
     requireAdminAuth();
 
-    $tableExists = static function (string $table) use ($pdo): bool {
-        $stmt = $pdo->prepare('SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table LIMIT 1');
-        $stmt->execute([':table' => $table]);
-        return (bool)$stmt->fetchColumn();
-    };
-
-    $products = [];
-    $hasOrderItems = $tableExists('order_items');
-    if ($hasOrderItems) {
-        $stmt = $pdo->query("SELECT COALESCE(NULLIF(oi.product_id, ''), NULLIF(oi.sku, ''), oi.product_name) AS product_key,
-                MAX(oi.product_name) AS product_name, SUM(oi.quantity) AS units,
-                COUNT(DISTINCT oi.order_id) AS order_count
-            FROM order_items oi
-            INNER JOIN orders_rows o ON o.id = oi.order_id
-            WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-              AND LOWER(COALESCE(o.status, '')) NOT IN ('cancelled', 'canceled', 'refunded')
-            GROUP BY COALESCE(NULLIF(oi.product_id, ''), NULLIF(oi.sku, ''), oi.product_name)
-            ORDER BY units DESC, order_count DESC, product_name ASC
-            LIMIT 10");
-        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-            $key = (string)$row['product_key'];
-            $products[$key] = [
-                'name' => (string)$row['product_name'],
-                'units' => (int)$row['units'],
-                'orders' => (int)$row['order_count'],
-            ];
-        }
-    }
-
-    // Los pedidos anteriores a la normalizacion conservan sus articulos en JSON.
-    $legacySql = "SELECT o.id, o.items FROM orders_rows o
-        WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-          AND o.items IS NOT NULL AND TRIM(o.items) <> ''
-          AND LOWER(COALESCE(o.status, '')) NOT IN ('cancelled', 'canceled', 'refunded')";
-    if ($hasOrderItems) {
-        $legacySql .= ' AND NOT EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = o.id)';
-    }
-    $legacyRows = $pdo->query($legacySql)->fetchAll(PDO::FETCH_ASSOC);
-    $legacyOrders = [];
-    foreach ($legacyRows as $order) {
-        $decoded = json_decode((string)$order['items'], true);
-        if (!is_array($decoded)) continue;
-        if (isset($decoded['items']) && is_array($decoded['items'])) {
-            $items = $decoded['items'];
-        } elseif (isset($decoded['products']) && is_array($decoded['products'])) {
-            $items = $decoded['products'];
-        } elseif (isset($decoded['name']) || isset($decoded['product_name']) || isset($decoded['productId']) || isset($decoded['product_id'])) {
-            $items = [$decoded];
-        } else {
-            $items = $decoded;
-        }
-
-        foreach ($items as $item) {
-            if (!is_array($item)) continue;
-            $name = trim((string)($item['name'] ?? $item['product_name'] ?? $item['title'] ?? ''));
-            if ($name === '') continue;
-            $sku = trim((string)($item['sku'] ?? ''));
-            $productId = trim((string)($item['productId'] ?? $item['product_id'] ?? $item['id'] ?? ''));
-            $key = $productId !== '' ? $productId : ($sku !== '' ? $sku : strtolower($name));
-            $quantity = max(1, (int)($item['quantity'] ?? $item['qty'] ?? $item['cantidad'] ?? 1));
-            if (!isset($legacyOrders[$key])) {
-                $legacyOrders[$key] = ['name' => $name, 'units' => 0, 'order_ids' => []];
-            }
-            $legacyOrders[$key]['units'] += $quantity;
-            $legacyOrders[$key]['order_ids'][(string)$order['id']] = true;
-        }
-    }
-    foreach ($legacyOrders as $key => $item) {
-        if (!isset($products[$key])) $products[$key] = ['name' => $item['name'], 'units' => 0, 'orders' => 0];
-        $products[$key]['units'] += $item['units'];
-        $products[$key]['orders'] += count($item['order_ids']);
-    }
-    uasort($products, static fn(array $a, array $b): int => ($b['units'] <=> $a['units']) ?: ($b['orders'] <=> $a['orders']));
+    $tableExists = static fn(string $table): bool => smartispTableExists($pdo, $table);
+    $topProducts = smartispTopProducts($pdo, date('Y-m-d H:i:s', strtotime('-30 days')), date('Y-m-d H:i:s'), 5);
 
     $inventory = ['tracked_products' => 0, 'available_units' => 0, 'reserved_units' => 0, 'out_of_stock' => 0];
     if ($tableExists('product_inventory')) {
         $row = $pdo->query("SELECT COUNT(*) AS tracked_products,
-                COALESCE(SUM(GREATEST(quantity_available - quantity_reserved, 0)), 0) AS available_units,
+                COALESCE(SUM(GREATEST(CAST(quantity_available AS SIGNED) - CAST(quantity_reserved AS SIGNED), 0)), 0) AS available_units,
                 COALESCE(SUM(quantity_reserved), 0) AS reserved_units,
                 COALESCE(SUM(quantity_available <= quantity_reserved), 0) AS out_of_stock
             FROM product_inventory")->fetch(PDO::FETCH_ASSOC) ?: [];
@@ -262,7 +155,7 @@ if ($action === 'admin-dashboard-insights') {
 
     echo json_encode([
         'period_days' => 30,
-        'top_products' => array_slice(array_values($products), 0, 5),
+        'top_products' => $topProducts,
         'inventory' => $inventory,
         'inventory_configured' => $inventory['tracked_products'] > 0,
     ]);
@@ -431,6 +324,25 @@ if ($action === 'admin-products') {
         $externalUrl = trim($body['externalUrl'] ?? ($body['external_url'] ?? ''));
         $sku = trim($body['sku'] ?? '');
         $visible = isset($body['visible']) ? ($body['visible'] ? 1 : 0) : 1;
+        // Specs estructuradas (clave/valor), contenido del paquete y garantia: opcionales, solo
+        // se guardan si el admin las completo. No se inventan ni se derivan de nada.
+        $specsInput = $body['specs'] ?? null;
+        if (is_string($specsInput)) {
+            $decoded = json_decode($specsInput, true);
+            $specsInput = is_array($decoded) ? $decoded : null;
+        }
+        $specsJson = null;
+        if (is_array($specsInput)) {
+            $cleanSpecs = [];
+            foreach ($specsInput as $spec) {
+                $label = trim((string)($spec['label'] ?? ''));
+                $value = trim((string)($spec['value'] ?? ''));
+                if ($label !== '' && $value !== '') $cleanSpecs[] = ['label' => $label, 'value' => $value];
+            }
+            if ($cleanSpecs) $specsJson = json_encode($cleanSpecs, JSON_UNESCAPED_UNICODE);
+        }
+        $contentText = trim((string)($body['content_text'] ?? '')) ?: null;
+        $warrantyText = trim((string)($body['warranty_text'] ?? '')) ?: null;
 
         if (!$name) {
             http_response_code(400);
@@ -500,6 +412,9 @@ if ($action === 'admin-products') {
                         external_url = :external_url,
                         sku = :sku,
                         visible = :visible,
+                        specs_json = :specs_json,
+                        content_text = :content_text,
+                        warranty_text = :warranty_text,
                         updated_at = CURRENT_TIMESTAMP
                     WHERE id = :id";
             $stmt = $pdo->prepare($sql);
@@ -513,7 +428,10 @@ if ($action === 'admin-products') {
                 ':image_url'    => $imageUrl,
                 ':external_url' => $externalUrl,
                 ':sku'          => $sku,
-                ':visible'      => $visible
+                ':visible'      => $visible,
+                ':specs_json'   => $specsJson,
+                ':content_text' => $contentText,
+                ':warranty_text' => $warrantyText
             ]);
             $publicUrl = '/producto/' . $existingId . '-' . $prodSlug;
             echo json_encode([
@@ -524,8 +442,8 @@ if ($action === 'admin-products') {
                 'message' => 'Producto actualizado con éxito.'
             ]);
         } else {
-            $sql = "INSERT INTO `$pTable` (id, name, description, price, category, subcategory, image_url, external_url, sku, visible)
-                    VALUES (:id, :name, :description, :price, :category, :subcategory, :image_url, :external_url, :sku, :visible)";
+            $sql = "INSERT INTO `$pTable` (id, name, description, price, category, subcategory, image_url, external_url, sku, visible, specs_json, content_text, warranty_text)
+                    VALUES (:id, :name, :description, :price, :category, :subcategory, :image_url, :external_url, :sku, :visible, :specs_json, :content_text, :warranty_text)";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
                 ':id'           => $id,
@@ -537,7 +455,10 @@ if ($action === 'admin-products') {
                 ':image_url'    => $imageUrl,
                 ':external_url' => $externalUrl,
                 ':sku'          => $sku,
-                ':visible'      => $visible
+                ':visible'      => $visible,
+                ':specs_json'   => $specsJson,
+                ':content_text' => $contentText,
+                ':warranty_text' => $warrantyText
             ]);
             $publicUrl = '/producto/' . $id . '-' . $prodSlug;
             echo json_encode([
@@ -566,12 +487,100 @@ if ($action === 'admin-products') {
 }
 
 // -------------------------------------------------------------
+// 2.0b GALERÍA DE IMÁGENES POR PRODUCTO (/api/auth/product-images)
+// -------------------------------------------------------------
+if ($action === 'product-images') {
+    if ($method === 'GET') {
+        $productId = trim((string)($_GET['product_id'] ?? ''));
+        if ($productId === '') {
+            http_response_code(400);
+            echo json_encode(['error' => 'product_id requerido.']);
+            exit;
+        }
+        $stmt = $pdo->prepare('SELECT id, image_url, image_alt, sort_order, is_primary FROM product_images WHERE product_id = :pid ORDER BY sort_order, id');
+        $stmt->execute([':pid' => $productId]);
+        echo json_encode(['images' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+        exit;
+    }
+
+    requireAdminAuth();
+
+    if ($method === 'POST') {
+        $productId = trim((string)($body['product_id'] ?? ''));
+        $imageUrl = trim((string)($body['image_url'] ?? ''));
+        if ($productId === '' || $imageUrl === '') {
+            http_response_code(400);
+            echo json_encode(['error' => 'product_id e image_url son obligatorios.']);
+            exit;
+        }
+        $pTable = getProductsTableName($pdo);
+        $chk = $pdo->prepare("SELECT id FROM `$pTable` WHERE id = :id LIMIT 1");
+        $chk->execute([':id' => $productId]);
+        if (!$chk->fetchColumn()) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Producto no encontrado.']);
+            exit;
+        }
+        $orderStmt = $pdo->prepare('SELECT COALESCE(MAX(sort_order), -1) + 1 FROM product_images WHERE product_id = :pid');
+        $orderStmt->execute([':pid' => $productId]);
+        $nextOrder = (int)$orderStmt->fetchColumn();
+        $countStmt = $pdo->prepare('SELECT COUNT(*) FROM product_images WHERE product_id = :pid');
+        $countStmt->execute([':pid' => $productId]);
+        $isFirst = (int)$countStmt->fetchColumn() === 0;
+        $ins = $pdo->prepare('INSERT INTO product_images (product_id, image_url, image_alt, sort_order, is_primary) VALUES (:pid, :url, :alt, :sort, :primary)');
+        $ins->execute([
+            ':pid' => $productId,
+            ':url' => substr($imageUrl, 0, 500),
+            ':alt' => trim((string)($body['image_alt'] ?? '')) ?: null,
+            ':sort' => $nextOrder,
+            ':primary' => $isFirst ? 1 : 0
+        ]);
+        echo json_encode(['ok' => true, 'id' => (int)$pdo->lastInsertId()]);
+        exit;
+    }
+
+    if ($method === 'DELETE') {
+        $imageId = (int)($_GET['id'] ?? ($body['id'] ?? 0));
+        if (!$imageId) {
+            http_response_code(400);
+            echo json_encode(['error' => 'id requerido.']);
+            exit;
+        }
+        $pdo->prepare('DELETE FROM product_images WHERE id = :id')->execute([':id' => $imageId]);
+        echo json_encode(['ok' => true]);
+        exit;
+    }
+
+    if ($method === 'PUT') {
+        // Reordenar / marcar portada: body = { ids: [id_en_orden...], primary_id: id }
+        $ids = $body['ids'] ?? null;
+        if (is_array($ids)) {
+            $upd = $pdo->prepare('UPDATE product_images SET sort_order = :sort WHERE id = :id');
+            foreach ($ids as $index => $imgId) {
+                $upd->execute([':sort' => $index, ':id' => (int)$imgId]);
+            }
+        }
+        $primaryId = (int)($body['primary_id'] ?? 0);
+        if ($primaryId && is_array($ids) && in_array($primaryId, array_map('intval', $ids), true)) {
+            $productId = trim((string)($body['product_id'] ?? ''));
+            if ($productId !== '') {
+                $pdo->prepare('UPDATE product_images SET is_primary = 0 WHERE product_id = :pid')->execute([':pid' => $productId]);
+                $pdo->prepare('UPDATE product_images SET is_primary = 1 WHERE id = :id')->execute([':id' => $primaryId]);
+            }
+        }
+        echo json_encode(['ok' => true]);
+        exit;
+    }
+}
+
+// -------------------------------------------------------------
 // 2.1 SUBIDA DE IMÁGENES DE PRODUCTOS (/api/auth/upload-image)
 // -------------------------------------------------------------
-
 if ($action === 'upload-image' && $method === 'POST') {
     requireAdminAuth();
 
+    // Igual que uploads/campaigns (ver getSmartispUploadsDir): fuera de public_html a proposito,
+    // cada deploy reconstruye dist/ desde cero y borraba estas fotos cuando vivian dentro del repo.
     $uploadDir = getSmartispUploadsDir('products');
 
     $fileData = null;
@@ -616,7 +625,7 @@ if ($action === 'upload-image' && $method === 'POST') {
     }
 
     $filename = 'prod_' . bin2hex(random_bytes(8)) . '.' . $ext;
-    $targetPath = $uploadDir . $filename;
+    $targetPath = $uploadDir . '/' . $filename;
 
     if (@file_put_contents($targetPath, $fileData) === false) {
         http_response_code(500);
@@ -624,7 +633,7 @@ if ($action === 'upload-image' && $method === 'POST') {
         exit;
     }
 
-    $publicUrl = '/uploads/products/' . $filename;
+    $publicUrl = '/api/auth/serve-upload?category=products&file=' . rawurlencode($filename);
     echo json_encode([
         'ok' => true,
         'url' => $publicUrl,
@@ -636,7 +645,6 @@ if ($action === 'upload-image' && $method === 'POST') {
 // -------------------------------------------------------------
 // 3. IMPORTACIÓN MASIVA Y LOTES (/api/auth/admin-products-bulk, /api/auth/import-products)
 // -------------------------------------------------------------
-
 if ($action === 'import-products' || $action === 'import-excel' || $action === 'admin-products-bulk' || $action === 'import-catalog' || $action === 'save-products-batch') {
     requireAdminAuth();
     $pTable = getProductsTableName($pdo);
@@ -677,7 +685,9 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
 
     $pdo->beginTransaction();
     try {
-        $checkStmt = $pdo->prepare("SELECT id FROM `$pTable` WHERE id = :id OR (name = :name AND name != '') LIMIT 1");
+        $checkStmtId = $pdo->prepare("SELECT id FROM `$pTable` WHERE id = :id LIMIT 1");
+        $checkStmtSku = $pdo->prepare("SELECT id FROM `$pTable` WHERE sku = :sku AND sku != '' LIMIT 1");
+        $checkStmtName = $pdo->prepare("SELECT id FROM `$pTable` WHERE name = :name AND name != '' LIMIT 1");
 
         $insertStmt = $pdo->prepare("INSERT INTO `$pTable` (id, name, description, price, category, subcategory, image_url, external_url, sku, visible)
                 VALUES (:id, :name, :description, :price, :category, :subcategory, :image_url, :external_url, :sku, :visible)");
@@ -697,21 +707,50 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
 
         $inserted = 0;
         foreach ($products as $p) {
-            $id = $p['id'] ?? uniqid('prod_');
             $name = trim($p['name'] ?? '');
             if (!$name) continue;
+
+            $rawId = trim((string)($p['id'] ?? ''));
+            $id = (!empty($rawId) && $rawId !== 'modal-draft') ? $rawId : ('prod_' . bin2hex(random_bytes(7)));
 
             $desc = trim($p['description'] ?? '');
             $price = (float)($p['price'] ?? 0);
             $cat = trim($p['category'] ?? 'General');
+            if (empty($cat)) $cat = 'General';
             $subcat = trim($p['subcategory'] ?? '');
             $img = trim($p['imageUrl'] ?? ($p['image_url'] ?? ''));
             $ext = trim($p['externalUrl'] ?? ($p['external_url'] ?? ''));
             $sku = trim($p['sku'] ?? '');
             $vis = isset($p['visible']) ? ($p['visible'] ? 1 : 0) : 1;
 
-            $checkStmt->execute([':id' => $id, ':name' => $name]);
-            $existingId = $checkStmt->fetchColumn();
+            // Auto-crear categoría en categories_rows si no existe
+            if (!empty($cat)) {
+                try {
+                    $chkCat = $pdo->prepare("SELECT id FROM `categories_rows` WHERE LOWER(name) = LOWER(:name) LIMIT 1");
+                    $chkCat->execute([':name' => $cat]);
+                    if (!$chkCat->fetchColumn()) {
+                        $catId = slugify($cat);
+                        $insCat = $pdo->prepare("INSERT INTO `categories_rows` (id, name, subcategories) VALUES (:id, :name, :subs)");
+                        $subsJson = !empty($subcat) ? json_encode([$subcat], JSON_UNESCAPED_UNICODE) : '[]';
+                        $insCat->execute([':id' => $catId, ':name' => $cat, ':subs' => $subsJson]);
+                    }
+                } catch (Throwable $e) {}
+            }
+
+            // Identificar si el producto ya existe (por id, sku o nombre idéntico)
+            $existingId = null;
+            if (!empty($rawId)) {
+                $checkStmtId->execute([':id' => $rawId]);
+                $existingId = $checkStmtId->fetchColumn();
+            }
+            if (!$existingId && !empty($sku)) {
+                $checkStmtSku->execute([':sku' => $sku]);
+                $existingId = $checkStmtSku->fetchColumn();
+            }
+            if (!$existingId && !empty($name)) {
+                $checkStmtName->execute([':name' => $name]);
+                $existingId = $checkStmtName->fetchColumn();
+            }
 
             if ($existingId) {
                 $updateStmt->execute([
@@ -752,7 +791,6 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
     }
     exit;
 }
-
 
 if ($action === 'admin-products-clear') {
     requireAdminAuth();

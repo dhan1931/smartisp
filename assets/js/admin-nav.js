@@ -38,12 +38,12 @@
     { key: 'clientes', group: 'operacion', href: '/clientes.html', label: 'Clientes', icon: 'users' },
     { key: 'productos', group: 'catalogo', href: '/editor-catalogo.html', label: 'Productos', icon: 'package' },
     { key: 'categorias', group: 'catalogo', href: '/categorias.html', label: 'Categorías', icon: 'folder' },
-    { key: 'inventario', group: 'catalogo', href: '#', label: 'Inventario', icon: 'boxes', disabled: true, title: 'Próximamente' },
+    { key: 'inventario', group: 'catalogo', href: '/inventario.html', label: 'Inventario', icon: 'boxes' },
     { key: 'contenido', group: 'tienda', href: '/editor-landing.html', label: 'Contenido', icon: 'layout-template' },
     { key: 'portada', group: 'tienda', href: '/portada.html', label: 'Portada', icon: 'layout-dashboard' },
     { key: 'campanas', group: 'tienda', href: '/campanas.html', label: 'Campañas y banners', icon: 'megaphone' },
-    { key: 'estadisticas', group: 'analisis', href: '#', label: 'Estadísticas', icon: 'bar-chart-3', disabled: true, title: 'Próximamente' },
-    { key: 'reportes', group: 'analisis', href: '#', label: 'Reportes', icon: 'file-text', disabled: true, title: 'Próximamente' },
+    { key: 'estadisticas', group: 'analisis', href: '/estadisticas.html', label: 'Estadísticas', icon: 'bar-chart-3' },
+    { key: 'reportes', group: 'analisis', href: '/reportes.html', label: 'Reportes', icon: 'file-down' },
     { key: 'config', group: 'sistema', href: '/configuracion.html', label: 'Configuración', icon: 'settings' }
   ];
 

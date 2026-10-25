@@ -62,7 +62,7 @@ if ($pdo && $slug !== '') {
     try {
         $pTable = getProductsTableName($pdo);
         ensureProductTableColumns($pdo, $pTable);
-        $hasInventoryTable = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'product_inventory'")->fetchColumn() > 0;
+        $hasInventoryTable = smartispTableExists($pdo, 'product_inventory');
         $stmt = $pdo->query("
             SELECT TRIM(category) AS category, TRIM(subcategory) AS subcategory, COUNT(*) AS product_count
             FROM `$pTable`
@@ -166,7 +166,7 @@ if ($pdo && $slug !== '') {
             elseif ($sortOrder === 'precio_desc') $orderBySql = '(price <= 0) ASC, price DESC, name ASC';
             elseif ($sortOrder === 'nombre') $orderBySql = 'name ASC';
             $stmtProducts = $pdo->prepare("
-                SELECT p.*" . ($hasInventoryTable ? ", (SELECT GREATEST(quantity_available - quantity_reserved, 0) FROM product_inventory WHERE product_id = p.id LIMIT 1) AS available_qty" : ", NULL AS available_qty") . "
+                SELECT p.*" . ($hasInventoryTable ? ", (SELECT GREATEST(CAST(quantity_available AS SIGNED) - CAST(quantity_reserved AS SIGNED), 0) FROM product_inventory WHERE product_id = p.id LIMIT 1) AS available_qty" : ", NULL AS available_qty") . "
                 FROM `$pTable` p
                 WHERE $where
                 ORDER BY $orderBySql

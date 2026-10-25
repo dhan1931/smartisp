@@ -16,6 +16,14 @@ if ($action === 'orders' || $action === 'customer-orders') {
         $customerCity = trim($body['city'] ?? ($shipping['city'] ?? ''));
         $customerNotes = trim($body['notes'] ?? ($shipping['notes'] ?? ''));
 
+        // El correo es a donde se envía el comprobante: sin uno válido el pedido queda sin
+        // contacto y el mailer intentaría enviar a cualquier texto que llegue.
+        if ($customerName === '' || !filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Ingresa tu nombre y un correo electrónico válido.']);
+            exit;
+        }
+
         $rawItems = is_array($body['items'] ?? null) ? $body['items'] : [];
         if (empty($rawItems)) {
             http_response_code(400);
@@ -32,16 +40,27 @@ if ($action === 'orders' || $action === 'customer-orders') {
         // en lo que manda el navegador, que cualquiera puede alterar desde la consola (ej. bajar
         // el precio a $0.01 antes de enviar el formulario).
         $pTable = getProductsTableName($pdo);
-        $hasInventoryTable = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'product_inventory'")->fetchColumn() > 0;
+        $hasInventoryTable = smartispTableExists($pdo, 'product_inventory');
+        $stockEnabled = smartispOrderStockEnabled($pdo);
         $productStmt = $pdo->prepare("SELECT * FROM `$pTable` WHERE id = :id LIMIT 1");
-        $inventoryStmt = $hasInventoryTable ? $pdo->prepare('SELECT GREATEST(quantity_available - quantity_reserved, 0) AS available_qty FROM product_inventory WHERE product_id = :id LIMIT 1') : null;
+        // FOR UPDATE (con la transacción de abajo): dos compras simultáneas de la última unidad
+        // no pueden leer el mismo stock libre y pasar las dos.
+        $inventoryStmt = $hasInventoryTable
+            ? $pdo->prepare('SELECT GREATEST(CAST(quantity_available AS SIGNED) - CAST(quantity_reserved AS SIGNED), 0) AS available_qty FROM product_inventory WHERE product_id = :id LIMIT 1' . ($stockEnabled ? ' FOR UPDATE' : ''))
+            : null;
+        $fail = static function (string $message) use ($pdo): void {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            http_response_code(400);
+            echo json_encode(['error' => $message]);
+            exit;
+        };
+        $requestedByProduct = [];
 
+        $pdo->beginTransaction();
         foreach ($rawItems as $it) {
             $qty = (int)($it['quantity'] ?? 1);
             if ($qty < 1 || $qty > 99) {
-                http_response_code(400);
-                echo json_encode(['error' => 'La cantidad por producto debe estar entre 1 y 99 unidades.']);
-                exit;
+                $fail('La cantidad por producto debe estar entre 1 y 99 unidades.');
             }
             $totalUnits += $qty;
 
@@ -52,24 +71,23 @@ if ($action === 'orders' || $action === 'customer-orders') {
                 $productRow = $productStmt->fetch(PDO::FETCH_ASSOC);
             }
             if (!$productRow) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Uno o más productos de tu carrito ya no están disponibles. Actualiza la página e intenta de nuevo.']);
-                exit;
+                $fail('Uno o más productos de tu carrito ya no están disponibles. Actualiza la página e intenta de nuevo.');
             }
             $product = normalizeProductRow($productRow);
             if (!$product['visible']) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Uno o más productos de tu carrito ya no están disponibles. Actualiza la página e intenta de nuevo.']);
-                exit;
+                $fail('Uno o más productos de tu carrito ya no están disponibles. Actualiza la página e intenta de nuevo.');
             }
 
             if ($inventoryStmt) {
                 $inventoryStmt->execute([':id' => $productId]);
                 $availableQty = $inventoryStmt->fetchColumn();
-                if ($availableQty !== false && (int)$availableQty < $qty) {
-                    http_response_code(400);
-                    echo json_encode(['error' => 'No hay stock suficiente de "' . $product['name'] . '" (disponible: ' . (int)$availableQty . ').']);
-                    exit;
+                if ($availableQty !== false) {
+                    // El mismo producto puede venir en dos líneas del carrito: se compara la suma.
+                    $requestedByProduct[$productId] = ($requestedByProduct[$productId] ?? 0) + $qty;
+                    if ((int)$availableQty < $requestedByProduct[$productId]) {
+                        $fail('No hay stock suficiente de "' . $product['name'] . '" (disponible: ' . (int)$availableQty . ').');
+                    }
+                    if ($stockEnabled) $it['stockTracked'] = true;
                 }
             }
 
@@ -80,13 +98,15 @@ if ($action === 'orders' || $action === 'customer-orders') {
             $calculatedTotal += ($qty * $prc);
             $it['quantity'] = $qty;
             $it['price'] = $prc;
+            // Igual que el precio: el nombre y el SKU que quedan en el pedido y en los correos
+            // salen de la base, no de lo que diga el carrito.
+            $it['name'] = $product['name'];
+            if ($product['sku'] !== '') $it['sku'] = $product['sku'];
             $validItems[] = $it;
         }
 
         if ($totalUnits > 500) {
-            http_response_code(400);
-            echo json_encode(['error' => 'El pedido supera el límite máximo permitido de 500 unidades en total.']);
-            exit;
+            $fail('El pedido supera el límite máximo permitido de 500 unidades en total.');
         }
 
         // El total del pedido es siempre el calculado con los precios reales de la base
@@ -96,10 +116,6 @@ if ($action === 'orders' || $action === 'customer-orders') {
 
         $isQuote = !$hasPrice || $total <= 0;
         $orderStatus = $isQuote ? 'quote_requested' : 'pending';
-
-        // Generar un ID legible de pedido, ej: PED-A1B2C3
-        $cleanShort = strtoupper(substr(md5(uniqid((string)microtime(true), true)), 0, 6));
-        $orderId = 'PED-' . $cleanShort;
 
         $shippingData = [
             'name'    => $customerName,
@@ -111,17 +127,18 @@ if ($action === 'orders' || $action === 'customer-orders') {
         ];
 
         // Obtener columnas reales de orders_rows para inserción 100% compatible
-        $colsStmt = $pdo->query("SHOW COLUMNS FROM orders_rows");
-        $existingCols = $colsStmt ? $colsStmt->fetchAll(PDO::FETCH_COLUMN) : [];
+        $existingCols = smartispTableColumns($pdo, 'orders_rows');
 
         $insertData = [
-            'id'     => $orderId,
+            'id'     => '',
             'status' => $orderStatus,
             'total'  => $total
         ];
 
         if (in_array('user_id', $existingCols, true)) {
-            $insertData['user_id'] = $_SESSION['user']['id'] ?? null;
+            // El historial del cliente se filtra solo por user_id: tomarlo de la sesión validada
+            // contra la base, no de $_SESSION a secas (puede ser de un usuario ya borrado).
+            $insertData['user_id'] = getAuthUser()['id'] ?? null;
         }
         if (in_array('items', $existingCols, true)) {
             $insertData['items'] = json_encode($validItems, JSON_UNESCAPED_UNICODE);
@@ -150,12 +167,33 @@ if ($action === 'orders' || $action === 'customer-orders') {
         if (in_array('updated_at', $existingCols, true)) {
             $insertData['updated_at'] = date('Y-m-d H:i:s');
         }
+        $stockState = $stockEnabled ? smartispOrderStockTarget($orderStatus) : null;
+        if ($stockEnabled) {
+            $insertData['stock_state'] = $stockState;
+        }
 
         $fields = array_keys($insertData);
         $placeholders = array_map(fn($f) => ':' . $f, $fields);
-        $sql = "INSERT INTO orders_rows (" . implode(', ', $fields) . ") VALUES (" . implode(', ', $placeholders) . ")";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($insertData);
+        $stmt = $pdo->prepare("INSERT INTO orders_rows (" . implode(', ', $fields) . ") VALUES (" . implode(', ', $placeholders) . ")");
+
+        // ID legible de pedido, ej: PED-A1B2C3. Son 6 hex (16M combinaciones): un choque con un
+        // pedido existente es improbable pero posible, y antes terminaba en un 500 con el pedido
+        // perdido. Ante clave duplicada se genera otro.
+        for ($attempt = 1; ; $attempt++) {
+            $cleanShort = strtoupper(bin2hex(random_bytes(3)));
+            $orderId = 'PED-' . $cleanShort;
+            $insertData['id'] = $orderId;
+            try {
+                $stmt->execute($insertData);
+                break;
+            } catch (PDOException $e) {
+                if ($attempt >= 5 || ($e->errorInfo[1] ?? null) !== 1062) throw $e;
+            }
+        }
+        if ($stockEnabled) {
+            smartispApplyOrderStock($pdo, $validItems, 'released', $stockState);
+        }
+        $pdo->commit();
 
         // Despachar correos automáticos (Comprobante al cliente y Alerta con WhatsApp al admin)
         $orderDataForMail = [
@@ -193,34 +231,25 @@ if ($action === 'orders' || $action === 'customer-orders') {
         }
 
         try {
-            $colsStmt = $pdo->query("SHOW COLUMNS FROM orders_rows");
-            $existingCols = array_map(fn($c) => $c['Field'], $colsStmt ? $colsStmt->fetchAll() : []);
+            $existingCols = smartispTableColumns($pdo, 'orders_rows');
 
-            $userId = $user['id'] ?? '';
-            $userEmail = $user['email'] ?? '';
+            $userId = (string)($user['id'] ?? '');
+
+            // El id (PED-XXXXXX) es aleatorio: ordenar por él mezclaba el historial.
+            $orderBy = in_array('created_at', $existingCols, true) ? 'created_at DESC, id DESC' : 'id DESC';
 
             if (isAdminUser($user)) {
-                $stmt = $pdo->query("SELECT * FROM orders_rows ORDER BY id DESC LIMIT 100");
+                $stmt = $pdo->query("SELECT * FROM orders_rows ORDER BY $orderBy LIMIT 100");
                 $rows = $stmt ? $stmt->fetchAll() : [];
+            } elseif (in_array('user_id', $existingCols, true) && $userId !== '') {
+                // Solo por user_id. Antes también se cruzaba por customer_email, pero el registro
+                // no verifica el correo: cualquiera que se registrara con el correo de otra persona
+                // veía sus pedidos de invitado (dirección y teléfono incluidos).
+                $stmt = $pdo->prepare("SELECT * FROM orders_rows WHERE user_id = :uid ORDER BY $orderBy LIMIT 50");
+                $stmt->execute([':uid' => $userId]);
+                $rows = $stmt->fetchAll();
             } else {
-                $where = [];
-                $params = [];
-                if (in_array('user_id', $existingCols, true) && !empty($userId)) {
-                    $where[] = "user_id = :uid";
-                    $params[':uid'] = $userId;
-                }
-                if (in_array('customer_email', $existingCols, true) && !empty($userEmail)) {
-                    $where[] = "customer_email = :email";
-                    $params[':email'] = $userEmail;
-                }
-
-                if (!empty($where)) {
-                    $stmt = $pdo->prepare("SELECT * FROM orders_rows WHERE (" . implode(' OR ', $where) . ") ORDER BY id DESC LIMIT 50");
-                    $stmt->execute($params);
-                    $rows = $stmt ? $stmt->fetchAll() : [];
-                } else {
-                    $rows = [];
-                }
+                $rows = [];
             }
 
             $orders = array_map(function($r) {
@@ -281,7 +310,7 @@ if ($action === 'admin-orders') {
         $params[':status'] = $status;
     }
     if ($q !== '') {
-        $columns = $pdo->query('SHOW COLUMNS FROM orders_rows')->fetchAll(PDO::FETCH_COLUMN);
+        $columns = smartispTableColumns($pdo, 'orders_rows');
         $searchColumns = array_values(array_intersect(['id', 'customer_name', 'customer_email', 'customer_phone', 'shipping'], $columns));
         if (!$searchColumns) $searchColumns = ['id'];
         $where[] = '(' . implode(' OR ', array_map(static fn($column) => "`$column` LIKE :q", $searchColumns)) . ')';
@@ -394,10 +423,12 @@ if ($action === 'admin-order-status' && $method === 'POST') {
         exit;
     }
 
-    $stmt = $pdo->prepare('SELECT * FROM orders_rows WHERE id = :id LIMIT 1');
+    $pdo->beginTransaction();
+    $stmt = $pdo->prepare('SELECT * FROM orders_rows WHERE id = :id LIMIT 1 FOR UPDATE');
     $stmt->execute([':id' => $id]);
     $order = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$order) {
+        $pdo->rollBack();
         http_response_code(404);
         echo json_encode(['error' => 'Pedido no encontrado.']);
         exit;
@@ -405,14 +436,41 @@ if ($action === 'admin-order-status' && $method === 'POST') {
 
     $fromStatus = $order['status'] ?? null;
     if (strtolower(trim((string)$fromStatus)) === strtolower($newStatus)) {
+        $pdo->rollBack();
         http_response_code(409);
         echo json_encode(['error' => 'El pedido ya está en ese estado. No se registró un cambio duplicado.']);
         exit;
     }
 
-    // El estado logístico no demuestra que el proveedor haya confirmado el pago.
-    $upd = $pdo->prepare('UPDATE orders_rows SET status = :status, updated_at = NOW() WHERE id = :id');
-    $upd->execute([':status' => $newStatus, ':id' => $id]);
+    $sets = ['status = :status', 'updated_at = NOW()'];
+    $params = [':status' => $newStatus, ':id' => $id];
+
+    // Un estado logístico (enviado, entregado...) no demuestra que se cobró. Pero "paid" es
+    // justo lo que el panel muestra como "Pago confirmado": en pagos manuales (transferencia,
+    // efectivo) es el admin quien confirma el cobro, así que ese estado sí lo registra.
+    // Sin esto ningún pedido manual llegaba a contar como venta en el dashboard.
+    $paymentProvider = strtolower(trim((string)($order['payment_provider'] ?? '')));
+    $paymentStatus = strtolower(trim((string)($order['payment_status'] ?? '')));
+    if ($newStatus === 'paid' && array_key_exists('payment_status', $order)
+        && in_array($paymentProvider, ['', 'manual'], true)
+        && !in_array($paymentStatus, SMARTISP_CONFIRMED_PAYMENTS, true)) {
+        $sets[] = "payment_status = 'paid'";
+        $order['payment_status'] = 'paid';
+    }
+
+    // Inventario: aplicar solo la diferencia entre lo que el pedido ocupaba y lo que ocupa ahora.
+    if (smartispOrderStockEnabled($pdo)) {
+        $fromStock = (string)($order['stock_state'] ?? '') ?: 'released';
+        $toStock = smartispOrderStockTarget($newStatus);
+        if ($fromStock !== $toStock) {
+            smartispApplyOrderStock($pdo, smartispDecodeOrderRow($order)['items'] ?? [], $fromStock, $toStock);
+            $sets[] = 'stock_state = :stock_state';
+            $params[':stock_state'] = $toStock;
+        }
+    }
+
+    $upd = $pdo->prepare('UPDATE orders_rows SET ' . implode(', ', $sets) . ' WHERE id = :id');
+    $upd->execute($params);
 
     $actor = getAuthUser()['email'] ?? 'admin';
     $ev = $pdo->prepare('INSERT INTO order_events (order_id, from_status, to_status, actor, note) VALUES (:order_id, :from_status, :to_status, :actor, :note)');
@@ -423,6 +481,7 @@ if ($action === 'admin-order-status' && $method === 'POST') {
         ':actor'       => $actor,
         ':note'        => $note !== '' ? $note : null,
     ]);
+    $pdo->commit();
 
     $order['status'] = $newStatus;
     $emailResult = sendOrderStatusUpdateEmail($pdo, $order, $newStatus, $note);
@@ -471,9 +530,7 @@ if ($action === 'admin-order-delete' && $method === 'POST') {
         exit;
     }
 
-    $tableStmt = $pdo->prepare('SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table LIMIT 1');
-    $tableStmt->execute([':table' => 'order_payments']);
-    if ($tableStmt->fetchColumn()) {
+    if (smartispTableExists($pdo, 'order_payments')) {
         $payments = $pdo->prepare('SELECT COUNT(*) FROM order_payments WHERE order_id = :id');
         $payments->execute([':id' => $id]);
         if ((int)$payments->fetchColumn() > 0) {
@@ -520,6 +577,8 @@ if ($action === 'customer-wishlist') {
 
         if (!empty($prodId)) {
             array_unshift($_SESSION[$uKey], $item);
+            // Vive en la sesión (un archivo por visitante): sin tope, crecía con lo que mandara el cliente.
+            $_SESSION[$uKey] = array_slice($_SESSION[$uKey], 0, 100);
         }
 
         echo json_encode(['ok' => true, 'wishlist' => array_values($_SESSION[$uKey])]);

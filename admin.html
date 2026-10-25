@@ -126,7 +126,7 @@
 <body>
   <link rel="stylesheet" href="/assets/css/admin-nav.css?v=admin-brand-20261011">
   <div id="smartisp-admin-nav" class="is-loading" data-active="inicio"></div>
-  <script src="/assets/js/admin-nav.js?v=admin-cotizaciones-link-20261017" defer></script>
+  <script src="/assets/js/admin-nav.js?v=admin-inventario-20261023" defer></script>
   <header class="top"><div><h1>SmartISP Administracion</h1><span>Gestiona tu tienda sin editar el codigo</span></div><div style="display:flex;gap:8px;"><a class="button secondary" href="/" target="_blank" rel="noopener">Ver tienda online</a></div></header>
   <main class="shell">
     <section id="accessDeniedPanel" class="login hidden">
@@ -249,7 +249,7 @@
           <div id="dashboardTopProducts" class="insight-list" aria-live="polite"><p class="insight-empty">Cargando artículos de pedidos...</p></div>
         </section>
         <section class="dashboard-card insight-panel">
-          <div class="panel-title-row"><h3>Inventario registrado</h3><a href="editor-catalogo.html">Gestionar catálogo</a></div>
+          <div class="panel-title-row"><h3>Inventario registrado</h3><a href="/inventario.html">Gestionar inventario</a></div>
           <div id="dashboardInventory" aria-live="polite"><p class="insight-empty">Cargando inventario...</p></div>
         </section>
       </div>
@@ -1741,7 +1741,7 @@
         : '<p class="insight-empty">Aún no hay artículos detallados en pedidos de los últimos 30 días.</p>';
 
       if (!insights.inventory_configured) {
-        inventory.innerHTML = '<p class="insight-empty">Todavía no hay existencias registradas. El panel no asume que los productos tengan stock cero. Completa el inventario para activar estas métricas.</p>';
+        inventory.innerHTML = '<p class="insight-empty">Todavía no hay existencias registradas. El panel no asume que los productos tengan stock cero. <a href="/inventario.html">Carga el stock en Inventario</a> para activar estas métricas.</p>';
         return;
       }
 

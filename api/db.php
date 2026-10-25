@@ -56,12 +56,33 @@ function getDbConnection() {
 
     try {
         $pdo = new PDO($dsn, $config['username'], $config['password'], $options);
-        ensureAuxiliaryTables($pdo);
+        smartispSchemaMarker('', $config);
+        smartispRunSchemaOnce('schema_v1', fn() => ensureAuxiliaryTables($pdo));
         return $pdo;
     } catch (PDOException $e) {
         error_log('Error de conexión a MySQL: ' . $e->getMessage());
         return null;
     }
+}
+
+// Las reparaciones de esquema (ensureAuxiliaryTables, ensureProductTableColumns) son
+// idempotentes pero cuestan varias consultas, incluso DDL (ALTER ... ADD INDEX IF NOT EXISTS),
+// y se llamaban en CADA petición, también en páginas públicas. Basta con correrlas una vez por
+// base: si terminan bien se deja un marcador en el tmp del servidor. En CLI (migrate.php, tests)
+// se corren siempre, porque ahí la base puede haberse recreado. Para forzar que vuelvan a
+// correr tras cambiar una de ellas, subir el sufijo de versión de su nombre.
+function smartispSchemaMarker(string $name, ?array $config = null): string {
+    static $dbKey = '';
+    if ($config !== null) {
+        $dbKey = md5($config['host'] . '|' . $config['port'] . '|' . $config['database']);
+    }
+    return sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'smartisp_' . $name . '_' . $dbKey;
+}
+
+function smartispRunSchemaOnce(string $name, callable $repair): void {
+    $marker = smartispSchemaMarker($name);
+    if (PHP_SAPI !== 'cli' && is_file($marker)) return;
+    if ($repair() && PHP_SAPI !== 'cli') @touch($marker);
 }
 
 // Repara tablas que fueron importadas desde Excel/CSV con nombres genéricos COL 1, COL 2...
@@ -130,8 +151,9 @@ function fixImportedTableColumns(PDO $pdo, string $tableName) {
     }
 }
 
-// Crea las tablas complementarias si no existen todavía
-function ensureAuxiliaryTables(PDO $pdo) {
+// Crea las tablas complementarias si no existen todavía. Devuelve false si algo falló, para
+// que getDbConnection no la marque como hecha y la reintente en la siguiente petición.
+function ensureAuxiliaryTables(PDO $pdo): bool {
     try {
         // Corregir tablas importadas con COL 1, COL 2...
         fixImportedTableColumns($pdo, 'users_rows');
@@ -182,8 +204,10 @@ function ensureAuxiliaryTables(PDO $pdo) {
             INDEX idx_token (token),
             INDEX idx_email (email)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+        return true;
     } catch (Throwable $e) {
         error_log('ensureAuxiliaryTables warning: ' . $e->getMessage());
+        return false;
     }
 }
 
@@ -217,10 +241,15 @@ function getProductsTableName(PDO $pdo) {
 function ensureProductTableColumns(PDO $pdo, string $tableName): void {
     static $ensured = [];
     if (!empty($ensured[$tableName])) return;
+    $ensured[$tableName] = true;
+    smartispRunSchemaOnce('product_cols_v1_' . $tableName, fn() => repairProductTableColumns($pdo, $tableName));
+}
+
+function repairProductTableColumns(PDO $pdo, string $tableName): bool {
     try {
         $stmt = $pdo->query("DESCRIBE `$tableName`");
         $cols = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
-        if (empty($cols)) return;
+        if (empty($cols)) return false;
 
         $needed = [
             'id'           => 'VARCHAR(191) NOT NULL PRIMARY KEY',
@@ -249,10 +278,10 @@ function ensureProductTableColumns(PDO $pdo, string $tableName): void {
         } catch (Throwable $e) {
             error_log('ensureProductTableColumns (indice) warning: ' . $e->getMessage());
         }
-
-        $ensured[$tableName] = true;
+        return true;
     } catch (Throwable $e) {
         error_log('ensureProductTableColumns warning: ' . $e->getMessage());
+        return false;
     }
 }
 
@@ -275,6 +304,27 @@ function getUsersTableName(PDO $pdo) {
 
     $tbl = 'users_rows';
     return $tbl;
+}
+
+// ¿Existe la tabla? Se consulta una vez por petición (antes cada handler y cada página PHP
+// preguntaba a information_schema por su cuenta, a veces dos veces en la misma página).
+function smartispTableExists(PDO $pdo, string $table): bool {
+    static $cache = [];
+    if (!array_key_exists($table, $cache)) {
+        $stmt = $pdo->prepare('SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table LIMIT 1');
+        $stmt->execute([':table' => $table]);
+        $cache[$table] = (bool)$stmt->fetchColumn();
+    }
+    return $cache[$table];
+}
+
+// Columnas reales de una tabla cuyo esquema varía entre bases (orders_rows), una vez por petición.
+function smartispTableColumns(PDO $pdo, string $table): array {
+    static $cache = [];
+    if (!isset($cache[$table])) {
+        $cache[$table] = $pdo->query("SHOW COLUMNS FROM `$table`")->fetchAll(PDO::FETCH_COLUMN);
+    }
+    return $cache[$table];
 }
 
 // Verifica si una URL proviene de distribuidores externos (Intcomex, Siglo 21, 1worldsync, etc.)
@@ -378,16 +428,8 @@ function getSmartispUploadsDir(string $category): string {
 // ver migracion 017). Se usa tanto desde getDynamicCategoriesList() (para anotar cada
 // categoria con su familia) como desde el admin (para gestionarlas directamente).
 function getCategoryMacroGroups(PDO $pdo): array {
-    try {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS `category_macro_groups` (
-            `id` VARCHAR(100) NOT NULL PRIMARY KEY,
-            `name` VARCHAR(255) NOT NULL,
-            `icon` VARCHAR(64) NOT NULL DEFAULT 'package',
-            `sort_order` INT NOT NULL DEFAULT 0,
-            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-    } catch (Throwable $e) {}
+    // La tabla (con image_url y visible) la crean las migraciones 017 en adelante. Aquí había un
+    // CREATE TABLE IF NOT EXISTS sin esas columnas que corría en cada carga del catálogo público.
     $stmt = $pdo->query("SELECT id, name, icon, image_url, sort_order, visible FROM category_macro_groups ORDER BY sort_order, name");
     $groups = [];
     foreach (($stmt ? $stmt->fetchAll() : []) as $g) {
@@ -431,23 +473,7 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
         }
     }
 
-    try {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS `categories_rows` (
-            `id` VARCHAR(100) NOT NULL PRIMARY KEY,
-            `name` VARCHAR(255) NOT NULL,
-            `subcategories` LONGTEXT NULL,
-            `banner_image_url` VARCHAR(500) NULL,
-            `banner_alt` VARCHAR(200) NULL,
-            `description` VARCHAR(500) NULL,
-            `icon` VARCHAR(64) NOT NULL DEFAULT 'package',
-            `keywords` LONGTEXT NULL,
-            `macro_group_id` VARCHAR(100) NULL,
-            `parent_category_id` VARCHAR(100) NULL,
-            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-    } catch (Throwable $e) {}
-
+    // categories_rows la crea ensureAuxiliaryTables y la completan las migraciones.
     $macroGroups = [];
     foreach (getCategoryMacroGroups($pdo) as $g) {
         $macroGroups[$g['id']] = $g;

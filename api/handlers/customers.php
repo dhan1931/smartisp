@@ -11,7 +11,7 @@ if ($method !== 'GET') {
 
 $userTable = getUsersTableName($pdo);
 $userColumns = array_column($pdo->query("SHOW COLUMNS FROM `$userTable`")->fetchAll(PDO::FETCH_ASSOC), 'Field');
-$orderColumns = array_column($pdo->query('SHOW COLUMNS FROM orders_rows')->fetchAll(PDO::FETCH_ASSOC), 'Field');
+$orderColumns = smartispTableColumns($pdo, 'orders_rows');
 $userColumn = static function (array $candidates) use ($userColumns): ?string {
     foreach ($candidates as $candidate) if (in_array($candidate, $userColumns, true)) return $candidate;
     return null;
