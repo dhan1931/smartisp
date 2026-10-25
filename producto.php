@@ -15,13 +15,7 @@ $slug = trim($_GET['slug'] ?? ($_GET['id'] ?? ($_GET['p'] ?? '')));
 
 // Función para limpiar texto y convertirlo en slug SEO amigable
 function slugify(string $text): string {
-    $clean = @iconv('UTF-8', 'ASCII//TRANSLIT', $text);
-    if (!$clean) $clean = $text;
-    $clean = preg_replace('~[^\\pL\\d]+~u', '-', $clean);
-    $clean = trim($clean, '-');
-    $clean = preg_replace('~-+~', '-', $clean);
-    $clean = strtolower($clean);
-    return !empty($clean) ? substr($clean, 0, 80) : 'articulo';
+    return smartispSlug($text, 80, 'articulo');
 }
 
 // Extrae el identificador del producto a partir del slug de la URL
@@ -129,7 +123,6 @@ if ($product) {
         'description' => $rawDesc,
         'sku' => $product['sku'] ?: $product['id'],
         'category' => $product['category'],
-        'brand' => ['@type' => 'Brand', 'name' => 'SmartISP'],
     ];
     if ($productPrice > 0) {
         // Search Console (Datos estructurados de Fichas de comerciantes) marcó 'availability'
@@ -248,11 +241,12 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
     <link rel="icon" type="image/png" sizes="192x192" href="<?= $siteUrl ?>/assets/favicons/favicon-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="<?= $siteUrl ?>/assets/favicons/apple-touch-icon.png">
     <meta name="theme-color" content="#102a43">
-    <script src="/assets/js/public-brand.js?v=admin-brand-20261011" defer></script>
+    <script src="/assets/js/public-brand.js?v=seo2-20261025" defer></script>
 
     <!-- Open Graph / Redes Sociales (Facebook, WhatsApp, LinkedIn) -->
     <meta property="og:type" content="product">
     <meta property="og:site_name" content="SmartISP Ecuador">
+    <meta property="og:locale" content="es_EC">
     <meta property="og:title" content="<?= $productName ?> | SmartISP">
     <meta property="og:description" content="<?= $metaDesc ?>">
     <meta property="og:image" content="<?= htmlspecialchars($imgSrc, ENT_QUOTES, 'UTF-8') ?>">
@@ -436,7 +430,7 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
         .toast { position: fixed; bottom: 24px; right: 24px; background: #0f172a; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); display: none; align-items: center; gap: 8px; z-index: 100; animation: slideUp .3s ease; }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
-    <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=mobile-bottom-bar-restore-20261019">
+    <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=seo2-20261025">
     <style>header { position: relative !important; top: auto !important; }.storefront-logo img { height: auto; max-height: 140px; border-radius: 0; }</style>
 </head>
 <body>
@@ -660,12 +654,12 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
       <span><i data-lucide="headphones" width="18"></i> Soporte técnico</span>
       <span><i data-lucide="handshake" width="18"></i> Asesoría especializada</span>
       <div class="site-footer-payments"><small>Métodos de pago:</small>
-        <span class="payment-badge" aria-label="Visa"><svg viewBox="0 0 48 30" width="40" height="26" role="img"><rect width="48" height="30" fill="#fff"/><text x="24" y="20" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="900" font-style="italic" fill="#1434CB" text-anchor="middle">VISA</text></svg></span>
-        <span class="payment-badge" aria-label="Mastercard"><svg viewBox="0 0 48 30" width="40" height="26" role="img"><rect width="48" height="30" fill="#fff"/><circle cx="20" cy="15" r="9" fill="#EB001B"/><circle cx="28" cy="15" r="9" fill="#F79E1B" fill-opacity=".92"/></svg></span>
-        <span class="payment-badge" aria-label="American Express"><svg viewBox="0 0 48 30" width="40" height="26" role="img"><rect width="48" height="30" fill="#006FCF"/><text x="24" y="19" font-family="Arial, Helvetica, sans-serif" font-size="9.5" font-weight="800" fill="#fff" text-anchor="middle">AMEX</text></svg></span>
-        <span class="payment-badge" aria-label="Diners Club"><svg viewBox="0 0 48 30" width="40" height="26" role="img"><rect width="48" height="30" fill="#fff"/><circle cx="24" cy="15" r="10" fill="#0079BE"/><path d="M24 7a8 8 0 0 0 0 16z" fill="#fff"/></svg></span>
-        <span class="payment-badge" aria-label="Banco Pichincha"><svg viewBox="0 0 48 30" width="40" height="26" role="img"><rect width="48" height="30" fill="#FFCB05"/><text x="24" y="18" font-family="Arial, Helvetica, sans-serif" font-size="7" font-weight="900" fill="#0A3D62" text-anchor="middle">PICHINCHA</text></svg></span>
-        <span class="payment-badge" aria-label="PayPhone"><svg viewBox="0 0 48 30" width="40" height="26" role="img"><rect width="48" height="30" fill="#00B4A6"/><text x="24" y="19" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="800" fill="#fff" text-anchor="middle">PayPhone</text></svg></span>
+        <span class="payment-badge" role="img" aria-label="Visa"><svg viewBox="0 0 48 30" width="40" height="26" aria-hidden="true"><rect width="48" height="30" fill="#fff"/><text x="24" y="20" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="900" font-style="italic" fill="#1434CB" text-anchor="middle">VISA</text></svg></span>
+        <span class="payment-badge" role="img" aria-label="Mastercard"><svg viewBox="0 0 48 30" width="40" height="26" aria-hidden="true"><rect width="48" height="30" fill="#fff"/><circle cx="20" cy="15" r="9" fill="#EB001B"/><circle cx="28" cy="15" r="9" fill="#F79E1B" fill-opacity=".92"/></svg></span>
+        <span class="payment-badge" role="img" aria-label="American Express"><svg viewBox="0 0 48 30" width="40" height="26" aria-hidden="true"><rect width="48" height="30" fill="#006FCF"/><text x="24" y="19" font-family="Arial, Helvetica, sans-serif" font-size="9.5" font-weight="800" fill="#fff" text-anchor="middle">AMEX</text></svg></span>
+        <span class="payment-badge" role="img" aria-label="Diners Club"><svg viewBox="0 0 48 30" width="40" height="26" aria-hidden="true"><rect width="48" height="30" fill="#fff"/><circle cx="24" cy="15" r="10" fill="#0079BE"/><path d="M24 7a8 8 0 0 0 0 16z" fill="#fff"/></svg></span>
+        <span class="payment-badge" role="img" aria-label="Banco Pichincha"><svg viewBox="0 0 48 30" width="40" height="26" aria-hidden="true"><rect width="48" height="30" fill="#FFCB05"/><text x="24" y="18" font-family="Arial, Helvetica, sans-serif" font-size="7" font-weight="900" fill="#0A3D62" text-anchor="middle">PICHINCHA</text></svg></span>
+        <span class="payment-badge" role="img" aria-label="PayPhone"><svg viewBox="0 0 48 30" width="40" height="26" aria-hidden="true"><rect width="48" height="30" fill="#00B4A6"/><text x="24" y="19" font-family="Arial, Helvetica, sans-serif" font-size="8" font-weight="800" fill="#fff" text-anchor="middle">PayPhone</text></svg></span>
       </div>
     </div>
     <div class="site-footer-bottom">

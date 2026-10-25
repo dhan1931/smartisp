@@ -1,15 +1,40 @@
 # Robots.txt for SmartISP
 User-agent: *
+User-agent: Googlebot
+User-agent: Bingbot
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Applebot
+User-agent: Applebot-Extended
+User-agent: DuckAssistBot
+User-agent: meta-externalagent
 Allow: /
+# Imágenes de productos y banners
 Allow: /api/auth/product-image
+Allow: /api/auth/serve-upload
+Allow: /uploads/
 
-# Páginas privadas/transaccionales: no deben indexarse ni rastrearse
+# Panel y páginas transaccionales
 Disallow: /admin.html
 Disallow: /pedidos.html
+Disallow: /cotizaciones.html
+Disallow: /clientes.html
 Disallow: /configuracion.html
 Disallow: /categorias.html
 Disallow: /editor-catalogo.html
 Disallow: /editor-landing.html
+Disallow: /portada.html
+Disallow: /campanas.html
+Disallow: /inventario.html
+Disallow: /estadisticas.html
+Disallow: /reportes.html
 Disallow: /login.html
 Disallow: /checkout.html
 Disallow: /reset-password.html

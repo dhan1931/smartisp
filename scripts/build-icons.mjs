@@ -1,13 +1,6 @@
-// Genera assets/vendor/lucide-icons.min.js: Lucide solo con los íconos que el sitio puede usar,
-// en vez de la librería completa (assets/vendor/lucide.min.js, ~450 KB con 2137 íconos).
-//
-//   npm run build:icons     (volver a correrlo al usar un ícono nuevo en el código)
-//
-// Un ícono "se usa" si su nombre (kebab-case, ej. "shopping-cart") aparece como cadena en el
-// código fuente: así entran también las listas de opciones de los selects del panel, cuyos
-// valores quedan guardados en la base. Si aun así una página pide un ícono que no está en el
-// paquete (p. ej. dentro de HTML guardado en la base), el paquete carga la librería completa una
-// vez y lo dibuja: en el peor caso el resultado es el mismo de antes.
+// Genera assets/vendor/lucide-icons.min.js solo con los íconos que aparecen en el código.
+// Correr `npm run build:icons` al usar un ícono nuevo. Si una página pide uno que no está,
+// el paquete carga la librería completa (assets/vendor/lucide.min.js).
 import fs from 'node:fs';
 import path from 'node:path';
 import { build } from 'esbuild';

@@ -469,6 +469,7 @@ if ($action === 'admin-products') {
                 'message' => 'Producto registrado y publicado con éxito.'
             ]);
         }
+        smartispNotifySearchEngines([$publicUrl]);
         exit;
     }
 
@@ -706,6 +707,7 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
                 WHERE id = :id");
 
         $inserted = 0;
+        $changedPaths = [];
         foreach ($products as $p) {
             $name = trim($p['name'] ?? '');
             if (!$name) continue;
@@ -780,10 +782,12 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
                 ]);
             }
             $inserted++;
+            $changedPaths[] = '/producto/' . ($existingId ?: $id) . '-' . slugify($name);
         }
 
         $pdo->commit();
         echo json_encode(['ok' => true, 'count' => $inserted]);
+        smartispNotifySearchEngines(array_slice($changedPaths, 0, 10000));
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);

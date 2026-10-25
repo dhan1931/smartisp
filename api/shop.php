@@ -138,3 +138,41 @@ function smartispOrderStockEnabled(PDO $pdo): bool {
     return smartispTableExists($pdo, 'product_inventory')
         && in_array('stock_state', smartispTableColumns($pdo, 'orders_rows'), true);
 }
+
+// -------------------------------------------------------------
+// INDEXNOW (Bing, Yandex y otros). Inactivo sin INDEXNOW_KEY.
+// -------------------------------------------------------------
+
+function smartispIndexNowKey(): string {
+    $key = trim((string)(getenv('INDEXNOW_KEY') ?: ''));
+    return preg_match('/^[A-Za-z0-9-]{8,128}$/', $key) ? $key : '';
+}
+
+function smartispNotifySearchEngines(array $paths): void {
+    $key = smartispIndexNowKey();
+    $paths = array_values(array_unique(array_filter($paths, fn($p) => is_string($p) && str_starts_with($p, '/'))));
+    if ($key === '' || !$paths || !function_exists('curl_init')) return;
+    $siteUrl = rtrim((string)(getenv('SITE_URL') ?: 'https://smart-isp.com.ec'), '/');
+    register_shutdown_function(static function () use ($key, $paths, $siteUrl): void {
+        if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+        elseif (function_exists('litespeed_finish_request')) litespeed_finish_request();
+        $ch = curl_init('https://api.indexnow.org/indexnow');
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json; charset=utf-8'],
+            CURLOPT_POSTFIELDS => json_encode([
+                'host' => (string)parse_url($siteUrl, PHP_URL_HOST),
+                'key' => $key,
+                'keyLocation' => $siteUrl . '/' . $key . '.txt',
+                'urlList' => array_map(fn($p) => $siteUrl . $p, $paths),
+            ], JSON_UNESCAPED_SLASHES),
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 5,
+            CURLOPT_SSL_VERIFYPEER => true,
+        ]);
+        curl_exec($ch);
+        $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        if ($status >= 400 || $status === 0) error_log('IndexNow respondió ' . $status . ' para ' . implode(', ', $paths));
+        curl_close($ch);
+    });
+}

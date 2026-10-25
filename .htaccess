@@ -16,10 +16,12 @@ DirectoryIndex tienda.html index.html index.htm index.php
     # Rutas amigables SEO para productos individuales y sitemaps
     RewriteRule ^sitemap-products\.xml$ sitemap-products.php [QSA,L]
     RewriteRule ^sitemap-categories\.xml$ sitemap-categories.php [QSA,L]
+    RewriteRule ^llms\.txt$ llms.php [L]
     RewriteRule ^productos-destacados/?$ productos-destacados.php [QSA,L]
     # categorias-destacadas.php (hub con tarjetas) quedo reemplazada por el catalogo real:
     # ahora esta ruta sirve tienda.html, que detecta el modo catalogo por location.pathname
     # (un query string inyectado aqui por el rewrite no le llegaria al JS del navegador).
+    RewriteRule ^categorias-destacadas\.php$ /categorias-destacadas [R=301,L]
     RewriteRule ^categorias-destacadas/?$ tienda.html [QSA,L]
     RewriteRule ^servicios/?$ servicios.html [QSA,L]
     RewriteRule ^nosotros/?$ nosotros.html [QSA,L]
@@ -35,6 +37,10 @@ DirectoryIndex tienda.html index.html index.htm index.php
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^uploads/(campaigns|products)/([A-Za-z0-9._-]+)$ api/router.php?action=serve-upload&category=$1&file=$2 [QSA,L]
 
+    # Clave de IndexNow
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^([A-Za-z0-9-]{8,128})\.txt$ api/router.php?action=indexnow-key&key=$1 [L]
+
     # Enrutamiento universal de API hacia router.php (evita bucle interno)
     RewriteCond %{REQUEST_URI} !/api/router\.php
     RewriteRule ^api/auth/(.*)$ api/router.php?action=$1 [QSA,L]
@@ -48,6 +54,7 @@ DirectoryIndex tienda.html index.html index.htm index.php
     ExpiresByType text/html "access plus 5 minutes"
     ExpiresByType text/css "access plus 7 days"
     ExpiresByType application/javascript "access plus 7 days"
+    ExpiresByType text/javascript "access plus 7 days"
     ExpiresByType image/png "access plus 30 days"
     ExpiresByType image/jpeg "access plus 30 days"
     ExpiresByType image/webp "access plus 30 days"
@@ -57,6 +64,11 @@ DirectoryIndex tienda.html index.html index.htm index.php
 </IfModule>
 
 <IfModule mod_headers.c>
+    # Panel y checkout fuera de los buscadores
+    <FilesMatch "^(admin|pedidos|cotizaciones|clientes|configuracion|categorias|editor-catalogo|editor-landing|portada|campanas|inventario|estadisticas|reportes|login|checkout|reset-password|index-presentacion)\.html$">
+        Header set X-Robots-Tag "noindex, nofollow"
+    </FilesMatch>
+
     <FilesMatch "\.(?:css|js|png|jpe?g|webp|svg|ico|woff2?)$">
         Header set Cache-Control "public, max-age=604800"
     </FilesMatch>
@@ -66,5 +78,5 @@ DirectoryIndex tienda.html index.html index.htm index.php
 </IfModule>
 
 <IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html text/plain text/css application/javascript application/json image/svg+xml
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript application/javascript application/json image/svg+xml application/xml text/xml application/manifest+json
 </IfModule>
