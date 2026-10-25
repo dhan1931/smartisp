@@ -10,8 +10,8 @@ $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 $readonly = getenv('SMARTISP_READONLY') === '1';
 
 // Nunca se sirven código, configuración ni archivos internos.
-$deny = '#^/(?:\.|api/(?:config|db|mailer|shop|roles|category-admin)\.php|api/handlers/|src/|scripts/|ops/|docs/|data/|legacy/|node_modules/)'
-    . '|^/(?:server\.js|db\.js|package(?:-lock)?\.json|vite\.config\.js|vercel\.json)$'
+$deny = '#^/(?:\.|api/(?:config\.php|lib/|handlers/)|scripts/|ops/|docs/|migrations/|tests/|node_modules/)'
+    . '|^/(?:package(?:-lock)?\.json|vite\.config\.js|vercel\.json)$'
     . '|\.(?:env|token|yml|yaml|md|sql|gz|dump|bak|log)$#i';
 if (preg_match($deny, $uri)) {
     http_response_code(404);

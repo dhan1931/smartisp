@@ -11,7 +11,7 @@
  */
 declare(strict_types=1);
 
-require __DIR__ . '/../api/db.php';
+require __DIR__ . '/../api/lib/db.php';
 
 $dryRun = in_array('--dry-run', $argv, true);
 $statusOnly = in_array('--status', $argv, true);

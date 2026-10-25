@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/api/db.php';
+require_once __DIR__ . '/api/lib/db.php';
 
 function seoSlugCategoryHub(string $text): string {
     return smartispSlug($text, 90, 'categoria');
@@ -149,8 +149,8 @@ foreach ($categories as $idx => $category) {
   <meta name="robots" content="index, follow, max-image-preview:large">
   <link rel="canonical" href="<?= $siteUrl ?>/categorias-destacadas">
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
-  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=seo2-20261025">
-  <script src="/assets/js/public-brand.js?v=seo2-20261025" defer></script>
+  <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=seo2-20261025">
+  <script src="/assets/js/store/public-brand.js?v=seo2-20261025" defer></script>
   <script src="/assets/vendor/lucide-icons.min.js?v=8707c619"></script>
   <script type="application/ld+json">
   <?= json_encode([
@@ -217,7 +217,7 @@ foreach ($categories as $idx => $category) {
     @media(max-width:800px){.public-menu-btn{display:none!important}.public-nav{display:flex!important;position:sticky;top:var(--sticky-nav-height,70px);flex-direction:row;align-items:center;justify-content:flex-start;gap:18px;padding:10px 16px;overflow-x:auto;white-space:nowrap}.public-nav a{flex:0 0 auto;padding:3px 0;border:0}}
   </style>
   <style>.nav, .public-nav { position: relative !important; top: auto !important; }</style>
-  <link rel="stylesheet" href="/assets/css/category-catalog.css?v=seo2-20261025">
+  <link rel="stylesheet" href="/assets/css/store/category-catalog.css?v=seo2-20261025">
 </head>
 <body>
   <?php $storefrontActivePage = 'categories'; require __DIR__ . '/includes/storefront-discovery-nav.php'; ?>
@@ -274,9 +274,9 @@ foreach ($categories as $idx => $category) {
     </section>
   </main>
   <footer class="storefront-footer category-catalog-footer"><span>SmartISP Ecuador · Tecnología, conectividad e infraestructura TI.</span><a href="/tienda.html">Ir a la tienda <i data-lucide="arrow-up-right"></i></a></footer>
-  <script src="/assets/js/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
-  <script src="/assets/js/public-account.js" defer></script>
-  <script src="/assets/js/storefront-product-card.js" defer></script>
-  <script src="/assets/js/category-catalog.js?v=seo2-20261025" defer></script>
+  <script src="/assets/js/store/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
+  <script src="/assets/js/store/public-account.js" defer></script>
+  <script src="/assets/js/store/storefront-product-card.js" defer></script>
+  <script src="/assets/js/store/category-catalog.js?v=seo2-20261025" defer></script>
 </body>
 </html>

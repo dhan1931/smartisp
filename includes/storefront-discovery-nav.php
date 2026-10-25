@@ -48,9 +48,9 @@ $storefrontNavLinks = [
     </div>
   </div>
 </nav>
-<link rel="stylesheet" href="/assets/css/storefront-cart.css?v=shared-cart-drawer-20261009">
-<script src="/assets/js/public-admin-link.js?v=seo2-20261025" defer></script>
-<script src="/assets/js/storefront-cart.js?v=shared-cart-drawer-20261009" defer></script>
+<link rel="stylesheet" href="/assets/css/store/storefront-cart.css?v=shared-cart-drawer-20261009">
+<script src="/assets/js/store/public-admin-link.js?v=seo2-20261025" defer></script>
+<script src="/assets/js/store/storefront-cart.js?v=shared-cart-drawer-20261009" defer></script>
 <nav class="storefront-mobile-bar" aria-label="Accesos rápidos">
   <a href="/tienda.html"><i data-lucide="store" width="19"></i><span>Tienda</span></a>
   <a href="/categorias-destacadas"><i data-lucide="layout-grid" width="19"></i><span>Categorías</span></a>

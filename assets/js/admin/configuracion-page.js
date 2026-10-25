@@ -770,7 +770,7 @@ $('#cropBox').addEventListener('pointerup', () => { cropState.dragging = false; 
 $('#cancelCropButton')?.addEventListener('click', () => closeCropEditor(true));
 $('#applyCropButton')?.addEventListener('click', applyCrop);
 
-// El logout ya lo provee el navbar compartido (assets/js/admin-nav.js, .admin-nav-logout).
+// El logout ya lo provee el navbar compartido (assets/js/admin/admin-nav.js, .admin-nav-logout).
 
 $('#switchAccountBtn')?.addEventListener('click', async () => {
   try { await api('logout', { method: 'POST' }); } catch (e) {}

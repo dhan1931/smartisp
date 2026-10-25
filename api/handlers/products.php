@@ -819,7 +819,7 @@ if ($action === 'categories') {
     }
 
     if ($method === 'POST') {
-        require_once __DIR__ . '/../category-admin.php';
+        require_once __DIR__ . '/../lib/category-admin.php';
         $cats = isset($body['category']) ? [$body['category']] : ($body['categories'] ?? null);
         if (!is_array($cats) || !$cats) {
             http_response_code(400);

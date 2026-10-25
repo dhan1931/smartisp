@@ -4,8 +4,8 @@ $database = getenv('MYSQL_DATABASE') ?: '';
 if (!preg_match('/(?:^|_)ci$/i', $database) || !in_array(getenv('MYSQL_HOST') ?: '', ['localhost', '127.0.0.1', '::1'], true)) {
     throw new RuntimeException('Esta prueba solo se permite en una base local aislada terminada en _ci.');
 }
-require __DIR__ . '/../api/db.php';
-require __DIR__ . '/../api/category-admin.php';
+require __DIR__ . '/../api/lib/db.php';
+require __DIR__ . '/../api/lib/category-admin.php';
 $pdo = getDbConnection();
 $table = getProductsTableName($pdo);
 $assert = static function (bool $ok, string $message): void { if (!$ok) throw new RuntimeException($message); };

@@ -58,7 +58,7 @@ php scripts/migrate.php
 
 Si prefieres pegar el SQL directo en phpMyAdmin (o con el cliente `mysql`) en vez de correr
 `scripts/migrate.php` desde una terminal con acceso a Hostinger, existe el mismo cambio consolidado
-en un único archivo: **`docs/MIGRACION-MANUAL-PRODUCCION.sql`**. Ese archivo histórico contiene las
+en un único archivo: **`docs/guias/MIGRACION-MANUAL-PRODUCCION.sql`**. Ese archivo histórico contiene las
 migraciones 001-006; no incluye la expansión 008 de campañas. Tiene una sección de verificación al
 final (conteos esperados: 2789
 productos, 12 pedidos, 4 usuarios — los del dump original `u606699314_smart_isp.sql`).
@@ -69,7 +69,7 @@ migraciones registradas en `schema_migrations` (para que un futuro `--status` la
 aplicadas), y los conteos de verificación coinciden exactamente.
 
 - [ ] Backup antes (ver paso 1, es el mismo sin importar qué método uses).
-- [ ] Aplicar `docs/MIGRACION-MANUAL-PRODUCCION.sql` completo, de una vez, en orden.
+- [ ] Aplicar `docs/guias/MIGRACION-MANUAL-PRODUCCION.sql` completo, de una vez, en orden.
 - [ ] Correr las consultas de verificación al final del archivo y comparar contra lo esperado.
 
 ## 3. Variables de entorno en el servidor

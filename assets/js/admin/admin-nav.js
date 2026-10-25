@@ -7,8 +7,8 @@
  * token en localStorage.
  *
  * Uso: <div id="smartisp-admin-nav" class="is-loading" data-active="productos"></div>
- *      <link rel="stylesheet" href="/assets/css/admin-nav.css">
- *      <script src="/assets/js/admin-nav.js" defer></script>
+ *      <link rel="stylesheet" href="/assets/css/admin/admin-nav.css">
+ *      <script src="/assets/js/admin/admin-nav.js" defer></script>
  *
  * Agregar una opción nueva al menú = agregar una entrada a LINKS (o un grupo nuevo a GROUPS).
  * Nada más que tocar: ninguna página individual define su propio menú.

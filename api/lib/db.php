@@ -38,7 +38,7 @@ function getDbConnection() {
         return $pdo;
     }
 
-    $config = require __DIR__ . '/config.php';
+    $config = require __DIR__ . '/../config.php';
 
     $dsn = sprintf(
         'mysql:host=%s;port=%s;dbname=%s;charset=%s',
@@ -428,7 +428,7 @@ function getSmartispUploadsDir(string $category): string {
         $documentRoot = rtrim((string)($_SERVER['DOCUMENT_ROOT'] ?? ''), '/\\');
         $base = $documentRoot !== ''
             ? dirname($documentRoot) . '/smartisp-uploads'
-            : dirname(__DIR__) . '/uploads';
+            : dirname(__DIR__, 2) . '/uploads';
     }
     $dir = $base . '/' . $category;
     if (!is_dir($dir)) @mkdir($dir, 0755, true);

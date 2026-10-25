@@ -5,15 +5,15 @@ const required = [
   'index.html', 'tienda.html', 'nosotros.html', 'servicios.html', 'checkout.html',
   'admin.html', 'configuracion.html', 'campanas.html', 'pedidos.html', 'cotizaciones.html', 'clientes.html', 'categorias.html',
   'editor-catalogo.html', 'editor-landing.html', 'login.html', 'reset-password.html',
-  'inventario.html', 'estadisticas.html', 'reportes.html', 'assets/js/admin-page.js', 'assets/css/admin-page.css', 'api/shop.php',
-  'assets/vendor/lucide-icons.min.js', 'assets/vendor/lucide.min.js', 'assets/js/admin-charts.js', 'assets/js/admin-dashboard.js', 'assets/css/admin-dashboard.css',
+  'inventario.html', 'estadisticas.html', 'reportes.html', 'assets/js/admin/admin-page.js', 'assets/css/admin/admin-page.css', 'api/lib/shop.php',
+  'assets/vendor/lucide-icons.min.js', 'assets/vendor/lucide.min.js', 'assets/js/admin/admin-charts.js', 'assets/js/admin/admin-dashboard.js', 'assets/css/admin/admin-dashboard.css',
   '.htaccess', 'robots.txt', 'sitemap.xml', 'sitemap-main.xml',
   'producto.php', 'categoria.php', 'productos-destacados.php', 'categorias-destacadas.php',
   'sitemap-products.php', 'sitemap-categories.php', 'llms.php', 'api/router.php', 'api/config.php',
-  'assets/js/admin-nav.js', 'assets/js/public-brand.js', 'assets/js/public-account.js', 'assets/js/public-admin-link.js',
-  'assets/js/storefront-discovery.js', 'assets/css/storefront-discovery.css',
+  'assets/js/admin/admin-nav.js', 'assets/js/store/public-brand.js', 'assets/js/store/public-account.js', 'assets/js/store/public-admin-link.js',
+  'assets/js/store/storefront-discovery.js', 'assets/css/store/storefront-discovery.css',
   'includes/storefront-discovery-nav.php', 'includes/storefront-product-card.php',
-  'assets/js/categories-admin.js', 'api/category-admin.php'
+  'assets/js/admin/categories-admin.js', 'api/lib/category-admin.php'
 ];
 
 const missing = required.filter(file => !existsSync(path.join('dist', file)));

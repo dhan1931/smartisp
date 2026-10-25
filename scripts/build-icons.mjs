@@ -8,7 +8,7 @@ import * as lucide from 'lucide';
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..');
 const out = path.join(root, 'assets/vendor/lucide-icons.min.js');
-const skip = /node_modules|[\\/](dist|vendor|ops|docs|tests|legacy|\.git)([\\/]|$)|server\.js|src[\\/]lib/;
+const skip = /node_modules|[\\/](dist|vendor|ops|docs|tests|\.git)([\\/]|$)/;
 const pascal = name => name.replace(/(^|-)([a-z0-9])/g, (_, __, c) => c.toUpperCase());
 
 // Nombres que se piden en el código pero ya no existen en Lucide 1.x (íconos de marcas):
