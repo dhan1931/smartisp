@@ -24,7 +24,7 @@
   const safeIcon = value => /^[a-z0-9-]+$/i.test(String(value || '')) ? String(value) : 'package';
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
   const money = value => Number(value) > 0 ? '$' + Number(value).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'Cotizar';
-  const productSlug = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 90);
+  const productSlug = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || 'articulo';
   const imageIsSafe = value => {
     const image = String(value || '').trim();
     return (image.startsWith('/') && !image.startsWith('//') && !image.includes('..')) || /^https:\/\//i.test(image);

@@ -2,17 +2,7 @@
 require_once __DIR__ . '/api/db.php';
 
 function seoSlugCategoryHub(string $text): string {
-    // Mismo fix que slugifyCategoryPage() en categoria.php: iconv deja apostrofes en vez de
-    // quitar acentos limpio en este entorno, asi que se reemplazan a mano primero.
-    $accentMap = ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','ñ'=>'n','ü'=>'u','Á'=>'A','É'=>'E','Í'=>'I','Ó'=>'O','Ú'=>'U','Ñ'=>'N','Ü'=>'U'];
-    $clean = strtr($text, $accentMap);
-    $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT', $clean);
-    if ($ascii !== false) $clean = $ascii;
-    $clean = preg_replace('~[^\\pL\\d]+~u', '-', $clean);
-    $clean = trim($clean, '-');
-    $clean = preg_replace('~-+~', '-', $clean);
-    $clean = strtolower($clean);
-    return !empty($clean) ? substr($clean, 0, 90) : 'categoria';
+    return smartispSlug($text, 90, 'categoria');
 }
 
 function escCategoryHub(string $value): string {
@@ -159,9 +149,9 @@ foreach ($categories as $idx => $category) {
   <meta name="robots" content="index, follow, max-image-preview:large">
   <link rel="canonical" href="<?= $siteUrl ?>/categorias-destacadas">
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
-  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=mobile-bottom-bar-restore-20261019">
-  <script src="/assets/js/public-brand.js?v=admin-brand-20261011" defer></script>
-  <script src="/assets/vendor/lucide.min.js?v=1.55.0"></script>
+  <link rel="stylesheet" href="/assets/css/storefront-discovery.css?v=seo2-20261025">
+  <script src="/assets/js/public-brand.js?v=seo2-20261025" defer></script>
+  <script src="/assets/vendor/lucide-icons.min.js?v=8707c619"></script>
   <script type="application/ld+json">
   <?= json_encode([
       '@context' => 'https://schema.org',
@@ -182,36 +172,36 @@ foreach ($categories as $idx => $category) {
     .category-hero{display:grid;grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr);align-items:center;gap:28px;min-height:310px;margin:22px auto 34px;padding:30px 36px;border:1px solid #d8eaf1;border-radius:12px;background:#fff;overflow:hidden}
     .category-hero-copy{max-width:590px}.category-eyebrow,.section-eyebrow{display:block;color:#087ea4;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.12em}
     .category-hero h1{max-width:590px;margin:10px 0 12px;color:#102c3d;font-size:48px;line-height:1.02;letter-spacing:0}
-    .category-hero p{max-width:530px;margin:0;color:#60798f;font-size:15px;line-height:1.55}
+    .category-hero p{max-width:530px;margin:0;color:#556d82;font-size:15px;line-height:1.55}
     .category-hero-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}.category-hero .btn{gap:8px;min-height:44px;padding:0 16px;border-radius:6px}.category-hero .btn.primary{background:#087ea4}.category-hero .btn.secondary{background:white;color:#087ea4;border-color:#b9d9e5}
     .hero-audiences{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.hero-audiences span{display:inline-flex;align-items:center;gap:6px;color:#31536a;font-size:12px;font-weight:700}.hero-audiences svg{color:#087ea4}
     .category-hero-mosaic{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:132px 132px;gap:10px;min-width:0}
     .hero-product-tile{position:relative;display:grid;place-items:center;min-width:0;overflow:hidden;border:1px solid #d7eaf2;border-radius:8px;background:#eaf6fb}
     .hero-product-tile:nth-child(2){background:#edf7f3;border-color:#d6ece2}.hero-product-tile:nth-child(3){background:#edf2ff;border-color:#dce4fb}.hero-product-tile:nth-child(4){background:#f4effd;border-color:#e6dcf7}
     .hero-product-tile img{width:100%;height:100%;padding:8px;object-fit:contain}.hero-product-tile .tile-fallback{font-size:34px;color:#087ea4}
-    .category-section-head{display:flex;align-items:end;justify-content:space-between;gap:18px;margin:0 0 14px}.category-section-head h2{margin:3px 0 0;color:#102c3d;font-size:29px;line-height:1.15;letter-spacing:0}.category-section-head p{margin:5px 0 0;color:#60798f;font-size:13px}.category-total{display:inline-flex;align-items:center;gap:8px;padding:9px 13px;border:1px solid #cfe2ec;border-radius:999px;background:#fff;color:#31536a;font-size:12px;font-weight:800;white-space:nowrap}
+    .category-section-head{display:flex;align-items:end;justify-content:space-between;gap:18px;margin:0 0 14px}.category-section-head h2{margin:3px 0 0;color:#102c3d;font-size:29px;line-height:1.15;letter-spacing:0}.category-section-head p{margin:5px 0 0;color:#556d82;font-size:13px}.category-total{display:inline-flex;align-items:center;gap:8px;padding:9px 13px;border:1px solid #cfe2ec;border-radius:999px;background:#fff;color:#31536a;font-size:12px;font-weight:800;white-space:nowrap}
     .featured-category-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
     .featured-category{--accent:#0787bb;--tint:#e4f5fc;position:relative;display:flex;min-height:168px;overflow:hidden;padding:16px;border:1px solid #d7e7ee;border-top:3px solid var(--accent);border-radius:8px;background:linear-gradient(105deg,#fff 0%,#fff 52%,var(--tint) 100%);transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
     .featured-category:nth-child(2){--accent:#3e83eb;--tint:#eaf1ff}.featured-category:nth-child(3){--accent:#14a879;--tint:#e7f7f0}.featured-category:nth-child(4){--accent:#9362da;--tint:#f2ecfc}
     .featured-category:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 10px 24px rgba(16,44,61,.09)}
     .featured-copy{position:relative;z-index:1;display:flex;flex:0 0 62%;flex-direction:column;align-items:flex-start;min-width:0}
     .featured-title-row{display:flex;align-items:center;gap:10px}.featured-icon{display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;border-radius:8px;background:var(--accent);color:#fff}.featured-icon svg{width:21px;height:21px}
-    .featured-category h3{margin:0;color:#102c3d;font-size:16px;line-height:1.25;letter-spacing:0}.featured-description{max-width:230px;margin:9px 0;color:#60798f;font-size:12px;line-height:1.4}
+    .featured-category h3{margin:0;color:#102c3d;font-size:16px;line-height:1.25;letter-spacing:0}.featured-description{max-width:230px;margin:9px 0;color:#556d82;font-size:12px;line-height:1.4}
     .featured-count{display:inline-flex;align-items:center;gap:6px;margin-top:auto;padding:6px 10px;border-radius:999px;background:#102c3d;color:#fff;font-size:11px;font-weight:800}.featured-count svg{width:14px;height:14px}
     .featured-image{position:absolute;right:0;top:0;bottom:0;width:43%;display:grid;place-items:center}.featured-image img{width:100%;height:100%;padding:8px 4px;object-fit:contain}.featured-image svg{width:42px;height:42px;color:var(--accent);opacity:.65}
     .category-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:38px}
     .category-link{display:grid;grid-template-columns:44px minmax(0,1fr) 18px;align-items:center;gap:10px;min-height:76px;padding:11px 13px;border:1px solid #e0ebf0;border-radius:8px;background:#fff;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
     .category-link:hover{transform:translateY(-1px);border-color:#a8d4e5;box-shadow:0 7px 18px rgba(16,44,61,.07)}
     .category-link-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:8px;background:#e9f5fb;color:#087ea4}.category-link-icon svg{width:21px;height:21px}
-    .category-link-copy{min-width:0}.category-link strong{display:block;overflow-wrap:anywhere;color:#102c3d;font-size:14px;line-height:1.25}.category-link small{display:inline-flex;margin-top:4px;color:#60798f;font-size:11px;font-weight:700}.category-link-arrow{color:#5794b3}
-    .category-empty{padding:24px;border:1px solid #d8e5e7;border-radius:8px;background:#fff;color:#60798f}
+    .category-link-copy{min-width:0}.category-link strong{display:block;overflow-wrap:anywhere;color:#102c3d;font-size:14px;line-height:1.25}.category-link small{display:inline-flex;margin-top:4px;color:#556d82;font-size:11px;font-weight:700}.category-link-arrow{color:#5794b3}
+    .category-empty{padding:24px;border:1px solid #d8e5e7;border-radius:8px;background:#fff;color:#556d82}
     @media(max-width:1100px){.featured-category-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.category-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.category-hero{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);padding:26px}.category-hero-mosaic{grid-template-rows:112px 112px}}
     @media(max-width:760px){main.page-wrap,footer.page-wrap{width:calc(100% - 28px)}.category-hero{grid-template-columns:1fr;gap:18px;min-height:0;margin:14px auto 26px;padding:22px}.category-hero h1{max-width:550px;font-size:36px}.category-hero p{font-size:14px}.category-hero-mosaic{grid-template-rows:100px 100px}.hero-audiences{gap:12px}.category-section-head{align-items:flex-start;flex-direction:column;gap:10px}.category-section-head h2{font-size:25px}.featured-category-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.featured-category{min-height:160px;padding:12px}.featured-copy{flex-basis:74%}.featured-title-row{align-items:flex-start;gap:8px}.featured-icon{flex-basis:36px;width:36px;height:36px}.featured-category h3{font-size:14px}.featured-description{font-size:11px;margin:7px 0}.featured-image{width:38%;opacity:.9}.category-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.category-link{grid-template-columns:36px minmax(0,1fr) 14px;gap:8px;min-height:70px;padding:9px}.category-link-icon{width:36px;height:36px}.category-link strong{font-size:12px}.category-link small{font-size:10px}footer.page-wrap{padding-bottom:96px}}
     @media(max-width:420px){.category-hero h1{font-size:32px}.category-hero-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.category-hero-actions .btn{min-width:0;min-height:48px;padding:7px;font-size:11px;line-height:1.25;text-align:center}.category-hero-mosaic{grid-template-rows:84px 84px}.featured-category{min-height:152px;padding:10px}.featured-icon{flex-basis:32px;width:32px;height:32px}.featured-category h3{font-size:12.5px}.featured-description{font-size:10px}.featured-count{padding:5px 7px;font-size:10px}.category-link{grid-template-columns:32px minmax(0,1fr) 12px;gap:6px;padding:8px}.category-link-icon{width:32px;height:32px}.category-link-icon svg{width:18px;height:18px}.category-link strong{font-size:11px}}
     @media(prefers-reduced-motion:reduce){.featured-category,.category-link{transition:none}.featured-category:hover,.category-link:hover{transform:none}}
   </style>
   <style>
-    :root{--navy:#102c3d;--blue:#087ea4;--pale:#f3f7f8;--line:#d8e5e7;--muted:#60798f;--white:#fff;--gold:#f5a524}
+    :root{--navy:#102c3d;--blue:#087ea4;--pale:#f3f7f8;--line:#d8e5e7;--muted:#556d82;--white:#fff;--gold:#f5a524}
     *{box-sizing:border-box}body{margin:0;background:var(--pale);color:#17324d;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}a{text-decoration:none;color:inherit}button,input{font:inherit}
     .topbar{background:var(--navy);color:#d9efff;font-size:12px;padding:8px 5vw;display:flex;justify-content:space-between;gap:18px}
     svg{width:1em;height:1em;vertical-align:-.14em}.nav{background:#fff;border-bottom:1px solid var(--line);padding:15px 5vw;display:grid;grid-template-columns:minmax(120px,220px) minmax(0,680px) minmax(180px,1fr);align-items:center;gap:20px;position:sticky;top:0;z-index:1000;box-shadow:0 5px 18px rgba(16,44,61,.06)}.logo{display:inline-flex;align-items:center;color:var(--navy);font-size:22px;font-weight:900;letter-spacing:-.04em}.logo b{color:var(--blue)}html:not(.public-brand-ready) .logo{opacity:0}.public-brand-ready .logo{opacity:1;transition:opacity .12s ease}.logo img{display:block;object-fit:contain;width:auto;max-width:100%}
@@ -227,7 +217,7 @@ foreach ($categories as $idx => $category) {
     @media(max-width:800px){.public-menu-btn{display:none!important}.public-nav{display:flex!important;position:sticky;top:var(--sticky-nav-height,70px);flex-direction:row;align-items:center;justify-content:flex-start;gap:18px;padding:10px 16px;overflow-x:auto;white-space:nowrap}.public-nav a{flex:0 0 auto;padding:3px 0;border:0}}
   </style>
   <style>.nav, .public-nav { position: relative !important; top: auto !important; }</style>
-  <link rel="stylesheet" href="/assets/css/category-catalog.css?v=category-catalog-20261010">
+  <link rel="stylesheet" href="/assets/css/category-catalog.css?v=seo2-20261025">
 </head>
 <body>
   <?php $storefrontActivePage = 'categories'; require __DIR__ . '/includes/storefront-discovery-nav.php'; ?>
@@ -287,6 +277,6 @@ foreach ($categories as $idx => $category) {
   <script src="/assets/js/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
   <script src="/assets/js/public-account.js" defer></script>
   <script src="/assets/js/storefront-product-card.js" defer></script>
-  <script src="/assets/js/category-catalog.js?v=category-catalog-20261010" defer></script>
+  <script src="/assets/js/category-catalog.js?v=seo2-20261025" defer></script>
 </body>
 </html>

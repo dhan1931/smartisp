@@ -73,7 +73,7 @@
     @media (max-width: 420px) { .modal-overlay { padding: 10px; } .modal-box { padding: 20px 16px; } }
     svg.lucide { width: 1em; height: 1em; vertical-align: -0.125em; stroke-width: 2; flex-shrink: 0; }
   </style>
-  <script src="/assets/vendor/lucide.min.js?v=1.55.0"></script>
+  <script src="/assets/vendor/lucide-icons.min.js?v=8707c619"></script>
 </head>
 <body>
   <link rel="stylesheet" href="/assets/css/admin-nav.css?v=admin-brand-20261011">
@@ -253,8 +253,11 @@
 
     const isUserAdmin = u => !!u && ['admin', 'administrator', 'administrador'].includes(String(u.role || '').trim().toLowerCase());
 
-    const initialStatus = new URLSearchParams(location.search).get('status') || 'all';
-    let state = { page: 1, limit: 20, status: initialStatus, q: '', totalPages: 1 };
+    const initialParams = new URLSearchParams(location.search);
+    const initialStatus = initialParams.get('status') || 'all';
+    // ?q= abre la lista ya filtrada (los pedidos recientes del dashboard enlazan así).
+    let state = { page: 1, limit: 20, status: initialStatus, q: (initialParams.get('q') || '').trim(), totalPages: 1 };
+    if (state.q) $('#searchInput').value = state.q;
 
     const renderStats = (stats) => {
       const byStatus = Object.fromEntries((stats.by_status || []).map(s => [s.status, s.total]));

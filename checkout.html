@@ -18,8 +18,9 @@
   <meta name="theme-color" content="#102c3d">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
-  <script src="/assets/vendor/lucide.min.js?v=1.55.0"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet"></noscript>
+  <script src="/assets/vendor/lucide-icons.min.js?v=8707c619" defer onload="window.lucide && window.lucide.createIcons()"></script>
   <style>
     :root {
       --navy: #102c3d;
@@ -28,7 +29,7 @@
       --mint: #eaf7f5;
       --pale: #f3f7f8;
       --ink: #163342;
-      --muted: #6b7f88;
+      --muted: #5d717a;
       --line: #d8e5e7;
       --danger: #a53b3b;
       --green: #0f8b44;
@@ -902,12 +903,13 @@
 
     // Pre-fill User Profile Data
     let activeUser = null;
-    fetch('/api/auth/me', { credentials: 'include' })
+    fetch('/api/auth/session', { credentials: 'include' })
       .then(async res => {
         if (!res.ok) throw new Error();
         return res.json();
       })
       .then(result => {
+        if (!result.user) throw new Error();
         activeUser = result.user;
         const fullName = [activeUser.name, activeUser.surname].filter(Boolean).join(' ');
         form.elements.name.value = fullName || '';
@@ -917,13 +919,13 @@
         profileNotice.classList.remove('guest');
         profileStatusText.innerHTML = `Sesión activa como <strong>${fullName || activeUser.email}</strong> · Correo de tu perfil: <strong>${activeUser.email}</strong> · Celular: <strong>${activeUser.phone || 'Pendiente de registrar'}</strong>`;
         profileBadge.innerHTML = `<i data-lucide="check" width="12"></i> Usuario Registrado`;
-        lucide.createIcons();
+        window.lucide?.createIcons();
       })
       .catch(() => {
         profileNotice.classList.add('guest');
         profileStatusText.innerHTML = `No has iniciado sesión. Puedes completar tus datos para la compra o <a href="/tienda.html#openAccount" style="color:#b45309; font-weight:700; text-decoration:underline;">iniciar sesión aquí</a>.`;
         profileBadge.innerHTML = `<i data-lucide="user-x" width="12"></i> Invitado`;
-        lucide.createIcons();
+        window.lucide?.createIcons();
       });
 
     // Form Submission
@@ -940,7 +942,7 @@
 
       submitButton.disabled = true;
       submitButton.innerHTML = `<i data-lucide="loader" width="18"></i> Procesando tu orden y enviando comprobante...`;
-      lucide.createIcons();
+      window.lucide?.createIcons();
       message.classList.remove('show');
 
       try {
@@ -1014,13 +1016,13 @@
         document.querySelector('#checkoutView').style.display = 'none';
         document.querySelector('#confirmationSuccessView').style.display = 'block';
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        lucide.createIcons();
+        window.lucide?.createIcons();
 
       } catch (err) {
         showMessage(err.message || 'Ocurrió un problema al procesar tu pedido.', true);
         submitButton.disabled = false;
         submitButton.innerHTML = `<i data-lucide="check-circle" width="18"></i> Confirmar compra y solicitar asesor`;
-        lucide.createIcons();
+        window.lucide?.createIcons();
       }
     });
 
@@ -1049,7 +1051,7 @@
       })
       .catch(() => {});
 
-    lucide.createIcons();
+    window.lucide?.createIcons();
   </script>
 </body>
 </html>

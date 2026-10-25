@@ -306,6 +306,18 @@ function getUsersTableName(PDO $pdo) {
     return $tbl;
 }
 
+// Igual que el slug que arma el JS de la tienda.
+function smartispSlug(string $text, int $maxLength = 80, string $fallback = 'articulo'): string {
+    if (class_exists('Normalizer')) {
+        $text = preg_replace('/\p{Mn}+/u', '', (string)Normalizer::normalize($text, Normalizer::FORM_D));
+    } else {
+        $text = strtr($text, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','ñ'=>'n','ü'=>'u','Á'=>'A','É'=>'E','Í'=>'I','Ó'=>'O','Ú'=>'U','Ñ'=>'N','Ü'=>'U']);
+    }
+    $slug = preg_replace('/[^a-z0-9]+/', '-', strtolower($text));
+    $slug = substr(trim($slug, '-'), 0, $maxLength);
+    return $slug !== '' ? $slug : $fallback;
+}
+
 // ¿Existe la tabla? Se consulta una vez por petición (antes cada handler y cada página PHP
 // preguntaba a information_schema por su cuenta, a veces dos veces en la misma página).
 function smartispTableExists(PDO $pdo, string $table): bool {
