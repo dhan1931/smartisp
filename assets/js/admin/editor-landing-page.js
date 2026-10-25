@@ -38,7 +38,9 @@
 			setTimeout(() => { toast.classList.remove('show'); }, 3500);
 		};
 
-		const markDirty = (dirty = true) => {
+		let savedState = null;
+		let dirtyTimer = 0;
+		const setDirtyUi = dirty => {
 			isDirty = dirty;
 			const dot = document.querySelector('#statusDot');
 			const text = document.querySelector('#statusMessageText');
@@ -46,6 +48,12 @@
 			if (dot) dot.classList.toggle('dirty', dirty);
 			if (text) text.textContent = dirty ? 'Hay cambios sin guardar' : 'Todos los cambios guardados';
 			if (saveBtn) saveBtn.classList.toggle('has-changes', dirty);
+		};
+		// Hay cambios solo si lo que se guardaría difiere de lo último cargado o guardado.
+		const markDirty = (dirty = true) => {
+			clearTimeout(dirtyTimer);
+			if (dirty !== true || savedState === null) { setDirtyUi(dirty); return; }
+			dirtyTimer = setTimeout(() => setDirtyUi(comparableState() !== savedState), 150);
 		};
 
 		window.addEventListener('beforeunload', e => {
@@ -1089,6 +1097,7 @@
 				});
 
 				syncWhatsAppLink();
+				savedState = comparableState();
 				markDirty(false);
 			} catch (e) {
 				console.warn('Error al cargar datos:', e);
@@ -1136,15 +1145,7 @@
 			return clone.innerHTML.trim();
 		};
 
-		const saveLandingData = async () => {
-			const saveBtn = document.querySelector('#saveLandingChangesBtn');
-			const originalHtml = saveBtn.innerHTML;
-			saveBtn.disabled = true;
-			saveBtn.innerHTML = '<span>Guardando...</span>';
-
-			// Deselect any active card box
-			setSelectedCardBox(null);
-
+		const buildLandingPayload = () => {
 			const payload = {
 				landing_logo_type: landingState.logo_type,
 				landing_logo_image: landingState.logo_image,
@@ -1181,6 +1182,23 @@
 				if (el.style.fontWeight) payload[k + '_weight'] = el.style.fontWeight;
 				if (el.style.textAlign) payload[k + '_align'] = el.style.textAlign;
 			});
+			return payload;
+		};
+		// Lucide cambia <i data-lucide> por <svg> al dibujar: se compara con la forma original.
+		const comparableState = () => JSON.stringify(buildLandingPayload())
+			.replace(/<svg[^>]*class=\\"lucide lucide-([a-z0-9-]+)[^>]*>[\s\S]*?<\/svg>/g, '<i data-lucide=\\"$1\\"></i>')
+			.replace(/ class=\\"\\"/g, '');
+
+		const saveLandingData = async () => {
+			const saveBtn = document.querySelector('#saveLandingChangesBtn');
+			const originalHtml = saveBtn.innerHTML;
+			saveBtn.disabled = true;
+			saveBtn.innerHTML = '<span>Guardando...</span>';
+
+			// Deselect any active card box
+			setSelectedCardBox(null);
+
+			const payload = buildLandingPayload();
 
 			try {
 				const headers = getAdminHeaders();
@@ -1200,6 +1218,7 @@
 				}
 				const result = await response.json();
 				if (!response.ok) throw new Error(result.error || 'No se pudo guardar.');
+				savedState = comparableState();
 				markDirty(false);
 				showToast('¡Página de presentación guardada con éxito!');
 			} catch (err) {

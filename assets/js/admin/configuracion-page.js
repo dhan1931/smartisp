@@ -588,6 +588,7 @@ const openPanel = async user => {
   $('#adminIdentity').textContent = `${user.name} ${user.surname || ''} - ${user.email}`;
   initLogoCustomizerEvents();
   await loadContent();
+  document.dispatchEvent(new CustomEvent('settings-loaded'));
 };
 
 $('#loginForm').addEventListener('submit', async event => {
@@ -681,6 +682,7 @@ $('#notificationsForm').addEventListener('submit', async event => {
   try {
     await api('admin-content', { method: 'POST', body: JSON.stringify(payload) });
     showMessage($('#notificationsMessage'), 'Configuración de correo guardada correctamente.');
+    $('#notificationsForm').dispatchEvent(new CustomEvent('settings-saved'));
   } catch (error) {
     showMessage($('#notificationsMessage'), error.message, true);
   }
