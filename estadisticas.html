@@ -6,42 +6,17 @@
   <title>SmartISP | Estadísticas</title>
   <link rel="icon" href="/assets/favicons/favicon.ico">
   <link rel="stylesheet" href="/assets/css/admin-nav.css?v=admin-brand-20261011">
-  <link rel="stylesheet" href="/assets/css/admin-page.css?v=20261023">
+  <link rel="stylesheet" href="/assets/css/admin-page.css?v=20261025">
   <script src="/assets/vendor/lucide.min.js?v=1.55.0" defer></script>
   <script src="/assets/js/admin-nav.js?v=admin-inventario-20261023" defer></script>
-  <script src="/assets/js/admin-page.js?v=20261023" defer></script>
+  <script src="/assets/js/admin-page.js?v=20261025" defer></script>
+  <script src="/assets/js/admin-charts.js?v=20261025" defer></script>
   <style>
-    :root { --series: #087ea4; --grid: #e6edf0; }
     .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 18px; }
     .custom-range { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
     .custom-range input { height: 38px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); }
     .range-label { margin-left: auto; color: var(--muted); font-size: 12px; }
     .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
-    .card-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
-    .card-head h2 { margin: 0 0 4px; font-size: 16px; }
-    .card-head p { margin: 0; color: var(--muted); font-size: 12.5px; }
-    .chart { position: relative; height: 270px; }
-    .chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
-    .chart .tick { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
-    .chart .grid-line { stroke: var(--grid); stroke-width: 1; }
-    .chart .baseline { stroke: #c9d6dc; stroke-width: 1; }
-    .chart .col { fill: var(--series); }
-    .chart .hit { fill: transparent; cursor: pointer; outline: none; }
-    .chart .hit:hover + .col, .chart .hit:focus + .col, .chart .col.is-hover { fill: #2a97ba; }
-    .chart-empty { display: grid; place-items: center; height: 100%; color: var(--muted); }
-    .tooltip { position: absolute; z-index: 5; min-width: 140px; padding: 9px 11px; border: 1px solid var(--line); border-radius: 7px; background: #fff; box-shadow: 0 8px 24px #0a22301f; pointer-events: none; font-size: 12px; }
-    .tooltip strong { display: block; font-size: 15px; }
-    .tooltip span { color: var(--muted); }
-    .bars { display: grid; gap: 11px; }
-    .bar-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; }
-    .bar-row .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; font-size: 13px; }
-    .bar-row .value { font-variant-numeric: tabular-nums; font-size: 12px; text-align: right; white-space: nowrap; }
-    .bar-row .value small { color: var(--muted); }
-    .bar-track { grid-column: 1 / -1; height: 8px; }
-    .bar-fill { height: 100%; min-width: 4px; border-radius: 0 4px 4px 0; background: var(--series); }
-    .data-table { margin-top: 12px; max-height: 300px; overflow: auto; border: 1px solid var(--line-soft); border-radius: 6px; }
-    .data-table td, .data-table th { padding: 8px 12px; }
-    .link-button { padding: 0; border: 0; background: none; color: var(--blue); font-weight: 700; cursor: pointer; }
     @media (max-width: 950px) { .grid { grid-template-columns: 1fr; } .range-label { margin-left: 0; width: 100%; } }
   </style>
 </head>
@@ -157,15 +132,6 @@
         return { mode, points: [...groups.values()] };
       };
 
-      // Tope del eje = 4 pasos "redondos" (1, 2, 2.5 o 5 × potencia de 10), el más chico que cubre el máximo.
-      const niceMax = max => {
-        if (max <= 0) return 4;
-        const rawStep = max / 4;
-        const pow = 10 ** Math.floor(Math.log10(rawStep));
-        const step = [1, 2, 2.5, 5, 10].find(s => s * pow >= rawStep) * pow;
-        return step * 4;
-      };
-
       const renderTrend = () => {
         const metric = METRICS[state.metric];
         const { mode, points } = bucketed();
@@ -174,63 +140,17 @@
         const total = points.reduce((sum, p) => sum + p[state.metric], 0);
         $('#trendHint').textContent = `Total del periodo: ${metric.format(total)}`;
 
-        const box = $('#trendChart');
-        if (!points.length || total === 0) {
-          box.innerHTML = `<div class="chart-empty">No hay ${metric.title.toLowerCase()} en este periodo.</div>`;
-        } else {
-          const width = box.clientWidth, height = box.clientHeight;
-          const m = { top: 10, right: 6, bottom: 26, left: 52 };
-          const plotW = width - m.left - m.right, plotH = height - m.top - m.bottom;
-          const max = niceMax(Math.max(...points.map(p => p[state.metric])));
-          const slot = plotW / points.length;
-          const barW = Math.max(2, Math.min(24, slot - 2));
-          const y = v => m.top + plotH - (v / max) * plotH;
-          const ticks = [0, 1, 2, 3, 4].map(i => (max / 4) * i);
-          const labelEvery = Math.ceil(points.length / Math.max(2, Math.floor(plotW / 70)));
-          let svg = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(metric.title)} ${per}">`;
-          ticks.forEach(t => {
-            svg += `<line class="${t === 0 ? 'baseline' : 'grid-line'}" x1="${m.left}" x2="${width - m.right}" y1="${y(t)}" y2="${y(t)}"/>`;
-            svg += `<text class="tick" x="${m.left - 8}" y="${y(t) + 4}" text-anchor="end">${esc(metric.axis(t))}</text>`;
-          });
-          points.forEach((p, i) => {
-            const v = p[state.metric], cx = m.left + slot * i + slot / 2, top = y(v), h = m.top + plotH - top;
-            const x = cx - barW / 2, r = Math.min(4, barW / 2, h);
-            // Extremo de datos redondeado (4px), base recta sobre la línea de cero.
-            const path = h <= 0 ? '' : `M${x},${top + h}V${top + r}Q${x},${top} ${x + r},${top}H${x + barW - r}Q${x + barW},${top} ${x + barW},${top + r}V${top + h}Z`;
-            svg += `<rect class="hit" x="${m.left + slot * i}" y="${m.top}" width="${slot}" height="${plotH}" tabindex="0" data-i="${i}" aria-label="${esc(p.title)}: ${esc(metric.format(v))}"/>`;
-            svg += `<path class="col" d="${path}"/>`;
-            if (i % labelEvery === 0) svg += `<text class="tick" x="${cx}" y="${height - 6}" text-anchor="middle">${esc(p.label)}</text>`;
-          });
-          svg += '</svg><div class="tooltip" hidden></div>';
-          box.innerHTML = svg;
-
-          const tip = box.querySelector('.tooltip');
-          const show = target => {
-            const p = points[Number(target.dataset.i)];
-            tip.innerHTML = `<strong>${esc(metric.format(p[state.metric]))}</strong><span>${esc(p.title)}</span><br><span>${number(p.orders)} pedido${p.orders === 1 ? '' : 's'}</span>`;
-            tip.hidden = false;
-            const r = target.getBoundingClientRect(), b = box.getBoundingClientRect();
-            const left = Math.min(Math.max(0, r.left - b.left + r.width / 2 - tip.offsetWidth / 2), b.width - tip.offsetWidth);
-            tip.style.left = left + 'px';
-            tip.style.top = '0px';
-          };
-          box.querySelectorAll('.hit').forEach(hit => {
-            hit.addEventListener('pointerenter', () => show(hit));
-            hit.addEventListener('focus', () => show(hit));
-            hit.addEventListener('pointerleave', () => { tip.hidden = true; });
-            hit.addEventListener('blur', () => { tip.hidden = true; });
-          });
-        }
+        SmartCharts.columns($('#trendChart'), points, {
+          key: state.metric, format: metric.format, axis: metric.axis, label: `${metric.title} ${per}`,
+          emptyText: `No hay ${metric.title.toLowerCase()} en este periodo.`,
+          detail: p => `${number(p.orders)} pedido${p.orders === 1 ? '' : 's'}`,
+        });
 
         $('#trendTable').innerHTML = `<table><thead><tr><th>Periodo</th><th class="num">Pedidos</th><th class="num">Valor de pedidos</th><th class="num">Ventas cobradas</th></tr></thead><tbody>${
           points.map(p => `<tr><td>${esc(p.title)}</td><td class="num">${number(p.orders)}</td><td class="num">${money(p.pipeline)}</td><td class="num">${money(p.revenue)}</td></tr>`).join('')}</tbody></table>`;
       };
 
-      const bars = (rows, emptyText) => {
-        if (!rows.length) return `<p class="muted">${emptyText}</p>`;
-        const max = Math.max(...rows.map(r => r.value)) || 1;
-        return rows.map(r => `<div class="bar-row" title="${esc(r.label)}"><span class="label">${esc(r.label)}</span><span class="value">${r.valueText}${r.extra ? ` <small>· ${r.extra}</small>` : ''}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.max(1, (r.value / max) * 100)}%"></div></div></div>`).join('');
-      };
+      const bars = SmartCharts.bars;
 
       const renderLists = () => {
         const d = state.data;
@@ -281,8 +201,7 @@
         table.hidden = !table.hidden;
         event.currentTarget.textContent = table.hidden ? 'Ver tabla' : 'Ocultar tabla';
       });
-      let resizeTimer;
-      window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => state.data && renderTrend(), 150); });
+      SmartCharts.onResize(() => state.data && renderTrend());
 
       await load();
     }));
