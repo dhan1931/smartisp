@@ -30,6 +30,15 @@
     .toolbar-end { display: flex; align-items: center; gap: 10px; margin-left: auto; }
     .toolbar-end .result-count { margin-left: 0; }
     #migrationNote { margin-bottom: 16px; }
+    .moves { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+    .moves li { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 12px 0; border-bottom: 1px solid var(--border-soft); }
+    .moves li:last-child { border-bottom: 0; }
+    .moves .move-reason { font-weight: 600; font-size: 13.5px; }
+    .moves .move-meta { grid-column: 1 / -1; color: var(--text-3); font-size: 12px; }
+    .moves .move-delta { font-variant-numeric: tabular-nums; font-weight: 700; text-align: right; white-space: nowrap; }
+    .moves .move-delta.up { color: var(--success); }
+    .moves .move-delta.down { color: var(--danger); }
+    .moves-pager { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; color: var(--text-3); font-size: 12.5px; }
     @media (max-width: 950px) { .table-wrap table { min-width: 900px; } }
     /* En el teléfono cada producto es una tarjeta: el campo de stock queda a mano sin desplazar la tabla. */
     @media (max-width: 620px) {
@@ -132,6 +141,7 @@
           <td class="num" data-label="Libre"><strong>${item.tracked ? number(item.free) : '—'}</strong></td>
           <td><div class="row-actions">
             <button class="button small primary" type="button" data-save hidden>Guardar</button>
+            <button class="button small ghost" type="button" data-history aria-label="Historial de ${esc(item.name)}" title="Historial de movimientos"><i data-lucide="history" aria-hidden="true"></i> Historial</button>
             ${item.tracked ? '<button class="button small" type="button" data-untrack title="El producto vuelve a venderse sin límite">Quitar control</button>' : ''}
           </div></td>
         </tr>`;
@@ -233,8 +243,46 @@
           event.target.dispatchEvent(new Event('input', { bubbles: true }));
         }
       });
+      const REASONS = {
+        manual: 'Ajuste manual', order_reserved: 'Reservado por un pedido', order_released: 'Liberado por un pedido',
+        order_shipped: 'Despachado', order_cancelled: 'Devuelto al cancelar un pedido', order_returned: 'Pedido reabierto',
+        untracked: 'Se quitó el control de stock', import: 'Importación',
+      };
+      const signed = n => (n > 0 ? '+' : n < 0 ? '−' : '') + number(Math.abs(n));
+      const openHistory = (id, name) => {
+        const view = SmartAdmin.drawer({ title: 'Historial de stock', subtitle: name, body: SmartAdmin.skeletonRows(1, 6) });
+        let page = 1;
+        const render = async () => {
+          view.body.innerHTML = '<span class="sk sk-line"></span><span class="sk sk-line" style="width:70%"></span>';
+          try {
+            const data = await api(`admin-inventory-movements?${new URLSearchParams({ product_id: id, page, limit: 20 })}`);
+            if (!data.enabled) { view.body.innerHTML = SmartAdmin.state('empty', 'Historial no disponible', 'Aplica la migración 042_inventory_movements.sql (php scripts/migrate.php) para registrar los movimientos.', 'history'); icons(); return; }
+            if (!data.items.length) { view.body.innerHTML = SmartAdmin.state('empty', 'Sin movimientos registrados', 'Los ajustes y pedidos a partir de ahora aparecerán aquí.', 'history'); icons(); return; }
+            view.body.innerHTML = `<ul class="moves">${data.items.map(m => {
+              const when = SmartAdmin.utc(m.createdAt);
+              const parts = [];
+              if (m.deltaAvailable) parts.push(`<span class="move-delta ${m.deltaAvailable > 0 ? 'up' : 'down'}">${signed(m.deltaAvailable)} disp.</span>`);
+              if (m.deltaReserved) parts.push(`<span class="move-delta">${signed(m.deltaReserved)} reserv.</span>`);
+              const meta = [when ? when.toLocaleString('es-EC', { dateStyle: 'medium', timeStyle: 'short' }) : '', m.orderId ? `Pedido <a href="/pedidos.html?q=${encodeURIComponent(m.orderId)}">${esc(m.orderId)}</a>` : '', m.user ? esc(m.user) : '', m.note ? esc(m.note) : ''].filter(Boolean).join(' · ');
+              return `<li><span class="move-reason">${esc(REASONS[m.reason] || m.reason)}</span><span>${parts.join(' ')}</span><span class="move-meta">${meta}</span></li>`;
+            }).join('')}</ul>
+            <div class="moves-pager"><button class="button small" type="button" data-move-page="-1" ${data.page <= 1 ? 'disabled' : ''}><i data-lucide="chevron-left" aria-hidden="true"></i> Recientes</button><span>Página ${data.page} de ${data.totalPages} · ${plural(data.total)}</span><button class="button small" type="button" data-move-page="1" ${data.page >= data.totalPages ? 'disabled' : ''}>Anteriores <i data-lucide="chevron-right" aria-hidden="true"></i></button></div>`;
+            icons();
+          } catch (error) { view.body.innerHTML = SmartAdmin.state('error', 'No se pudo cargar el historial', error.message); icons(); }
+        };
+        view.body.addEventListener('click', event => {
+          const button = event.target.closest('[data-move-page]');
+          if (!button) return;
+          page += Number(button.dataset.movePage);
+          render();
+        });
+        render();
+      };
+      const plural = n => `${number(n)} movimiento${n === 1 ? '' : 's'}`;
+
       $('#rows').addEventListener('click', async event => {
         const row = event.target.closest('tr');
+        if (event.target.closest('[data-history]')) openHistory(row.dataset.id, row.querySelector('.product-name')?.textContent || '');
         if (event.target.closest('[data-save]')) save(row);
         if (event.target.closest('[data-untrack]')) {
           if (row.dataset.saving || !confirm('¿Quitar el control de stock? El producto se podrá vender sin límite.')) return;

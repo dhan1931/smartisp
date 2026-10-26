@@ -250,7 +250,7 @@ if ($action === 'orders' || $action === 'customer-orders') {
         }
         if ($stockEnabled) {
             try {
-                smartispApplyOrderStock($pdo, $validItems, 'released', $stockState);
+                smartispApplyOrderStock($pdo, $validItems, 'released', $stockState, $orderId);
             } catch (SmartispStockException $e) {
                 $pdo->rollBack();
                 http_response_code(400);
@@ -516,7 +516,7 @@ if ($action === 'admin-order-status' && $method === 'POST') {
         $toStock = smartispOrderStockTarget($newStatus);
         if ($fromStock !== $toStock) {
             try {
-                smartispApplyOrderStock($pdo, smartispDecodeOrderRow($order)['items'] ?? [], $fromStock, $toStock);
+                smartispApplyOrderStock($pdo, smartispDecodeOrderRow($order)['items'] ?? [], $fromStock, $toStock, (string)$id);
             } catch (SmartispStockException $e) {
                 $pdo->rollBack();
                 http_response_code(409);
