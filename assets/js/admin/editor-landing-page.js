@@ -972,7 +972,23 @@
 		// LOAD & SAVE ENGINE
 		// =========================================================================
 		const getAdminHeaders = () => {
-			return { 'Content-Type': 'application/json' };
+			const headers = { 'Content-Type': 'application/json' };
+			try {
+				const token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
+				if (token) { headers.Authorization = `Bearer ${token}`; headers['X-Admin-Token'] = token; }
+			} catch (e) { /* almacenamiento bloqueado: basta la cookie de sesión */ }
+			return headers;
+		};
+
+		// Sin el contenido real cargado, guardar sobrescribiría la landing con la plantilla del editor.
+		let landingLoaded = false;
+		let savingLanding = false;
+		const blockSaveAfterLoadError = message => {
+			const saveBtn = document.querySelector('#saveLandingChangesBtn');
+			if (saveBtn) { saveBtn.disabled = true; saveBtn.title = 'Recarga la página: el contenido actual no se pudo cargar.'; }
+			const text = document.querySelector('#statusMessageText');
+			if (text) text.textContent = 'No se pudo cargar el contenido. Guardar está bloqueado.';
+			showToast(`No se pudo cargar el contenido de la landing: ${message}. Recarga la página antes de editar.`, true);
 		};
 
 		const loadLandingData = async () => {
@@ -982,7 +998,7 @@
 				if (!res || !res.ok) {
 					res = await fetch('/api/router.php?action=landing-content', { credentials: 'include', headers });
 				}
-				if (!res || !res.ok) return;
+				if (!res || !res.ok) throw new Error(`error ${res ? res.status : 'de red'}`);
 				const data = await res.json();
 				const content = Object.fromEntries((data.content || []).map(i => [i.key, i.value]));
 
@@ -1090,8 +1106,10 @@
 
 				syncWhatsAppLink();
 				markDirty(false);
+				landingLoaded = true;
 			} catch (e) {
 				console.warn('Error al cargar datos:', e);
+				blockSaveAfterLoadError(e.message || 'error desconocido');
 			}
 		};
 
@@ -1137,6 +1155,9 @@
 		};
 
 		const saveLandingData = async () => {
+			if (savingLanding) return;
+			if (!landingLoaded) { showToast('El contenido actual no se cargó: recarga la página antes de guardar.', true); return; }
+			savingLanding = true;
 			const saveBtn = document.querySelector('#saveLandingChangesBtn');
 			const originalHtml = saveBtn.innerHTML;
 			saveBtn.disabled = true;
@@ -1205,6 +1226,7 @@
 			} catch (err) {
 				showToast(err.message, true);
 			} finally {
+				savingLanding = false;
 				saveBtn.disabled = false;
 				saveBtn.innerHTML = originalHtml;
 				markDirty(isDirty);
@@ -1225,8 +1247,16 @@
 				return;
 			}
 			try {
-				const res = await fetch('/api/auth/landing-content/reset', { method: 'POST' });
-				if (!res.ok) throw new Error('Error al restablecer.');
+				const headers = getAdminHeaders();
+				let res = await fetch('/api/auth/landing-content/reset', { method: 'POST', credentials: 'include', headers, body: '{}' });
+				if (!res.ok && res.status !== 401 && res.status !== 403) {
+					res = await fetch('/api/router.php?action=landing-content-reset', { method: 'POST', credentials: 'include', headers, body: '{}' });
+				}
+				if (!res.ok) {
+					const data = await res.json().catch(() => ({}));
+					throw new Error(data.error || 'Error al restablecer.');
+				}
+				isDirty = false;
 				showToast('Valores originales restablecidos. Recargando...');
 				setTimeout(() => { location.reload(); }, 700);
 			} catch (err) {
