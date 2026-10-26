@@ -114,11 +114,26 @@
           </div></td>
         </tr>`;
 
-      const load = async () => {
+      // Valores escritos y aún sin guardar, por producto.
+      const dirtyValues = () => Object.fromEntries([...document.querySelectorAll('#rows input.is-dirty')].map(input => [input.closest('tr').dataset.id, input.value]));
+      const confirmDiscard = () => {
+        const count = Object.keys(dirtyValues()).length;
+        return !count || confirm(`Hay ${count} fila${count === 1 ? '' : 's'} con stock sin guardar. ¿Descartar esos cambios?`);
+      };
+      const markRow = (input, dirty) => {
+        input.classList.toggle('is-dirty', dirty);
+        input.closest('tr').querySelector('[data-save]').hidden = !dirty;
+      };
+
+      let loadSeq = 0;
+      const load = async ({ keepDirty = false } = {}) => {
+        const seq = ++loadSeq;
         const query = new URLSearchParams({ page: state.page, limit: state.limit, q: state.q, filter: state.filter, low: state.low });
         $('#tableWrap').classList.add('is-refreshing');
         try {
           const data = await api(`admin-inventory?${query}`);
+          if (seq !== loadSeq) return;
+          const pending = keepDirty ? dirtyValues() : {};
           const s = data.stats || {};
           state.totalPages = data.totalPages || 1;
           $('#migrationNote').hidden = !!data.stockByOrders;
@@ -129,8 +144,12 @@
             ['all', 'Unidades libres', number(s.free_units), `${number(s.reserved_units)} reservadas por pedidos`],
           ];
           $('#stats').innerHTML = tiles.map(([filter, label, value, hint, alert]) =>
-            `<button type="button" class="stat ${alert ? 'is-alert' : ''} ${state.filter === filter && filter !== 'all' ? 'is-active' : ''}" data-filter="${filter}"><span>${label}</span><strong>${value}</strong><small>${hint}</small></button>`).join('');
+            `<button type="button" class="stat ${alert ? 'is-alert' : ''} ${state.filter === filter && filter !== 'all' ? 'is-active' : ''}" data-filter="${filter}" aria-pressed="${state.filter === filter && filter !== 'all'}"><span>${label}</span><strong>${value}</strong><small>${hint}</small></button>`).join('');
           $('#rows').innerHTML = (data.items || []).map(rowHtml).join('');
+          Object.entries(pending).forEach(([id, value]) => {
+            const input = document.querySelector(`#rows tr[data-id="${CSS.escape(id)}"] input`);
+            if (input) { input.value = value; markRow(input, value !== input.dataset.original); }
+          });
           $('#empty').hidden = (data.items || []).length > 0;
           $('#tableWrap').hidden = (data.items || []).length === 0;
           $('#count').textContent = `${number(data.total)} producto${data.total === 1 ? '' : 's'}`;
@@ -139,28 +158,35 @@
           $('#next').disabled = state.page >= state.totalPages;
           icons();
         } catch (error) {
-          toast(error.message, true);
+          if (seq === loadSeq) toast(error.message, true);
         } finally {
-          $('#tableWrap').classList.remove('is-refreshing');
+          if (seq === loadSeq) $('#tableWrap').classList.remove('is-refreshing');
         }
       };
 
+      const setRowBusy = (row, busy) => {
+        row.dataset.saving = busy ? '1' : '';
+        row.querySelectorAll('input, button').forEach(el => { el.disabled = busy; });
+      };
       const save = async row => {
+        if (row.dataset.saving) return;
         const input = row.querySelector('input');
         if (input.value.trim() === '') { toast('Escribe la cantidad disponible.', true); input.focus(); return; }
+        setRowBusy(row, true);
         try {
           await post('admin-inventory', { product_id: row.dataset.id, available: Number(input.value) });
+          input.dataset.original = input.value;
+          markRow(input, false);
           toast('Stock actualizado.');
-          await load();
+          await load({ keepDirty: true });
         } catch (error) { toast(error.message, true); }
+        finally { if (document.contains(row)) setRowBusy(row, false); }
       };
 
       $('#rows').addEventListener('input', event => {
         const input = event.target.closest('input');
         if (!input) return;
-        const dirty = input.value !== input.dataset.original;
-        input.classList.toggle('is-dirty', dirty);
-        input.closest('tr').querySelector('[data-save]').hidden = !dirty;
+        markRow(input, input.value !== input.dataset.original);
       });
       $('#rows').addEventListener('keydown', event => {
         if (event.key === 'Enter' && event.target.matches('input')) save(event.target.closest('tr'));
@@ -173,26 +199,29 @@
         const row = event.target.closest('tr');
         if (event.target.closest('[data-save]')) save(row);
         if (event.target.closest('[data-untrack]')) {
-          if (!confirm('¿Quitar el control de stock? El producto se podrá vender sin límite.')) return;
-          try { await post('admin-inventory', { product_id: row.dataset.id, track: false }); toast('Control de stock quitado.'); await load(); }
+          if (row.dataset.saving || !confirm('¿Quitar el control de stock? El producto se podrá vender sin límite.')) return;
+          setRowBusy(row, true);
+          try { await post('admin-inventory', { product_id: row.dataset.id, track: false }); toast('Control de stock quitado.'); await load({ keepDirty: true }); }
           catch (error) { toast(error.message, true); }
+          finally { if (document.contains(row)) setRowBusy(row, false); }
         }
       });
       $('#stats').addEventListener('click', event => {
         const tile = event.target.closest('[data-filter]');
-        if (!tile) return;
+        if (!tile || !confirmDiscard()) return;
         state.filter = tile.dataset.filter === state.filter ? 'all' : tile.dataset.filter;
         $('#filter').value = state.filter;
         state.page = 1;
         load();
       });
       let debounce;
-      $('#search').addEventListener('input', event => { clearTimeout(debounce); debounce = setTimeout(() => { state.q = event.target.value.trim(); state.page = 1; load(); }, 300); });
-      $('#filter').addEventListener('change', event => { state.filter = event.target.value; state.page = 1; load(); });
-      $('#low').addEventListener('change', event => { state.low = Number(event.target.value); state.page = 1; load(); });
-      $('#refresh').addEventListener('click', load);
-      $('#prev').addEventListener('click', () => { if (state.page > 1) { state.page--; load(); } });
-      $('#next').addEventListener('click', () => { if (state.page < state.totalPages) { state.page++; load(); } });
+      $('#search').addEventListener('input', event => { clearTimeout(debounce); debounce = setTimeout(() => { if (!confirmDiscard()) { event.target.value = state.q; return; } state.q = event.target.value.trim(); state.page = 1; load(); }, 300); });
+      $('#filter').addEventListener('change', event => { if (!confirmDiscard()) { event.target.value = state.filter; return; } state.filter = event.target.value; state.page = 1; load(); });
+      $('#low').addEventListener('change', event => { if (!confirmDiscard()) { event.target.value = String(state.low); return; } state.low = Number(event.target.value); state.page = 1; load(); });
+      $('#refresh').addEventListener('click', () => { if (confirmDiscard()) load(); });
+      $('#prev').addEventListener('click', () => { if (state.page > 1 && confirmDiscard()) { state.page--; load(); } });
+      $('#next').addEventListener('click', () => { if (state.page < state.totalPages && confirmDiscard()) { state.page++; load(); } });
+      window.addEventListener('beforeunload', event => { if (Object.keys(dirtyValues()).length) { event.preventDefault(); event.returnValue = ''; } });
 
       await load();
     }));
