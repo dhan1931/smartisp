@@ -116,6 +116,20 @@ try {
   assert.equal(mixed.data.isQuote, true, 'un carrito con un artículo sin precio es cotización');
   assert.equal(mixed.data.order.status, 'quote_requested');
 
+  // --- Idempotencia: el mismo intento de compra repetido no crea un segundo pedido
+  const idemKey = `smk-${Date.now()}-idem`;
+  const idemBody = { customerName: 'Idem', customerEmail: 'smk-idem@example.test', items: [{ id: 'smk-prod', quantity: 1 }], idempotencyKey: idemKey };
+  const idem1 = await req('customer-orders', { method: 'POST', headers: { 'Idempotency-Key': idemKey }, body: idemBody });
+  assert.equal(idem1.status, 200, JSON.stringify(idem1.data));
+  const idem2 = await req('customer-orders', { method: 'POST', headers: { 'Idempotency-Key': idemKey }, body: idemBody });
+  assert.equal(idem2.status, 200, JSON.stringify(idem2.data));
+  assert.deepEqual(idem2.data, idem1.data, 'el reintento devuelve la misma respuesta');
+  const [[idemCount]] = await db.query("SELECT COUNT(*) n FROM orders_rows WHERE customer_email = 'smk-idem@example.test'");
+  assert.equal(Number(idemCount.n), 1, 'dos envíos con la misma clave crean un solo pedido');
+  const idemOther = await req('customer-orders', { method: 'POST', body: { ...idemBody, customerEmail: 'smk-idem2@example.test' } });
+  assert.equal(idemOther.status, 200, JSON.stringify(idemOther.data));
+  assert.notEqual(idemOther.data.orderId, idem1.data.orderId, 'la clave de otro cliente no devuelve su pedido');
+
   const search = await req(`admin-orders?q=${encodeURIComponent(ok.data.orderId)}`, { cookie: ac });
   assert.equal(search.status, 200, `búsqueda de pedidos: ${JSON.stringify(search.data)}`);
   assert.ok(search.data.orders.some(o => o.id === ok.data.orderId), 'la búsqueda encuentra el pedido');
@@ -127,6 +141,34 @@ try {
   const ids = mine.data.orders.map(o => o.id);
   assert.ok(ids.includes(ok.data.orderId), 'debe ver su pedido');
   assert.ok(!ids.includes('smk-guest'), 'no debe ver pedidos de invitado por coincidir el correo');
+
+  // --- Directorio de clientes: mismos campos en listado y ficha; cada pedido cuenta una vez
+  const customerFields = ['customer_id', 'customer_name', 'customer_email', 'customer_phone', 'joined_at', 'source', 'order_count', 'order_value', 'last_order'];
+  const directory = await req('admin-customers?limit=100&q=smk-', { cookie: ac });
+  assert.equal(directory.status, 200, JSON.stringify(directory.data));
+  for (const c of directory.data.customers) assert.deepEqual(Object.keys(c), customerFields, 'campos del listado de clientes');
+  assert.deepEqual(Object.keys(directory.data.stats), ['customers', 'accounts', 'guests', 'orders', 'order_value']);
+  assert.equal(directory.data.total, directory.data.customers.length);
+  const acct = directory.data.customers.find(c => c.customer_id === customer.id);
+  assert.ok(acct && acct.source === 'account', 'la cuenta del cliente aparece');
+  assert.equal(Number(acct.order_count), 2, 'su pedido y el de invitado con su correo');
+  assert.equal(Number(acct.order_value), 21);
+  assert.ok(!directory.data.customers.some(c => c.customer_id === `guest:${customer.email}`), 'el correo de una cuenta no aparece como invitado');
+  const guestRow = directory.data.customers.find(c => c.customer_id === 'guest:smk-idem@example.test');
+  assert.ok(guestRow && guestRow.source === 'guest' && Number(guestRow.order_count) === 1, 'comprador invitado');
+  assert.ok(!directory.data.customers.some(c => c.customer_id === admin.id), 'los admin no salen en el directorio');
+  const guestsOnly = await req('admin-customers?type=guest&q=smk-', { cookie: ac });
+  assert.ok(guestsOnly.data.customers.length > 0 && guestsOnly.data.customers.every(c => c.source === 'guest'));
+  assert.equal(guestsOnly.data.stats.accounts, 0);
+  const acctDetail = await req(`admin-customers?id=${customer.id}`, { cookie: ac });
+  assert.equal(acctDetail.status, 200, JSON.stringify(acctDetail.data));
+  assert.deepEqual(acctDetail.data.customer, acct, 'la ficha coincide con la fila del listado');
+  const guestDetail = await req(`admin-customers?id=${encodeURIComponent('guest:smk-idem@example.test')}`, { cookie: ac });
+  assert.deepEqual(guestDetail.data.customer, guestRow);
+  assert.equal((await req(`admin-customers?id=${admin.id}`, { cookie: ac })).status, 404);
+  assert.equal((await req(`admin-customers?id=${encodeURIComponent('guest:' + customer.email)}`, { cookie: ac })).status, 404);
+  const farPage = await req('admin-customers?limit=10&page=999&q=smk-', { cookie: ac });
+  assert.equal(farPage.data.total, directory.data.total, 'una página vacía conserva el total');
 
   // --- Registro
   const regBad = await req('register', { method: 'POST', body: { email: 'nope', password: '123456' } });
@@ -178,6 +220,7 @@ try {
 
   const toPaid = await req('admin-order-status', { method: 'POST', cookie: ac, body: { id: stockOrder.data.orderId, status: 'paid' } });
   assert.equal(toPaid.status, 200, JSON.stringify(toPaid.data));
+  assert.equal(toPaid.data.emailQueued, true, 'el correo de estado sale después de responder');
   const [[paidRow]] = await db.query('SELECT payment_status, stock_state FROM orders_rows WHERE id = ?', [stockOrder.data.orderId]);
   assert.equal(paidRow.payment_status, 'paid', '"Pago confirmado" debe registrar el cobro');
   assert.equal(paidRow.stock_state, 'reserved');
@@ -204,6 +247,9 @@ try {
   assert.equal(stats.status, 200, JSON.stringify(stats.data));
   assert.equal(stats.data.daily.length, 30);
   assert.ok(stats.data.totals.active_orders >= 2 && stats.data.top_products.some(p => p.name === 'Nombre Real'));
+  const general = stats.data.categories.find(c => c.category === 'General');
+  // ok (2) + mixed (2) + idempotencia (1 + 1) + forged (1), todos de productos de General.
+  assert.ok(general && general.units >= 7, `estadísticas por categoría: ${JSON.stringify(stats.data.categories)}`);
   const statsRange = await req('admin-analytics?from=2026-01-01&to=2026-01-31', { cookie: ac });
   assert.equal(statsRange.data.daily.length, 31);
   for (const type of ['orders', 'products', 'customers', 'inventory']) {
@@ -212,7 +258,11 @@ try {
     assert.match(res.headers.get('content-type'), /text\/csv/);
     const buf = Buffer.from(await res.arrayBuffer());
     assert.deepEqual([...buf.subarray(0, 3)], [0xef, 0xbb, 0xbf], 'CSV con BOM');
-    if (type === 'orders') assert.ok(buf.toString().includes(ok.data.orderId), 'el CSV de pedidos incluye el pedido');
+    if (type === 'orders') {
+      assert.ok(buf.toString().includes(ok.data.orderId), 'el CSV de pedidos incluye el pedido');
+      const [[localDate]] = await db.query("SELECT DATE_FORMAT(created_at - INTERVAL 5 HOUR, '%Y-%m-%d %H:%i:%s') d FROM orders_rows WHERE id = ?", [ok.data.orderId]);
+      assert.ok(buf.toString().includes(`${ok.data.orderId};"${localDate.d}"`) || buf.toString().includes(`${ok.data.orderId};${localDate.d}`), 'la fecha del CSV va en hora de Ecuador');
+    }
   }
   const anonExport = await req('admin-export?type=orders');
   assert.equal(anonExport.status, 401, 'exportar exige sesión admin');

@@ -27,12 +27,10 @@ function smartispReportRange(): array {
     return [smartispLocalDayStartUtc($from), smartispLocalDayEndUtc($to), $from, $to];
 }
 
-$voidList = "'" . implode("','", SMARTISP_VOID_STATUSES) . "'";
-$paidList = "'" . implode("','", SMARTISP_CONFIRMED_PAYMENTS) . "'";
 $orderCols = smartispTableColumns($pdo, 'orders_rows');
 $hasPaymentStatus = in_array('payment_status', $orderCols, true);
-$isVoid = "(LOWER(COALESCE(status, '')) IN ($voidList))";
-$isPaid = $hasPaymentStatus ? "(NOT $isVoid AND LOWER(COALESCE(payment_status, '')) IN ($paidList))" : '0';
+$isVoid = smartispSqlIsVoid();
+$isPaid = $hasPaymentStatus ? "(NOT $isVoid AND " . smartispSqlIsPaid() . ')' : '0';
 
 // -------------------------------------------------------------
 // ESTADÍSTICAS (/api/auth/admin-analytics)
@@ -101,17 +99,19 @@ if ($action === 'admin-analytics') {
     $statusStmt->execute([':from' => $from, ':to' => $to]);
     $byStatus = array_map(static fn($r) => ['status' => $r['status'], 'orders' => (int)$r['orders'], 'value' => round((float)$r['value'], 2)], $statusStmt->fetchAll(PDO::FETCH_ASSOC));
 
-    // Categorías: se agrupan los más vendidos según la categoría actual del producto.
-    $topProducts = smartispTopProducts($pdo, $from, $to, 200);
+    // Categorías: todos los productos vendidos del periodo, según la categoría actual del producto.
+    $soldProducts = smartispTopProducts($pdo, $from, $to, 0);
     $categories = [];
-    $ids = array_values(array_filter(array_map(static fn($p) => (string)$p['key'], $topProducts)));
+    $ids = array_values(array_filter(array_map(static fn($p) => (string)$p['key'], $soldProducts)));
     if ($ids) {
         $pTable = getProductsTableName($pdo);
-        $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $catStmt = $pdo->prepare("SELECT id, category FROM `$pTable` WHERE id IN ($placeholders)");
-        $catStmt->execute($ids);
-        $categoryOf = $catStmt->fetchAll(PDO::FETCH_KEY_PAIR);
-        foreach ($topProducts as $product) {
+        $categoryOf = [];
+        foreach (array_chunk($ids, 500) as $chunk) {
+            $catStmt = $pdo->prepare("SELECT id, category FROM `$pTable` WHERE id IN (" . implode(',', array_fill(0, count($chunk), '?')) . ')');
+            $catStmt->execute($chunk);
+            $categoryOf += $catStmt->fetchAll(PDO::FETCH_KEY_PAIR);
+        }
+        foreach ($soldProducts as $product) {
             $name = trim((string)($categoryOf[$product['key']] ?? '')) ?: 'Sin categoría';
             $categories[$name] ??= ['category' => $name, 'units' => 0, 'revenue' => 0.0];
             $categories[$name]['units'] += $product['units'];
@@ -127,7 +127,7 @@ if ($action === 'admin-analytics') {
         'previous' => $previous,
         'daily' => $daily,
         'by_status' => $byStatus,
-        'top_products' => array_slice($topProducts, 0, 10),
+        'top_products' => array_slice($soldProducts, 0, 10),
         'categories' => array_slice(array_values($categories), 0, 8),
     ]);
     exit;
@@ -157,7 +157,7 @@ if ($type === 'orders') {
         $items = smartispDecodeOrderItems($o['items'] ?? '');
         $shipping = json_decode((string)($o['shipping'] ?? ''), true) ?: [];
         $rows[] = [
-            $o['id'], $o['created_at'] ?? '', $o['status'] ?? '', $o['payment_status'] ?? '',
+            $o['id'], smartispUtcToLocal($o['created_at'] ?? ''), $o['status'] ?? '', $o['payment_status'] ?? '',
             $o['customer_name'] ?? ($shipping['name'] ?? ''), $o['customer_email'] ?? ($shipping['email'] ?? ''),
             $o['customer_phone'] ?? ($shipping['phone'] ?? ''), $shipping['city'] ?? '', $shipping['address'] ?? '',
             implode(' | ', array_map(static fn($i) => $i['quantity'] . ' x ' . $i['name'], $items)),
@@ -172,16 +172,15 @@ if ($type === 'orders') {
         $rows[] = [$p['id'], $p['sku'], $p['name'], $p['category'], $p['subcategory'], number_format($p['price'], 2, '.', ''), $p['visible'] ? 'Sí' : 'No', $p['rawImageUrl']];
     }
 } elseif ($type === 'customers') {
-    $userCols = smartispTableColumns($pdo, 'users_rows');
-    $joinOrders = in_array('user_id', $orderCols, true);
-    $sql = 'SELECT u.id, u.name, u.surname, u.email, u.phone, u.created_at'
-        . ($joinOrders ? ", COUNT(o.id) AS orders, COALESCE(SUM(CASE WHEN o.id IS NOT NULL AND LOWER(COALESCE(o.status, '')) NOT IN ($voidList) THEN o.total END), 0) AS value, MAX(o.created_at) AS last_order" : ", 0 AS orders, 0 AS value, NULL AS last_order")
-        . ' FROM users_rows u' . ($joinOrders ? ' LEFT JOIN orders_rows o ON o.user_id = u.id' : '')
+    // Mismo criterio que el directorio de clientes (admin-customers): pedidos por cuenta y por correo.
+    $orders = smartispCustomerAccountJoin(smartispCustomerOrderAggregates($pdo, 'users_rows', 'id'), 'id', 'email');
+    $sql = "SELECT u.id, u.name, u.surname, u.email, u.phone, u.created_at, {$orders['order_count']} AS orders, {$orders['order_value']} AS value, {$orders['last_order']} AS last_order"
+        . " FROM users_rows u{$orders['joins']}"
         . " WHERE LOWER(COALESCE(u.role, 'customer')) NOT IN ('admin', 'administrator', 'administrador')"
-        . ' GROUP BY u.id ORDER BY u.created_at DESC';
+        . ' ORDER BY u.created_at DESC';
     $headers = ['ID', 'Nombre', 'Apellido', 'Correo', 'Teléfono', 'Registrado', 'Pedidos', 'Valor no anulado', 'Último pedido'];
     foreach ($pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC) as $u) {
-        $rows[] = [$u['id'], $u['name'] ?? '', $u['surname'] ?? '', $u['email'], $u['phone'] ?? '', $u['created_at'] ?? '', (int)$u['orders'], number_format((float)$u['value'], 2, '.', ''), $u['last_order'] ?? ''];
+        $rows[] = [$u['id'], $u['name'] ?? '', $u['surname'] ?? '', $u['email'], $u['phone'] ?? '', smartispUtcToLocal($u['created_at'] ?? ''), (int)$u['orders'], number_format((float)$u['value'], 2, '.', ''), smartispUtcToLocal($u['last_order'] ?? '')];
     }
 } else {
     $headers = ['ID', 'SKU', 'Nombre', 'Categoría', 'Stock controlado', 'Disponible', 'Reservado', 'Libre'];
@@ -198,9 +197,10 @@ if ($type === 'orders') {
     }
 }
 
+// Las fechas van en hora de Ecuador (la base guarda UTC).
 // Excel abre bien el CSV si trae BOM UTF-8 y usa ; como separador (configuración regional es-EC).
 $names = ['orders' => 'pedidos', 'products' => 'productos', 'customers' => 'clientes', 'inventory' => 'inventario'];
-$filename = 'smartisp-' . $names[$type] . ($type === 'orders' ? '-' . $fromDay . '_a_' . $toDay : '-' . date('Y-m-d')) . '.csv';
+$filename = 'smartisp-' . $names[$type] . ($type === 'orders' ? '-' . $fromDay . '_a_' . $toDay : '-' . smartispLocalToday()) . '.csv';
 header('Content-Type: text/csv; charset=utf-8');
 header('Content-Disposition: attachment; filename="' . $filename . '"');
 $out = fopen('php://output', 'w');

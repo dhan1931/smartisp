@@ -9,6 +9,18 @@ const SMARTISP_VOID_STATUSES = ['cancelled', 'canceled', 'refunded'];
 // Pagos que sí cuentan como cobrados (mismo criterio que admin-orders-stats).
 const SMARTISP_CONFIRMED_PAYMENTS = ['paid', 'confirmed', 'succeeded', 'completed', 'approved', 'captured'];
 
+function smartispSqlList(array $values): string {
+    return "'" . implode("','", $values) . "'";
+}
+
+function smartispSqlIsVoid(string $statusColumn = 'status'): string {
+    return "(LOWER(COALESCE($statusColumn, '')) IN (" . smartispSqlList(SMARTISP_VOID_STATUSES) . '))';
+}
+
+function smartispSqlIsPaid(string $paymentColumn = 'payment_status'): string {
+    return "(LOWER(COALESCE($paymentColumn, '')) IN (" . smartispSqlList(SMARTISP_CONFIRMED_PAYMENTS) . '))';
+}
+
 // -------------------------------------------------------------
 // DÍAS DE REPORTE
 // -------------------------------------------------------------
@@ -38,6 +50,17 @@ function smartispLocalDayStartUtc(string $day): string {
 // Último segundo del día local Y-m-d, en UTC.
 function smartispLocalDayEndUtc(string $day): string {
     return (new DateTimeImmutable($day . ' 23:59:59', smartispReportTimezone()))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+}
+
+// Fecha y hora UTC de la base (Y-m-d H:i:s) en hora de Ecuador, para mostrar o exportar.
+function smartispUtcToLocal(?string $value): string {
+    $value = trim((string)$value);
+    if ($value === '' || str_starts_with($value, '0000-00-00')) return '';
+    try {
+        return (new DateTimeImmutable($value, new DateTimeZone('UTC')))->setTimezone(smartispReportTimezone())->format('Y-m-d H:i:s');
+    } catch (Exception $e) {
+        return $value;
+    }
 }
 
 // Expresión SQL con el día de Ecuador de una columna UTC.
@@ -78,45 +101,23 @@ function smartispDecodeOrderItems($raw): array {
     return $normalized;
 }
 
-// Productos más vendidos entre dos fechas (Y-m-d H:i:s), excluyendo pedidos anulados. Junta los
-// pedidos normalizados en order_items con los que solo tienen el JSON en orders_rows.items.
+// Productos vendidos entre dos fechas (Y-m-d H:i:s), excluyendo pedidos anulados, a partir de
+// orders_rows.items (la tabla order_items de la migración 007 nunca se llegó a escribir).
+// $limit 0 devuelve todos.
 function smartispTopProducts(PDO $pdo, string $from, string $to, int $limit = 10): array {
-    $voidList = "'" . implode("','", SMARTISP_VOID_STATUSES) . "'";
     $products = [];
-    $add = static function (string $key, string $name, int $units, float $revenue, string $orderId) use (&$products): void {
-        if (!isset($products[$key])) $products[$key] = ['key' => $key, 'name' => $name, 'units' => 0, 'revenue' => 0.0, 'order_ids' => []];
-        $products[$key]['units'] += $units;
-        $products[$key]['revenue'] += $revenue;
-        $products[$key]['order_ids'][$orderId] = true;
-    };
-
-    $hasOrderItems = smartispTableExists($pdo, 'order_items');
-    if ($hasOrderItems) {
-        $stmt = $pdo->prepare("SELECT oi.order_id, COALESCE(NULLIF(oi.product_id, ''), NULLIF(oi.sku, ''), oi.product_name) AS product_key,
-                oi.product_name, oi.quantity, oi.subtotal
-            FROM order_items oi
-            INNER JOIN orders_rows o ON o.id = oi.order_id
-            WHERE o.created_at BETWEEN :from AND :to
-              AND LOWER(COALESCE(o.status, '')) NOT IN ($voidList)");
-        $stmt->execute([':from' => $from, ':to' => $to]);
-        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-            $add((string)$row['product_key'], (string)$row['product_name'], (int)$row['quantity'], (float)$row['subtotal'], (string)$row['order_id']);
-        }
-    }
-
-    $legacySql = "SELECT o.id, o.items FROM orders_rows o
+    $stmt = $pdo->prepare("SELECT o.id, o.items FROM orders_rows o
         WHERE o.created_at BETWEEN :from AND :to
           AND o.items IS NOT NULL AND TRIM(o.items) <> ''
-          AND LOWER(COALESCE(o.status, '')) NOT IN ($voidList)";
-    if ($hasOrderItems) {
-        $legacySql .= ' AND NOT EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = o.id)';
-    }
-    $stmt = $pdo->prepare($legacySql);
+          AND NOT " . smartispSqlIsVoid('o.status'));
     $stmt->execute([':from' => $from, ':to' => $to]);
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $order) {
         foreach (smartispDecodeOrderItems($order['items']) as $item) {
             $key = $item['product_id'] !== '' ? $item['product_id'] : ($item['sku'] !== '' ? $item['sku'] : strtolower($item['name']));
-            $add($key, $item['name'], $item['quantity'], $item['quantity'] * $item['price'], (string)$order['id']);
+            $products[$key] ??= ['key' => $key, 'name' => $item['name'], 'units' => 0, 'revenue' => 0.0, 'order_ids' => []];
+            $products[$key]['units'] += $item['quantity'];
+            $products[$key]['revenue'] += $item['quantity'] * $item['price'];
+            $products[$key]['order_ids'][(string)$order['id']] = true;
         }
     }
 
@@ -127,7 +128,8 @@ function smartispTopProducts(PDO $pdo, string $from, string $to, int $limit = 10
     }
     unset($product);
     uasort($products, static fn(array $a, array $b): int => ($b['units'] <=> $a['units']) ?: ($b['orders'] <=> $a['orders']));
-    return array_slice(array_values($products), 0, $limit);
+    $products = array_values($products);
+    return $limit > 0 ? array_slice($products, 0, $limit) : $products;
 }
 
 // -------------------------------------------------------------
@@ -200,6 +202,143 @@ function smartispOrderStockEnabled(PDO $pdo): bool {
 }
 
 // -------------------------------------------------------------
+// RESPUESTAS DE PEDIDOS
+// -------------------------------------------------------------
+
+function smartispDecodeOrderRow(array $r): array {
+    if (isset($r['items']) && is_string($r['items'])) {
+        $r['items'] = json_decode($r['items'], true) ?: [];
+    }
+    if (isset($r['shipping']) && is_string($r['shipping'])) {
+        $r['shipping'] = json_decode($r['shipping'], true) ?: [];
+    }
+    return $r;
+}
+
+// Envía $payload y cierra la conexión con el navegador; lo que siga (correos, avisos) corre
+// después sin hacerlo esperar. Un SMTP lento hacía que el navegador diera el pedido por fallido
+// y el cliente lo reintentara.
+function smartispFinishResponse(string $payload = ''): void {
+    if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
+    ignore_user_abort(true);
+    echo $payload;
+    if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+    elseif (function_exists('litespeed_finish_request')) litespeed_finish_request();
+    else flush();
+}
+
+// Respuesta de éxito de un pedido nuevo; la misma se devuelve al repetir el intento de compra.
+function smartispOrderSuccessPayload(string $orderId, string $status, float $total, array $items): array {
+    return [
+        'ok'          => true,
+        'orderId'     => $orderId,
+        'id'          => $orderId,
+        'shortId'     => preg_replace('/^PED-/', '', $orderId),
+        'isQuote'     => $status === 'quote_requested',
+        'emailQueued' => true,
+        'order'       => [
+            'id'     => $orderId,
+            'status' => $status,
+            'total'  => $total,
+            'items'  => array_map(static fn($i) => [
+                'id' => (string)($i['id'] ?? ''), 'name' => (string)($i['name'] ?? ''), 'sku' => $i['sku'] ?? '',
+                'price' => (float)($i['price'] ?? 0), 'quantity' => (int)($i['quantity'] ?? 1),
+            ], $items),
+        ],
+    ];
+}
+
+// Clave de idempotencia del checkout (un UUID por intento de compra), por cabecera o cuerpo.
+function smartispIdempotencyKey(array $body): ?string {
+    $key = trim((string)($_SERVER['HTTP_IDEMPOTENCY_KEY'] ?? (is_scalar($body['idempotencyKey'] ?? null) ? $body['idempotencyKey'] : '')));
+    return preg_match('/^[A-Za-z0-9_-]{8,64}$/', $key) ? $key : null;
+}
+
+// Pedido con esa clave. 'mine': creado hace menos de 24 h por el mismo cliente (cuenta o correo);
+// si no, la clave no se reutiliza, para no devolver el pedido de otra persona.
+function smartispFindIdempotentOrder(PDO $pdo, string $key, ?string $userId, string $email): ?array {
+    $stmt = $pdo->prepare('SELECT * FROM orders_rows WHERE idempotency_key = :k LIMIT 1');
+    $stmt->execute([':k' => $key]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) return null;
+    $recent = !empty($row['created_at']) && strtotime($row['created_at'] . ' UTC') >= time() - 86400;
+    $shipping = json_decode((string)($row['shipping'] ?? ''), true) ?: [];
+    $rowEmail = strtolower(trim((string)($row['customer_email'] ?? ($shipping['email'] ?? ''))));
+    $sameUser = $userId !== null && $userId !== '' && (string)($row['user_id'] ?? '') === $userId;
+    $sameEmail = $email !== '' && $rowEmail === strtolower(trim($email));
+    return ['row' => $row, 'mine' => $recent && ($sameUser || $sameEmail)];
+}
+
+// Se responde con el estado inicial del pedido, no con el actual (el admin pudo cambiarlo):
+// cotización si algún artículo no tenía precio.
+function smartispIdempotentOrderPayload(array $row): array {
+    $items = json_decode((string)($row['items'] ?? ''), true) ?: [];
+    $total = (float)($row['total'] ?? 0);
+    $isQuote = $total <= 0;
+    foreach ($items as $item) if ((float)($item['price'] ?? 0) <= 0) $isQuote = true;
+    return smartispOrderSuccessPayload((string)$row['id'], $isQuote ? 'quote_requested' : 'pending', $total, $items);
+}
+
+// -------------------------------------------------------------
+// PEDIDOS POR CLIENTE (directorio de clientes y su CSV)
+// -------------------------------------------------------------
+// Cada pedido cuenta una sola vez: para la cuenta de su user_id si esa cuenta existe y, si no,
+// para su correo (que puede ser el de una cuenta o el de un comprador invitado). El valor es la
+// suma de los pedidos no anulados. by_user/by_email generan subconsultas agrupadas (customer_key,
+// order_count, order_value, last_order, first_order); $where añade filtros sobre o.
+function smartispCustomerOrderAggregates(PDO $pdo, string $usersTable, string $usersIdColumn): array {
+    $columns = smartispTableColumns($pdo, 'orders_rows');
+    $pick = static function (array $candidates) use ($columns): ?string {
+        foreach ($candidates as $candidate) if (in_array($candidate, $columns, true)) return $candidate;
+        return null;
+    };
+    $userId = $pick(['user_id']);
+    $email = $pick(['customer_email', 'email']);
+    $name = $pick(['customer_name', 'name']);
+    $phone = $pick(['customer_phone', 'phone']);
+    $total = $pick(['total', 'amount']);
+    $status = $pick(['status']);
+    $created = $pick(['created_at']);
+
+    $value = $total ? 'COALESCE(SUM(CASE WHEN ' . ($status ? smartispSqlIsVoid("o.`$status`") : '0') . " THEN 0 ELSE o.`$total` END), 0)" : '0';
+    $aggregate = "COUNT(*) AS order_count, $value AS order_value, "
+        . ($created ? "MAX(o.`$created`) AS last_order, MIN(o.`$created`) AS first_order" : 'NULL AS last_order, NULL AS first_order');
+    $emailKey = $email ? "LOWER(TRIM(o.`$email`))" : null;
+    $orphan = $userId ? " AND (o.`$userId` IS NULL OR o.`$userId` = '' OR NOT EXISTS (SELECT 1 FROM `$usersTable` ux WHERE ux.`$usersIdColumn` = o.`$userId`))" : '';
+
+    return [
+        'user_column' => $userId,
+        'email_key' => $emailKey,
+        'by_user' => $userId ? static fn(string $where = ''): string => "SELECT o.`$userId` AS customer_key, $aggregate FROM orders_rows o WHERE o.`$userId` IS NOT NULL AND o.`$userId` <> ''$where GROUP BY o.`$userId`" : null,
+        'by_email' => $email ? static fn(string $where = ''): string => "SELECT $emailKey AS customer_key, $aggregate, "
+            . ($name ? "MAX(NULLIF(TRIM(o.`$name`), ''))" : "''") . ' AS customer_name, '
+            . ($phone ? "MAX(NULLIF(TRIM(o.`$phone`), ''))" : 'NULL') . ' AS customer_phone, '
+            . "MAX(o.`$email`) AS customer_email FROM orders_rows o WHERE $emailKey <> ''$orphan$where GROUP BY $emailKey" : null,
+    ];
+}
+
+// JOINs y columnas de pedidos de una cuenta (alias u) a partir de las subconsultas de arriba.
+function smartispCustomerAccountJoin(array $aggregates, string $userIdColumn, string $userEmailColumn, string $userWhere = '', string $emailWhere = ''): array {
+    $joins = '';
+    $sources = [];
+    if ($aggregates['by_user']) {
+        $joins .= ' LEFT JOIN (' . $aggregates['by_user']($userWhere) . ") bu ON bu.customer_key = u.`$userIdColumn`";
+        $sources[] = 'bu';
+    }
+    if ($aggregates['by_email']) {
+        $joins .= ' LEFT JOIN (' . $aggregates['by_email']($emailWhere) . ") be ON be.customer_key = u.`$userEmailColumn`";
+        $sources[] = 'be';
+    }
+    $sum = static fn(string $field): string => $sources ? implode(' + ', array_map(static fn($s) => "COALESCE($s.$field, 0)", $sources)) : '0';
+    $last = match (count($sources)) {
+        0 => 'NULL',
+        1 => $sources[0] . '.last_order',
+        default => 'CASE WHEN bu.last_order IS NULL THEN be.last_order WHEN be.last_order IS NULL THEN bu.last_order ELSE GREATEST(bu.last_order, be.last_order) END',
+    };
+    return ['joins' => $joins, 'order_count' => $sum('order_count'), 'order_value' => $sum('order_value'), 'last_order' => $last];
+}
+
+// -------------------------------------------------------------
 // INDEXNOW (Bing, Yandex y otros). Inactivo sin INDEXNOW_KEY.
 // -------------------------------------------------------------
 
@@ -214,8 +353,7 @@ function smartispNotifySearchEngines(array $paths): void {
     if ($key === '' || !$paths || !function_exists('curl_init')) return;
     $siteUrl = rtrim((string)(getenv('SITE_URL') ?: 'https://smart-isp.com.ec'), '/');
     register_shutdown_function(static function () use ($key, $paths, $siteUrl): void {
-        if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
-        elseif (function_exists('litespeed_finish_request')) litespeed_finish_request();
+        smartispFinishResponse();
         $ch = curl_init('https://api.indexnow.org/indexnow');
         curl_setopt_array($ch, [
             CURLOPT_POST => true,

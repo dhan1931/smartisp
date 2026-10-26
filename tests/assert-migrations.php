@@ -99,4 +99,9 @@ $assert($transitionColumn && (int)$transitionColumn['Default'] === 1000, 'Falta 
 $tokenVersion = $pdo->query("SHOW COLUMNS FROM users_rows LIKE 'token_version'")->fetch();
 $assert($tokenVersion && $tokenVersion['Null'] === 'NO' && (int)$tokenVersion['Default'] === 0, 'Falta users_rows.token_version (revocación de sesiones).');
 
+$idempotencyIndex = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'orders_rows'
+      AND INDEX_NAME = 'idx_orders_idempotency' AND COLUMN_NAME = 'idempotency_key' AND NON_UNIQUE = 0")->fetchColumn();
+$assert($idempotencyIndex === 1, 'Falta el índice único de orders_rows.idempotency_key (migración 039).');
+
 echo "Migraciones verificadas: claves, tipos, fecha, correo, historial y esquema de campañas correctos.\n";

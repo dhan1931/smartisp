@@ -91,6 +91,7 @@ updated_at	timestamp	Yes	current_timestamp()
 payment_status	varchar(40)	Yes	NULL	
 payment_provider	varchar(60)	Yes	NULL	
 shipping	text	Yes	NULL	
+idempotency_key	varchar(64)	Yes	NULL	Clave del intento de compra (migración 039)
 Indexes
 Keyname	Type	Unique	Packed	Column	Cardinality	Collation	Null	Comment
 PRIMARY	BTREE	Yes	No	id	12	A	No	
@@ -99,6 +100,7 @@ idx_status_created	BTREE	No	No	status	3	A	No
 created_at	12	A	Yes
 idx_orders_user_created	BTREE	No	No	user_id	4	A	Yes	
 created_at	12	A	Yes
+idx_orders_idempotency	BTREE	Yes	No	idempotency_key		A	Yes	
 order_events
 Column	Type	Null	Default	Comments
 id (Primary)	int(11)	No		
