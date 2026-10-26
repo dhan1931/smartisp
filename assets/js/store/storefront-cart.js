@@ -10,6 +10,7 @@
  *      <script src="/assets/js/store/storefront-cart.js" defer></script>
  * Requiere que exista un link/boton con [data-open-cart] en la pagina (ya lo trae
  * includes/storefront-discovery-nav.php via .storefront-cart).
+ * El drawer se construye al abrirlo; checkout-page.js solo usa window.SmartStorefrontCart.
  */
 (function () {
   'use strict';
@@ -51,8 +52,8 @@
     drawerEl = document.createElement('div');
     drawerEl.className = 'storefront-cart-drawer';
     drawerEl.innerHTML =
-      '<div class="storefront-cart-panel">' +
-      '<div class="storefront-cart-head"><h2>Tu carrito</h2><button type="button" class="storefront-cart-close" aria-label="Cerrar carrito"><i data-lucide="x"></i></button></div>' +
+      '<div class="storefront-cart-panel" role="dialog" aria-modal="true" aria-labelledby="storefrontCartTitle">' +
+      '<div class="storefront-cart-head"><h2 id="storefrontCartTitle">Tu carrito</h2><button type="button" class="storefront-cart-close" aria-label="Cerrar carrito"><i data-lucide="x"></i></button></div>' +
       '<div class="storefront-cart-items" id="storefrontCartItems">Tu carrito está vacío.</div>' +
       '<div class="storefront-cart-footer"><div class="storefront-cart-total"><span>Total</span><span id="storefrontCartTotal">$0</span></div>' +
       '<button type="button" class="storefront-cart-checkout">Finalizar compra <i data-lucide="arrow-up-right" width="16"></i></button></div>' +
@@ -66,20 +67,33 @@
     });
   };
 
+  let returnFocus = null;
   const setOpen = open => {
     buildDrawer();
+    const wasOpen = drawerEl.classList.contains('open');
     drawerEl.classList.toggle('open', open);
     document.body.classList.toggle('storefront-cart-open', open);
+    if (open && !wasOpen) {
+      returnFocus = document.activeElement;
+      setTimeout(() => drawerEl.querySelector('.storefront-cart-close')?.focus(), 50);
+    } else if (!open && wasOpen) {
+      returnFocus?.focus?.();
+      returnFocus = null;
+    }
   };
 
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && drawerEl?.classList.contains('open')) setOpen(false);
+  });
+
   const render = () => {
-    buildDrawer();
     const cart = readCart();
     const totalQty = cart.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
     document.querySelectorAll('.store-product-cart-count').forEach(node => {
       node.textContent = String(totalQty);
       node.hidden = totalQty === 0;
     });
+    if (!drawerEl) return;
 
     const itemsEl = drawerEl.querySelector('#storefrontCartItems');
     if (!cart.length) {
@@ -138,23 +152,26 @@
     window.lucide?.createIcons();
   };
 
+  const openDrawer = () => {
+    buildDrawer();
+    render();
+    setOpen(true);
+  };
+
   document.addEventListener('click', event => {
     const opener = event.target.closest('[data-open-cart], .storefront-cart');
     if (opener) {
       event.preventDefault();
-      render();
-      setOpen(true);
+      openDrawer();
     }
   });
 
   window.addEventListener('storage', event => { if (event.key === 'smartisp.cart') render(); });
+  window.SmartStorefrontCart = { open: openDrawer, render, read: readCart, write: writeCart, money, escapeHtml, productKey, fallbackImage: FALLBACK_SVG };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render);
   else render();
 
   const params = new URLSearchParams(window.location.search);
-  if (params.get('openCart') === '1' || params.get('carrito') === '1') {
-    render();
-    setOpen(true);
-  }
+  if (params.get('openCart') === '1' || params.get('carrito') === '1') openDrawer();
 })();

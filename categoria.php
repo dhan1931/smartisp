@@ -15,7 +15,7 @@ function slugifyCategoryPage(string $text): string {
 function productSlugForCategoryPage(array $product): string {
     $id = (string)($product['id'] ?? ($product['sku'] ?? ''));
     $name = (string)($product['name'] ?? 'articulo');
-    return rawurlencode($id) . '-' . slugifyCategoryPage($name);
+    return rawurlencode($id) . '-' . smartispSlug($name, 80, 'articulo');
 }
 
 function escapeCategoryPage(string $text): string {
@@ -263,13 +263,13 @@ foreach ($products as $idx => $product) {
   {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    "name": <?= json_encode($categoryName . ' SmartISP Ecuador', JSON_UNESCAPED_UNICODE) ?>,
-    "description": <?= json_encode($metaDesc, JSON_UNESCAPED_UNICODE) ?>,
-    "url": <?= json_encode($canonicalUrl, JSON_UNESCAPED_SLASHES) ?>,
+    "name": <?= json_encode($categoryName . ' SmartISP Ecuador', JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+    "description": <?= json_encode($metaDesc, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+    "url": <?= json_encode($canonicalUrl, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
     "mainEntity": {
       "@type": "ItemList",
-      "name": <?= json_encode('Productos de ' . $categoryName, JSON_UNESCAPED_UNICODE) ?>,
-      "itemListElement": <?= json_encode($productItemList, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>
+      "name": <?= json_encode('Productos de ' . $categoryName, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+      "itemListElement": <?= json_encode($productItemList, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) ?>
     },
     "isPartOf": {
       "@type": "WebSite",
@@ -530,7 +530,6 @@ foreach ($products as $idx => $product) {
   <link rel="stylesheet" href="/assets/css/store/site-footer.css?v=1">
   <script src="/assets/js/store/site-footer.js?v=1" defer></script>
   <script src="/assets/js/store/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
-  <script src="/assets/js/store/storefront-product-card.js" defer></script>
   <?php if ($categoryName !== '' && $totalProducts > 0): ?>
   <script>
     (() => {
