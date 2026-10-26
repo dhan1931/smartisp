@@ -8,6 +8,7 @@
 const QUOTE_STATUSES = ['nuevo', 'contactado', 'cerrado'];
 
 if ($action === 'service-quote-requests' && $method === 'POST') {
+    smartispEnforceRateLimit('quotes', 5, 600, 'Recibimos varias solicitudes desde esta conexión. Por favor intenta de nuevo en unos minutos.');
     $clientType = trim((string)($body['clientType'] ?? ''));
     $serviceInterest = trim((string)($body['service'] ?? ''));
     $description = trim((string)($body['description'] ?? ''));
@@ -30,7 +31,7 @@ if ($action === 'service-quote-requests' && $method === 'POST') {
             ':id' => $id,
             ':client_type' => mb_substr($clientType, 0, 60),
             ':service_interest' => mb_substr($serviceInterest, 0, 120),
-            ':description' => $description !== '' ? $description : null,
+            ':description' => $description !== '' ? mb_substr($description, 0, 5000) : null,
             ':company_name' => $companyName !== '' ? mb_substr($companyName, 0, 191) : null,
             ':email' => $email !== '' ? mb_substr($email, 0, 191) : null,
             ':phone' => $phone !== '' ? mb_substr($phone, 0, 40) : null,
@@ -62,8 +63,14 @@ if ($action === 'admin-service-quotes' && $method === 'GET') {
         $params[':status'] = $status;
     }
     if ($q !== '') {
-        $where[] = '(company_name LIKE :q OR email LIKE :q OR phone LIKE :q OR service_interest LIKE :q OR description LIKE :q)';
-        $params[':q'] = '%' . $q . '%';
+        // Un marcador por columna: con ATTR_EMULATE_PREPARES=false no se puede repetir :q.
+        $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $q) . '%';
+        $conditions = [];
+        foreach (['company_name', 'email', 'phone', 'service_interest', 'description'] as $i => $column) {
+            $conditions[] = "$column LIKE :q$i";
+            $params[":q$i"] = $like;
+        }
+        $where[] = '(' . implode(' OR ', $conditions) . ')';
     }
     $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 
@@ -84,8 +91,10 @@ if ($action === 'admin-service-quotes' && $method === 'GET') {
         foreach ($statsStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
             if (isset($byStatus[$row['status']])) $byStatus[$row['status']] = (int)$row['total'];
         }
-    } catch (Throwable $e) {
+    } catch (PDOException $e) {
         // Tabla sin migrar todavia -- no es un 500, es un estado valido de "todavia no hay nada".
+        // Cualquier otro error sí lo es: antes se tragaba y el panel mostraba "sin solicitudes".
+        if (($e->errorInfo[1] ?? null) !== 1146) throw $e;
         echo json_encode(['quotes' => [], 'total' => 0, 'page' => 1, 'limit' => $limit, 'totalPages' => 1, 'stats' => ['nuevo' => 0, 'contactado' => 0, 'cerrado' => 0], 'migrated' => false]);
         exit;
     }
