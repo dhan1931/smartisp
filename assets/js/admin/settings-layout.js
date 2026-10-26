@@ -6,8 +6,8 @@
   appearance.classList.add('settings-content-panel');
   const toolbar=panel.querySelector('.toolbar');
   const intro=document.createElement('p');intro.className='settings-intro';intro.textContent='Elige qué necesitas cambiar. Cada sección guarda únicamente sus ajustes.';toolbar.insertAdjacentElement('afterend',intro);
-  const nav=document.createElement('nav');nav.className='settings-tabs';nav.setAttribute('aria-label','Secciones de configuración');
-  nav.innerHTML=[['brand','Marca y logo'],['contact','Contacto'],['catalog','Catálogo'],['mail','Correo']].map(([key,title])=>`<button type="button" data-settings-tab="${key}" aria-label="${title}" aria-pressed="false">${title}</button>`).join('');intro.insertAdjacentElement('afterend',nav);
+  const nav=document.createElement('nav');nav.className='tabs settings-tabs';nav.setAttribute('aria-label','Secciones de configuración');
+  nav.innerHTML=[['brand','Marca y logo'],['contact','Contacto'],['catalog','Catálogo'],['mail','Correo']].map(([key,title])=>`<button type="button" class="tab" data-settings-tab="${key}" aria-label="${title}" aria-pressed="false">${title}</button>`).join('');intro.insertAdjacentElement('afterend',nav);
   const brand=document.createElement('section'),contact=document.createElement('section'),legacy=document.createElement('details');
   brand.dataset.settingsGroup='brand';contact.dataset.settingsGroup='contact';legacy.className='settings-legacy';
   brand.append(content.querySelector('.logo-customizer-card'));
@@ -63,7 +63,7 @@
   const help=destination.closest('div').querySelector('small');if(help)help.textContent='Aquí llegan las alertas de pedidos. Este correo no cambia los permisos de acceso al admin.';
   const provider=$('#notificationsForm [name="smtp_provider"]');
   if(provider){provider.closest('label').firstChild.textContent='Enviar correos con';[...provider.options].forEach(option=>{option.textContent=({gmail:'Gmail',hostinger:'Hostinger',custom:'Otro servidor SMTP',smtp:'Otro servidor SMTP',resend:'Resend'})[option.value]||option.textContent;});}
-  for(const id of ['gmailConfigSection','hostingerConfigSection','resendConfigSection']){
+  for(const id of ['gmailConfigSection','hostingerConfigSection','resendSection']){
     const section=document.getElementById(id);if(!section)continue;
     const paragraphs=[...section.children].filter(element=>element.tagName==='P');
     if(!paragraphs.length)continue;const details=document.createElement('details');details.className='settings-mail-help';details.innerHTML='<summary>Cómo configurar esta cuenta</summary>';paragraphs[0].before(details);paragraphs.forEach(paragraph=>details.append(paragraph));
