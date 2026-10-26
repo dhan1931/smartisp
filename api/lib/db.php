@@ -442,6 +442,22 @@ function getSmartispUploadsDir(string $category): string {
     return $dir;
 }
 
+// Respaldo de las palabras clave de la migración 045 mientras no esté aplicada: sin ellas todas
+// las categorías sin familia caerían en «Otras Soluciones IT».
+const SMARTISP_DEFAULT_FAMILY_KEYWORDS = [
+    'computacion' => ['Computadores Portátiles', 'Computadores de Escritorio', 'Tabletas Digitales', 'computador', 'computadores', 'notebook', 'notebooks', 'laptop', 'laptops', 'portatil', 'portatiles', 'desktop', 'escritorio', 'tableta', 'tabletas', 'tablet', 'all-in-one', 'workstation'],
+    'componentes' => ['Componentes Informáticos', 'Memorias RAM', 'Almacenamiento', 'componente', 'componentes', 'disco', 'discos', 'ssd', 'hdd', 'nvme', 'ram', 'memoria', 'memorias', 'procesador', 'procesadores', 'tarjeta madre', 'placa', 'motherboard', 'gpu', 'almacenamiento'],
+    'redes' => ['Redes y Comunicaciones', 'Cables y Adaptadores', 'red', 'redes', 'comunicaciones', 'router', 'switch', 'cables', 'cable', 'adaptador', 'adaptadores', 'wifi', 'access point', 'fibra', 'patch cord', 'conector', 'mikrotik', 'ubiquiti'],
+    'monitores' => ['Monitores', 'Televisores y Pantallas', 'monitor', 'monitores', 'pantalla', 'pantallas', 'tv', 'televisor', 'televisores', 'display', 'proyector', 'proyectores'],
+    'perifericos' => ['Periféricos de Entrada', 'Audio y Auriculares', 'Accesorios Generales', 'Mochilas y Soportes', 'periferico', 'perifericos', 'teclado', 'teclados', 'mouse', 'raton', 'audio', 'auricular', 'auriculares', 'audifono', 'audifonos', 'parlante', 'parlantes', 'mochila', 'mochilas', 'soporte', 'soportes', 'accesorio', 'accesorios', 'funda', 'maletin', 'webcam'],
+    'impresion' => ['Impresoras y Multifuncionales', 'Consumibles de Impresión', 'Puntos de Venta', 'impresora', 'impresoras', 'multifuncional', 'multifuncionales', 'toner', 'cartucho', 'cartuchos', 'tinta', 'consumible', 'consumibles', 'pos', 'punto de venta', 'puntos de venta', 'codigo de barras', 'escaner', 'escaneres'],
+    'seguridad' => ['Seguridad y Vigilancia', 'seguridad', 'vigilancia', 'camara', 'camaras', 'cctv', 'dvr', 'nvr', 'alarma', 'alarmas', 'biometrico', 'sensor', 'sensores', 'control de acceso'],
+    'energia' => ['Protección de Energía', 'Climatización y Ventilación', 'energia', 'ups', 'bateria', 'baterias', 'regulador', 'reguladores', 'inversor', 'inversores', 'proteccion de poder', 'clima', 'climatizacion', 'ventilacion', 'ventilador', 'aire'],
+    'telefonia' => ['Celulares y Smartphones', 'Dispositivos Vestibles', 'celular', 'celulares', 'smartphone', 'smartphones', 'telefono', 'telefonos', 'reloj', 'smartwatch', 'vestible', 'vestibles', 'wearable'],
+    'gaming' => ['Gaming y Videojuegos', 'Consolas de Videojuegos', 'Sillas Gaming', 'Audio y Sonido para Hogar', 'Electrodomésticos y Línea Blanca', 'gaming', 'videojuegos', 'videojuego', 'consola', 'consolas', 'playstation', 'xbox', 'nintendo', 'silla gaming', 'sillas', 'linea blanca', 'electrodomesticos', 'electrodomestico', 'hogar'],
+    'software' => ['Software y Licencias', 'software', 'licencia', 'licencias', 'antivirus', 'sistema operativo', 'office', 'windows'],
+];
+
 // Familias visuales del sidebar de tienda (antes un array hardcodeado en tienda.html,
 // ver migracion 017). Se usa tanto desde getDynamicCategoriesList() (para anotar cada
 // categoria con su familia) como desde el admin (para gestionarlas directamente).
@@ -461,7 +477,7 @@ function getCategoryMacroGroups(PDO $pdo): array {
             'imageUrl' => (string)($g['image_url'] ?? ''),
             'sortOrder' => (int)($g['sort_order'] ?? 0),
             'visible' => $g['visible'] === null ? true : (string)$g['visible'] === '1',
-            'keywords' => is_array($keywords) ? array_values(array_filter(array_map('strval', $keywords), 'strlen')) : [],
+            'keywords' => is_array($keywords) && $keywords ? array_values(array_filter(array_map('strval', $keywords), 'strlen')) : (SMARTISP_DEFAULT_FAMILY_KEYWORDS[(string)$g['id']] ?? []),
         ];
     }
     return $groups;
