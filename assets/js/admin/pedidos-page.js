@@ -300,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async user =
     (res.events || []).forEach(ev => entries.push({
       at: ev.created_at, kind: 'status', icon: 'refresh-cw',
       title: ev.from_status ? `${statusLabel(ev.from_status)} → ${statusLabel(ev.to_status)}` : `Estado: ${statusLabel(ev.to_status)}`,
-      meta: ev.actor || '', text: ev.note ? `Mensaje al cliente: ${ev.note}` : '',
+      meta: ev.actor || '', text: ev.note ? (ev.from_status ? `Mensaje al cliente: ${ev.note}` : ev.note) : '',
     }));
     (res.activity || []).forEach(a => {
       const meta = ACTIVITY_META[a.kind] || { label: a.kind, icon: 'info' };

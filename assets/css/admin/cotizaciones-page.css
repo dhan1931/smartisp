@@ -14,10 +14,21 @@ td{vertical-align:top}
 .status-select:disabled{opacity:.6;cursor:wait}
 tr.is-new td:first-child{box-shadow:inset 3px 0 0 var(--warning)}
 .pager button:disabled{opacity:.45;cursor:default}
+.followup-cell{display:grid;gap:4px;min-width:150px;font-size:12.5px}.followup-cell .muted{color:var(--text-3)}
+.order-link{display:inline-flex;align-items:center;gap:4px;color:var(--accent-text);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-weight:700;text-decoration:none}.order-link:hover{text-decoration:underline}.order-link svg{width:13px;height:13px}
+.next-action{color:var(--text-2);overflow-wrap:anywhere}.next-action small{display:block;color:var(--text-3);font-size:11.5px}.next-action.is-late small{color:var(--danger);font-weight:700}
+.quote-open{white-space:nowrap}
+.qd-section{padding:0 0 18px;margin:0 0 18px;border-bottom:1px solid var(--border-soft)}.qd-section:last-child{border-bottom:0;margin-bottom:0}
+.qd-section h3{margin:0 0 10px;font-size:14px}.qd-section p{margin:0 0 6px;font-size:13.5px;line-height:1.5}
+.qd-meta{color:var(--text-3);font-size:12.5px!important}.qd-desc{white-space:pre-line;color:var(--text-2)}
+.qd-section .input,.qd-section .select{width:100%}.qd-textarea{height:auto;min-height:64px;padding:9px 12px;resize:vertical}
+.qd-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
+.qd-notes{display:grid;gap:8px;margin-bottom:12px}.qd-note{padding:9px 11px;border-radius:var(--radius-sm);background:var(--warning-soft)}.qd-note p{margin:0;white-space:pre-line;overflow-wrap:anywhere}.qd-note small{color:var(--text-3);font-size:11.5px}
+#qdOrderLink{color:var(--accent-text)}
 @media(max-width:720px){
   #tableWrap table thead{display:none}
   #tableWrap table tr{display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:12px 14px;border-bottom:1px solid var(--border-soft)}
   #tableWrap table td{display:block;padding:0;border:0}
-  #tableWrap table td.desc-cell,#tableWrap table td.contact{grid-column:1/-1;max-width:none}
+  #tableWrap table td.desc-cell,#tableWrap table td.contact,#tableWrap table td.followup-cell{grid-column:1/-1;max-width:none}
   .toolbar .segmented{width:100%}.toolbar .segmented button{flex:1}
 }
