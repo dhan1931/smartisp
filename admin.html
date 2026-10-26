@@ -8,74 +8,158 @@
   <link rel="icon" type="image/svg+xml" href="/assets/favicons/favicon.svg">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
   <link rel="manifest" href="/assets/site.webmanifest">
-  <meta name="theme-color" content="#102c3d">
-  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=admin-brand-20261011">
-  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=20261025">
-  <link rel="stylesheet" href="/assets/css/admin/admin-dashboard.css?v=20261025-a11y">
-  <script src="/assets/vendor/lucide-icons.min.js?v=8707c619" defer></script>
-  <script src="/assets/js/admin/admin-nav.js?v=20261025-a11y" defer></script>
-  <script src="/assets/js/admin/admin-page.js?v=20261025-waf" defer></script>
-  <script src="/assets/js/admin/admin-charts.js?v=seo2-20261025" defer></script>
-  <script src="/assets/js/admin/admin-dashboard.js?v=20261025-a11y" defer></script>
+  <meta name="theme-color" content="#102A43">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <script src="/assets/js/admin/admin-theme.js?v=ds-20261027"></script>
+  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/admin-dashboard.css?v=ds-20261027">
+  <script src="/assets/vendor/lucide-icons.min.js?v=68df8f2b" defer></script>
+  <script src="/assets/js/admin/admin-nav.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/admin-page.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/admin-charts.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/admin-dashboard.js?v=ds-20261027" defer></script>
 </head>
 <body>
   <div id="smartisp-admin-nav" class="is-loading" data-active="inicio"></div>
   <main class="shell" id="app" hidden>
     <header class="page-head dash-head">
-      <div><h1 id="greeting">Hola</h1><p id="today"></p></div>
-      <div class="head-actions dash-actions">
+      <div>
+        <p class="eyebrow" id="today">Resumen</p>
+        <h1 id="greeting">Hola</h1>
+        <p id="periodText">Cargando el resumen…</p>
+      </div>
+      <div class="head-actions">
         <button class="button icon-only" id="refresh" type="button" aria-label="Actualizar resumen" title="Actualizar"><i data-lucide="refresh-cw"></i></button>
-        <a class="button hide-mobile" href="/" target="_blank" rel="noopener"><i data-lucide="external-link"></i> Ver tienda</a>
-        <a class="button" href="/campanas.html"><i data-lucide="megaphone"></i> Banners</a>
-        <a class="button primary" href="/editor-catalogo.html?tab=tab-products"><i data-lucide="package-plus"></i> Productos</a>
+        <a class="button hide-mobile" href="/tienda.html" target="_blank" rel="noopener"><i data-lucide="external-link"></i> Ver tienda</a>
+        <a class="button primary" href="/editor-catalogo.html?tab=tab-products&amp;new=1"><i data-lucide="package-plus"></i> Nuevo producto</a>
       </div>
     </header>
 
-    <div id="dashboard">
-      <section class="kpis" id="kpis" aria-label="Indicadores principales"></section>
+    <div class="dash-filters card" role="region" aria-label="Periodo del resumen">
+      <div class="segmented" id="period" role="group" aria-label="Periodo">
+        <button type="button" data-period="today">Hoy</button>
+        <button type="button" data-period="7d">7 días</button>
+        <button type="button" data-period="30d">30 días</button>
+        <button type="button" data-period="90d">90 días</button>
+        <button type="button" data-period="month">Este mes</button>
+        <button type="button" data-period="custom">Rango</button>
+      </div>
+      <form class="dash-range" id="range" hidden>
+        <label><span class="sr-only">Desde</span><input class="input" type="date" id="rangeFrom" required></label>
+        <span aria-hidden="true">→</span>
+        <label><span class="sr-only">Hasta</span><input class="input" type="date" id="rangeTo" required></label>
+        <button class="button small primary" type="submit">Aplicar</button>
+      </form>
+      <p class="dash-compare" id="compareText"></p>
+    </div>
 
-      <div class="dash-row main">
-        <section class="card">
+    <div id="dashboard">
+      <section class="kpi-grid dash-kpis" id="kpis" aria-label="Indicadores principales"></section>
+
+      <div class="dash-row r-main">
+        <section class="card chart-card" aria-labelledby="trendTitle">
           <div class="card-head">
-            <div><h2 id="trendTitle">Ventas</h2><p id="trendHint"></p></div>
-            <div class="segmented" id="metric" role="group" aria-label="Medida del gráfico">
-              <button type="button" data-metric="pipeline" class="is-active">Valor</button>
-              <button type="button" data-metric="revenue">Cobrado</button>
-              <button type="button" data-metric="orders">Pedidos</button>
-            </div>
+            <div><h2 id="trendTitle">Ingresos y pedidos</h2><p id="trendHint">Ventas confirmadas y pedidos por día.</p></div>
+            <label class="toggle"><input type="checkbox" id="comparePrev" checked> <span>Comparar con el periodo anterior</span></label>
           </div>
-          <div class="chart compact" id="trendChart"></div>
+          <ul class="legend" id="trendLegend"></ul>
+          <div class="combo" id="trendChart"></div>
+          <details class="dash-table-toggle"><summary>Ver como tabla</summary><div class="data-table" id="trendTable"></div></details>
         </section>
-        <section class="card" aria-labelledby="attentionTitle">
-          <div class="card-head"><div><h2 id="attentionTitle">Necesita tu atención</h2><p>Lo que conviene resolver hoy.</p></div></div>
-          <div class="attention" id="attention"><p class="muted">Revisando pedidos y catálogo…</p></div>
-        </section>
+        <div class="dash-stack">
+          <section class="card" aria-labelledby="goalTitle">
+            <div class="card-head">
+              <div><h2 id="goalTitle">Meta del mes</h2><p id="goalHint">Ventas confirmadas del mes en curso.</p></div>
+              <button class="button small ghost" type="button" id="editGoal"><i data-lucide="target"></i> Meta</button>
+            </div>
+            <div id="goal" class="goal"></div>
+          </section>
+          <section class="card" aria-labelledby="cashTitle">
+            <div class="card-head"><div><h2 id="cashTitle">Cobrado y por cobrar</h2><p>Pedidos del periodo según su pago.</p></div></div>
+            <div id="cash"></div>
+          </section>
+        </div>
       </div>
 
-      <div class="dash-row split">
-        <section class="card">
-          <div class="card-head"><div><h2>Pedidos recientes</h2></div><a href="/pedidos.html">Ver todos</a></div>
+      <div class="dash-row r-split">
+        <section class="card" aria-labelledby="attentionTitle">
+          <div class="card-head"><div><h2 id="attentionTitle">Requiere atención</h2><p>Lo que conviene resolver hoy.</p></div><span class="badge" id="attentionCount" hidden></span></div>
+          <div class="attention" id="attention"></div>
+        </section>
+        <section class="card" aria-labelledby="recentTitle">
+          <div class="card-head"><div><h2 id="recentTitle">Pedidos recientes</h2><p>Los últimos 8, de cualquier fecha.</p></div><a href="/pedidos.html">Ver todos</a></div>
           <div class="table-wrap"><table class="recent">
-            <thead><tr><th>Pedido</th><th>Cliente</th><th>Estado</th><th>Fecha</th><th class="num">Total</th></tr></thead>
-            <tbody id="recent"><tr><td colspan="5" class="muted">Cargando…</td></tr></tbody>
+            <thead><tr><th>Pedido</th><th>Cliente</th><th>Estado</th><th class="num">Total</th><th data-no-export><span class="sr-only">Acciones</span></th></tr></thead>
+            <tbody id="recent"></tbody>
           </table></div>
         </section>
-        <section class="card">
-          <div class="card-head"><div><h2>Salud del catálogo</h2></div><a href="/editor-catalogo.html">Revisar catálogo</a></div>
-          <div id="health"></div>
+      </div>
+
+      <div class="dash-row r-three">
+        <section class="card" aria-labelledby="statusTitle">
+          <div class="card-head"><div><h2 id="statusTitle">Pedidos por estado</h2><p>Todo lo creado en el periodo.</p></div><a href="/pedidos.html">Gestionar</a></div>
+          <div id="status"></div>
+        </section>
+        <section class="card" aria-labelledby="buyersTitle">
+          <div class="card-head"><div><h2 id="buyersTitle">Clientes nuevos y recurrentes</h2><p>Compradores con pedidos en el periodo.</p></div></div>
+          <div id="buyers"></div>
+        </section>
+        <section class="card" aria-labelledby="opsTitle">
+          <div class="card-head"><div><h2 id="opsTitle">Operación</h2><p>Cotizaciones y tiempos del periodo.</p></div></div>
+          <div id="ops"></div>
         </section>
       </div>
 
-      <div class="dash-row half">
-        <section class="card">
-          <div class="card-head"><div><h2>Más vendidos</h2><p>Unidades en pedidos de los últimos 30 días.</p></div><a href="/estadisticas.html">Ver estadísticas</a></div>
+      <div class="dash-row r-three">
+        <section class="card" aria-labelledby="topTitle">
+          <div class="card-head">
+            <div><h2 id="topTitle">Productos más vendidos</h2><p>Pedidos no anulados del periodo.</p></div>
+            <div class="segmented" id="topMetric" role="group" aria-label="Ordenar productos por"><button type="button" data-metric="revenue" class="is-active" aria-pressed="true">Ingresos</button><button type="button" data-metric="units" aria-pressed="false">Unidades</button></div>
+          </div>
           <div class="bars" id="top"></div>
         </section>
-        <section class="card">
-          <div class="card-head"><div><h2>Inventario</h2><p>Stock de los productos controlados.</p></div><a href="/inventario.html">Gestionar</a></div>
-          <div id="inventory"></div>
+        <section class="card" aria-labelledby="catTitle">
+          <div class="card-head">
+            <div><h2 id="catTitle">Categorías</h2><p>Según la categoría actual de cada producto.</p></div>
+            <div class="segmented" id="catMetric" role="group" aria-label="Ordenar categorías por"><button type="button" data-metric="revenue" class="is-active" aria-pressed="true">Ingresos</button><button type="button" data-metric="units" aria-pressed="false">Unidades</button></div>
+          </div>
+          <div class="bars" id="categories"></div>
+        </section>
+        <section class="card" aria-labelledby="marginTitle">
+          <div class="card-head"><div><h2 id="marginTitle">Margen bruto</h2><p>Ventas menos costo de lo vendido, solo productos con costo.</p></div><a href="/estadisticas.html">Detalle</a></div>
+          <div id="margin"></div>
         </section>
       </div>
+
+      <div class="dash-row r-main">
+        <section class="card" aria-labelledby="heatTitle">
+          <div class="card-head"><div><h2 id="heatTitle">¿Cuándo compran?</h2><p id="heatHint">Pedidos por día de la semana y hora (Ecuador).</p></div></div>
+          <div id="heatmap"></div>
+        </section>
+        <section class="card" aria-labelledby="cityTitle">
+          <div class="card-head"><div><h2 id="cityTitle">Ventas por ciudad</h2><p>Valor de pedidos según la dirección de envío.</p></div></div>
+          <div class="bars" id="cities"></div>
+        </section>
+      </div>
+
+      <div class="dash-row r-three">
+        <section class="card" aria-labelledby="invTitle">
+          <div class="card-head"><div><h2 id="invTitle">Inventario</h2><p>Productos con stock controlado.</p></div><a href="/inventario.html">Gestionar</a></div>
+          <div id="inventory"></div>
+        </section>
+        <section class="card" aria-labelledby="idleTitle">
+          <div class="card-head"><div><h2 id="idleTitle">Sin movimiento</h2><p>Productos visibles sin ventas.</p></div></div>
+          <div id="idle"></div>
+        </section>
+        <section class="card" aria-labelledby="customersTitle">
+          <div class="card-head"><div><h2 id="customersTitle">Mejores clientes</h2><p>Por valor de pedidos en el periodo.</p></div><a href="/clientes.html">Clientes</a></div>
+          <div id="customers"></div>
+        </section>
+      </div>
+      <p class="dash-foot muted" id="generated"></p>
     </div>
   </main>
 </body>

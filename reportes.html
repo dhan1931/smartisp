@@ -5,74 +5,85 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SmartISP | Reportes</title>
   <link rel="icon" href="/assets/favicons/favicon.ico">
-  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=admin-brand-20261011">
-  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=20261025">
-  <script src="/assets/vendor/lucide-icons.min.js?v=8707c619" defer></script>
-  <script src="/assets/js/admin/admin-nav.js?v=20261025-a11y" defer></script>
-  <script src="/assets/js/admin/admin-page.js?v=20261025-waf" defer></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <script src="/assets/js/admin/admin-theme.js?v=ds-20261027"></script>
+  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261027">
+  <script src="/assets/vendor/lucide-icons.min.js?v=68df8f2b" defer></script>
+  <script src="/assets/js/admin/admin-nav.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/admin-page.js?v=ds-20261027" defer></script>
   <style>
-    .reports { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-    .report { display: flex; flex-direction: column; gap: 14px; }
-    .report-head { display: flex; gap: 12px; align-items: flex-start; }
-    .report-icon { display: grid; flex: none; place-items: center; width: 40px; height: 40px; border-radius: 8px; background: var(--blue-wash); color: var(--blue-dark); }
-    .report-icon svg { width: 20px; height: 20px; }
-    .report h2 { margin: 0 0 4px; font-size: 16px; }
-    .report p { margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
-    .report-columns { color: var(--muted); font-size: 12px; line-height: 1.5; }
-    .report-columns strong { color: var(--ink); }
-    .range { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-    .range input { height: 38px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); }
-    .report footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line-soft); }
-    .report footer small { color: var(--muted); }
-    .tip { margin-top: 16px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+    .reports { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .report { display: flex; flex-direction: column; gap: 16px; transition: border-color var(--dur), box-shadow var(--dur); }
+    .report:hover { border-color: var(--border-strong); box-shadow: var(--shadow-2); }
+    .report.is-wide { grid-column: 1 / -1; }
+    .report-head { display: flex; gap: 14px; align-items: flex-start; }
+    .report-icon { display: grid; flex: none; place-items: center; width: 44px; height: 44px; border-radius: var(--radius); background: var(--accent-soft); color: var(--accent-text); }
+    .report-icon.green { background: var(--success-soft); color: var(--success); }
+    .report-icon.violet { background: var(--violet-soft); color: var(--violet); }
+    .report-icon.amber { background: var(--warning-soft); color: var(--warning); }
+    .report-icon svg { width: 22px; height: 22px; }
+    .report h2 { margin: 0 0 4px; font-size: 16.5px; }
+    .report p { margin: 0; color: var(--text-3); font-size: 13px; line-height: 1.5; }
+    .report-columns { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+    .report-columns li { padding: 2px 9px; border: 1px solid var(--border-soft); border-radius: var(--radius-pill); background: var(--surface-2); color: var(--text-2); font-size: 12px; }
+    .range { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .range label { display: inline-flex; align-items: center; gap: 6px; color: var(--text-3); font-size: 13px; }
+    .range input { height: 34px; padding: 0 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); }
+    .report footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 14px; border-top: 1px solid var(--border-soft); }
+    .report footer small { color: var(--text-3); }
+    .tip { margin-top: 18px; }
     @media (max-width: 950px) { .reports { grid-template-columns: 1fr; } }
+    @media (max-width: 620px) { .report footer .button { width: 100%; } }
   </style>
 </head>
 <body>
   <div id="smartisp-admin-nav" class="is-loading" data-active="reportes"></div>
   <main class="shell" id="app" hidden>
     <header class="page-head">
-      <div><h1>Reportes</h1><p>Descarga los datos de la tienda en CSV para abrirlos en Excel o Google Sheets.</p></div>
-      <div class="head-actions"><a class="button" href="/estadisticas.html"><i data-lucide="bar-chart-3"></i> Ver estadísticas</a></div>
+      <div><span class="eyebrow"><i data-lucide="file-down" aria-hidden="true"></i> Análisis</span><h1>Reportes</h1><p>Descarga los datos de la tienda en CSV para abrirlos en Excel o Google Sheets.</p></div>
+      <div class="head-actions"><a class="button" href="/estadisticas.html"><i data-lucide="chart-column"></i> Ver estadísticas</a></div>
     </header>
 
     <div class="reports">
-      <section class="card report">
-        <div class="report-head"><span class="report-icon"><i data-lucide="receipt"></i></span><div><h2>Pedidos</h2><p>Cada pedido del periodo con su cliente, dirección, artículos y total. Útil para contabilidad y conciliación de pagos.</p></div></div>
+      <section class="card report is-wide" aria-labelledby="reportOrders">
+        <div class="report-head"><span class="report-icon"><i data-lucide="receipt"></i></span><div><h2 id="reportOrders">Pedidos</h2><p>Cada pedido del periodo con su cliente, dirección, artículos y total. Útil para contabilidad y conciliación de pagos.</p></div></div>
         <div class="range">
           <div class="segmented" id="orderPresets" role="group" aria-label="Periodo de pedidos">
-            <button type="button" data-days="7">7 días</button>
-            <button type="button" data-days="30" class="is-active">30 días</button>
-            <button type="button" data-days="90">90 días</button>
-            <button type="button" data-month="current">Este mes</button>
-            <button type="button" data-month="previous">Mes anterior</button>
+            <button type="button" data-days="7" aria-pressed="false">7 días</button>
+            <button type="button" data-days="30" class="is-active" aria-pressed="true">30 días</button>
+            <button type="button" data-days="90" aria-pressed="false">90 días</button>
+            <button type="button" data-month="current" aria-pressed="false">Este mes</button>
+            <button type="button" data-month="previous" aria-pressed="false">Mes anterior</button>
           </div>
-          <label class="muted">Desde <input type="date" id="ordersFrom"></label>
-          <label class="muted">hasta <input type="date" id="ordersTo"></label>
+          <label>Desde <input type="date" id="ordersFrom"></label>
+          <label>hasta <input type="date" id="ordersTo"></label>
         </div>
-        <div class="report-columns"><strong>Columnas:</strong> pedido, fecha, estado, pago, cliente, correo, teléfono, ciudad, dirección, artículos, unidades, total.</div>
-        <footer><small id="ordersRangeText"></small><button class="button primary" type="button" data-export="orders"><i data-lucide="download"></i> Descargar pedidos</button></footer>
+        <ul class="report-columns" aria-label="Columnas incluidas"><li>Pedido</li><li>Fecha</li><li>Estado</li><li>Pago</li><li>Cliente</li><li>Correo</li><li>Teléfono</li><li>Ciudad</li><li>Dirección</li><li>Artículos</li><li>Unidades</li><li>Total</li></ul>
+        <footer><small id="ordersRangeText" aria-live="polite"></small><button class="button primary" type="button" data-export="orders"><i data-lucide="download"></i> Descargar pedidos</button></footer>
       </section>
 
-      <section class="card report">
-        <div class="report-head"><span class="report-icon"><i data-lucide="package"></i></span><div><h2>Catálogo de productos</h2><p>Todos los productos con SKU, categoría, precio y si están visibles en la tienda.</p></div></div>
-        <div class="report-columns"><strong>Columnas:</strong> ID, SKU, nombre, categoría, subcategoría, precio, visible, imagen.</div>
+      <section class="card report" aria-labelledby="reportProducts">
+        <div class="report-head"><span class="report-icon violet"><i data-lucide="package"></i></span><div><h2 id="reportProducts">Catálogo de productos</h2><p>Todos los productos con SKU, categoría, precio y si están visibles en la tienda.</p></div></div>
+        <ul class="report-columns" aria-label="Columnas incluidas"><li>ID</li><li>SKU</li><li>Nombre</li><li>Categoría</li><li>Subcategoría</li><li>Precio</li><li>Visible</li><li>Imagen</li></ul>
         <footer><small>Estado actual del catálogo</small><button class="button primary" type="button" data-export="products"><i data-lucide="download"></i> Descargar productos</button></footer>
       </section>
 
-      <section class="card report">
-        <div class="report-head"><span class="report-icon"><i data-lucide="users"></i></span><div><h2>Clientes registrados</h2><p>Cuentas de clientes con sus datos de contacto, cantidad de pedidos y valor comprado.</p></div></div>
-        <div class="report-columns"><strong>Columnas:</strong> ID, nombre, apellido, correo, teléfono, registrado, pedidos, valor no anulado, último pedido.</div>
+      <section class="card report" aria-labelledby="reportCustomers">
+        <div class="report-head"><span class="report-icon green"><i data-lucide="users"></i></span><div><h2 id="reportCustomers">Clientes registrados</h2><p>Cuentas de clientes con sus datos de contacto, cantidad de pedidos y valor comprado.</p></div></div>
+        <ul class="report-columns" aria-label="Columnas incluidas"><li>ID</li><li>Nombre</li><li>Apellido</li><li>Correo</li><li>Teléfono</li><li>Registrado</li><li>Pedidos</li><li>Valor no anulado</li><li>Último pedido</li></ul>
         <footer><small>No incluye compradores invitados</small><button class="button primary" type="button" data-export="customers"><i data-lucide="download"></i> Descargar clientes</button></footer>
       </section>
 
-      <section class="card report">
-        <div class="report-head"><span class="report-icon"><i data-lucide="boxes"></i></span><div><h2>Inventario</h2><p>Stock de cada producto: disponible, reservado por pedidos en curso y libre para vender.</p></div></div>
-        <div class="report-columns"><strong>Columnas:</strong> ID, SKU, nombre, categoría, stock controlado, disponible, reservado, libre.</div>
+      <section class="card report is-wide" aria-labelledby="reportInventory">
+        <div class="report-head"><span class="report-icon amber"><i data-lucide="boxes"></i></span><div><h2 id="reportInventory">Inventario</h2><p>Stock de cada producto: disponible, reservado por pedidos en curso y libre para vender.</p></div></div>
+        <ul class="report-columns" aria-label="Columnas incluidas"><li>ID</li><li>SKU</li><li>Nombre</li><li>Categoría</li><li>Stock controlado</li><li>Disponible</li><li>Reservado</li><li>Libre</li></ul>
         <footer><small>Estado actual del inventario</small><button class="button primary" type="button" data-export="inventory"><i data-lucide="download"></i> Descargar inventario</button></footer>
       </section>
     </div>
-    <p class="tip">Los archivos usan punto y coma (;) como separador y codificación UTF-8, el formato que Excel abre directamente con la configuración regional de Ecuador. Contienen datos personales de clientes: guárdalos en un lugar seguro.</p>
+    <p class="callout info tip"><i data-lucide="shield-check"></i><span>Los archivos usan punto y coma (;) como separador y codificación UTF-8, el formato que Excel abre directamente con la configuración regional de Ecuador. Contienen datos personales de clientes: guárdalos en un lugar seguro.</span></p>
   </main>
 
   <script>
@@ -80,6 +91,7 @@
       const { $, download, toast } = SmartAdmin;
       const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       const fmt = value => new Date(value + 'T12:00:00').toLocaleDateString('es-EC', { day: 'numeric', month: 'short', year: 'numeric' });
+      const setPreset = button => $('#orderPresets').querySelectorAll('button').forEach(b => { b.classList.toggle('is-active', b === button); b.setAttribute('aria-pressed', String(b === button)); });
 
       const setRange = (from, to) => {
         $('#ordersFrom').value = iso(from);
@@ -95,7 +107,7 @@
       $('#orderPresets').addEventListener('click', event => {
         const button = event.target.closest('button');
         if (!button) return;
-        $('#orderPresets').querySelectorAll('button').forEach(b => b.classList.toggle('is-active', b === button));
+        setPreset(button);
         if (button.dataset.days) { lastDays(Number(button.dataset.days)); return; }
         const now = new Date();
         const offset = button.dataset.month === 'previous' ? 1 : 0;
@@ -104,7 +116,7 @@
         setRange(from, to);
       });
       ['#ordersFrom', '#ordersTo'].forEach(id => $(id).addEventListener('change', () => {
-        $('#orderPresets').querySelectorAll('button').forEach(b => b.classList.remove('is-active'));
+        setPreset(null);
         updateText();
       }));
 
@@ -117,9 +129,10 @@
           query += `&from=${from}&to=${to}`;
         }
         button.disabled = true;
+        button.classList.add('is-busy');
         try { await download(query); toast('Reporte descargado.'); }
         catch (error) { toast(error.message, true); }
-        finally { button.disabled = false; }
+        finally { button.disabled = false; button.classList.remove('is-busy'); }
       }));
 
       lastDays(30);

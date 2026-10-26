@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Admin-Token');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Admin-Token, Idempotency-Key');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
@@ -73,12 +73,17 @@ if ($earlyAction === 'indexnow-key') {
 define('SMARTISP_SESSION_READONLY', in_array($requestMethod, ['GET', 'HEAD'], true) && $earlyAction !== 'logout');
 
 if (session_status() === PHP_SESSION_NONE) {
+    // Rechaza ids de sesión que el servidor no emitió (fijación de sesión).
+    ini_set('session.use_strict_mode', '1');
     if (!headers_sent()) {
+        // LiteSpeed/Hostinger puede terminar TLS en un proxy y dejar HTTPS vacío.
+        $isHttps = (isset($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) === 'on')
+            || strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
         @session_set_cookie_params([
             'lifetime' => 86400 * 30,
             'path'     => '/',
             'domain'   => '',
-            'secure'   => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
+            'secure'   => $isHttps,
             'httponly' => true,
             'samesite' => 'Lax'
         ]);
@@ -89,6 +94,7 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/lib/shop.php';
 require_once __DIR__ . '/lib/mailer.php';
 require_once __DIR__ . '/lib/roles.php';
+require_once __DIR__ . '/lib/audit.php';
 
 $pdo = getDbConnection();
 
@@ -116,8 +122,13 @@ function smartispRequirePost(): void {
 
 // Sin la migración 038 la columna no existe y la revocación de sesiones queda inactiva.
 function smartispUsersHaveTokenVersion(PDO $pdo): bool {
+    return smartispUsersHaveColumn($pdo, 'token_version');
+}
+
+// active y last_login_at llegan con la migración 044.
+function smartispUsersHaveColumn(PDO $pdo, string $column): bool {
     try {
-        return in_array('token_version', smartispTableColumns($pdo, 'users_rows'), true);
+        return in_array($column, smartispTableColumns($pdo, 'users_rows'), true);
     } catch (Throwable $e) {
         return false;
     }
@@ -260,25 +271,28 @@ function resolveAuthUser(): ?array {
     // La sesión conserva identidad, no permisos: recargar rol y perfil desde la fuente
     // autorizada en cada petición invalida permisos revocados y corrige sesiones antiguas.
     $pdo = getDbConnection();
-    $hasVersion = true;
-    try {
-        $stmt = $pdo->prepare('SELECT id, email, name, surname, phone, role, token_version FROM users_rows WHERE id = :id LIMIT 1');
-        $stmt->execute([':id' => $userId]);
-    } catch (PDOException $e) {
-        // 1054: columna inexistente (migración 038 sin aplicar); se sigue sin revocación.
-        if (($e->errorInfo[1] ?? null) !== 1054) throw $e;
-        $hasVersion = false;
-        $stmt = $pdo->prepare('SELECT id, email, name, surname, phone, role FROM users_rows WHERE id = :id LIMIT 1');
-        $stmt->execute([':id' => $userId]);
+    $hasVersion = false;
+    $freshUser = false;
+    foreach ([', token_version, active', ', token_version', ''] as $extra) {
+        try {
+            $stmt = $pdo->prepare('SELECT id, email, name, surname, phone, role' . $extra . ' FROM users_rows WHERE id = :id LIMIT 1');
+            $stmt->execute([':id' => $userId]);
+            $freshUser = $stmt->fetch(PDO::FETCH_ASSOC);
+            $hasVersion = $extra !== '';
+            break;
+        } catch (PDOException $e) {
+            // 1054: columna inexistente (migraciones 038/044 sin aplicar); se sigue sin revocación o sin estado.
+            if (($e->errorInfo[1] ?? null) !== 1054 || $extra === '') throw $e;
+        }
     }
-    $freshUser = $stmt->fetch(PDO::FETCH_ASSOC);
-    // token_version sube al cambiar o restablecer la contraseña: invalida sesiones y tokens previos.
+    // token_version sube al cambiar o restablecer la contraseña o al cerrar sesiones desde Equipo.
     $currentVersion = (int)($freshUser['token_version'] ?? 0);
-    if (!$freshUser || ($hasVersion && $currentVersion !== $claimedVersion)) {
+    $disabled = $freshUser && isset($freshUser['active']) && (int)$freshUser['active'] === 0;
+    if (!$freshUser || $disabled || ($hasVersion && $currentVersion !== $claimedVersion)) {
         if ($fromSession) unset($_SESSION['user'], $_SESSION['tv']);
         return null;
     }
-    unset($freshUser['token_version']);
+    unset($freshUser['token_version'], $freshUser['active']);
     smartispAuthTokenVersion($currentVersion);
     $freshUser['role'] = smartispNormalizeRole($freshUser['role'] ?? 'customer');
     $_SESSION['user'] = $freshUser;
@@ -361,6 +375,44 @@ if (!$pdo) {
     exit;
 }
 
+// Registro central de actividad: toda escritura hecha por un admin, con el código HTTP final.
+// Login, contraseñas y cierres de sesión los registra auth.php con su propio detalle; las acciones
+// de la tienda (comprar, favoritos, cotizar) no son administración aunque las haga un admin.
+const SMARTISP_AUDIT_SKIP_ACTIONS = ['login', 'logout', 'register', 'change-password', 'change_password', 'reset-password', 'request-password-reset', 'revoke-other-sessions', 'orders', 'customer-wishlist', 'service-quote-requests'];
+if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true) && $action !== '' && !in_array($action, SMARTISP_AUDIT_SKIP_ACTIONS, true)) {
+    $auditQuery = $_GET;
+    $auditBody = is_array($body) ? $body : [];
+    register_shutdown_function(static function () use ($pdo, $action, $method, $auditQuery, $auditBody) {
+        try {
+            $note = smartispAuditNote();
+            if (!empty($note['skip'])) return;
+            $user = getAuthUser();
+            if (!$user || !isAdminUser($user)) return;
+            unset($auditQuery['action'], $auditQuery['route']);
+            smartispAuditWrite($pdo, [
+                'user_id' => $user['id'] ?? null,
+                'user_email' => $user['email'] ?? null,
+                'action' => $action,
+                'method' => $method,
+                'target' => $note['target'] ?? smartispAuditTarget($auditQuery, $auditBody),
+                'summary' => $note['summary'] ?? smartispAuditSummary($auditQuery + $auditBody, $_FILES ?? []),
+                'status' => http_response_code() ?: 200,
+            ]);
+        } catch (Throwable $e) {
+            error_log('SmartISP audit: ' . $e->getMessage());
+        }
+    });
+}
+
+// Los avisos de la barra lateral suman los intentos fallidos de acceso al panel sin tocar insights.php.
+if ($action === 'admin-insights-alerts' && isAdminUser()) {
+    $loginAlerts = smartispAuditLoginAlerts($pdo);
+    ob_start(static function (string $buffer) use ($loginAlerts) {
+        $data = json_decode($buffer, true);
+        return is_array($data) && !isset($data['error']) ? json_encode($data + $loginAlerts) : $buffer;
+    });
+}
+
 if (in_array($action, ['store-campaigns', 'admin-store-campaigns', 'upload-campaign-image'], true)) {
     require __DIR__ . '/handlers/campaigns.php';
 }
@@ -381,7 +433,9 @@ require __DIR__ . '/handlers/customers.php';
 require __DIR__ . '/handlers/quotes.php';
 require __DIR__ . '/handlers/inventory.php';
 require __DIR__ . '/handlers/analytics.php';
+require __DIR__ . '/handlers/insights.php';
 require __DIR__ . '/handlers/auth.php';
+require __DIR__ . '/handlers/team.php';
 
 // Acción no encontrada
 http_response_code(404);

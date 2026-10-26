@@ -47,7 +47,7 @@
     try { return localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken'); } catch (e) { return null; }
   }
 
-  function remember(result) {
+  function rememberToken(result) {
     if (result && result.token) {
       try { localStorage.setItem('smartisp.adminToken', result.token); } catch (e) { /* almacenamiento bloqueado */ }
     }
@@ -96,7 +96,7 @@
       error.status = response.status;
       throw error;
     }
-    remember(result);
+    rememberToken(result);
     return result;
   }
 
@@ -140,6 +140,174 @@
   }
 
   function icons() { if (window.lucide) window.lucide.createIcons(); }
+
+  // ---------- Componentes compartidos (HTML) ----------
+  function state(kind, title, text, icon) {
+    var ico = icon || ({ empty: 'inbox', error: 'circle-alert', search: 'search-x' }[kind] || 'inbox');
+    return '<div class="state' + (kind === 'error' ? ' is-error' : '') + '" role="' + (kind === 'error' ? 'alert' : 'status') + '">' +
+      '<i data-lucide="' + ico + '" aria-hidden="true"></i><strong>' + esc(title) + '</strong>' + (text ? '<span>' + esc(text) + '</span>' : '') + '</div>';
+  }
+
+  function skeletonRows(cols, rows) {
+    var cells = '';
+    for (var c = 0; c < cols; c++) cells += '<td><span class="sk sk-line" style="width:' + (40 + ((c * 37) % 50)) + '%"></span></td>';
+    var out = '';
+    for (var r = 0; r < (rows || 5); r++) out += '<tr aria-hidden="true">' + cells + '</tr>';
+    return out;
+  }
+
+  function pct(now, before) {
+    now = Number(now || 0); before = Number(before || 0);
+    if (!before) return now ? null : 0;
+    return Math.round(((now - before) / before) * 1000) / 10;
+  }
+
+  // Delta coloreado; invert=true cuando subir es malo (cancelaciones).
+  function delta(now, before, opts) {
+    opts = opts || {};
+    var p = pct(now, before);
+    if (p === null) return '<span class="delta up" title="Sin datos en el periodo anterior">Nuevo</span>';
+    if (p === 0) return '<span class="delta" title="Igual que el periodo anterior">= 0%</span>';
+    var good = opts.invert ? p < 0 : p > 0;
+    return '<span class="delta ' + (good ? 'up' : 'down') + '"><i data-lucide="' + (p > 0 ? 'arrow-up-right' : 'arrow-down-right') + '" aria-hidden="true"></i>' +
+      (p > 0 ? '+' : '') + String(Math.abs(p) >= 100 ? Math.round(p) : p).replace('.', ',') + '%<span class="sr-only"> frente al periodo anterior</span></span>';
+  }
+
+  // Fechas de la BD vienen en UTC sin zona: se interpretan como UTC para mostrarlas en hora local.
+  function utc(value) {
+    if (!value) return null;
+    var s = String(value);
+    return parseDate(/[zZ]$|[+-]\d\d:?\d\d$/.test(s) ? s : s.replace(' ', 'T') + 'Z');
+  }
+
+  function relTime(value) {
+    var d = utc(value);
+    if (!d) return '—';
+    var diff = (Date.now() - d.getTime()) / 1000;
+    if (diff < 60) return 'hace un momento';
+    if (diff < 3600) return 'hace ' + Math.round(diff / 60) + ' min';
+    if (diff < 86400) return 'hace ' + Math.round(diff / 3600) + ' h';
+    if (diff < 86400 * 30) { var days = Math.round(diff / 86400); return 'hace ' + days + (days === 1 ? ' día' : ' días'); }
+    return d.toLocaleDateString('es-EC', { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+
+  // ---------- CSV ----------
+  function csvCell(v) {
+    var s = v == null ? '' : String(v);
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+    return /[";\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  // Excel en es-EC abre bien ; como separador y BOM UTF-8 (igual que admin-export).
+  function csv(filename, headers, rows) {
+    var text = '﻿' + [headers].concat(rows).map(function (r) { return r.map(csvCell).join(';'); }).join('\r\n');
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(function () { URL.revokeObjectURL(link.href); link.remove(); }, 1000);
+  }
+
+  function tableCsv(table, filename) {
+    var cols = [];
+    var headers = [];
+    Array.prototype.forEach.call(table.querySelectorAll('thead th'), function (th, i) {
+      if (th.hasAttribute('data-no-export')) return;
+      cols.push(i);
+      headers.push(th.textContent.trim());
+    });
+    var rows = Array.prototype.filter.call(table.querySelectorAll('tbody tr'), function (tr) { return !tr.hasAttribute('aria-hidden') && tr.children.length > 1; })
+      .map(function (tr) { return cols.map(function (i) { var td = tr.children[i]; return td ? (td.getAttribute('data-export') || td.innerText.replace(/\s+/g, ' ').trim()) : ''; }); });
+    if (!rows.length) { toast('No hay filas para exportar.', true); return; }
+    csv(filename || 'smartisp-tabla.csv', headers, rows);
+    toast(rows.length + ' fila' + (rows.length === 1 ? '' : 's') + ' exportada' + (rows.length === 1 ? '' : 's') + '.');
+  }
+
+  // <table data-export="nombre"> recibe un botón "Exportar CSV" con las filas que se ven en pantalla.
+  // data-export-host="id" indica dónde poner el botón (si no, va encima de la tabla).
+  function enhanceTables(root) {
+    (root || document).querySelectorAll('table[data-export]:not([data-export-ready])').forEach(function (table) {
+      table.setAttribute('data-export-ready', '');
+      var host = document.getElementById(table.getAttribute('data-export-host') || '');
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'button small';
+      button.innerHTML = '<i data-lucide="download" aria-hidden="true"></i> Exportar CSV';
+      button.title = 'Descargar en CSV las filas que se ven en pantalla';
+      button.addEventListener('click', function () {
+        tableCsv(table, 'smartisp-' + table.getAttribute('data-export') + '-' + new Date().toISOString().slice(0, 10) + '.csv');
+      });
+      if (host) { host.appendChild(button); return; }
+      var wrap = table.closest('.table-wrap') || table;
+      var bar = document.createElement('div');
+      bar.className = 'table-actions';
+      bar.appendChild(button);
+      wrap.parentNode.insertBefore(bar, wrap);
+    });
+    icons();
+  }
+
+  // ---------- Vistas guardadas / filtros persistentes ----------
+  function remembered(key, fallback) {
+    try { var v = JSON.parse(localStorage.getItem('smartisp.view.' + key) || 'null'); return v == null ? fallback : v; } catch (e) { return fallback; }
+  }
+  function remember(key, value) {
+    try { localStorage.setItem('smartisp.view.' + key, JSON.stringify(value)); } catch (e) { /* almacenamiento bloqueado */ }
+  }
+
+  // ---------- Modal y drawer accesibles ----------
+  function overlay(kind, opts) {
+    var opener = document.activeElement;
+    var el = document.createElement('div');
+    el.className = kind === 'drawer' ? 'sa-drawer' : 'sa-modal';
+    var id = 'sa-' + kind + '-' + Date.now();
+    el.innerHTML = '<section class="panel" role="dialog" aria-modal="true" aria-labelledby="' + id + '">' +
+      '<header class="panel-head"><div><h2 id="' + id + '">' + esc(opts.title || '') + '</h2>' + (opts.subtitle ? '<p>' + esc(opts.subtitle) + '</p>' : '') + '</div>' +
+      '<button type="button" class="icon-button" data-close aria-label="Cerrar"><i data-lucide="x" aria-hidden="true"></i></button></header>' +
+      '<div class="panel-body"></div>' + (opts.actions ? '<footer class="panel-foot"></footer>' : '') + '</section>';
+    var body = el.querySelector('.panel-body');
+    if (typeof opts.body === 'string') body.innerHTML = opts.body; else if (opts.body) body.appendChild(opts.body);
+    var onKey;
+    var close = function (result) {
+      el.remove();
+      document.removeEventListener('keydown', onKey, true);
+      if (opener && opener.focus) opener.focus();
+      if (opts.onClose) opts.onClose(result);
+    };
+    onKey = function (e) {
+      if (e.key === 'Escape') { e.stopPropagation(); close(false); return; }
+      if (e.key !== 'Tab') return;
+      var f = el.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])');
+      if (!f.length) return;
+      var first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    (opts.actions || []).forEach(function (a) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'button' + (a.kind ? ' ' + a.kind : '');
+      b.textContent = a.label;
+      b.addEventListener('click', function () { if (a.onClick && a.onClick(el) === false) return; close(a.value); });
+      el.querySelector('.panel-foot').appendChild(b);
+    });
+    el.addEventListener('mousedown', function (e) { if (e.target === el) close(false); });
+    el.querySelector('[data-close]').addEventListener('click', function () { close(false); });
+    document.addEventListener('keydown', onKey, true);
+    document.body.appendChild(el);
+    icons();
+    (el.querySelector('[autofocus]') || el.querySelector('.panel-foot .primary') || el.querySelector('[data-close]')).focus();
+    return { el: el, body: body, close: close };
+  }
+  function modal(opts) { return overlay('modal', opts); }
+  function drawer(opts) { return overlay('drawer', opts); }
+  function confirmDialog(title, text, okLabel) {
+    return new Promise(function (resolve) {
+      modal({ title: title, body: '<p style="margin:0;color:var(--text-2);line-height:1.5">' + esc(text) + '</p>', onClose: resolve,
+        actions: [{ label: 'Cancelar', value: false }, { label: okLabel || 'Confirmar', kind: 'primary', value: true }] });
+    });
+  }
 
   function isAdmin(user) {
     return !!user && ['admin', 'administrator', 'administrador'].indexOf(String(user.role || '').trim().toLowerCase()) !== -1;
@@ -185,6 +353,7 @@
         app.hidden = false;
         icons();
         await onReady(me.user);
+        enhanceTables();
         icons();
       } catch (error) {
         if (error.status === 401) { goToLogin(); return; }
@@ -198,6 +367,9 @@
 
   window.SmartAdmin = {
     $: $, esc: esc, money: money, compact: compact, number: number, date: date, parseDate: parseDate,
-    api: api, post: post, download: download, toast: toast, icons: icons, boot: boot
+    api: api, post: post, download: download, toast: toast, icons: icons, boot: boot,
+    state: state, skeletonRows: skeletonRows, pct: pct, delta: delta, relTime: relTime, utc: utc,
+    csv: csv, tableCsv: tableCsv, enhanceTables: enhanceTables, remembered: remembered, remember: remember,
+    modal: modal, drawer: drawer, confirm: confirmDialog
   };
 })();

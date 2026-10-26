@@ -18,18 +18,21 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/assets/favicons/favicon-512x512.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
   <link rel="manifest" href="/assets/site.webmanifest">
-  <meta name="theme-color" content="#087ea4">
+  <meta name="theme-color" content="#102A43">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
-  <script src="/assets/vendor/lucide-icons.min.js?v=8707c619"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <script src="/assets/js/admin/admin-theme.js?v=ds-20261027"></script>
+  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/editor-catalogo-page.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/products-admin.css?v=ds-20261027">
+  <script src="/assets/vendor/lucide-icons.min.js?v=68df8f2b"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAI062MaV8sfjQKYVGjOBaZBOA87z+IhZE9DA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <link rel="stylesheet" href="/assets/css/admin/editor-catalogo-page.css?v=20261025">
-<link rel="stylesheet" href="/assets/css/admin/products-admin.css?v=products-v2"></head>
+  <script src="/assets/js/admin/admin-nav.js?v=ds-20261027" defer></script>
+</head>
 <body>
-  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=admin-brand-20261011">
   <div id="smartisp-admin-nav" class="is-loading" data-active="productos"></div>
-  <script src="/assets/js/admin/admin-nav.js?v=20261025-a11y" defer></script>
 
 <!-- Main Content Shell -->
   <main class="main-shell">
@@ -46,23 +49,23 @@
           </div>
         </div>
         <div class="stat-box">
-          <div class="stat-icon-wrap" style="background:#ecfdf5; color:#059669;"><i data-lucide="eye" width="24"></i></div>
+          <div class="stat-icon-wrap tone-ok"><i data-lucide="eye" width="24"></i></div>
           <div>
             <div class="stat-num" id="statProductsVisible">0</div>
             <div class="stat-label">Visibles en Tienda</div>
           </div>
         </div>
         <div class="stat-box">
-          <div class="stat-icon-wrap" style="background:#fef3c7; color:#d97706;"><i data-lucide="image" width="24"></i></div>
+          <div class="stat-icon-wrap tone-warn"><i data-lucide="image" width="24"></i></div>
           <div>
             <div class="stat-num" id="statProductsWithPhoto">0</div>
             <div class="stat-label">Con Fotografía</div>
           </div>
         </div>
         <div class="stat-box">
-          <div class="stat-icon-wrap" style="background:#fef2f2; color:#dc2626;"><i data-lucide="alert-circle" width="24"></i></div>
+          <div class="stat-icon-wrap tone-bad"><i data-lucide="alert-circle" width="24"></i></div>
           <div>
-            <div class="stat-num" id="statProductsWithoutPhoto" style="color:#dc2626;">0</div>
+            <div class="stat-num tone-bad-text" id="statProductsWithoutPhoto">0</div>
             <div class="stat-label">Sin Fotografía</div>
           </div>
         </div>
@@ -75,13 +78,13 @@
             <p class="card-desc">Filtra por familia y categoría, revisa tus productos y edita sus datos. Las familias y categorías se administran en <a href="/categorias.html">Categorías</a>.</p>
           </div>
           <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-            <details><summary class="btn btn-secondary">Más acciones</summary><button type="button" id="btnDeleteAllProducts" class="btn btn-danger" style="background:#fee2e2; color:#b91c1c; border-color:#fca5a5;" title="Eliminar todos los productos subidos en un solo momento">
+            <details><summary class="btn btn-secondary">Más acciones</summary><button type="button" id="btnDeleteAllProducts" class="btn btn-danger" title="Eliminar todos los productos subidos en un solo momento">
               <i data-lucide="trash-2" width="16"></i> Eliminar todos los productos
             </button></details>
             <button type="button" class="btn btn-secondary" onclick="switchTab('tab-importer')">
               <i data-lucide="file-up" width="16"></i> Importar Excel
             </button>
-            <button type="button" id="btnNewProduct" class="btn btn-primary" style="background:#0284c7; font-weight:700; padding:8px 16px; box-shadow:0 3px 10px rgba(2,132,199,0.35);">
+            <button type="button" id="btnNewProduct" class="btn btn-primary">
               <i data-lucide="plus-circle" width="16"></i> Agregar Producto Manual
             </button>
           </div>
@@ -91,7 +94,7 @@
         <div class="filter-bar">
           <div class="search-input-wrap">
             <i data-lucide="search" class="search-icon" width="16"></i>
-            <input type="text" id="productSearchInput" placeholder="Buscar por nombre, SKU, marca, categoría, subcategoría...">
+            <input type="search" id="productSearchInput" placeholder="Buscar por nombre, SKU, marca, categoría, subcategoría..." aria-label="Buscar productos">
           </div>
           <select id="filterFamily" class="filter-select" aria-label="Familia"><option value="all">Todas las familias</option></select>
           <select id="filterMacroCat" class="filter-select" aria-label="Categoría">
@@ -117,26 +120,44 @@
           </select>
         </div>
 
+        <div id="bulkBar" class="bulk-bar" role="region" aria-label="Acciones masivas" hidden>
+          <strong id="bulkCount">0 seleccionados</strong>
+          <button type="button" class="btn btn-secondary btn-sm" id="bulkSelectFiltered" hidden>Seleccionar los filtrados</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="bulkClear">Quitar selección</button>
+          <span class="bulk-sep" aria-hidden="true"></span>
+          <button type="button" class="btn btn-secondary btn-sm" data-bulk="hide"><i data-lucide="eye-off" width="14"></i> Ocultar</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-bulk="show"><i data-lucide="eye" width="14"></i> Mostrar</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-bulk="category"><i data-lucide="folder-input" width="14"></i> Cambiar categoría</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-bulk="price"><i data-lucide="percent" width="14"></i> Ajustar precio</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-bulk="track-on"><i data-lucide="boxes" width="14"></i> Controlar stock</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-bulk="track-off">Quitar control de stock</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-bulk="csv"><i data-lucide="download" width="14"></i> Exportar CSV</button>
+        </div>
+
         <!-- Table View -->
         <div class="data-table-wrap">
           <table class="data-table">
             <thead>
               <tr>
+                <th class="product-select-head"><input type="checkbox" id="selectPageProducts" aria-label="Seleccionar los productos de esta página"></th>
                 <th style="width:60px;">Foto</th>
                 <th>Producto & SKU</th>
                 <th>Categoría</th>
                 <th>Subcategoría</th>
                 <th>Precio Tienda</th>
+                <th>Stock</th>
                 <th style="text-align:center; width:80px;">Visible</th>
                 <th style="text-align:right; width:150px;">Acciones</th>
               </tr>
             </thead>
             <tbody id="productsTableBody">
-              <!-- Dynamically populated -->
+              <tr aria-hidden="true"><td><span class="sk sk-line" style="width:24%"></span></td><td><span class="sk" style="width:44px;height:44px"></span></td><td><span class="sk sk-line" style="width:80%"></span><span class="sk sk-line" style="width:40%"></span></td><td><span class="sk sk-line" style="width:70%"></span></td><td><span class="sk sk-line" style="width:60%"></span></td><td><span class="sk sk-line" style="width:50%"></span></td><td><span class="sk sk-line" style="width:40%"></span></td><td><span class="sk sk-line" style="width:40%"></span></td><td><span class="sk sk-line" style="width:70%"></span></td></tr>
+              <tr aria-hidden="true"><td><span class="sk sk-line" style="width:24%"></span></td><td><span class="sk" style="width:44px;height:44px"></span></td><td><span class="sk sk-line" style="width:70%"></span><span class="sk sk-line" style="width:35%"></span></td><td><span class="sk sk-line" style="width:60%"></span></td><td><span class="sk sk-line" style="width:50%"></span></td><td><span class="sk sk-line" style="width:45%"></span></td><td><span class="sk sk-line" style="width:40%"></span></td><td><span class="sk sk-line" style="width:40%"></span></td><td><span class="sk sk-line" style="width:70%"></span></td></tr>
+              <tr aria-hidden="true"><td><span class="sk sk-line" style="width:24%"></span></td><td><span class="sk" style="width:44px;height:44px"></span></td><td><span class="sk sk-line" style="width:75%"></span><span class="sk sk-line" style="width:45%"></span></td><td><span class="sk sk-line" style="width:65%"></span></td><td><span class="sk sk-line" style="width:55%"></span></td><td><span class="sk sk-line" style="width:50%"></span></td><td><span class="sk sk-line" style="width:40%"></span></td><td><span class="sk sk-line" style="width:40%"></span></td><td><span class="sk sk-line" style="width:70%"></span></td></tr>
             </tbody>
           </table>
         </div>
-        <div id="productsPager" style="display:flex; align-items:center; justify-content:center; gap:14px; padding:16px 0; font-size:13px; color:var(--muted);"></div>
+        <div id="productsPager" class="catalog-pager"></div>
       </div>
     </section>
 
@@ -180,16 +201,16 @@
             <span id="importFileStats" style="font-size:12.5px; color:var(--muted);"></span>
           </div>
           <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-            <div style="display:flex; align-items:center; gap:6px; background:#e8f4f8; padding:5px 12px; border-radius:8px; border:1px solid #cde5eb;">
+            <div class="import-margin-box">
               <label for="importPriceMargin" style="font-size:12px; font-weight:700; color:var(--blue); margin:0; display:inline-flex; align-items:center; gap:5px;"><i data-lucide="trending-up" width="14"></i> Margen de Ganancia:</label>
-              <input type="number" id="importPriceMargin" value="30" min="0" max="500" step="1" style="width:52px; padding:3px 6px; font-size:12px; font-weight:700; text-align:center; border:1px solid #90caf9; border-radius:4px; color:var(--blue);">
+              <input type="number" id="importPriceMargin" value="30" min="0" max="500" step="1" class="import-margin-input">
               <span style="font-size:12px; font-weight:700; color:var(--blue);">%</span>
               <span style="font-size:11px; color:var(--muted);">(Y + 30%)</span>
             </div>
             <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('excelFileInput').click()">
               <i data-lucide="plus" width="14"></i> Agregar más archivos
             </button>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="resetImportFile()" style="color:#ef4444; border-color:#fca5a5;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="resetImportFile()" data-tone="danger">
               <i data-lucide="trash-2" width="14"></i> Vaciar todo
             </button>
           </div>
@@ -200,13 +221,13 @@
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
             <span style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:5px;"><i data-lucide="folder" width="13"></i> Archivos en esta sesión (haz clic para ajustar columnas):</span>
           </div>
-          <div id="importFilesChipsContainer" style="display:flex; gap:8px; flex-wrap:wrap; padding:10px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; min-height:46px; align-items:center;">
+          <div id="importFilesChipsContainer" class="import-chips-box">
             <!-- Rendered dynamically -->
           </div>
         </div>
 
         <!-- Column Mapping Configuration -->
-        <div style="background:#f1f7f9; border:1px solid #cbe0e7; border-radius:10px; padding:16px; margin-bottom:18px;">
+        <div class="import-mapping-box">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
             <div>
               <strong style="font-size:13.5px; color:var(--navy); display:inline-flex; align-items:center; gap:6px;"><i data-lucide="settings-2" width="15"></i> Asignación Inteligente de Columnas: <span id="activeFileNameLabel" style="color:var(--blue);"></span></strong>
@@ -228,8 +249,12 @@
               <select id="mapColPrice" class="filter-select" style="width:100%;"></select>
             </div>
             <div>
+              <label class="form-label" style="margin-bottom:3px;" for="mapColCost">Costo de compra (opcional):</label>
+              <select id="mapColCost" class="filter-select" style="width:100%;"></select>
+            </div>
+            <div>
               <label class="form-label" style="margin-bottom:3px;">Categoría en Excel (Detectar Afinidad):</label>
-              <select id="mapColCategory" class="filter-select" style="width:100%; border-color:#059669; font-weight:600;"></select>
+              <select id="mapColCategory" class="filter-select" style="width:100%; border-color:var(--success); font-weight:600;"></select>
             </div>
             <div>
               <label class="form-label" style="margin-bottom:3px;">SKU / Código / Ref:</label>
@@ -274,7 +299,7 @@
         </div>
 
         <!-- Additional Options & Import Action -->
-        <div style="background:#eef8f8; border:1px solid #c9e8e3; border-radius:8px; padding:12px 16px; margin-bottom:16px;">
+        <div class="import-option-box">
           <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; cursor:pointer; margin:0;">
             <input type="checkbox" id="chkAutoFetchImages" style="width:17px; height:17px; accent-color:var(--blue);">
             <span style="display:inline-flex; align-items:center; gap:6px;"><i data-lucide="globe" width="14"></i> Buscar fotografías nítidas automáticamente en internet para artículos sin imagen (opcional)</span>
@@ -334,13 +359,20 @@
             </div>
             <div style="position:relative;">
               <input type="number" id="prodPriceInput" class="form-control" step="0.01" min="0" placeholder="0.00" required>
-              <div id="quotePriceBadge" style="display:none; position:absolute; inset:0; background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:0 12px; align-items:center; color:#0369a1; font-size:12.5px; font-weight:700; gap:6px; cursor:pointer;" onclick="document.getElementById('chkQuotePrice').click()" title="Clic para volver a ingresar un precio">
+              <div id="quotePriceBadge" style="display:none; position:absolute; inset:0; background:var(--accent-soft); border:1px solid var(--border); border-radius:8px; padding:0 12px; align-items:center; color:var(--accent-text); font-size:12.5px; font-weight:700; gap:6px; cursor:pointer;" onclick="document.getElementById('chkQuotePrice').click()" title="Clic para volver a ingresar un precio">
                 <i data-lucide="file-text" width="15"></i> Sin precio · Solicitar cotización ($0)
               </div>
             </div>
             <span style="font-size:11px; color:var(--muted); margin-top:3px; display:block;">
               Marca "Solicitar cotización" para productos sin precio fijo en tienda.
             </span>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="prodCostInput">Costo de compra (USD, opcional):</label>
+            <input type="number" id="prodCostInput" class="form-control" step="0.01" min="0" placeholder="Sin costo">
+            <span id="prodMarginHint" style="font-size:11px; color:var(--muted); margin-top:3px; display:block;">Solo se ve en el panel: sirve para calcular tu margen. Nunca se muestra en la tienda.</span>
           </div>
         </div>
         <div class="form-row">
@@ -360,7 +392,7 @@
           <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
             <div style="position:relative; display:inline-block;">
               <img id="prodImagePreview" src="" alt="" class="prod-thumb-img" style="width:58px; height:58px; display:none;">
-              <button type="button" id="btnRemoveProdImage" style="display:none; position:absolute; top:-6px; right:-6px; background:#dc2626; color:#fff; border:none; border-radius:50%; width:20px; height:20px; font-size:11px; cursor:pointer; align-items:center; justify-content:center; box-shadow:0 2px 4px rgba(0,0,0,0.25);" title="Quitar fotografía">✕</button>
+              <button type="button" id="btnRemoveProdImage" style="display:none; position:absolute; top:-6px; right:-6px; background:var(--danger); color:var(--on-danger); border:none; border-radius:50%; width:20px; height:20px; font-size:11px; cursor:pointer; align-items:center; justify-content:center; box-shadow:0 2px 4px rgba(0,0,0,0.25);" title="Quitar fotografía">✕</button>
             </div>
             <input type="text" id="prodImageUrlInput" class="form-control" placeholder="https://ejemplo.com/foto.jpg o sube un archivo local" style="flex:1; min-width:200px;">
             <input type="file" id="prodLocalFileInput" accept="image/*" style="display:none;">
@@ -412,7 +444,7 @@
           </label>
         </div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; border-top:1px solid var(--line); padding-top:16px;">
-          <button type="button" class="btn btn-danger btn-sm" id="btnModalDeleteProduct" style="display:none; background:#fee2e2; color:#b91c1c; border-color:#fca5a5;" title="Eliminar definitivamente este producto">
+          <button type="button" class="btn btn-danger btn-sm" id="btnModalDeleteProduct" style="display:none;" title="Eliminar definitivamente este producto">
             <i data-lucide="trash-2" width="14"></i> Eliminar este producto
           </button>
           <div style="display:flex; gap:8px; margin-left:auto;">
@@ -429,22 +461,22 @@
   <!-- MODAL: CONFIRMAR ELIMINAR TODOS LOS PRODUCTOS -->
   <div class="modal-overlay" id="deleteAllModal">
     <div class="modal-dialog" style="max-width:480px; text-align:center;" role="alertdialog" aria-modal="true" aria-label="Eliminar todos los productos">
-      <div style="width:64px; height:64px; border-radius:50%; background:#fee2e2; color:#dc2626; display:flex; align-items:center; justify-content:center; margin:0 auto 16px auto;">
+      <div style="width:64px; height:64px; border-radius:50%; background:var(--danger-soft); color:var(--danger); display:flex; align-items:center; justify-content:center; margin:0 auto 16px auto;">
         <i data-lucide="alert-triangle" width="34" height="34"></i>
       </div>
-      <h3 class="modal-title" style="margin-bottom:8px; color:#991b1b;">¿Eliminar TODOS los productos?</h3>
-      <p style="font-size:13.5px; color:#475569; line-height:1.5; margin-bottom:16px;">
-        Estás a punto de borrar los <strong id="deleteAllCountText" style="color:#b91c1c;">0</strong> productos registrados en la tienda.
+      <h3 class="modal-title" style="margin-bottom:8px; color:var(--danger);">¿Eliminar TODOS los productos?</h3>
+      <p style="font-size:13.5px; color:var(--text-2); line-height:1.5; margin-bottom:16px;">
+        Estás a punto de borrar los <strong id="deleteAllCountText" style="color:var(--danger);">0</strong> productos registrados en la tienda.
       </p>
-      <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:12px; margin-bottom:20px; text-align:left;">
-        <div style="color:#991b1b; font-size:12.5px; font-weight:600; display:flex; gap:6px; align-items:flex-start;">
+      <div style="background:var(--danger-soft); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:20px; text-align:left;">
+        <div style="color:var(--danger); font-size:12.5px; font-weight:600; display:flex; gap:6px; align-items:flex-start;">
           <i data-lucide="triangle-alert" width="16" style="flex-shrink:0;"></i>
           <span>Esta acción vaciará el catálogo de productos por completo en un solo momento. No se puede deshacer. Las categorías y subcategorías configuradas se mantendrán.</span>
         </div>
       </div>
       <div style="display:flex; justify-content:center; gap:10px;">
         <button type="button" class="btn btn-secondary" onclick="closeModal('deleteAllModal')">Cancelar</button>
-        <button type="button" id="btnConfirmDeleteAll" class="btn btn-danger" style="background:#dc2626; color:#fff; border-color:#b91c1c;">
+        <button type="button" id="btnConfirmDeleteAll" class="btn btn-danger is-solid">
           <i data-lucide="trash-2" width="15"></i> Sí, vaciar y eliminar todos
         </button>
       </div>
@@ -482,8 +514,9 @@
     <span id="toastText">Operación realizada</span>
   </div>
 
-  <!-- Main Application Script -->
-  <script src="/assets/js/admin/editor-catalogo-page.js?v=20261025" defer></script>
-<script src="/assets/js/admin/products-layout.js?v=products-v2"></script></body>
+  <script src="/assets/js/admin/admin-page.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/editor-catalogo-page.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/products-layout.js?v=ds-20261027"></script>
+</body>
 </html>
 

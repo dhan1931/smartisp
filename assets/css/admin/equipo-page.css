@@ -1,0 +1,31 @@
+/* Equipo (equipo.html). Base: admin-page.css. */
+.team-card{padding:0;overflow:hidden}
+.member{display:flex;align-items:center;gap:12px;min-width:220px}
+.member-avatar{display:grid;flex:none;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--accent-soft);color:var(--accent-text);font-weight:700}
+.member-name{display:flex;align-items:center;gap:6px;font-weight:700}
+.member-email{display:block;margin-top:2px;color:var(--text-3);font-size:12.5px;text-decoration:none;overflow-wrap:anywhere}.member-email:hover{color:var(--accent-text);text-decoration:underline}
+tr.is-inactive .member-name,tr.is-inactive .member-avatar{opacity:.6}
+.row-actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+.team-help{margin:14px 2px 0;color:var(--text-3);font-size:12.5px;line-height:1.55}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.form-row .field,.form-row .select{width:100%}
+.access-mode{margin:0;padding:0;border:0}.access-mode legend{margin-bottom:6px;color:var(--text-2);font-size:13px;font-weight:600}
+.access-mode label{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer}
+.access-mode label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.access-mode input{margin-top:3px}.access-mode strong{display:block;font-size:13px}.access-mode small{display:block;color:var(--text-3);font-size:12px}
+.team-modal-text{margin:0 0 12px;color:var(--text-2);line-height:1.5}
+.temp-password{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:12px 14px;border:1px dashed var(--border-strong);border-radius:var(--radius-sm);background:var(--surface-2)}
+.temp-password code{flex:1;font-size:18px;font-weight:700;letter-spacing:.04em;overflow-wrap:anywhere;user-select:all}
+@media(max-width:950px){#tableWrap table{min-width:900px}}
+@media(max-width:720px){
+  #tableWrap table{min-width:0}
+  #tableWrap table thead{display:none}
+  #tableWrap table tr{display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:12px 14px;border-bottom:1px solid var(--border-soft)}
+  #tableWrap table td{display:block;padding:0;border:0}
+  #tableWrap table td[data-label]::before{content:attr(data-label) ' ';color:var(--text-3);font-size:11.5px}
+  #tableWrap table td:first-child,#tableWrap table td.actions{grid-column:1/-1}
+  .row-actions{justify-content:flex-start}
+  .member{min-width:0}
+  .toolbar .segmented{width:100%}.toolbar .segmented button{flex:1}
+  .form-grid{grid-template-columns:1fr}
+}

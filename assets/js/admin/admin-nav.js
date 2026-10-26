@@ -1,120 +1,487 @@
 /**
- * Sidebar compartido del área de administración (DEV-20261005-012/037-039 maqueta inicial;
- * DEV-20261006-010 lo convierte de navbar horizontal a sidebar fijo, por grupos, a partir del
- * mockup de referencia de la épica "Dashboard tipo SaaS").
- * Reemplaza los botones sueltos repetidos en cada página del panel por un solo componente, con
- * un único origen de verdad para la sesión: /api/auth/me (cookie de sesión del backend), no el
- * token en localStorage.
+ * Barra lateral del panel: grupos con íconos, colapsable, avisos con conteos, buscador global
+ * (Ctrl+K) y preferencias de tema y densidad. La sesión sale de /api/auth/me.
  *
  * Uso: <div id="smartisp-admin-nav" class="is-loading" data-active="productos"></div>
- *      <link rel="stylesheet" href="/assets/css/admin/admin-nav.css">
- *      <script src="/assets/js/admin/admin-nav.js" defer></script>
- *
- * Agregar una opción nueva al menú = agregar una entrada a LINKS (o un grupo nuevo a GROUPS).
- * Nada más que tocar: ninguna página individual define su propio menú.
+ *      admin-theme.js (sin defer, en <head>) + admin-nav.css + admin-nav.js (defer).
+ * Una pantalla nueva = una entrada en LINKS.
  */
 (function () {
   'use strict';
 
-  // Grupos en el orden en que se muestran. 'key' no se renderiza; agrupa LINKS por su campo 'group'.
-  // Estructura alineada a la epica "Dashboard tipo SaaS" (mockup de referencia): Productos,
-  // Categorias e Inventario son conceptos separados, no una sola pantalla de "Catalogo".
   var GROUPS = [
     { key: 'general', label: null },
     { key: 'operacion', label: 'Operación' },
     { key: 'catalogo', label: 'Catálogo' },
     { key: 'tienda', label: 'Tienda' },
     { key: 'analisis', label: 'Análisis' },
-    { key: 'sistema', label: 'Sistema' }
+    { key: 'sistema', label: 'Sistema' },
+    { key: 'administracion', label: 'Administración' }
   ];
 
-  // Los 'disabled: true' son pantallas del mockup que todavia no existen (sin pagina real
-  // detras): se muestran para comunicar la estructura objetivo, pero no son un link muerto --
-  // admin-nav.css les quita el click (pointer-events: none) y las atenua visualmente.
   var LINKS = [
-    { key: 'inicio', group: 'general', href: '/admin.html', label: 'Inicio', icon: 'home' },
-    { key: 'pedidos', group: 'operacion', href: '/pedidos.html', label: 'Pedidos', icon: 'receipt' },
-    { key: 'cotizaciones', group: 'operacion', href: '/cotizaciones.html', label: 'Cotizaciones', icon: 'file-text' },
-    { key: 'clientes', group: 'operacion', href: '/clientes.html', label: 'Clientes', icon: 'users' },
-    { key: 'productos', group: 'catalogo', href: '/editor-catalogo.html', label: 'Productos', icon: 'package' },
-    { key: 'categorias', group: 'catalogo', href: '/categorias.html', label: 'Categorías', icon: 'folder' },
-    { key: 'inventario', group: 'catalogo', href: '/inventario.html', label: 'Inventario', icon: 'boxes' },
-    { key: 'contenido', group: 'tienda', href: '/editor-landing.html', label: 'Contenido', icon: 'layout-template' },
-    { key: 'portada', group: 'tienda', href: '/portada.html', label: 'Portada', icon: 'layout-dashboard' },
-    { key: 'campanas', group: 'tienda', href: '/campanas.html', label: 'Campañas y banners', icon: 'megaphone' },
-    { key: 'estadisticas', group: 'analisis', href: '/estadisticas.html', label: 'Estadísticas', icon: 'bar-chart-3' },
-    { key: 'reportes', group: 'analisis', href: '/reportes.html', label: 'Reportes', icon: 'file-down' },
-    { key: 'config', group: 'sistema', href: '/configuracion.html', label: 'Configuración', icon: 'settings' }
+    { key: 'inicio', group: 'general', href: '/admin.html', label: 'Inicio', icon: 'layout-dashboard', hint: 'Resumen y alertas', shortcut: 'i' },
+    { key: 'pedidos', group: 'operacion', href: '/pedidos.html', label: 'Pedidos', icon: 'receipt', hint: 'Estados, pagos y envíos', shortcut: 'p', badge: 'orders' },
+    { key: 'cotizaciones', group: 'operacion', href: '/cotizaciones.html', label: 'Cotizaciones', icon: 'file-text', hint: 'Solicitudes de servicios', shortcut: 'q', badge: 'quotes' },
+    { key: 'clientes', group: 'operacion', href: '/clientes.html', label: 'Clientes', icon: 'users', hint: 'Cuentas y compradores', shortcut: 'c' },
+    { key: 'productos', group: 'catalogo', href: '/editor-catalogo.html', label: 'Productos', icon: 'package', hint: 'Catálogo, precios e importación', shortcut: 'r' },
+    { key: 'categorias', group: 'catalogo', href: '/categorias.html', label: 'Categorías', icon: 'folder-tree', hint: 'Familias y categorías' },
+    { key: 'inventario', group: 'catalogo', href: '/inventario.html', label: 'Inventario', icon: 'boxes', hint: 'Stock y reservas', shortcut: 'n', badge: 'stock' },
+    { key: 'contenido', group: 'tienda', href: '/editor-landing.html', label: 'Contenido', icon: 'layout-template', hint: 'Página de presentación' },
+    { key: 'portada', group: 'tienda', href: '/portada.html', label: 'Portada', icon: 'panels-top-left', hint: 'Selección comercial de la tienda' },
+    { key: 'campanas', group: 'tienda', href: '/campanas.html', label: 'Campañas y banners', icon: 'megaphone', hint: 'Banners y promociones' },
+    { key: 'estadisticas', group: 'analisis', href: '/estadisticas.html', label: 'Estadísticas', icon: 'chart-column', hint: 'Ventas, clientes y productos', shortcut: 'e' },
+    { key: 'reportes', group: 'analisis', href: '/reportes.html', label: 'Reportes', icon: 'file-down', hint: 'Exportaciones CSV' },
+    { key: 'config', group: 'sistema', href: '/configuracion.html', label: 'Configuración', icon: 'settings', hint: 'Marca, correo y visibilidad' },
+    { key: 'equipo', group: 'administracion', href: '/equipo.html', label: 'Equipo', icon: 'users-round', hint: 'Cuentas del panel, roles y sesiones', fullAdmin: true },
+    { key: 'actividad', group: 'administracion', href: '/actividad.html', label: 'Actividad', icon: 'history', hint: 'Registro de cambios y accesos del equipo', shortcut: 'a', fullAdmin: true }
   ];
 
-  function escapeHtml(value) {
+  var ACTIONS = [
+    { label: 'Nuevo producto', icon: 'package-plus', href: '/editor-catalogo.html?tab=tab-products&new=1', hint: 'Catálogo' },
+    { label: 'Pedidos pendientes de pago', icon: 'credit-card', href: '/pedidos.html?status=pending', hint: 'Pedidos' },
+    { label: 'Productos agotados', icon: 'package-x', href: '/inventario.html?filter=out', hint: 'Inventario' },
+    { label: 'Productos con stock bajo', icon: 'triangle-alert', href: '/inventario.html?filter=low', hint: 'Inventario' },
+    { label: 'Productos sin foto', icon: 'image-off', href: '/editor-catalogo.html?photo=without_photo', hint: 'Catálogo' },
+    { label: 'Exportar pedidos (CSV)', icon: 'file-spreadsheet', href: '/reportes.html', hint: 'Reportes' },
+    { label: 'Ver la tienda', icon: 'external-link', href: '/tienda.html', hint: 'Sitio público', external: true },
+    { label: 'Mi cuenta: nombre, contraseña y sesiones', icon: 'user-cog', run: function () { openAccount(); }, hint: 'Cuenta' },
+    { label: 'Crear cuenta de equipo', icon: 'user-plus', href: '/equipo.html?new=1', hint: 'Equipo', fullAdmin: true },
+    { label: 'Accesos fallidos al panel', icon: 'shield-alert', href: '/actividad.html?act=login-failed', hint: 'Actividad', fullAdmin: true },
+    { label: 'Cambiar tema claro/oscuro', icon: 'sun-moon', run: function () { cycleTheme(); }, hint: 'Preferencias' },
+    { label: 'Alternar tablas compactas', icon: 'rows-3', run: function () { toggleDensity(); }, hint: 'Preferencias' }
+  ];
+
+  var STATUS_LABEL = { quote_requested: 'Cotización', pending: 'Pendiente de pago', paid: 'Pago confirmado', preparing: 'Preparando', shipped: 'Enviado', delivered: 'Entregado', cancelled: 'Cancelado', received: 'Recibido' };
+  var ADMIN_ROLES = ['admin', 'administrator', 'administrador'];
+  // Equipo y Actividad: solo admin pleno (el servidor lo vuelve a exigir en cada acción).
+  var FULL_ADMIN_ROLES = ['admin'];
+  var currentUser = null;
+  var prefs = window.SmartPrefs || { setCollapsed: function () {}, collapsed: function () { return false; }, theme: function () { return 'auto'; }, setTheme: function () {}, density: function () { return 'comfortable'; }, setDensity: function () {}, locked: function () { return false; } };
+
+  function esc(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
     });
   }
+  function icons() { if (window.lucide) window.lucide.createIcons(); }
+  function token() { try { return localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken'); } catch (e) { return null; } }
+  function authHeaders() { var t = token(); return t ? { Authorization: 'Bearer ' + t, 'X-Admin-Token': t } : {}; }
+  function getJson(action) {
+    return fetch('/api/router.php?action=' + action, { credentials: 'include', cache: 'no-store', headers: authHeaders() })
+      .then(function (r) { if (!r.ok) throw new Error(String(r.status)); return r.json(); });
+  }
+  var isMac = /Mac|iPhone|iPad/.test(navigator.platform || '');
+  var money = function (v) { return '$' + Number(v || 0).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
 
-  function buildLinkHtml(link, activeKey) {
-    var classes = [];
-    if (link.key === activeKey) classes.push('is-active');
-    if (link.disabled) classes.push('is-disabled');
-    var titleAttr = ' title="' + escapeHtml(link.title || link.label) + '"';
-    var currentAttr = link.key === activeKey ? ' aria-current="page"' : '';
-    return '<a href="' + link.href + '" class="' + classes.join(' ') + '"' + titleAttr + currentAttr + '>' +
-      '<i data-lucide="' + link.icon + '" aria-hidden="true"></i><span class="label">' + escapeHtml(link.label) + '</span></a>';
+  function linkHtml(link, activeKey) {
+    var active = link.key === activeKey;
+    return '<a href="' + link.href + '" class="admin-nav-link' + (active ? ' is-active' : '') + '" data-key="' + link.key + '"' + (active ? ' aria-current="page"' : '') + ' data-tip="' + esc(link.label) + '">' +
+      '<i data-lucide="' + link.icon + '" aria-hidden="true"></i><span class="label">' + esc(link.label) + '</span>' +
+      (link.badge ? '<span class="admin-nav-badge" data-badge="' + link.badge + '" hidden></span>' : '') + '</a>';
   }
 
-  function buildGroupsHtml(activeKey) {
+  function isFullAdmin() { return !!currentUser && FULL_ADMIN_ROLES.indexOf(String(currentUser.role || '').toLowerCase()) !== -1; }
+  function allowed(item) { return !item.fullAdmin || isFullAdmin(); }
+
+  function groupsHtml(activeKey) {
     return GROUPS.map(function (group) {
-      var links = LINKS.filter(function (l) { return l.group === group.key; });
+      var links = LINKS.filter(function (l) { return l.group === group.key && allowed(l); });
       if (!links.length) return '';
-      var heading = group.label ? '<div class="admin-nav-group-label">' + escapeHtml(group.label) + '</div>' : '';
-      return '<div class="admin-nav-group">' + heading + links.map(function (l) { return buildLinkHtml(l, activeKey); }).join('') + '</div>';
+      return '<div class="admin-nav-group">' + (group.label ? '<div class="admin-nav-group-label">' + esc(group.label) + '</div>' : '') +
+        links.map(function (l) { return linkHtml(l, activeKey); }).join('') + '</div>';
     }).join('');
   }
 
-  function loadConfiguredLogo(root) {
-    fetch('/api/auth/site-content', { credentials: 'include', cache: 'no-store' })
-      .then(function (response) { return response.ok ? response.json() : null; })
-      .then(function (data) {
-        if (!data || !Array.isArray(data.content)) return;
-        var content = Object.fromEntries(data.content.map(function (item) { return [item.key, item.value]; }));
-        var logo = root.querySelector('.admin-nav-logo');
-        if (!logo) return;
-
-        var mode = content.logo_type || content.landing_logo_type || 'image';
-        var brand = content.landing_logo_text || content.brand_name || content.logo_text || 'SmartISP';
-        var image = content.logo_image || content.landing_logo_image || '/assets/img/logo-default.jpg';
-        if (/\/assets\/img\/logo\.(png|webp)(\?|$)/.test(image)) image = '/assets/img/logo-default.jpg';
-        var height = parseInt(content.landing_logo_height || content.logo_height, 10) || 38;
-        logo.replaceChildren();
-        if (mode === 'image' && image) {
-          var img = document.createElement('img');
-          img.src = image;
-          img.alt = brand;
-          img.width = 300;
-          img.height = 100;
-          img.style.height = height + 'px';
-          logo.appendChild(img);
-          return;
-        }
-
-        var text = content.landing_logo_text || content.logo_text || brand;
-        var value = String(text || 'SmartISP').trim() || 'SmartISP';
-        var splitAt = Math.ceil(value.length / 2);
-        logo.appendChild(document.createTextNode(value.slice(0, splitAt)));
-        var bold = document.createElement('b');
-        bold.textContent = value.slice(splitAt);
-        logo.appendChild(bold);
-        var dot = document.createElement('span');
-        dot.className = 'admin-nav-logo-dot';
-        dot.textContent = '.';
-        logo.appendChild(dot);
-      })
-      .catch(function () { /* Se conserva el nombre de marca de respaldo. */ });
+  function themeMeta() {
+    var t = prefs.theme();
+    if (t === 'dark') return { icon: 'moon', label: 'Tema: oscuro' };
+    if (t === 'light') return { icon: 'sun', label: 'Tema: claro' };
+    return { icon: 'sun-moon', label: 'Tema: sistema' };
   }
 
-  // render() puede volver a correr (Reintentar): el fondo y los listeners de document se crean una sola vez
-  // y apuntan al menú vigente.
+  function cycleTheme() {
+    if (prefs.locked()) { notify('Esta pantalla usa siempre el tema claro (previsualiza la tienda).'); }
+    var order = ['auto', 'light', 'dark'];
+    var next = order[(order.indexOf(prefs.theme()) + 1) % order.length];
+    prefs.setTheme(next);
+    var m = themeMeta();
+    document.querySelectorAll('[data-nav-theme]').forEach(function (b) {
+      b.innerHTML = '<i data-lucide="' + m.icon + '" aria-hidden="true"></i><span>' + m.label + '</span>';
+      b.setAttribute('aria-label', m.label + '. Cambiar tema');
+    });
+    icons();
+  }
+
+  function toggleDensity() {
+    var next = prefs.density() === 'compact' ? 'comfortable' : 'compact';
+    prefs.setDensity(next);
+    document.querySelectorAll('[data-nav-density]').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(next === 'compact'));
+      b.querySelector('span').textContent = next === 'compact' ? 'Tablas: compactas' : 'Tablas: cómodas';
+    });
+    notify(next === 'compact' ? 'Tablas compactas activadas.' : 'Tablas cómodas activadas.');
+  }
+
+  function notify(message) {
+    if (window.SmartAdmin && window.SmartAdmin.toast) { window.SmartAdmin.toast(message); return; }
+    var el = document.getElementById('admin-nav-live');
+    if (el) el.textContent = message;
+  }
+
+  // ---------- Avisos (conteos de la barra lateral) ----------
+  var ALERTS_KEY = 'smartisp.adminAlerts';
+  var alertsState = null;
+
+  function alertItems(a) {
+    if (!a) return [];
+    var items = [];
+    var plural = function (n, one, many) { return n + ' ' + (n === 1 ? one : many); };
+    if (a.orders_pending_stale) items.push({ tone: 'bad', icon: 'clock-alert', href: '/pedidos.html?status=pending', title: plural(a.orders_pending_stale, 'pedido sin pagar', 'pedidos sin pagar') + ' hace más de ' + a.stale_days + ' días', text: 'Confirma el pago o contacta al cliente.' });
+    else if (a.orders_pending) items.push({ tone: 'warn', icon: 'credit-card', href: '/pedidos.html?status=pending', title: plural(a.orders_pending, 'pedido pendiente de pago', 'pedidos pendientes de pago'), text: 'Revisa los comprobantes recibidos.' });
+    if (a.orders_quote_requested) items.push({ tone: 'warn', icon: 'file-question', href: '/pedidos.html?status=quote_requested', title: plural(a.orders_quote_requested, 'cotización de carrito', 'cotizaciones de carrito') + ' por responder', text: 'Clientes esperando precio final.' });
+    if (a.service_quotes_new) items.push({ tone: 'warn', icon: 'messages-square', href: '/cotizaciones.html?status=nuevo', title: plural(a.service_quotes_new, 'solicitud de servicio nueva', 'solicitudes de servicio nuevas'), text: 'Todavía sin contactar.' });
+    if (a.out_of_stock) items.push({ tone: 'bad', icon: 'package-x', href: '/inventario.html?filter=out', title: plural(a.out_of_stock, 'producto agotado', 'productos agotados'), text: 'Visibles en la tienda sin unidades libres.' });
+    if (a.low_stock) items.push({ tone: 'warn', icon: 'triangle-alert', href: '/inventario.html?filter=low', title: plural(a.low_stock, 'producto con stock bajo', 'productos con stock bajo'), text: 'Conviene reponer pronto.' });
+    if (a.products_no_price) items.push({ tone: 'warn', icon: 'circle-dollar-sign', href: '/editor-catalogo.html?price=quote', title: plural(a.products_no_price, 'producto visible sin precio', 'productos visibles sin precio'), text: 'Se muestran como “consultar precio”.' });
+    if (a.admin_login_alerts) items.push({ tone: 'bad', icon: 'shield-alert', href: '/actividad.html?act=login-*', title: plural(a.admin_login_alerts, 'alerta de acceso al panel', 'alertas de acceso al panel') + ' en 24 h', text: 'Varios intentos fallidos seguidos en una cuenta admin.' });
+    else if (a.admin_login_failures >= 3) items.push({ tone: 'warn', icon: 'shield-alert', href: '/actividad.html?act=login-failed', title: plural(a.admin_login_failures, 'intento fallido', 'intentos fallidos') + ' de acceso al panel en 24 h', text: 'Revisa el registro de actividad.' });
+    if (a.products_no_photo) items.push({ tone: 'info', icon: 'image-off', href: '/editor-catalogo.html?photo=without_photo', title: plural(a.products_no_photo, 'producto visible sin foto', 'productos visibles sin foto'), text: 'Una foto mejora la conversión.' });
+    return items;
+  }
+
+  function paintAlerts(root, a) {
+    alertsState = a;
+    var counts = { orders: (a.orders_pending || 0) + (a.orders_quote_requested || 0), quotes: a.service_quotes_new || 0, stock: a.out_of_stock || 0 };
+    root.querySelectorAll('[data-badge]').forEach(function (el) {
+      var n = counts[el.getAttribute('data-badge')] || 0;
+      el.hidden = !n;
+      el.textContent = n > 99 ? '99+' : String(n);
+      el.classList.toggle('is-bad', el.getAttribute('data-badge') === 'stock' || (el.getAttribute('data-badge') === 'orders' && a.orders_pending_stale > 0));
+      var link = el.closest('a');
+      if (link) link.setAttribute('aria-label', link.querySelector('.label').textContent + (n ? ' (' + n + ' por atender)' : ''));
+    });
+    var items = alertItems(a);
+    var bell = root.querySelector('.admin-nav-bell');
+    if (bell) {
+      var dot = bell.querySelector('.admin-nav-bell-count');
+      dot.hidden = !items.length;
+      dot.textContent = String(items.length);
+      bell.setAttribute('aria-label', items.length ? 'Avisos: ' + items.length + ' asuntos por atender' : 'Avisos: nada pendiente');
+    }
+    document.dispatchEvent(new CustomEvent('smartisp:alerts', { detail: a }));
+  }
+
+  function loadAlerts(root, force) {
+    try {
+      var cached = JSON.parse(sessionStorage.getItem(ALERTS_KEY) || 'null');
+      if (cached && cached.data) paintAlerts(root, cached.data);
+      if (!force && cached && Date.now() - cached.at < 60000) return;
+    } catch (e) { /* sin caché */ }
+    getJson('admin-insights-alerts').then(function (data) {
+      try { sessionStorage.setItem(ALERTS_KEY, JSON.stringify({ at: Date.now(), data: data })); } catch (e) { /* sin caché */ }
+      paintAlerts(root, data);
+    }).catch(function () { /* los avisos son opcionales */ });
+  }
+
+  function renderAlertsPanel() {
+    var items = alertItems(alertsState);
+    var body = !alertsState ? '<p class="admin-pop-empty">Consultando…</p>' : (items.length ? items.map(function (it) {
+      return '<a class="admin-pop-item tone-' + it.tone + '" href="' + it.href + '"><i data-lucide="' + it.icon + '" aria-hidden="true"></i><span><strong>' + esc(it.title) + '</strong><small>' + esc(it.text) + '</small></span></a>';
+    }).join('') : '<p class="admin-pop-empty"><i data-lucide="circle-check" aria-hidden="true"></i> Todo al día. No hay nada urgente.</p>');
+    return '<div class="admin-pop-head"><strong>Requiere atención</strong><a href="/admin.html">Ver resumen</a></div>' + body;
+  }
+
+  // ---------- Buscador global (Ctrl+K) ----------
+  var palette = null;
+
+  function normalize(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+
+  function buildPalette() {
+    var el = document.createElement('div');
+    el.className = 'admin-cmd';
+    el.hidden = true;
+    el.innerHTML = '<div class="admin-cmd-panel" role="dialog" aria-modal="true" aria-label="Buscar en el panel">' +
+      '<div class="admin-cmd-input"><i data-lucide="search" aria-hidden="true"></i>' +
+      '<input type="text" role="combobox" aria-expanded="true" aria-controls="admin-cmd-list" aria-autocomplete="list" autocomplete="off" spellcheck="false" placeholder="Busca pantallas, pedidos, productos o clientes…">' +
+      '<kbd>Esc</kbd></div>' +
+      '<div class="admin-cmd-list" id="admin-cmd-list" role="listbox" aria-label="Resultados"></div>' +
+      '<div class="admin-cmd-foot"><span><kbd>↑</kbd><kbd>↓</kbd> moverse</span><span><kbd>Enter</kbd> abrir</span><span><kbd>G</kbd> + letra: ir a una pantalla</span></div></div>';
+    document.body.appendChild(el);
+    var input = el.querySelector('input');
+    var list = el.querySelector('.admin-cmd-list');
+    var state = { items: [], index: 0, remote: null, seq: 0, timer: null, opener: null };
+
+    function localItems(q) {
+      var nq = normalize(q);
+      var screens = LINKS.filter(function (l) { return allowed(l) && (!nq || normalize(l.label + ' ' + l.hint).indexOf(nq) !== -1); })
+        .map(function (l) { return { group: 'Pantallas', label: l.label, hint: l.hint, icon: l.icon, href: l.href, kbd: l.shortcut ? 'G ' + l.shortcut.toUpperCase() : '' }; });
+      var actions = ACTIONS.filter(function (a) { return allowed(a) && (!nq || normalize(a.label + ' ' + a.hint).indexOf(nq) !== -1); })
+        .map(function (a) { return { group: 'Acciones', label: a.label, hint: a.hint, icon: a.icon, href: a.href, run: a.run, external: a.external }; });
+      return nq ? screens.concat(actions) : screens.slice(0, 6).concat(actions.slice(0, 5));
+    }
+
+    function remoteItems(data) {
+      if (!data) return [];
+      var out = [];
+      (data.orders || []).forEach(function (o) {
+        out.push({ group: 'Pedidos', icon: 'receipt', label: '#' + o.id + (o.customer_name ? ' · ' + o.customer_name : ''), hint: (STATUS_LABEL[o.status] || o.status || '') + (o.total != null ? ' · ' + money(o.total) : ''), href: '/pedidos.html?q=' + encodeURIComponent(o.id) });
+      });
+      (data.products || []).forEach(function (p) {
+        out.push({ group: 'Productos', icon: 'package', label: p.name, hint: [p.sku, p.price > 0 ? money(p.price) : 'Sin precio', p.visible ? '' : 'Oculto'].filter(Boolean).join(' · '), href: '/editor-catalogo.html?tab=tab-products&q=' + encodeURIComponent(p.sku || p.name) });
+      });
+      (data.customers || []).forEach(function (c) {
+        out.push({ group: 'Clientes', icon: 'user', label: c.name || c.email, hint: c.email, href: '/clientes.html?q=' + encodeURIComponent(c.email || c.name) });
+      });
+      return out;
+    }
+
+    function paint() {
+      var q = input.value.trim();
+      state.items = localItems(q).concat(remoteItems(state.remote));
+      if (state.index >= state.items.length) state.index = Math.max(0, state.items.length - 1);
+      var html = '';
+      var lastGroup = '';
+      state.items.forEach(function (it, i) {
+        if (it.group !== lastGroup) { html += '<div class="admin-cmd-group" role="presentation">' + esc(it.group) + '</div>'; lastGroup = it.group; }
+        html += '<div class="admin-cmd-item' + (i === state.index ? ' is-active' : '') + '" role="option" id="admin-cmd-' + i + '" data-i="' + i + '" aria-selected="' + (i === state.index) + '">' +
+          '<i data-lucide="' + it.icon + '" aria-hidden="true"></i><span class="t"><strong>' + esc(it.label) + '</strong>' + (it.hint ? '<small>' + esc(it.hint) + '</small>' : '') + '</span>' +
+          (it.kbd ? '<kbd>' + esc(it.kbd) + '</kbd>' : '') + '</div>';
+      });
+      if (q.length >= 2 && state.remote === null) html += '<div class="admin-cmd-status">Buscando en pedidos, productos y clientes…</div>';
+      if (!state.items.length) html += '<div class="admin-cmd-status">Sin resultados para “' + esc(q) + '”.</div>';
+      list.innerHTML = html;
+      input.setAttribute('aria-activedescendant', state.items.length ? 'admin-cmd-' + state.index : '');
+      icons();
+      var active = list.querySelector('.is-active');
+      if (active) active.scrollIntoView({ block: 'nearest' });
+    }
+
+    function search() {
+      var q = input.value.trim();
+      clearTimeout(state.timer);
+      state.remote = q.length >= 2 ? null : {};
+      state.index = 0;
+      paint();
+      if (q.length < 2) return;
+      var seq = ++state.seq;
+      state.timer = setTimeout(function () {
+        getJson('admin-insights-search&q=' + encodeURIComponent(q)).then(function (data) {
+          if (seq !== state.seq) return;
+          state.remote = data;
+          paint();
+        }).catch(function () { if (seq === state.seq) { state.remote = {}; paint(); } });
+      }, 220);
+    }
+
+    function choose(i) {
+      var it = state.items[i];
+      if (!it) return;
+      close();
+      if (it.run) { it.run(); return; }
+      if (it.external) window.open(it.href, '_blank', 'noopener');
+      else window.location.assign(it.href);
+    }
+
+    function open() {
+      state.opener = document.activeElement;
+      el.hidden = false;
+      document.documentElement.classList.add('admin-cmd-open');
+      input.value = '';
+      state.remote = {};
+      state.index = 0;
+      paint();
+      input.focus();
+    }
+    function close() {
+      el.hidden = true;
+      document.documentElement.classList.remove('admin-cmd-open');
+      if (state.opener && state.opener.focus) state.opener.focus();
+    }
+
+    input.addEventListener('input', search);
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); state.index = Math.min(state.items.length - 1, state.index + 1); paint(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); state.index = Math.max(0, state.index - 1); paint(); }
+      else if (e.key === 'Enter') { e.preventDefault(); choose(state.index); }
+      else if (e.key === 'Escape') { e.preventDefault(); close(); }
+      else if (e.key === 'Tab') { e.preventDefault(); }
+    });
+    list.addEventListener('click', function (e) { var item = e.target.closest('[data-i]'); if (item) choose(Number(item.getAttribute('data-i'))); });
+    list.addEventListener('mousemove', function (e) {
+      var item = e.target.closest('[data-i]');
+      if (item && Number(item.getAttribute('data-i')) !== state.index) { state.index = Number(item.getAttribute('data-i')); list.querySelectorAll('.admin-cmd-item').forEach(function (n) { n.classList.toggle('is-active', n === item); n.setAttribute('aria-selected', String(n === item)); }); }
+    });
+    el.addEventListener('mousedown', function (e) { if (e.target === el) close(); });
+    return { open: open, close: close, el: el };
+  }
+
+  function openPalette() {
+    if (!palette) palette = buildPalette();
+    palette.open();
+  }
+
+  function isTyping(target) {
+    return target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
+  }
+
+  function modalOpen() {
+    return Array.prototype.some.call(document.querySelectorAll('[aria-modal="true"], dialog[open]'), function (el) { return el.offsetParent !== null || el.getClientRects().length > 0; });
+  }
+
+  var keysBound = false;
+  function bindKeys() {
+    if (keysBound) return;
+    keysBound = true;
+    var pendingG = 0;
+    document.addEventListener('keydown', function (e) {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        if (palette && !palette.el.hidden) palette.close(); else openPalette();
+        return;
+      }
+      if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target) || modalOpen()) return;
+      if (e.key === '/') {
+        var search = document.querySelector('main .search input, main input[type="search"]');
+        if (search) { e.preventDefault(); search.focus(); }
+        return;
+      }
+      if (e.key === 'g' || e.key === 'G') { pendingG = Date.now(); return; }
+      if (pendingG && Date.now() - pendingG < 1200) {
+        pendingG = 0;
+        var link = LINKS.filter(function (l) { return l.shortcut === e.key.toLowerCase() && allowed(l); })[0];
+        if (link) { e.preventDefault(); window.location.assign(link.href); }
+      }
+    });
+  }
+
+  // ---------- Mi cuenta ----------
+  var ACCOUNT_EVENTS = { login: 'Inicio de sesión', 'login-failed': 'Intento fallido', 'login-blocked': 'Intento con la cuenta desactivada', 'change-password': 'Cambio de contraseña', 'revoke-other-sessions': 'Cierre de las demás sesiones', 'reset-password': 'Contraseña restablecida por correo' };
+
+  // El drawer usa SmartAdmin; las pantallas que no cargan admin-page.js lo piden al abrirlo.
+  function withSmartAdmin(fn) {
+    if (window.SmartAdmin) { fn(window.SmartAdmin); return; }
+    var script = document.createElement('script');
+    script.src = '/assets/js/admin/admin-page.js?v=ds-20261026';
+    script.onload = function () { if (window.SmartAdmin) fn(window.SmartAdmin); };
+    script.onerror = function () { notify('No se pudo abrir Mi cuenta. Recarga la página.'); };
+    document.head.appendChild(script);
+  }
+
+  // Cambiar la contraseña o cerrar sesiones invalida el token anterior: se reemplaza donde estaba guardado.
+  function replaceToken(newToken) {
+    if (!newToken) return;
+    try {
+      if (localStorage.getItem('smartisp.adminToken')) localStorage.setItem('smartisp.adminToken', newToken);
+      if (sessionStorage.getItem('smartisp.adminToken')) sessionStorage.setItem('smartisp.adminToken', newToken);
+    } catch (e) { /* almacenamiento bloqueado */ }
+  }
+
+  function ecTime(SA, value) {
+    var d = SA.utc(value);
+    return d ? d.toLocaleString('es-EC', { timeZone: 'America/Guayaquil', dateStyle: 'medium', timeStyle: 'short' }) : '—';
+  }
+
+  function browserName(ua) {
+    var s = String(ua || '');
+    var b = /Edg\//.test(s) ? 'Edge' : /OPR\//.test(s) ? 'Opera' : /Chrome\//.test(s) ? 'Chrome' : /Firefox\//.test(s) ? 'Firefox' : /Safari\//.test(s) ? 'Safari' : 'Otro navegador';
+    var os = /Windows/.test(s) ? 'Windows' : /Android/.test(s) ? 'Android' : /iPhone|iPad/.test(s) ? 'iOS' : /Mac OS/.test(s) ? 'macOS' : /Linux/.test(s) ? 'Linux' : '';
+    return b + (os ? ' en ' + os : '');
+  }
+
+  function busy(button, on) { button.disabled = on; button.classList.toggle('is-busy', on); }
+
+  function openAccount() {
+    withSmartAdmin(function (SA) {
+      var body = document.createElement('div');
+      body.className = 'admin-account';
+      body.innerHTML = '<span class="sk sk-line" style="width:60%"></span><span class="sk sk-line" style="width:85%"></span><span class="sk sk-line" style="width:40%"></span>';
+      SA.drawer({ title: 'Mi cuenta', subtitle: (currentUser && currentUser.email) || '', body: body });
+      SA.api('admin-my-account').then(function (data) { paintAccount(SA, body, data); })
+        .catch(function (error) { body.innerHTML = SA.state('error', 'No se pudo cargar tu cuenta', error.message); SA.icons(); });
+    });
+  }
+
+  function paintAccount(SA, body, data) {
+    var u = data.user || {};
+    var recent = (data.recent || []).map(function (r) {
+      var bad = r.action === 'login-failed' || r.action === 'login-blocked';
+      return '<li class="' + (bad ? 'is-bad' : '') + '"><i data-lucide="' + (r.action === 'login' ? 'log-in' : bad ? 'shield-alert' : 'lock-keyhole') + '" aria-hidden="true"></i>' +
+        '<span><strong>' + esc(ACCOUNT_EVENTS[r.action] || r.action) + '</strong><small>' + esc(ecTime(SA, r.created_at)) + ' · ' + esc(browserName(r.user_agent)) + (r.ip ? ' · IP ' + esc(r.ip) : '') + '</small></span></li>';
+    }).join('');
+    body.innerHTML =
+      '<section class="admin-account-section" aria-labelledby="acc-profile-title"><h3 id="acc-profile-title">Perfil</h3>' +
+        '<form id="acc-profile" novalidate>' +
+          '<div class="form-row"><label for="acc-name">Nombre</label><input class="field" id="acc-name" autocomplete="given-name" maxlength="120" required value="' + esc(u.name) + '"></div>' +
+          '<div class="form-row"><label for="acc-surname">Apellido</label><input class="field" id="acc-surname" autocomplete="family-name" maxlength="120" value="' + esc(u.surname) + '"></div>' +
+          '<p class="admin-account-hint">Correo <strong>' + esc(u.email) + '</strong> · ' + esc(u.roleLabel || 'Administrador') + '</p>' +
+          '<button class="button primary" type="submit"><i data-lucide="save" aria-hidden="true"></i> Guardar nombre</button>' +
+        '</form></section>' +
+      '<section class="admin-account-section" aria-labelledby="acc-pass-title"><h3 id="acc-pass-title">Contraseña</h3>' +
+        '<form id="acc-password" novalidate>' +
+          '<div class="form-row"><label for="acc-current">Contraseña actual</label><input class="field" id="acc-current" type="password" autocomplete="current-password" required></div>' +
+          '<div class="form-row"><label for="acc-new">Contraseña nueva</label><input class="field" id="acc-new" type="password" autocomplete="new-password" minlength="8" required><span class="hint">Mínimo 8 caracteres.</span></div>' +
+          '<div class="form-row"><label for="acc-confirm">Repite la contraseña nueva</label><input class="field" id="acc-confirm" type="password" autocomplete="new-password" required></div>' +
+          '<p class="admin-account-hint">Al cambiarla se cierran tus sesiones en otros dispositivos; esta sigue abierta.</p>' +
+          '<button class="button primary" type="submit"><i data-lucide="lock-keyhole" aria-hidden="true"></i> Cambiar contraseña</button>' +
+        '</form></section>' +
+      '<section class="admin-account-section" aria-labelledby="acc-sessions-title"><h3 id="acc-sessions-title">Sesiones</h3>' +
+        '<p class="admin-account-hint">Último inicio de sesión: <strong>' + esc(u.lastLoginAt ? ecTime(SA, u.lastLoginAt) : 'sin registro') + '</strong> (hora de Ecuador)</p>' +
+        (recent ? '<ul class="admin-account-events" aria-label="Accesos recientes">' + recent + '</ul>' : '') +
+        '<button class="button" type="button" id="acc-revoke"><i data-lucide="log-out" aria-hidden="true"></i> Cerrar las demás sesiones</button>' +
+        '<p class="admin-account-hint">Útil si iniciaste sesión en un equipo ajeno: los demás dispositivos tendrán que volver a entrar.</p></section>' +
+      (data.canManageTeam ? '<a class="button ghost" href="/equipo.html"><i data-lucide="users-round" aria-hidden="true"></i> Gestionar el equipo</a>' : '');
+    SA.icons();
+
+    body.querySelector('#acc-profile').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var name = body.querySelector('#acc-name').value.trim();
+      var surname = body.querySelector('#acc-surname').value.trim();
+      if (!name) { SA.toast('Escribe tu nombre.', true); body.querySelector('#acc-name').focus(); return; }
+      var button = e.submitter || this.querySelector('button[type="submit"]');
+      busy(button, true);
+      SA.post('update-profile', { name: name, surname: surname }).then(function (res) {
+        currentUser = Object.assign({}, currentUser, res.user || { name: name, surname: surname });
+        try { localStorage.setItem('smartisp.accountUser', JSON.stringify(currentUser)); } catch (err) { /* almacenamiento bloqueado */ }
+        document.querySelectorAll('#smartisp-admin-nav .admin-nav-user-info strong').forEach(function (el) { el.textContent = name; });
+        document.querySelectorAll('#smartisp-admin-nav .admin-nav-account .admin-nav-avatar').forEach(function (el) { el.textContent = name.charAt(0).toUpperCase(); });
+        SA.toast('Nombre actualizado.');
+      }).catch(function (err) { SA.toast(err.message, true); }).finally(function () { busy(button, false); });
+    });
+
+    body.querySelector('#acc-password').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var form = this;
+      var current = form.querySelector('#acc-current').value;
+      var next = form.querySelector('#acc-new').value;
+      var confirm = form.querySelector('#acc-confirm').value;
+      if (!current) { SA.toast('Escribe tu contraseña actual.', true); form.querySelector('#acc-current').focus(); return; }
+      if (next.length < 8) { SA.toast('La contraseña nueva debe tener al menos 8 caracteres.', true); form.querySelector('#acc-new').focus(); return; }
+      if (next !== confirm) { SA.toast('Las contraseñas nuevas no coinciden.', true); form.querySelector('#acc-confirm').focus(); return; }
+      if (next === current) { SA.toast('La contraseña nueva debe ser distinta de la actual.', true); return; }
+      var button = form.querySelector('button[type="submit"]');
+      busy(button, true);
+      SA.post('change-password', { currentPassword: current, newPassword: next, confirmation: confirm }).then(function (res) {
+        replaceToken(res.token);
+        form.reset();
+        SA.toast('Contraseña actualizada. Se cerraron tus demás sesiones.');
+      }).catch(function (err) { SA.toast(err.message, true); }).finally(function () { busy(button, false); });
+    });
+
+    body.querySelector('#acc-revoke').addEventListener('click', function () {
+      var button = this;
+      SA.confirm('¿Cerrar las demás sesiones?', 'Se cerrará tu sesión en cualquier otro navegador o dispositivo. Esta pestaña seguirá abierta.', 'Cerrar sesiones').then(function (ok) {
+        if (!ok) return;
+        busy(button, true);
+        SA.post('revoke-other-sessions').then(function (res) {
+          replaceToken(res.token);
+          SA.toast('Listo: las demás sesiones quedaron cerradas.');
+        }).catch(function (err) { SA.toast(err.message, true); }).finally(function () { busy(button, false); });
+      });
+    });
+  }
+
+  // ---------- Render ----------
   var currentMenu = null;
   var documentListenersBound = false;
   var initInFlight = false;
@@ -123,68 +490,97 @@
     if (documentListenersBound) return;
     documentListenersBound = true;
     document.addEventListener('click', function (event) {
-      if (currentMenu && currentMenu.root.classList.contains('is-mobile-open') && !currentMenu.root.contains(event.target)) currentMenu.setOpen(false);
+      if (!currentMenu) return;
+      if (currentMenu.root.classList.contains('is-mobile-open') && !currentMenu.root.contains(event.target)) currentMenu.setOpen(false);
+      var pop = currentMenu.root.querySelector('.admin-pop');
+      if (pop && !pop.hidden && !event.target.closest('.admin-pop, .admin-nav-bell')) currentMenu.setPop(false);
     });
+    // El tooltip va fijo en <body>: dentro de la lista con scroll quedaría recortado.
+    var tip = null;
+    function showTip(event) {
+      var target = event.target.closest && event.target.closest('#smartisp-admin-nav [data-tip]');
+      if (!target || !document.documentElement.classList.contains('admin-collapsed') || window.innerWidth <= 900) return;
+      if (!tip) { tip = document.createElement('div'); tip.className = 'admin-nav-floating-tip'; tip.setAttribute('role', 'tooltip'); document.body.appendChild(tip); }
+      var rect = target.getBoundingClientRect();
+      tip.textContent = target.getAttribute('data-tip');
+      tip.style.left = (rect.right + 12) + 'px';
+      tip.style.top = (rect.top + rect.height / 2) + 'px';
+      tip.hidden = false;
+    }
+    function hideTip() { if (tip) tip.hidden = true; }
+    document.addEventListener('mouseover', showTip);
+    document.addEventListener('focusin', showTip);
+    document.addEventListener('mouseout', function (event) { if (event.target.closest && event.target.closest('#smartisp-admin-nav [data-tip]')) hideTip(); });
+    document.addEventListener('focusout', hideTip);
+    document.addEventListener('scroll', hideTip, true);
     document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape' && currentMenu && currentMenu.root.classList.contains('is-mobile-open')) {
-        currentMenu.setOpen(false);
-        currentMenu.toggle.focus();
-      }
+      if (event.key !== 'Escape' || !currentMenu) return;
+      var pop = currentMenu.root.querySelector('.admin-pop');
+      if (pop && !pop.hidden) { currentMenu.setPop(false); currentMenu.root.querySelector('.admin-nav-bell').focus(); return; }
+      if (currentMenu.root.classList.contains('is-mobile-open')) { currentMenu.setOpen(false); currentMenu.toggle.focus(); }
     });
   }
 
+  function setBodyLayout(on) {
+    document.body.classList.toggle('has-admin-sidebar', on);
+    document.body.classList.toggle('admin-sidebar-collapsed', on && prefs.collapsed());
+    document.documentElement.classList.toggle('admin-layout', on);
+  }
+
   function render(root, user) {
+    currentUser = user;
     var activeKey = root.getAttribute('data-active') || '';
     var name = (user && (user.name || user.email)) || '';
-    var role = user && ['admin', 'administrator', 'administrador'].indexOf(String(user.role || '').toLowerCase()) >= 0 ? 'Administrador' : 'Cliente';
-    var initial = escapeHtml((name || '?').trim().charAt(0).toUpperCase());
-    var collapsed = false;
-
-    try {
-      collapsed = localStorage.getItem('smartisp.adminSidebarCollapsed') === '1';
-    } catch (e) { /* almacenamiento bloqueado; se usa expandido */ }
+    var initial = esc((name || '·').trim().charAt(0).toUpperCase());
+    var collapsed = prefs.collapsed();
+    var theme = themeMeta();
+    var compact = prefs.density() === 'compact';
+    var shortcut = isMac ? '⌘K' : 'Ctrl K';
 
     root.classList.remove('is-loading');
-    document.body.classList.add('has-admin-sidebar');
-    document.body.classList.toggle('admin-sidebar-collapsed', collapsed);
+    setBodyLayout(true);
     root.innerHTML =
       '<div class="admin-nav-brand">' +
-      '<button type="button" class="admin-nav-mobile-toggle" title="Abrir menú" aria-label="Abrir menú" aria-expanded="false" aria-controls="admin-nav-links"><i data-lucide="menu" aria-hidden="true"></i></button>' +
-      '<span class="admin-nav-logo"><img src="/assets/img/logo-default.jpg" alt="SmartISP" width="1280" height="426"></span>' +
-      '<div><strong>Panel Administrativo</strong></div>' +
-      '<button type="button" class="admin-nav-toggle" title="' + (collapsed ? 'Expandir barra lateral' : 'Contraer barra lateral') + '" aria-label="' + (collapsed ? 'Expandir barra lateral' : 'Contraer barra lateral') + '" aria-controls="admin-nav-links" aria-expanded="' + (!collapsed) + '">' +
-      '<i data-lucide="' + (collapsed ? 'panel-left-open' : 'panel-left-close') + '" aria-hidden="true"></i>' +
-      '</button>' +
+        '<button type="button" class="admin-nav-mobile-toggle" aria-label="Abrir menú" aria-expanded="false" aria-controls="admin-nav-body"><i data-lucide="menu" aria-hidden="true"></i></button>' +
+        '<a class="admin-nav-logo" href="/admin.html" aria-label="Inicio del panel"><img src="/assets/img/logo-default.jpg" alt="SmartISP" width="1280" height="426"></a>' +
+        '<span class="admin-nav-tag">Panel</span>' +
+        '<button type="button" class="admin-nav-mobile-search" aria-label="Buscar (' + shortcut + ')"><i data-lucide="search" aria-hidden="true"></i></button>' +
       '</div>' +
-      '<nav class="admin-nav-links" id="admin-nav-links" aria-label="Navegación administrativa">' + buildGroupsHtml(activeKey) + '</nav>' +
-      '<div class="admin-nav-user">' +
-      '<div class="admin-nav-user-row">' +
-      '<span class="admin-nav-avatar">' + initial + '</span>' +
-      '<div class="admin-nav-user-info"><strong>' + escapeHtml(name) + '</strong><span>' + role + '</span></div>' +
+      '<div class="admin-nav-body" id="admin-nav-body">' +
+        '<button type="button" class="admin-nav-search" aria-label="Buscar pantallas, pedidos, productos o clientes (' + shortcut + ')" data-tip="Buscar (' + shortcut + ')">' +
+          '<i data-lucide="search" aria-hidden="true"></i><span class="label">Buscar…</span><kbd>' + shortcut + '</kbd></button>' +
+        '<nav class="admin-nav-links" aria-label="Navegación administrativa">' + groupsHtml(activeKey) + '</nav>' +
+        '<div class="admin-nav-tools">' +
+          '<button type="button" class="admin-nav-tool admin-nav-bell" aria-haspopup="dialog" aria-expanded="false" aria-label="Avisos" data-tip="Avisos"><i data-lucide="bell" aria-hidden="true"></i><span class="label">Avisos</span><span class="admin-nav-bell-count" hidden></span></button>' +
+          '<button type="button" class="admin-nav-tool" data-nav-theme aria-label="' + theme.label + '. Cambiar tema" data-tip="' + theme.label + '"><i data-lucide="' + theme.icon + '" aria-hidden="true"></i><span>' + theme.label + '</span></button>' +
+          '<button type="button" class="admin-nav-tool" data-nav-density aria-pressed="' + compact + '" data-tip="Densidad de tablas"><i data-lucide="rows-3" aria-hidden="true"></i><span>' + (compact ? 'Tablas: compactas' : 'Tablas: cómodas') + '</span></button>' +
+          '<div class="admin-pop" role="dialog" aria-label="Avisos" hidden></div>' +
+        '</div>' +
+        '<div class="admin-nav-user">' +
+          '<button type="button" class="admin-nav-account" aria-haspopup="dialog" aria-label="Mi cuenta: ' + esc(name || 'Administrador') + '" data-tip="Mi cuenta">' +
+            '<span class="admin-nav-avatar" aria-hidden="true">' + initial + '</span>' +
+            '<span class="admin-nav-user-info"><strong>' + esc(name || 'Administrador') + '</strong><span>Mi cuenta</span></span></button>' +
+          '<a class="admin-nav-icon" href="/tienda.html" target="_blank" rel="noopener" aria-label="Ver tienda (pestaña nueva)" data-tip="Ver tienda"><i data-lucide="external-link" aria-hidden="true"></i></a>' +
+          '<button type="button" class="admin-nav-icon admin-nav-logout" aria-label="Cerrar sesión" data-tip="Cerrar sesión"><i data-lucide="log-out" aria-hidden="true"></i></button>' +
+        '</div>' +
       '</div>' +
-      '<a class="admin-nav-storelink" href="/tienda.html" title="Ver tienda"><i data-lucide="external-link" aria-hidden="true"></i><span>Ver tienda</span></a>' +
-      '<button type="button" class="admin-nav-logout" title="Cerrar sesión"><i data-lucide="log-out" aria-hidden="true"></i><span>Cerrar sesión</span></button>' +
-      '</div>';
+      '<button type="button" class="admin-nav-collapse" aria-controls="admin-nav-body" aria-expanded="' + (!collapsed) + '" aria-label="' + (collapsed ? 'Expandir barra lateral' : 'Contraer barra lateral') + '"><i data-lucide="chevrons-left" aria-hidden="true"></i></button>' +
+      '<p class="sr-only" id="admin-nav-live" aria-live="polite"></p>';
 
-    if (window.lucide) window.lucide.createIcons();
-
+    icons();
     loadConfiguredLogo(root);
-    root.querySelector('.admin-nav-toggle').addEventListener('click', function (event) {
-      event.stopPropagation();
-      var nextCollapsed = !document.body.classList.contains('admin-sidebar-collapsed');
-      document.body.classList.toggle('admin-sidebar-collapsed', nextCollapsed);
-      this.setAttribute('title', nextCollapsed ? 'Expandir barra lateral' : 'Contraer barra lateral');
-      this.setAttribute('aria-label', nextCollapsed ? 'Expandir barra lateral' : 'Contraer barra lateral');
-      this.setAttribute('aria-expanded', String(!nextCollapsed));
-      this.innerHTML = '<i data-lucide="' + (nextCollapsed ? 'panel-left-open' : 'panel-left-close') + '" aria-hidden="true"></i>';
-      try {
-        localStorage.setItem('smartisp.adminSidebarCollapsed', nextCollapsed ? '1' : '0');
-      } catch (e) { /* almacenamiento bloqueado; no es critico */ }
-      if (window.lucide) window.lucide.createIcons();
+
+    var collapseBtn = root.querySelector('.admin-nav-collapse');
+    collapseBtn.addEventListener('click', function () {
+      var next = !prefs.collapsed();
+      prefs.setCollapsed(next);
+      document.body.classList.toggle('admin-sidebar-collapsed', next);
+      collapseBtn.setAttribute('aria-expanded', String(!next));
+      collapseBtn.setAttribute('aria-label', next ? 'Expandir barra lateral' : 'Contraer barra lateral');
+      window.dispatchEvent(new Event('resize'));
     });
 
     var mobileToggle = root.querySelector('.admin-nav-mobile-toggle');
-    var brand = root.querySelector('.admin-nav-brand');
     var backdrop = document.querySelector('.admin-nav-backdrop');
     if (!backdrop) {
       backdrop = document.createElement('button');
@@ -197,59 +593,97 @@
     }
     var setMobileOpen = function (open) {
       root.classList.toggle('is-mobile-open', open);
+      document.documentElement.classList.toggle('admin-nav-open', open);
       mobileToggle.setAttribute('aria-expanded', String(open));
       mobileToggle.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
-      mobileToggle.setAttribute('title', open ? 'Cerrar menú' : 'Abrir menú');
       mobileToggle.innerHTML = '<i data-lucide="' + (open ? 'x' : 'menu') + '" aria-hidden="true"></i>';
-      if (window.lucide) window.lucide.createIcons();
+      icons();
     };
-    mobileToggle.addEventListener('click', function (event) {
-      event.stopPropagation();
-      setMobileOpen(!root.classList.contains('is-mobile-open'));
-    });
-    brand.addEventListener('click', function (event) {
-      if (event.target.closest('button')) return;
-      if (window.matchMedia('(max-width: 900px)').matches) {
-        setMobileOpen(!root.classList.contains('is-mobile-open'));
-      } else {
-        root.querySelector('.admin-nav-toggle').click();
-      }
-    });
-    root.querySelectorAll('.admin-nav-links a').forEach(function (link) {
-      link.addEventListener('click', function () { setMobileOpen(false); });
-    });
-    currentMenu = { root: root, setOpen: setMobileOpen, toggle: mobileToggle };
+    mobileToggle.addEventListener('click', function (event) { event.stopPropagation(); setMobileOpen(!root.classList.contains('is-mobile-open')); });
+    root.querySelectorAll('.admin-nav-links a').forEach(function (link) { link.addEventListener('click', function () { setMobileOpen(false); }); });
+
+    root.querySelector('.admin-nav-search').addEventListener('click', function () { setMobileOpen(false); openPalette(); });
+    root.querySelector('.admin-nav-mobile-search').addEventListener('click', openPalette);
+    root.querySelector('[data-nav-theme]').addEventListener('click', cycleTheme);
+    root.querySelector('[data-nav-density]').addEventListener('click', toggleDensity);
+
+    var bell = root.querySelector('.admin-nav-bell');
+    var pop = root.querySelector('.admin-pop');
+    var setPop = function (open) {
+      pop.hidden = !open;
+      bell.setAttribute('aria-expanded', String(open));
+      if (open) { pop.innerHTML = renderAlertsPanel(); icons(); loadAlerts(root, true); }
+    };
+    bell.addEventListener('click', function (e) { e.stopPropagation(); setPop(pop.hidden); });
+    document.addEventListener('smartisp:alerts', function () { if (!pop.hidden) { pop.innerHTML = renderAlertsPanel(); icons(); } });
+
+    currentMenu = { root: root, setOpen: setMobileOpen, toggle: mobileToggle, setPop: setPop };
     bindDocumentListeners();
+    bindKeys();
+    loadAlerts(root, false);
+
+    root.querySelector('.admin-nav-account').addEventListener('click', function () { setMobileOpen(false); openAccount(); });
 
     root.querySelector('.admin-nav-logout').addEventListener('click', function () {
       fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).finally(function () {
         try {
-          localStorage.removeItem('smartisp.adminToken');
-          localStorage.removeItem('smartisp.accountUser');
-          localStorage.removeItem('smartisp.accountRemembered');
-          sessionStorage.removeItem('smartisp.adminToken');
-          sessionStorage.removeItem('smartisp.accountUser');
-        } catch (e) { /* almacenamiento bloqueado (modo privado); no es crítico */ }
+          ['smartisp.adminToken', 'smartisp.accountUser', 'smartisp.accountRemembered'].forEach(function (k) { localStorage.removeItem(k); sessionStorage.removeItem(k); });
+          sessionStorage.removeItem(ALERTS_KEY);
+        } catch (e) { /* almacenamiento bloqueado */ }
         window.location.href = '/login.html?admin=1';
       });
     });
   }
 
+  function loadConfiguredLogo(root) {
+    fetch('/api/auth/site-content', { credentials: 'include', cache: 'no-store' })
+      .then(function (response) { return response.ok ? response.json() : null; })
+      .then(function (data) {
+        if (!data || !Array.isArray(data.content)) return;
+        var content = Object.fromEntries(data.content.map(function (item) { return [item.key, item.value]; }));
+        var logo = root.querySelector('.admin-nav-logo');
+        if (!logo) return;
+        var mode = content.logo_type || content.landing_logo_type || 'image';
+        var brand = content.landing_logo_text || content.brand_name || content.logo_text || 'SmartISP';
+        var darkImage = content.logo_dark_image || '';
+        var image = darkImage || content.logo_image || content.landing_logo_image || '/assets/img/logo-default.jpg';
+        if (/\/assets\/img\/logo\.(png|webp)(\?|$)/.test(image)) image = '/assets/img/logo-default.jpg';
+        logo.replaceChildren();
+        if (mode === 'image' && image) {
+          var img = document.createElement('img');
+          img.src = image;
+          img.alt = brand;
+          img.width = 300;
+          img.height = 100;
+          logo.classList.toggle('is-dark', !!darkImage);
+          logo.appendChild(img);
+          return;
+        }
+        var value = String(content.landing_logo_text || content.logo_text || brand || 'SmartISP').trim() || 'SmartISP';
+        var splitAt = Math.ceil(value.length / 2);
+        logo.classList.add('is-text');
+        logo.appendChild(document.createTextNode(value.slice(0, splitAt)));
+        var bold = document.createElement('b');
+        bold.textContent = value.slice(splitAt);
+        logo.appendChild(bold);
+      })
+      .catch(function () { /* se conserva el logo por defecto */ });
+  }
+
   function redirectToLogin() {
-    var back = encodeURIComponent(window.location.pathname + window.location.search);
-    window.location.href = '/login.html?admin=1&redirect=' + back;
+    window.location.href = '/login.html?admin=1&redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
   }
 
   function renderNotice(root, title, message, retry) {
     root.classList.remove('is-loading');
     root.classList.add('is-access-notice');
-    document.body.classList.remove('has-admin-sidebar', 'admin-sidebar-collapsed');
+    setBodyLayout(false);
     root.innerHTML = '<section class="admin-nav-notice" role="status"><i data-lucide="shield-alert" aria-hidden="true"></i>' +
-      '<strong>' + escapeHtml(title) + '</strong><span>' + escapeHtml(message) + '</span>' +
-      (retry ? '<button type="button" class="admin-nav-retry" aria-label="Reintentar" title="Reintentar"><i data-lucide="refresh-cw" aria-hidden="true"></i> Reintentar</button>' : '') +
+      '<strong>' + esc(title) + '</strong><span>' + esc(message) + '</span>' +
+      (retry ? '<button type="button" class="admin-nav-retry"><i data-lucide="refresh-cw" aria-hidden="true"></i> Reintentar</button>' : '') +
       '<a href="/tienda.html"><i data-lucide="store" aria-hidden="true"></i> Ver tienda</a>' +
       '<a href="/login.html?admin=1&redirect=' + encodeURIComponent(window.location.pathname + window.location.search) + '"><i data-lucide="log-in" aria-hidden="true"></i> Iniciar sesión de administrador</a></section>';
-    if (window.lucide) window.lucide.createIcons();
+    icons();
     var retryButton = root.querySelector('.admin-nav-retry');
     if (retryButton) retryButton.addEventListener('click', function () {
       if (initInFlight) return;
@@ -264,14 +698,7 @@
     var root = document.getElementById('smartisp-admin-nav');
     if (!root || initInFlight) return;
     initInFlight = true;
-
-    var authHeaders = {};
-    try {
-      var token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
-      if (token) authHeaders.Authorization = 'Bearer ' + token;
-    } catch (e) { /* cookies siguen siendo suficientes si el almacenamiento está bloqueado */ }
-
-    fetch('/api/auth/me', { credentials: 'include', cache: 'no-store', headers: authHeaders })
+    fetch('/api/auth/me', { credentials: 'include', cache: 'no-store', headers: authHeaders() })
       .finally(function () { initInFlight = false; })
       .then(function (res) {
         if (res.status === 401) { redirectToLogin(); return null; }
@@ -280,30 +707,27 @@
       })
       .then(function (data) {
         if (!data) return;
-        var user = data && data.user;
-        if (!user) {
-          redirectToLogin();
-          return;
-        }
-        if (['admin', 'administrator', 'administrador'].indexOf(String(user.role || '').toLowerCase()) < 0) {
+        var user = data.user;
+        if (!user) { redirectToLogin(); return; }
+        if (ADMIN_ROLES.indexOf(String(user.role || '').toLowerCase()) < 0) {
           renderNotice(root, 'Acceso administrativo', 'Esta cuenta no tiene permisos de administrador.', false);
           return;
         }
-        // Puente transicional (DEV-20261005-002 aún pendiente): hasta que todas las páginas del
-        // panel dejen de leer localStorage, se mantiene la misma clave sincronizada con la sesión
-        // real. La fuente de verdad del rol sigue siendo /api/auth/me, no este valor guardado.
         try {
           if (data.token) localStorage.setItem('smartisp.adminToken', data.token);
           localStorage.setItem('smartisp.accountUser', JSON.stringify(user));
-        } catch (e) { /* almacenamiento bloqueado; no es critico para el navbar */ }
+        } catch (e) { /* almacenamiento bloqueado */ }
         render(root, user);
       })
       .catch(function (error) { renderNotice(root, 'No se pudo validar la sesión', error.message || 'Comprueba tu conexión e inténtalo de nuevo.', true); });
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  window.SmartNav = {
+    openSearch: openPalette,
+    refreshAlerts: function () { var root = document.getElementById('smartisp-admin-nav'); if (root) loadAlerts(root, true); },
+    links: LINKS
+  };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 })();

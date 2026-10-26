@@ -8,6 +8,7 @@ DirectoryIndex tienda.html index.html index.htm index.php
     RewriteRule ^\.env - [F,L]
     RewriteRule ^api/config\.php - [F,L]
     RewriteRule ^api/(?!router\.php$).+\.php$ - [F,L]
+    RewriteRule ^includes/ - [F,L,NC]
     RewriteRule ^(?:package\.json|server\.js|vite\.config\.js|README\.md|CHANGELOG\.md|.*\.sql(?:\.gz)?)$ - [F,L,NC]
 
     # La raiz publica es la tienda.

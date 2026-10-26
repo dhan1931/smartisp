@@ -1900,3 +1900,35 @@
 			border-left-color: #ef4444;
 		}
 
+
+/* Barra y paneles del editor con el sistema de diseño del panel (la previsualización no cambia). */
+body { font-size: 16px; }
+button, input, select, textarea { color: revert; }
+:root.admin-layout body > footer { margin-left: var(--nav-width); width: calc(100vw - var(--nav-width)); box-sizing: border-box; }
+.editor-top-bar { background: #0B1F33; border-bottom-color: rgba(255, 255, 255, .08); box-shadow: 0 2px 14px rgba(0, 0, 0, .28); font-family: var(--font); gap: 12px; }
+.editor-action-btn { min-height: 34px; border-radius: var(--radius-sm); font-family: var(--font); font-weight: 600; font-size: 12.5px; }
+.editor-action-btn.primary { background: var(--brand); box-shadow: none; }
+.editor-action-btn.primary:hover { background: #0D63A8; transform: none; }
+.editor-action-btn.primary.has-changes { background: var(--brand); box-shadow: 0 0 0 3px rgba(75, 163, 238, .45); }
+.editor-action-btn.secondary { background: rgba(255, 255, 255, .07); border-color: rgba(255, 255, 255, .16); color: #E6EEF6; }
+.editor-action-btn.secondary:hover { background: rgba(255, 255, 255, .13); }
+.editor-action-btn.outline { color: #8CC8F7; border-color: rgba(140, 200, 247, .4); }
+.editor-action-btn.subtle { color: #C3D3E2; }
+.editor-action-btn:focus-visible, .editor-modal-close-btn:focus-visible, .format-btn:focus-visible { outline: 2px solid #8CC8F7; outline-offset: 2px; }
+.editor-status-box { border-radius: var(--radius-pill); }
+.editor-modal-card { border-radius: var(--radius-lg); border-color: var(--border); box-shadow: var(--shadow-3); font-family: var(--font); }
+.editor-modal-head { background: var(--surface-2); border-bottom-color: var(--border-soft); }
+.editor-modal-head h3 { font-family: var(--font-display); color: var(--text); letter-spacing: -.01em; }
+.editor-modal-foot { background: var(--surface-2); border-top-color: var(--border-soft); }
+.editor-modal-overlay { background: var(--overlay); backdrop-filter: none; }
+.editor-toast { background: var(--toast-bg); color: var(--toast-text); border-radius: var(--radius); box-shadow: var(--shadow-3); font-family: var(--font); }
+@media (max-width: 900px) {
+  body { padding-top: calc(var(--nav-mobile-h) + 58px) !important; }
+  :root.admin-layout body > footer { margin-left: 0; width: 100%; }
+  .editor-top-bar { padding: 0 10px; }
+  .editor-brand-badge > span:not(.editor-pulse-dot), .editor-action-btn > span { display: none; }
+  .editor-action-btn { padding: 0 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .editor-pulse-dot, .editor-action-btn.primary.has-changes { animation: none; }
+}
