@@ -5,39 +5,48 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SmartISP | Inventario</title>
   <link rel="icon" href="/assets/favicons/favicon.ico">
-  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=admin-brand-20261011">
-  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=20261025">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <script src="/assets/js/admin/admin-theme.js?v=ds-20261026"></script>
+  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261026">
+  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261026">
   <script src="/assets/vendor/lucide-icons.min.js?v=8707c619" defer></script>
-  <script src="/assets/js/admin/admin-nav.js?v=20261025-a11y" defer></script>
-  <script src="/assets/js/admin/admin-page.js?v=20261025-waf" defer></script>
+  <script src="/assets/js/admin/admin-nav.js?v=ds-20261026" defer></script>
+  <script src="/assets/js/admin/admin-page.js?v=ds-20261026" defer></script>
   <style>
-    .product-cell { display: flex; align-items: center; gap: 11px; min-width: 240px; }
-    .thumb { flex: none; width: 42px; height: 42px; border: 1px solid var(--line-soft); border-radius: 6px; background: #f6f9fa center / contain no-repeat; }
-    .product-name { font-weight: 700; line-height: 1.3; }
-    .product-sku { display: block; margin-top: 3px; color: #82939b; font-size: 11px; }
+    .product-cell { display: flex; align-items: center; gap: 12px; min-width: 240px; }
+    .thumb { flex: none; width: 44px; height: 44px; border: 1px solid var(--border-soft); border-radius: var(--radius-sm); background: #fff center / contain no-repeat; }
+    .product-name { font-weight: 600; line-height: 1.3; }
+    .product-sku { display: block; margin-top: 3px; color: var(--text-3); font-size: 11.5px; }
     .stock-edit { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
-    .stock-edit input { width: 86px; height: 34px; padding: 0 8px; border: 1px solid var(--line); border-radius: 5px; text-align: right; font-variant-numeric: tabular-nums; }
-    .stock-edit input:focus { outline: 2px solid var(--blue-wash); border-color: var(--blue); }
-    .stock-edit input.is-dirty { border-color: var(--blue); background: var(--blue-wash); }
+    .stock-edit input { width: 90px; height: 34px; padding: 0 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); text-align: right; font-variant-numeric: tabular-nums; }
+    .stock-edit input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+    .stock-edit input.is-dirty { border-color: var(--accent); background: var(--accent-soft); }
     .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
-    .migration-note { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 16px; padding: 12px 14px; border: 1px solid #f1d7a6; border-radius: 7px; background: var(--amber-wash); color: #6b3f05; font-size: 13px; line-height: 1.45; }
-    .migration-note svg { flex: none; width: 18px; height: 18px; margin-top: 1px; }
-    .help { margin: 0 0 16px; color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+    .help { margin: 0 0 16px; color: var(--text-3); font-size: 13px; line-height: 1.55; }
+    .inventory-card { padding: 0; overflow: hidden; }
+    .inventory-card .toolbar select { min-width: 160px; }
+    .toolbar-end { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+    .toolbar-end .result-count { margin-left: 0; }
+    #migrationNote { margin-bottom: 16px; }
     @media (max-width: 950px) { .table-wrap table { min-width: 900px; } }
     /* En el teléfono cada producto es una tarjeta: el campo de stock queda a mano sin desplazar la tabla. */
     @media (max-width: 620px) {
       .table-wrap table { min-width: 0; }
       .table-wrap thead { display: none; }
-      #rows tr { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 14px; border-bottom: 1px solid var(--line-soft); }
+      #rows tr { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 14px; border-bottom: 1px solid var(--border-soft); }
       #rows td { padding: 0; border: 0; }
       #rows td:nth-child(1) { flex-basis: 100%; }
       #rows td:nth-child(2) { display: none; }
       #rows td:nth-child(4) { margin-left: auto; }
-      #rows td[data-label]::before { content: attr(data-label) ' '; color: var(--muted); font-size: 11px; font-weight: 400; }
+      #rows td[data-label]::before { content: attr(data-label) ' '; color: var(--text-3); font-size: 11px; font-weight: 400; }
       #rows td:nth-child(7) { flex-basis: 100%; }
       #rows td:nth-child(7) .row-actions { justify-content: flex-start; }
       #rows td:nth-child(7):not(:has(button:not([hidden]))) { display: none; }
       .product-cell { min-width: 0; }
+      .inventory-card .toolbar select { flex: 1; min-width: 0; }
+      .toolbar-end { width: 100%; justify-content: space-between; margin-left: 0; }
     }
   </style>
 </head>
@@ -45,21 +54,26 @@
   <div id="smartisp-admin-nav" class="is-loading" data-active="inventario"></div>
   <main class="shell" id="app" hidden>
     <header class="page-head">
-      <div><h1>Inventario</h1><p>Stock por producto. Solo se limita la venta de los productos con stock controlado.</p></div>
+      <div><span class="eyebrow"><i data-lucide="boxes" aria-hidden="true"></i> Catálogo</span><h1>Inventario</h1><p>Stock por producto. Solo se limita la venta de los productos con stock controlado.</p></div>
       <div class="head-actions">
-        <a class="button" href="/reportes.html"><i data-lucide="download"></i> Exportar</a>
+        <a class="button" href="/reportes.html"><i data-lucide="file-down"></i> Reportes</a>
         <button class="button" id="refresh" type="button"><i data-lucide="rotate-cw"></i> Actualizar</button>
       </div>
     </header>
 
-    <div class="migration-note" id="migrationNote" hidden><i data-lucide="triangle-alert"></i><div>Los pedidos todavía no apartan stock: falta aplicar la migración <strong>037_order_stock_state.sql</strong> (<code>php scripts/migrate.php</code>). Mientras tanto se valida la disponibilidad al comprar, pero no se descuenta.</div></div>
+    <div class="callout warn" id="migrationNote" hidden><i data-lucide="triangle-alert"></i><div>Los pedidos todavía no apartan stock: falta aplicar la migración <strong>037_order_stock_state.sql</strong> (<code>php scripts/migrate.php</code>). Mientras tanto se valida la disponibilidad al comprar, pero no se descuenta.</div></div>
 
-    <section class="stats" id="stats" aria-label="Resumen de inventario"></section>
+    <section class="stats" id="stats" aria-label="Resumen de inventario">
+      <div class="stat" aria-hidden="true"><span class="sk sk-line" style="width:60%"></span><span class="sk sk-title"></span><span class="sk sk-line" style="width:40%"></span></div>
+      <div class="stat" aria-hidden="true"><span class="sk sk-line" style="width:60%"></span><span class="sk sk-title"></span><span class="sk sk-line" style="width:40%"></span></div>
+      <div class="stat" aria-hidden="true"><span class="sk sk-line" style="width:60%"></span><span class="sk sk-title"></span><span class="sk sk-line" style="width:40%"></span></div>
+      <div class="stat" aria-hidden="true"><span class="sk sk-line" style="width:60%"></span><span class="sk sk-title"></span><span class="sk sk-line" style="width:40%"></span></div>
+    </section>
     <p class="help"><strong>Disponible</strong> es lo que hay en almacén. <strong>Reservado</strong> lo apartan pedidos en curso y se descuenta al marcarlos como enviados o entregados; al cancelar un pedido vuelve a quedar libre. <strong>Libre</strong> = disponible − reservado, es lo que se puede vender.</p>
 
-    <section class="workspace" aria-label="Productos e inventario">
+    <section class="card inventory-card" aria-label="Productos e inventario">
       <div class="toolbar">
-        <label class="search"><i data-lucide="search"></i><input id="search" type="search" placeholder="Buscar por nombre, SKU o ID" autocomplete="off"></label>
+        <label class="search"><i data-lucide="search"></i><span class="sr-only">Buscar productos</span><input id="search" type="search" placeholder="Buscar por nombre, SKU o ID" autocomplete="off"></label>
         <select id="filter" aria-label="Filtrar por estado de stock">
           <option value="all">Todos los productos</option>
           <option value="tracked">Con stock controlado</option>
@@ -73,25 +87,33 @@
           <option value="10">Bajo: 10 o menos</option>
           <option value="20">Bajo: 20 o menos</option>
         </select>
-        <span class="result-count" id="count"></span>
+        <div class="toolbar-end" id="inventoryTools"><span class="result-count" id="count"></span></div>
       </div>
       <div class="table-wrap" id="tableWrap">
-        <table>
-          <thead><tr><th>Producto</th><th>Categoría</th><th>Estado</th><th class="num">Disponible</th><th class="num">Reservado</th><th class="num">Libre</th><th></th></tr></thead>
+        <table data-export="inventario" data-export-host="inventoryTools">
+          <thead><tr><th>Producto</th><th>Categoría</th><th>Estado</th><th class="num">Disponible</th><th class="num">Reservado</th><th class="num">Libre</th><th data-no-export><span class="sr-only">Acciones</span></th></tr></thead>
           <tbody id="rows"></tbody>
         </table>
       </div>
-      <div class="empty" id="empty" hidden>No hay productos que coincidan con el filtro.</div>
-      <footer class="pager"><button class="button small" id="prev" type="button">Anterior</button><span id="pageInfo"></span><button class="button small" id="next" type="button">Siguiente</button></footer>
+      <div id="empty" hidden></div>
+      <footer class="pager"><button class="button small" id="prev" type="button"><i data-lucide="chevron-left"></i> Anterior</button><span id="pageInfo"></span><button class="button small" id="next" type="button">Siguiente <i data-lucide="chevron-right"></i></button></footer>
     </section>
   </main>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => {
       const { $, esc, number, api, post, toast, icons } = SmartAdmin;
-      const initialFilter = new URLSearchParams(location.search).get('filter');
-      const state = { page: 1, limit: 25, totalPages: 1, q: '', filter: ['tracked', 'untracked', 'low', 'out'].includes(initialFilter) ? initialFilter : 'all', low: 5 };
+      const FILTERS = ['all', 'tracked', 'untracked', 'low', 'out'];
+      const params = new URLSearchParams(location.search);
+      // Sin parámetros en la URL se recupera la última vista usada.
+      const saved = params.has('filter') || params.has('q') ? {} : SmartAdmin.remembered('inventario', {});
+      const initialFilter = params.get('filter') || saved.filter;
+      const state = { page: 1, limit: 25, totalPages: 1, q: (params.get('q') || '').trim(), filter: FILTERS.includes(initialFilter) ? initialFilter : 'all', low: [3, 5, 10, 20].includes(Number(saved.low)) ? Number(saved.low) : 5 };
       $('#filter').value = state.filter;
+      $('#low').value = String(state.low);
+      $('#search').value = state.q;
+      const rememberView = () => SmartAdmin.remember('inventario', { filter: state.filter, low: state.low });
+      let firstLoad = true;
 
       const statusBadge = item => {
         if (!item.tracked) return '<span class="badge">Venta libre</span>';
@@ -105,7 +127,7 @@
           <td><div class="product-cell"><span class="thumb" ${item.imageUrl ? `style="background-image:url('${esc(item.imageUrl)}')"` : ''}></span><div><span class="product-name">${esc(item.name)}</span><span class="product-sku">${item.sku ? 'SKU ' + esc(item.sku) : 'ID ' + esc(item.id)}${item.visible ? '' : ' · oculto en tienda'}</span></div></div></td>
           <td class="muted">${esc(item.category || '—')}</td>
           <td>${statusBadge(item)}</td>
-          <td><div class="stock-edit"><input type="number" min="0" max="1000000" step="1" inputmode="numeric" aria-label="Stock disponible de ${esc(item.name)}" value="${item.tracked ? item.available : ''}" placeholder="${item.tracked ? '' : '—'}" title="${item.tracked ? 'Unidades en almacén' : 'Escribe una cantidad para empezar a controlar el stock'}" data-original="${item.tracked ? item.available : ''}"></div></td>
+          <td data-export="${item.tracked ? item.available : ''}"><div class="stock-edit"><input type="number" min="0" max="1000000" step="1" inputmode="numeric" aria-label="Stock disponible de ${esc(item.name)}" value="${item.tracked ? item.available : ''}" placeholder="${item.tracked ? '' : '—'}" title="${item.tracked ? 'Unidades en almacén' : 'Escribe una cantidad para empezar a controlar el stock'}" data-original="${item.tracked ? item.available : ''}"></div></td>
           <td class="num" data-label="Reservado">${item.tracked ? number(item.reserved) : '—'}</td>
           <td class="num" data-label="Libre"><strong>${item.tracked ? number(item.free) : '—'}</strong></td>
           <td><div class="row-actions">
@@ -129,7 +151,9 @@
       const load = async ({ keepDirty = false } = {}) => {
         const seq = ++loadSeq;
         const query = new URLSearchParams({ page: state.page, limit: state.limit, q: state.q, filter: state.filter, low: state.low });
-        $('#tableWrap').classList.add('is-refreshing');
+        if (firstLoad) $('#rows').innerHTML = SmartAdmin.skeletonRows(7, 8);
+        else $('#tableWrap').classList.add('is-refreshing');
+        rememberView();
         try {
           const data = await api(`admin-inventory?${query}`);
           if (seq !== loadSeq) return;
@@ -150,15 +174,28 @@
             const input = document.querySelector(`#rows tr[data-id="${CSS.escape(id)}"] input`);
             if (input) { input.value = value; markRow(input, value !== input.dataset.original); }
           });
+          const filtered = state.q || state.filter !== 'all';
+          $('#empty').innerHTML = filtered
+            ? SmartAdmin.state('search', 'Ningún producto coincide', 'Prueba otra búsqueda o cambia el filtro de stock.')
+            : SmartAdmin.state('empty', 'Todavía no hay productos', 'Crea productos en el catálogo para controlar su stock aquí.');
           $('#empty').hidden = (data.items || []).length > 0;
           $('#tableWrap').hidden = (data.items || []).length === 0;
           $('#count').textContent = `${number(data.total)} producto${data.total === 1 ? '' : 's'}`;
           $('#pageInfo').textContent = `Página ${data.page} de ${state.totalPages}`;
           $('#prev').disabled = state.page <= 1;
           $('#next').disabled = state.page >= state.totalPages;
+          firstLoad = false;
           icons();
         } catch (error) {
-          if (seq === loadSeq) toast(error.message, true);
+          if (seq !== loadSeq) return;
+          toast(error.message, true);
+          if (firstLoad) {
+            $('#tableWrap').hidden = true;
+            $('#stats').innerHTML = '';
+            $('#empty').innerHTML = SmartAdmin.state('error', 'No se pudo cargar el inventario', error.message);
+            $('#empty').hidden = false;
+            icons();
+          }
         } finally {
           if (seq === loadSeq) $('#tableWrap').classList.remove('is-refreshing');
         }
@@ -179,6 +216,7 @@
           markRow(input, false);
           toast('Stock actualizado.');
           await load({ keepDirty: true });
+          if (window.SmartNav) window.SmartNav.refreshAlerts();
         } catch (error) { toast(error.message, true); }
         finally { if (document.contains(row)) setRowBusy(row, false); }
       };
