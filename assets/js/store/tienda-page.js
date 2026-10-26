@@ -1097,6 +1097,7 @@
 				if (['category', 'sub'].includes(filter.type)) expandedGroups.add(filter.macroId);
 			}
 			updateSidebarActiveStates();
+			try { syncMiniActive(); } catch (e) { /* aún no definido durante la carga */ }
 			refreshView(true);
 		};
 		const openCategoryDrawer = () => {
@@ -1278,6 +1279,10 @@
 			input.addEventListener('input', event => { if (!typed && event.isTrusted && discard()) event.stopImmediatePropagation(); }, true);
 			[300, 1200, 3000].forEach(delay => setTimeout(() => { try { if (input.matches(':autofill, :-webkit-autofill')) discard(); } catch (e) { if (/@/.test(input.value)) discard(); } }, delay));
 		};
+		document.querySelectorAll('#sidebarCatSearch, #searchInput').forEach(input => {
+			const unlock = () => input.removeAttribute('readonly');
+			['pointerdown', 'touchstart', 'focus', 'keydown'].forEach(type => input.addEventListener(type, unlock, { once: true, passive: true }));
+		});
 		guardAgainstAutofill(document.querySelector('#sidebarCatSearch'));
 		guardAgainstAutofill(document.querySelector('#searchInput'));
 
@@ -1792,6 +1797,43 @@
 		setTimeout(() => { storefrontCampaignsSettled = true; document.querySelectorAll('#campaignFeatured, #miniCategories').forEach(el => el.classList.remove('is-pending')); }, 5000);
 		let miniCategoryItems = new Map();
 		let featuredRequest = 0;
+		const isMiniActive = (key, item) => {
+			if (!window.isCategoriasView) return Boolean(featuredFilter && featuredFilter.key === key);
+			if (!item || !selectedFilter || selectedFilter === 'all') return false;
+			if (selectedFilter.type === 'macro') return item.categories.length !== 1 && String(selectedFilter.id) === key;
+			if (selectedFilter.type === 'category' || selectedFilter.type === 'sub') return item.categories.length === 1 && normalizeCategoryText(item.categories[0]) === normalizeCategoryText(selectedFilter.category);
+			return false;
+		};
+		const syncMiniActive = () => {
+			document.querySelectorAll('#miniCategoriesGrid [data-mini-key]').forEach(card => {
+				const on = isMiniActive(card.dataset.miniKey, miniCategoryItems.get(card.dataset.miniKey));
+				card.classList.toggle('is-active', on);
+				card.setAttribute('aria-pressed', String(on));
+			});
+		};
+		// En el catálogo la tarjeta cambia el filtro igual que el menú lateral: sin recargar ni volver arriba.
+		const selectMiniCategoryInCatalog = key => {
+			const item = miniCategoryItems.get(key);
+			if (!item) return;
+			const params = new URLSearchParams();
+			if (isMiniActive(key, item)) setCategoryFilter('all');
+			else if (item.categories.length === 1) { setCategoryFilter(item.categories[0]); params.set('category', item.categories[0]); }
+			else { setCategoryFilter({ type: 'macro', id: key }); params.set('macro', key); }
+			const search = document.querySelector('#searchInput');
+			if (search && search.value) search.value = '';
+			history.pushState({ miniCategory: true }, '', `${window.location.pathname}${params.toString() ? `?${params}` : ''}`);
+			syncMiniActive();
+			const catalog = document.querySelector('#catalogo');
+			if (catalog && catalog.getBoundingClientRect().top > window.innerHeight * .6) catalog.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		};
+		window.addEventListener('popstate', () => {
+			if (!window.isCategoriasView) return;
+			const params = new URLSearchParams(window.location.search);
+			const category = params.get('category') || params.get('categoria');
+			const macro = params.get('macro');
+			setCategoryFilter(category || (macro ? { type: 'macro', id: macro } : 'all'));
+			syncMiniActive();
+		});
 		const selectMiniCategory = async key => {
 			const item = miniCategoryItems.get(key);
 			if (!item || !item.categories.length || (featuredFilter && featuredFilter.key === key)) featuredFilter = null;
@@ -1799,11 +1841,7 @@
 				const card = document.querySelector(`#miniCategoriesGrid [data-mini-key="${CSS.escape(key)}"]`);
 				featuredFilter = { key, label: item.name, href: card?.getAttribute('href') || '/categorias-destacadas', loading: true, products: [] };
 			}
-			document.querySelectorAll('#miniCategoriesGrid [data-mini-key]').forEach(card => {
-				const on = Boolean(featuredFilter && card.dataset.miniKey === featuredFilter.key);
-				card.classList.toggle('is-active', on);
-				card.setAttribute('aria-pressed', String(on));
-			});
+			syncMiniActive();
 			renderStorefrontFeatured();
 			const section = document.querySelector('#campaignFeatured');
 			if (section && section.getBoundingClientRect().top > window.innerHeight * .7) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1827,9 +1865,10 @@
 		};
 		document.querySelector('#miniCategoriesGrid')?.addEventListener('click', event => {
 			const card = event.target.closest('[data-mini-key]');
-			if (!card || window.isCategoriasView || event.ctrlKey || event.metaKey || event.shiftKey || event.button) return;
+			if (!card || event.ctrlKey || event.metaKey || event.shiftKey || event.button) return;
 			event.preventDefault();
-			selectMiniCategory(card.dataset.miniKey);
+			if (window.isCategoriasView) selectMiniCategoryInCatalog(card.dataset.miniKey);
+			else selectMiniCategory(card.dataset.miniKey);
 		});
 		const renderMiniCategories = () => {
 			settleStorefrontPlaceholders();
@@ -1859,7 +1898,7 @@
 			miniCategoryItems = new Map(displayItems.map(g => [String(g.id), g]));
 			const cardsHtml = displayItems.map(g => {
 				const href = g.categories.length === 1 ? `/categorias-destacadas?category=${encodeURIComponent(g.categories[0])}` : (g.id && g.id !== 'otros' ? `/categorias-destacadas?macro=${encodeURIComponent(g.id)}` : '/categorias-destacadas');
-				const active = Boolean(featuredFilter && featuredFilter.key === String(g.id));
+				const active = isMiniActive(String(g.id), g);
 				return `<a class="mini-category-card${active ? ' is-active' : ''}" href="${escapeHtml(href)}" data-mini-key="${escapeHtml(String(g.id))}" role="button" aria-pressed="${active}">
 					<span class="mini-category-visual">${g.image ? `<img src="${escapeHtml(g.image)}" alt="${escapeHtml(g.alt)}" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><i data-lucide="${escapeHtml(g.icon)}" width="24" hidden></i>` : `<i data-lucide="${escapeHtml(g.icon)}" width="24"></i>`}</span>
 					<span class="mini-category-name">${escapeHtml(g.name)}</span>
@@ -2239,8 +2278,8 @@
 			if (window.isCategoriasView) {
 				document.querySelector('#catalogView').hidden = false;
 				document.querySelectorAll('#mNavHome,#mNavCategories').forEach(el => el.classList.toggle('active', el.id === 'mNavCategories'));
-				document.querySelectorAll('.public-nav a').forEach(a => a.removeAttribute('aria-current'));
-				document.querySelector('.public-nav a[href="/categorias-destacadas"]')?.setAttribute('aria-current', 'page');
+				document.querySelectorAll('.public-nav a, .public-nav-strip a').forEach(a => a.removeAttribute('aria-current'));
+				document.querySelectorAll('.public-nav a[href="/categorias-destacadas"], .public-nav-strip a[href="/categorias-destacadas"]').forEach(a => a.setAttribute('aria-current', 'page'));
 			}
 
 			if (catParam) {
