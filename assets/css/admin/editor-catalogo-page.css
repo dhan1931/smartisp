@@ -792,3 +792,8 @@
       transition: width .2s ease;
     }
     @media(max-width:600px){#productModal .form-row{display:grid;grid-template-columns:minmax(0,1fr)}#productModal .modal-dialog{padding:20px;max-height:90dvh}#productModal .form-control{font-size:16px}#productModal .modal-head{position:sticky;top:-20px;padding:14px 0;background:#fff;z-index:2}}
+.found-image-card { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; cursor: pointer; background: #fff; text-align: center; transition: transform .2s; }
+.found-image-card:hover, .found-image-card:focus-visible { transform: translateY(-2px); }
+.import-summary { margin: 0 0 16px; padding: 12px 14px; border: 1px solid #fecaca; border-radius: 8px; background: #fef2f2; color: #991b1b; font-size: 12.5px; max-height: 260px; overflow: auto; }
+.import-summary ul { margin: 8px 0 0; padding-left: 18px; }
+.import-summary[hidden] { display: none; }
