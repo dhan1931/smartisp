@@ -355,6 +355,24 @@
       var pop = currentMenu.root.querySelector('.admin-pop');
       if (pop && !pop.hidden && !event.target.closest('.admin-pop, .admin-nav-bell')) currentMenu.setPop(false);
     });
+    // El tooltip va fijo en <body>: dentro de la lista con scroll quedaría recortado.
+    var tip = null;
+    function showTip(event) {
+      var target = event.target.closest && event.target.closest('#smartisp-admin-nav [data-tip]');
+      if (!target || !document.documentElement.classList.contains('admin-collapsed') || window.innerWidth <= 900) return;
+      if (!tip) { tip = document.createElement('div'); tip.className = 'admin-nav-floating-tip'; tip.setAttribute('role', 'tooltip'); document.body.appendChild(tip); }
+      var rect = target.getBoundingClientRect();
+      tip.textContent = target.getAttribute('data-tip');
+      tip.style.left = (rect.right + 12) + 'px';
+      tip.style.top = (rect.top + rect.height / 2) + 'px';
+      tip.hidden = false;
+    }
+    function hideTip() { if (tip) tip.hidden = true; }
+    document.addEventListener('mouseover', showTip);
+    document.addEventListener('focusin', showTip);
+    document.addEventListener('mouseout', function (event) { if (event.target.closest && event.target.closest('#smartisp-admin-nav [data-tip]')) hideTip(); });
+    document.addEventListener('focusout', hideTip);
+    document.addEventListener('scroll', hideTip, true);
     document.addEventListener('keydown', function (event) {
       if (event.key !== 'Escape' || !currentMenu) return;
       var pop = currentMenu.root.querySelector('.admin-pop');
