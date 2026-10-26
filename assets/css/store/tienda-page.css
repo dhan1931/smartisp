@@ -850,8 +850,13 @@
 				opacity: .9;
 			}
 			.public-nav-strip a[aria-current="page"] {
-				color: #7dd3fc;
+				color: #fff;
 				opacity: 1;
+				padding: 5px 11px;
+				margin: -5px -3px;
+				border-radius: 999px;
+				background: rgba(125, 211, 252, .22);
+				box-shadow: inset 0 0 0 1px rgba(125, 211, 252, .55);
 			}
 			.public-menu-btn {
 				display: inline-flex !important;
