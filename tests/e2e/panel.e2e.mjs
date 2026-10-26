@@ -62,10 +62,13 @@ const open = async (page, url) => { await page.goto(baseUrl + url, { waitUntil: 
 try {
   const { context, page } = await session();
 
-  for (const screen of ['admin', 'pedidos', 'clientes', 'cotizaciones', 'inventario', 'estadisticas', 'reportes', 'categorias', 'configuracion', 'campanas', 'portada', 'editor-catalogo', 'editor-landing']) {
+  for (const screen of ['admin', 'pedidos', 'clientes', 'cotizaciones', 'inventario', 'estadisticas', 'reportes', 'categorias', 'configuracion', 'campanas', 'portada', 'editor-catalogo', 'editor-landing', 'equipo', 'actividad']) {
     await open(page, `/${screen}.html`);
     assert.ok(new URL(page.url()).pathname.endsWith(`/${screen}.html`), `${screen}.html no debe redirigir: ${page.url()}`);
   }
+
+  await open(page, '/comprobante.html?id=E2E-1');
+  assert.ok((await page.locator('body').innerText()).includes('E2E-1'), 'el comprobante muestra el pedido');
 
   await open(page, '/admin.html');
   await page.waitForSelector('#kpis .kpi');
