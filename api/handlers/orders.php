@@ -5,6 +5,24 @@
 // cuando este archivo se incluye. Cada bloque se autogestiona con 'if ($action === ...) { ... exit; }',
 // igual que antes; solo cambio donde vive el codigo, no la logica.
 
+// Actividad interna del pedido (migración 043): notas del equipo, correos enviados y avisos del
+// sistema. Solo la leen las acciones de admin; los endpoints del cliente no la consultan.
+function smartispLogOrderActivity(PDO $pdo, string $orderId, string $kind, ?string $actor, string $text): void {
+    if (!smartispTableExists($pdo, 'order_activity')) return;
+    $pdo->prepare('INSERT INTO order_activity (order_id, kind, actor, body, created_at) VALUES (?, ?, ?, ?, ?)')
+        ->execute([$orderId, $kind, $actor, mb_substr($text, 0, 2000), gmdate('Y-m-d H:i:s')]);
+}
+
+// Se llama después de responder: un fallo al registrar no debe afectar al pedido.
+function smartispLogOrderEmail(PDO $pdo, string $orderId, string $what, string $to, array $result): void {
+    try {
+        $text = !empty($result['ok']) ? "$what enviado a $to" : "No se pudo enviar $what a " . ($to !== '' ? $to : 'el cliente') . ': ' . (string)($result['error'] ?? $result['response'] ?? 'error desconocido');
+        smartispLogOrderActivity($pdo, $orderId, 'email', null, $text);
+    } catch (Throwable $e) {
+        error_log('SmartISP registro de correo del pedido ' . $orderId . ': ' . $e->getMessage());
+    }
+}
+
 // -------------------------------------------------------------
 if ($action === 'orders' || $action === 'customer-orders') {
     if ($method === 'POST') {
@@ -250,7 +268,7 @@ if ($action === 'orders' || $action === 'customer-orders') {
         }
         if ($stockEnabled) {
             try {
-                smartispApplyOrderStock($pdo, $validItems, 'released', $stockState);
+                smartispApplyOrderStock($pdo, $validItems, 'released', $stockState, $orderId);
             } catch (SmartispStockException $e) {
                 $pdo->rollBack();
                 http_response_code(400);
@@ -264,7 +282,7 @@ if ($action === 'orders' || $action === 'customer-orders') {
 
         $categories = array_map(static fn($p) => $p['category'] ?? '', $products);
         try {
-            sendOrderEmails($pdo, [
+            $mailResults = sendOrderEmails($pdo, [
                 'id'            => $orderId,
                 'customerName'  => $customerName,
                 'customerEmail' => $customerEmail,
@@ -276,6 +294,7 @@ if ($action === 'orders' || $action === 'customer-orders') {
                 'total'         => $total,
                 'isQuote'       => $isQuote
             ]);
+            smartispLogOrderEmail($pdo, $orderId, $isQuote ? 'Confirmación de solicitud de cotización' : 'Comprobante de compra', $customerEmail, $mailResults['customer'] ?? []);
         } catch (Throwable $e) {
             error_log('SmartISP correos del pedido ' . $orderId . ': ' . $e->getMessage());
         }
@@ -454,11 +473,44 @@ if ($action === 'admin-order') {
 
     $evStmt = $pdo->prepare('SELECT * FROM order_events WHERE order_id = :id ORDER BY created_at ASC, id ASC');
     $evStmt->execute([':id' => $id]);
+    $activity = [];
+    if (smartispTableExists($pdo, 'order_activity')) {
+        $acStmt = $pdo->prepare('SELECT id, kind, actor, body, created_at FROM order_activity WHERE order_id = :id ORDER BY created_at ASC, id ASC');
+        $acStmt->execute([':id' => $id]);
+        $activity = $acStmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
     echo json_encode([
-        'order'  => smartispDecodeOrderRow($order),
-        'events' => $evStmt->fetchAll(PDO::FETCH_ASSOC),
+        'order'    => smartispDecodeOrderRow($order),
+        'events'   => $evStmt->fetchAll(PDO::FETCH_ASSOC),
+        'activity' => $activity,
     ]);
+    exit;
+}
+
+if ($action === 'admin-order-note' && $method === 'POST') {
+    requireAdminAuth();
+    $id = trim((string)($body['id'] ?? ''));
+    $note = trim(is_scalar($body['note'] ?? null) ? (string)$body['note'] : '');
+    if ($id === '' || $note === '' || mb_strlen($note) > 2000) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Escribe una nota de hasta 2000 caracteres.']);
+        exit;
+    }
+    if (!smartispTableExists($pdo, 'order_activity')) {
+        http_response_code(503);
+        echo json_encode(['error' => 'Falta aplicar la migración 043 (notas internas de pedidos).']);
+        exit;
+    }
+    $exists = $pdo->prepare('SELECT 1 FROM orders_rows WHERE id = :id LIMIT 1');
+    $exists->execute([':id' => $id]);
+    if (!$exists->fetchColumn()) {
+        http_response_code(404);
+        echo json_encode(['error' => 'Pedido no encontrado.']);
+        exit;
+    }
+    smartispLogOrderActivity($pdo, $id, 'note', getAuthUser()['email'] ?? 'admin', $note);
+    echo json_encode(['ok' => true]);
     exit;
 }
 
@@ -516,7 +568,7 @@ if ($action === 'admin-order-status' && $method === 'POST') {
         $toStock = smartispOrderStockTarget($newStatus);
         if ($fromStock !== $toStock) {
             try {
-                smartispApplyOrderStock($pdo, smartispDecodeOrderRow($order)['items'] ?? [], $fromStock, $toStock);
+                smartispApplyOrderStock($pdo, smartispDecodeOrderRow($order)['items'] ?? [], $fromStock, $toStock, (string)$id);
             } catch (SmartispStockException $e) {
                 $pdo->rollBack();
                 http_response_code(409);
@@ -549,7 +601,8 @@ if ($action === 'admin-order-status' && $method === 'POST') {
         'emailQueued' => true,
     ]));
     try {
-        sendOrderStatusUpdateEmail($pdo, $order, $newStatus, $note);
+        $mailResult = sendOrderStatusUpdateEmail($pdo, $order, $newStatus, $note);
+        smartispLogOrderEmail($pdo, $id, 'Aviso de estado "' . (ORDER_STATUS_LABELS[$newStatus] ?? $newStatus) . '"', trim((string)($order['customer_email'] ?? '')), $mailResult);
     } catch (Throwable $e) {
         error_log('SmartISP correo de estado del pedido ' . $id . ': ' . $e->getMessage());
     }

@@ -15,7 +15,8 @@
     { key: 'catalogo', label: 'Catálogo' },
     { key: 'tienda', label: 'Tienda' },
     { key: 'analisis', label: 'Análisis' },
-    { key: 'sistema', label: 'Sistema' }
+    { key: 'sistema', label: 'Sistema' },
+    { key: 'administracion', label: 'Administración' }
   ];
 
   var LINKS = [
@@ -31,7 +32,9 @@
     { key: 'campanas', group: 'tienda', href: '/campanas.html', label: 'Campañas y banners', icon: 'megaphone', hint: 'Banners y promociones' },
     { key: 'estadisticas', group: 'analisis', href: '/estadisticas.html', label: 'Estadísticas', icon: 'chart-column', hint: 'Ventas, clientes y productos', shortcut: 'e' },
     { key: 'reportes', group: 'analisis', href: '/reportes.html', label: 'Reportes', icon: 'file-down', hint: 'Exportaciones CSV' },
-    { key: 'config', group: 'sistema', href: '/configuracion.html', label: 'Configuración', icon: 'settings', hint: 'Marca, correo y visibilidad' }
+    { key: 'config', group: 'sistema', href: '/configuracion.html', label: 'Configuración', icon: 'settings', hint: 'Marca, correo y visibilidad' },
+    { key: 'equipo', group: 'administracion', href: '/equipo.html', label: 'Equipo', icon: 'users-round', hint: 'Cuentas del panel, roles y sesiones', fullAdmin: true },
+    { key: 'actividad', group: 'administracion', href: '/actividad.html', label: 'Actividad', icon: 'history', hint: 'Registro de cambios y accesos del equipo', shortcut: 'a', fullAdmin: true }
   ];
 
   var ACTIONS = [
@@ -42,12 +45,18 @@
     { label: 'Productos sin foto', icon: 'image-off', href: '/editor-catalogo.html?photo=without_photo', hint: 'Catálogo' },
     { label: 'Exportar pedidos (CSV)', icon: 'file-spreadsheet', href: '/reportes.html', hint: 'Reportes' },
     { label: 'Ver la tienda', icon: 'external-link', href: '/tienda.html', hint: 'Sitio público', external: true },
+    { label: 'Mi cuenta: nombre, contraseña y sesiones', icon: 'user-cog', run: function () { openAccount(); }, hint: 'Cuenta' },
+    { label: 'Crear cuenta de equipo', icon: 'user-plus', href: '/equipo.html?new=1', hint: 'Equipo', fullAdmin: true },
+    { label: 'Accesos fallidos al panel', icon: 'shield-alert', href: '/actividad.html?act=login-failed', hint: 'Actividad', fullAdmin: true },
     { label: 'Cambiar tema claro/oscuro', icon: 'sun-moon', run: function () { cycleTheme(); }, hint: 'Preferencias' },
     { label: 'Alternar tablas compactas', icon: 'rows-3', run: function () { toggleDensity(); }, hint: 'Preferencias' }
   ];
 
   var STATUS_LABEL = { quote_requested: 'Cotización', pending: 'Pendiente de pago', paid: 'Pago confirmado', preparing: 'Preparando', shipped: 'Enviado', delivered: 'Entregado', cancelled: 'Cancelado', received: 'Recibido' };
   var ADMIN_ROLES = ['admin', 'administrator', 'administrador'];
+  // Equipo y Actividad: solo admin pleno (el servidor lo vuelve a exigir en cada acción).
+  var FULL_ADMIN_ROLES = ['admin'];
+  var currentUser = null;
   var prefs = window.SmartPrefs || { setCollapsed: function () {}, collapsed: function () { return false; }, theme: function () { return 'auto'; }, setTheme: function () {}, density: function () { return 'comfortable'; }, setDensity: function () {}, locked: function () { return false; } };
 
   function esc(value) {
@@ -72,9 +81,12 @@
       (link.badge ? '<span class="admin-nav-badge" data-badge="' + link.badge + '" hidden></span>' : '') + '</a>';
   }
 
+  function isFullAdmin() { return !!currentUser && FULL_ADMIN_ROLES.indexOf(String(currentUser.role || '').toLowerCase()) !== -1; }
+  function allowed(item) { return !item.fullAdmin || isFullAdmin(); }
+
   function groupsHtml(activeKey) {
     return GROUPS.map(function (group) {
-      var links = LINKS.filter(function (l) { return l.group === group.key; });
+      var links = LINKS.filter(function (l) { return l.group === group.key && allowed(l); });
       if (!links.length) return '';
       return '<div class="admin-nav-group">' + (group.label ? '<div class="admin-nav-group-label">' + esc(group.label) + '</div>' : '') +
         links.map(function (l) { return linkHtml(l, activeKey); }).join('') + '</div>';
@@ -132,6 +144,8 @@
     if (a.out_of_stock) items.push({ tone: 'bad', icon: 'package-x', href: '/inventario.html?filter=out', title: plural(a.out_of_stock, 'producto agotado', 'productos agotados'), text: 'Visibles en la tienda sin unidades libres.' });
     if (a.low_stock) items.push({ tone: 'warn', icon: 'triangle-alert', href: '/inventario.html?filter=low', title: plural(a.low_stock, 'producto con stock bajo', 'productos con stock bajo'), text: 'Conviene reponer pronto.' });
     if (a.products_no_price) items.push({ tone: 'warn', icon: 'circle-dollar-sign', href: '/editor-catalogo.html?price=quote', title: plural(a.products_no_price, 'producto visible sin precio', 'productos visibles sin precio'), text: 'Se muestran como “consultar precio”.' });
+    if (a.admin_login_alerts) items.push({ tone: 'bad', icon: 'shield-alert', href: '/actividad.html?act=login-*', title: plural(a.admin_login_alerts, 'alerta de acceso al panel', 'alertas de acceso al panel') + ' en 24 h', text: 'Varios intentos fallidos seguidos en una cuenta admin.' });
+    else if (a.admin_login_failures >= 3) items.push({ tone: 'warn', icon: 'shield-alert', href: '/actividad.html?act=login-failed', title: plural(a.admin_login_failures, 'intento fallido', 'intentos fallidos') + ' de acceso al panel en 24 h', text: 'Revisa el registro de actividad.' });
     if (a.products_no_photo) items.push({ tone: 'info', icon: 'image-off', href: '/editor-catalogo.html?photo=without_photo', title: plural(a.products_no_photo, 'producto visible sin foto', 'productos visibles sin foto'), text: 'Una foto mejora la conversión.' });
     return items;
   }
@@ -200,9 +214,9 @@
 
     function localItems(q) {
       var nq = normalize(q);
-      var screens = LINKS.filter(function (l) { return !nq || normalize(l.label + ' ' + l.hint).indexOf(nq) !== -1; })
+      var screens = LINKS.filter(function (l) { return allowed(l) && (!nq || normalize(l.label + ' ' + l.hint).indexOf(nq) !== -1); })
         .map(function (l) { return { group: 'Pantallas', label: l.label, hint: l.hint, icon: l.icon, href: l.href, kbd: l.shortcut ? 'G ' + l.shortcut.toUpperCase() : '' }; });
-      var actions = ACTIONS.filter(function (a) { return !nq || normalize(a.label + ' ' + a.hint).indexOf(nq) !== -1; })
+      var actions = ACTIONS.filter(function (a) { return allowed(a) && (!nq || normalize(a.label + ' ' + a.hint).indexOf(nq) !== -1); })
         .map(function (a) { return { group: 'Acciones', label: a.label, hint: a.hint, icon: a.icon, href: a.href, run: a.run, external: a.external }; });
       return nq ? screens.concat(actions) : screens.slice(0, 6).concat(actions.slice(0, 5));
     }
@@ -335,9 +349,135 @@
       if (e.key === 'g' || e.key === 'G') { pendingG = Date.now(); return; }
       if (pendingG && Date.now() - pendingG < 1200) {
         pendingG = 0;
-        var link = LINKS.filter(function (l) { return l.shortcut === e.key.toLowerCase(); })[0];
+        var link = LINKS.filter(function (l) { return l.shortcut === e.key.toLowerCase() && allowed(l); })[0];
         if (link) { e.preventDefault(); window.location.assign(link.href); }
       }
+    });
+  }
+
+  // ---------- Mi cuenta ----------
+  var ACCOUNT_EVENTS = { login: 'Inicio de sesión', 'login-failed': 'Intento fallido', 'login-blocked': 'Intento con la cuenta desactivada', 'change-password': 'Cambio de contraseña', 'revoke-other-sessions': 'Cierre de las demás sesiones', 'reset-password': 'Contraseña restablecida por correo' };
+
+  // El drawer usa SmartAdmin; las pantallas que no cargan admin-page.js lo piden al abrirlo.
+  function withSmartAdmin(fn) {
+    if (window.SmartAdmin) { fn(window.SmartAdmin); return; }
+    var script = document.createElement('script');
+    script.src = '/assets/js/admin/admin-page.js?v=ds-20261026';
+    script.onload = function () { if (window.SmartAdmin) fn(window.SmartAdmin); };
+    script.onerror = function () { notify('No se pudo abrir Mi cuenta. Recarga la página.'); };
+    document.head.appendChild(script);
+  }
+
+  // Cambiar la contraseña o cerrar sesiones invalida el token anterior: se reemplaza donde estaba guardado.
+  function replaceToken(newToken) {
+    if (!newToken) return;
+    try {
+      if (localStorage.getItem('smartisp.adminToken')) localStorage.setItem('smartisp.adminToken', newToken);
+      if (sessionStorage.getItem('smartisp.adminToken')) sessionStorage.setItem('smartisp.adminToken', newToken);
+    } catch (e) { /* almacenamiento bloqueado */ }
+  }
+
+  function ecTime(SA, value) {
+    var d = SA.utc(value);
+    return d ? d.toLocaleString('es-EC', { timeZone: 'America/Guayaquil', dateStyle: 'medium', timeStyle: 'short' }) : '—';
+  }
+
+  function browserName(ua) {
+    var s = String(ua || '');
+    var b = /Edg\//.test(s) ? 'Edge' : /OPR\//.test(s) ? 'Opera' : /Chrome\//.test(s) ? 'Chrome' : /Firefox\//.test(s) ? 'Firefox' : /Safari\//.test(s) ? 'Safari' : 'Otro navegador';
+    var os = /Windows/.test(s) ? 'Windows' : /Android/.test(s) ? 'Android' : /iPhone|iPad/.test(s) ? 'iOS' : /Mac OS/.test(s) ? 'macOS' : /Linux/.test(s) ? 'Linux' : '';
+    return b + (os ? ' en ' + os : '');
+  }
+
+  function busy(button, on) { button.disabled = on; button.classList.toggle('is-busy', on); }
+
+  function openAccount() {
+    withSmartAdmin(function (SA) {
+      var body = document.createElement('div');
+      body.className = 'admin-account';
+      body.innerHTML = '<span class="sk sk-line" style="width:60%"></span><span class="sk sk-line" style="width:85%"></span><span class="sk sk-line" style="width:40%"></span>';
+      SA.drawer({ title: 'Mi cuenta', subtitle: (currentUser && currentUser.email) || '', body: body });
+      SA.api('admin-my-account').then(function (data) { paintAccount(SA, body, data); })
+        .catch(function (error) { body.innerHTML = SA.state('error', 'No se pudo cargar tu cuenta', error.message); SA.icons(); });
+    });
+  }
+
+  function paintAccount(SA, body, data) {
+    var u = data.user || {};
+    var recent = (data.recent || []).map(function (r) {
+      var bad = r.action === 'login-failed' || r.action === 'login-blocked';
+      return '<li class="' + (bad ? 'is-bad' : '') + '"><i data-lucide="' + (r.action === 'login' ? 'log-in' : bad ? 'shield-alert' : 'lock-keyhole') + '" aria-hidden="true"></i>' +
+        '<span><strong>' + esc(ACCOUNT_EVENTS[r.action] || r.action) + '</strong><small>' + esc(ecTime(SA, r.created_at)) + ' · ' + esc(browserName(r.user_agent)) + (r.ip ? ' · IP ' + esc(r.ip) : '') + '</small></span></li>';
+    }).join('');
+    body.innerHTML =
+      '<section class="admin-account-section" aria-labelledby="acc-profile-title"><h3 id="acc-profile-title">Perfil</h3>' +
+        '<form id="acc-profile" novalidate>' +
+          '<div class="form-row"><label for="acc-name">Nombre</label><input class="field" id="acc-name" autocomplete="given-name" maxlength="120" required value="' + esc(u.name) + '"></div>' +
+          '<div class="form-row"><label for="acc-surname">Apellido</label><input class="field" id="acc-surname" autocomplete="family-name" maxlength="120" value="' + esc(u.surname) + '"></div>' +
+          '<p class="admin-account-hint">Correo <strong>' + esc(u.email) + '</strong> · ' + esc(u.roleLabel || 'Administrador') + '</p>' +
+          '<button class="button primary" type="submit"><i data-lucide="save" aria-hidden="true"></i> Guardar nombre</button>' +
+        '</form></section>' +
+      '<section class="admin-account-section" aria-labelledby="acc-pass-title"><h3 id="acc-pass-title">Contraseña</h3>' +
+        '<form id="acc-password" novalidate>' +
+          '<div class="form-row"><label for="acc-current">Contraseña actual</label><input class="field" id="acc-current" type="password" autocomplete="current-password" required></div>' +
+          '<div class="form-row"><label for="acc-new">Contraseña nueva</label><input class="field" id="acc-new" type="password" autocomplete="new-password" minlength="8" required><span class="hint">Mínimo 8 caracteres.</span></div>' +
+          '<div class="form-row"><label for="acc-confirm">Repite la contraseña nueva</label><input class="field" id="acc-confirm" type="password" autocomplete="new-password" required></div>' +
+          '<p class="admin-account-hint">Al cambiarla se cierran tus sesiones en otros dispositivos; esta sigue abierta.</p>' +
+          '<button class="button primary" type="submit"><i data-lucide="lock-keyhole" aria-hidden="true"></i> Cambiar contraseña</button>' +
+        '</form></section>' +
+      '<section class="admin-account-section" aria-labelledby="acc-sessions-title"><h3 id="acc-sessions-title">Sesiones</h3>' +
+        '<p class="admin-account-hint">Último inicio de sesión: <strong>' + esc(u.lastLoginAt ? ecTime(SA, u.lastLoginAt) : 'sin registro') + '</strong> (hora de Ecuador)</p>' +
+        (recent ? '<ul class="admin-account-events" aria-label="Accesos recientes">' + recent + '</ul>' : '') +
+        '<button class="button" type="button" id="acc-revoke"><i data-lucide="log-out" aria-hidden="true"></i> Cerrar las demás sesiones</button>' +
+        '<p class="admin-account-hint">Útil si iniciaste sesión en un equipo ajeno: los demás dispositivos tendrán que volver a entrar.</p></section>' +
+      (data.canManageTeam ? '<a class="button ghost" href="/equipo.html"><i data-lucide="users-round" aria-hidden="true"></i> Gestionar el equipo</a>' : '');
+    SA.icons();
+
+    body.querySelector('#acc-profile').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var name = body.querySelector('#acc-name').value.trim();
+      var surname = body.querySelector('#acc-surname').value.trim();
+      if (!name) { SA.toast('Escribe tu nombre.', true); body.querySelector('#acc-name').focus(); return; }
+      var button = e.submitter || this.querySelector('button[type="submit"]');
+      busy(button, true);
+      SA.post('update-profile', { name: name, surname: surname }).then(function (res) {
+        currentUser = Object.assign({}, currentUser, res.user || { name: name, surname: surname });
+        try { localStorage.setItem('smartisp.accountUser', JSON.stringify(currentUser)); } catch (err) { /* almacenamiento bloqueado */ }
+        document.querySelectorAll('#smartisp-admin-nav .admin-nav-user-info strong').forEach(function (el) { el.textContent = name; });
+        document.querySelectorAll('#smartisp-admin-nav .admin-nav-account .admin-nav-avatar').forEach(function (el) { el.textContent = name.charAt(0).toUpperCase(); });
+        SA.toast('Nombre actualizado.');
+      }).catch(function (err) { SA.toast(err.message, true); }).finally(function () { busy(button, false); });
+    });
+
+    body.querySelector('#acc-password').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var form = this;
+      var current = form.querySelector('#acc-current').value;
+      var next = form.querySelector('#acc-new').value;
+      var confirm = form.querySelector('#acc-confirm').value;
+      if (!current) { SA.toast('Escribe tu contraseña actual.', true); form.querySelector('#acc-current').focus(); return; }
+      if (next.length < 8) { SA.toast('La contraseña nueva debe tener al menos 8 caracteres.', true); form.querySelector('#acc-new').focus(); return; }
+      if (next !== confirm) { SA.toast('Las contraseñas nuevas no coinciden.', true); form.querySelector('#acc-confirm').focus(); return; }
+      if (next === current) { SA.toast('La contraseña nueva debe ser distinta de la actual.', true); return; }
+      var button = form.querySelector('button[type="submit"]');
+      busy(button, true);
+      SA.post('change-password', { currentPassword: current, newPassword: next, confirmation: confirm }).then(function (res) {
+        replaceToken(res.token);
+        form.reset();
+        SA.toast('Contraseña actualizada. Se cerraron tus demás sesiones.');
+      }).catch(function (err) { SA.toast(err.message, true); }).finally(function () { busy(button, false); });
+    });
+
+    body.querySelector('#acc-revoke').addEventListener('click', function () {
+      var button = this;
+      SA.confirm('¿Cerrar las demás sesiones?', 'Se cerrará tu sesión en cualquier otro navegador o dispositivo. Esta pestaña seguirá abierta.', 'Cerrar sesiones').then(function (ok) {
+        if (!ok) return;
+        busy(button, true);
+        SA.post('revoke-other-sessions').then(function (res) {
+          replaceToken(res.token);
+          SA.toast('Listo: las demás sesiones quedaron cerradas.');
+        }).catch(function (err) { SA.toast(err.message, true); }).finally(function () { busy(button, false); });
+      });
     });
   }
 
@@ -388,6 +528,7 @@
   }
 
   function render(root, user) {
+    currentUser = user;
     var activeKey = root.getAttribute('data-active') || '';
     var name = (user && (user.name || user.email)) || '';
     var initial = esc((name || '·').trim().charAt(0).toUpperCase());
@@ -416,8 +557,9 @@
           '<div class="admin-pop" role="dialog" aria-label="Avisos" hidden></div>' +
         '</div>' +
         '<div class="admin-nav-user">' +
-          '<span class="admin-nav-avatar" aria-hidden="true">' + initial + '</span>' +
-          '<div class="admin-nav-user-info"><strong>' + esc(name || 'Administrador') + '</strong><span>Administrador</span></div>' +
+          '<button type="button" class="admin-nav-account" aria-haspopup="dialog" aria-label="Mi cuenta: ' + esc(name || 'Administrador') + '" data-tip="Mi cuenta">' +
+            '<span class="admin-nav-avatar" aria-hidden="true">' + initial + '</span>' +
+            '<span class="admin-nav-user-info"><strong>' + esc(name || 'Administrador') + '</strong><span>Mi cuenta</span></span></button>' +
           '<a class="admin-nav-icon" href="/tienda.html" target="_blank" rel="noopener" aria-label="Ver tienda (pestaña nueva)" data-tip="Ver tienda"><i data-lucide="external-link" aria-hidden="true"></i></a>' +
           '<button type="button" class="admin-nav-icon admin-nav-logout" aria-label="Cerrar sesión" data-tip="Cerrar sesión"><i data-lucide="log-out" aria-hidden="true"></i></button>' +
         '</div>' +
@@ -479,6 +621,8 @@
     bindDocumentListeners();
     bindKeys();
     loadAlerts(root, false);
+
+    root.querySelector('.admin-nav-account').addEventListener('click', function () { setMobileOpen(false); openAccount(); });
 
     root.querySelector('.admin-nav-logout').addEventListener('click', function () {
       fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).finally(function () {

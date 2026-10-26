@@ -180,7 +180,7 @@ if ($action === 'admin-store-campaigns') {
             $products = $pdo->prepare("SELECT p.* FROM storefront_campaign_products cp JOIN `$productTable` p ON p.id = cp.product_id WHERE cp.campaign_id = :id ORDER BY cp.sort_order, cp.product_id");
             $products->execute([':id' => $campaign['id']]);
             $productRows = array_map('normalizeProductRow', $products->fetchAll(PDO::FETCH_ASSOC));
-            $chips = $pdo->query('SELECT id, label, icon, target_url, is_active FROM storefront_promo_chips ORDER BY sort_order, id')->fetchAll(PDO::FETCH_ASSOC);
+            $chips = $pdo->query('SELECT id, label, icon, target_url, is_active, starts_at, ends_at FROM storefront_promo_chips ORDER BY sort_order, id')->fetchAll(PDO::FETCH_ASSOC);
         }
         echo json_encode(['campaign' => $campaign, 'slides' => $slideRows, 'products' => $productRows, 'chips' => $chips, 'featured_page' => $featuredPage, 'featured_category_ids' => $featuredCategoryIds]);
         exit;
@@ -312,6 +312,7 @@ if ($action === 'admin-store-campaigns') {
             try {
                 $chips[$chipIndex]['starts_at'] = storefrontCampaignDate($chip['starts_at'] ?? null);
                 $chips[$chipIndex]['ends_at'] = storefrontCampaignDate($chip['ends_at'] ?? null);
+                if ($chips[$chipIndex]['starts_at'] && $chips[$chipIndex]['ends_at'] && $chips[$chipIndex]['ends_at'] <= $chips[$chipIndex]['starts_at']) throw new RuntimeException('la fecha "hasta" debe ser posterior a "desde".');
             } catch (RuntimeException $error) {
                 http_response_code(400);
                 echo json_encode(['error' => 'Acceso promocional "' . trim((string)$chip['label']) . '": ' . $error->getMessage()]);

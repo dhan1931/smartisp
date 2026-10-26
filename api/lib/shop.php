@@ -156,7 +156,7 @@ class SmartispStockException extends RuntimeException {}
 // Debe correr dentro de una transacción. Si el cambio necesita unidades libres (reservar o
 // descontar) y no las hay, lanza SmartispStockException sin tocar nada: antes se recortaba a 0
 // en silencio y el inventario quedaba descuadrado.
-function smartispApplyOrderStock(PDO $pdo, array $items, string $from, string $to): void {
+function smartispApplyOrderStock(PDO $pdo, array $items, string $from, string $to, ?string $orderId = null): void {
     if ($from === $to) return;
     // [disponible, reservado] que ocupa una unidad en cada situación.
     $weights = ['released' => [0, 0], 'reserved' => [0, 1], 'consumed' => [-1, 0]];
@@ -189,9 +189,19 @@ function smartispApplyOrderStock(PDO $pdo, array $items, string $from, string $t
             throw new SmartispStockException('No hay stock libre suficiente de "' . $names[$productId] . '" (libre: ' . $free . ', necesita: ' . $qty . '). Ajusta el inventario antes de cambiar el estado.');
         }
         // Liberar más de lo reservado solo pasa con datos descuadrados de antes: se deja en 0.
-        $pending[] = [':available' => $available, ':reserved' => max(0, $reserved), ':id' => $productId];
+        $pending[] = [[':available' => $available, ':reserved' => max(0, $reserved), ':id' => $productId], [(int)$row['available'], (int)$row['reserved']]];
     }
-    foreach ($pending as $params) $update->execute($params);
+    $reason = smartispOrderStockReason($from, $to);
+    foreach ($pending as [$params, $before]) {
+        $update->execute($params);
+        smartispRecordStockMovement($pdo, $params[':id'], $before, [$params[':available'], $params[':reserved']], $reason, $orderId);
+    }
+}
+
+function smartispOrderStockReason(string $from, string $to): string {
+    if ($to === 'consumed') return 'order_shipped';
+    if ($to === 'reserved') return $from === 'consumed' ? 'order_returned' : 'order_reserved';
+    return $from === 'consumed' ? 'order_cancelled' : 'order_released';
 }
 
 // El inventario por pedido solo se activa cuando la migración 037 agregó stock_state; sin ella
@@ -199,6 +209,98 @@ function smartispApplyOrderStock(PDO $pdo, array $items, string $from, string $t
 function smartispOrderStockEnabled(PDO $pdo): bool {
     return smartispTableExists($pdo, 'product_inventory')
         && in_array('stock_state', smartispTableColumns($pdo, 'orders_rows'), true);
+}
+
+// -------------------------------------------------------------
+// HISTORIAL DE MOVIMIENTOS Y AVISOS DE STOCK
+// -------------------------------------------------------------
+// Cada cambio de stock deja una fila en inventory_movements (migración 042) dentro de la misma
+// transacción que lo provoca. Sin la tabla el stock funciona igual, sin historial.
+const SMARTISP_STOCK_LOW_THRESHOLD = 5;
+const SMARTISP_STOCK_ALERT_HOURS = 24;
+
+// $before y $after: [disponible, reservado].
+function smartispRecordStockMovement(PDO $pdo, string $productId, array $before, array $after, string $reason, ?string $orderId = null, ?string $note = null): void {
+    $deltaAvailable = (int)$after[0] - (int)$before[0];
+    $deltaReserved = (int)$after[1] - (int)$before[1];
+    if ($deltaAvailable === 0 && $deltaReserved === 0) return;
+    if (smartispTableExists($pdo, 'inventory_movements')) {
+        $user = function_exists('getAuthUser') ? getAuthUser() : null;
+        $userId = $user && function_exists('isAdminUser') && isAdminUser($user) ? (string)($user['id'] ?? '') : '';
+        $pdo->prepare('INSERT INTO inventory_movements (product_id, delta_available, delta_reserved, reason, order_id, user_id, note)
+            VALUES (:product_id, :da, :dr, :reason, :order_id, :user_id, :note)')->execute([
+            ':product_id' => $productId, ':da' => $deltaAvailable, ':dr' => $deltaReserved, ':reason' => $reason,
+            ':order_id' => $orderId ?: null, ':user_id' => $userId !== '' ? $userId : null,
+            ':note' => $note !== null && trim($note) !== '' ? mb_substr(trim($note), 0, 255) : null,
+        ]);
+    }
+    $freeBefore = max(0, (int)$before[0] - (int)$before[1]);
+    $freeAfter = max(0, (int)$after[0] - (int)$after[1]);
+    $low = SMARTISP_STOCK_LOW_THRESHOLD;
+    if ($reason !== 'untracked' && $freeAfter < $freeBefore && (($freeBefore > $low && $freeAfter <= $low) || ($freeBefore > 0 && $freeAfter === 0))) {
+        smartispQueueStockAlert($pdo, $productId);
+    }
+}
+
+// El correo sale después de responder. Entonces se vuelve a leer el stock: si la transacción se
+// deshizo o ya se repuso, no se avisa.
+function smartispQueueStockAlert(PDO $pdo, string $productId): void {
+    static $queue = null;
+    if ($queue === null) {
+        $queue = [];
+        register_shutdown_function(static function () use ($pdo, &$queue): void {
+            if (!$queue) return;
+            smartispFinishResponse();
+            try {
+                smartispSendStockAlerts($pdo, array_keys($queue));
+            } catch (Throwable $e) {
+                error_log('SmartISP aviso de stock: ' . $e->getMessage());
+            }
+        });
+    }
+    $queue[$productId] = true;
+}
+
+function smartispSendStockAlerts(PDO $pdo, array $productIds): void {
+    if (!function_exists('getMailSettings') || !function_exists('sendSmartEmail')) return;
+    $to = trim((string)(getMailSettings($pdo)['admin_email'] ?? ''));
+    if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) return;
+    $pTable = getProductsTableName($pdo);
+    $read = $pdo->prepare("SELECT p.name, p.sku, CAST(i.quantity_available AS SIGNED) AS available, CAST(i.quantity_reserved AS SIGNED) AS reserved
+        FROM product_inventory i INNER JOIN `$pTable` p ON p.id = i.product_id WHERE i.product_id = :id");
+    // Marca por producto en settings_rows: solo avisa quien la crea o la renueva ya vencida.
+    $mark = $pdo->prepare("INSERT INTO settings_rows (setting_key, setting_value) VALUES (:key, :now)
+        ON DUPLICATE KEY UPDATE setting_value = IF(setting_value < :cut, VALUES(setting_value), setting_value)");
+    $check = $pdo->prepare('SELECT setting_value FROM settings_rows WHERE setting_key = :key');
+    $siteUrl = rtrim((string)(getenv('SITE_URL') ?: 'https://smart-isp.com.ec'), '/');
+    foreach ($productIds as $productId) {
+        $productId = (string)$productId;
+        $read->execute([':id' => $productId]);
+        $row = $read->fetch(PDO::FETCH_ASSOC);
+        if (!$row) continue;
+        $free = max(0, (int)$row['available'] - (int)$row['reserved']);
+        if ($free > SMARTISP_STOCK_LOW_THRESHOLD) continue;
+        $key = smartispStockAlertKey($productId);
+        $now = gmdate('Y-m-d H:i:s');
+        $mark->execute([':key' => $key, ':now' => $now, ':cut' => gmdate('Y-m-d H:i:s', time() - SMARTISP_STOCK_ALERT_HOURS * 3600)]);
+        $check->execute([':key' => $key]);
+        if ($check->fetchColumn() !== $now) continue;
+        $name = htmlspecialchars((string)$row['name'], ENT_QUOTES, 'UTF-8');
+        $sku = trim((string)($row['sku'] ?? '')) !== '' ? ' (SKU ' . htmlspecialchars((string)$row['sku'], ENT_QUOTES, 'UTF-8') . ')' : '';
+        $state = $free === 0 ? 'se agotó' : "tiene stock bajo: quedan $free unidad(es) libres";
+        $link = $siteUrl . '/inventario.html?q=' . rawurlencode((string)($row['sku'] ?: $row['name']));
+        $html = '<div style="font-family:Arial,sans-serif;color:#163342;font-size:14px;line-height:1.5">'
+            . "<p>El producto <b>$name</b>$sku $state.</p>"
+            . '<p>Disponible: ' . (int)$row['available'] . ' · Apartado por pedidos: ' . (int)$row['reserved'] . '</p>'
+            . '<p><a href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '">Reponer en Inventario</a></p>'
+            . '<p style="color:#6b7f88;font-size:12px">Aviso automático de SmartISP: como máximo uno por producto cada ' . SMARTISP_STOCK_ALERT_HOURS . ' h.</p></div>';
+        $result = sendSmartEmail($pdo, $to, ($free === 0 ? 'Agotado: ' : 'Stock bajo: ') . (string)$row['name'] . ' - SmartISP', $html);
+        if (empty($result['ok'])) error_log('SmartISP aviso de stock de ' . $productId . ': ' . ($result['error'] ?? 'sin detalle'));
+    }
+}
+
+function smartispStockAlertKey(string $productId): string {
+    return 'stock_alert:' . (strlen($productId) <= 150 ? $productId : md5($productId));
 }
 
 // -------------------------------------------------------------

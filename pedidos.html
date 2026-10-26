@@ -14,14 +14,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap">
-  <script src="/assets/js/admin/admin-theme.js?v=ds-20261026"></script>
-  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261026">
-  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261026b">
-  <link rel="stylesheet" href="/assets/css/admin/pedidos-page.css?v=ds-20261026">
-  <script src="/assets/vendor/lucide-icons.min.js?v=bb816557" defer></script>
-  <script src="/assets/js/admin/admin-nav.js?v=ds-20261026b" defer></script>
-  <script src="/assets/js/admin/admin-page.js?v=ds-20261026" defer></script>
-  <script src="/assets/js/admin/pedidos-page.js?v=ds-20261026" defer></script>
+  <script src="/assets/js/admin/admin-theme.js?v=ds-20261027"></script>
+  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/pedidos-page.css?v=ds-20261027">
+  <script src="/assets/vendor/lucide-icons.min.js?v=68df8f2b" defer></script>
+  <script src="/assets/js/admin/admin-nav.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/admin-page.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/pedidos-page.js?v=ds-20261027" defer></script>
 </head>
 <body>
   <div id="smartisp-admin-nav" class="is-loading" data-active="pedidos"></div>
@@ -51,10 +51,17 @@
           <div class="toolbar-actions" id="ordersExportHost"></div>
         </div>
         <div class="filters status-tabs" id="statusTabs" role="group" aria-label="Filtrar por estado"></div>
+        <div class="bulk-bar" id="bulkBar" role="region" aria-label="Acciones en bloque" hidden>
+          <span id="bulkCount" aria-live="polite"></span>
+          <label class="sr-only" for="bulkStatus">Nuevo estado para los pedidos seleccionados</label>
+          <select id="bulkStatus" class="select"></select>
+          <button class="button primary small" id="bulkApply" type="button"><i data-lucide="refresh-cw" aria-hidden="true"></i> Cambiar estado</button>
+          <button class="button ghost small" id="bulkClear" type="button">Quitar selección</button>
+        </div>
 
         <div id="ordersTableWrap" class="table-wrap">
           <table class="orders-table" data-export="pedidos" data-export-host="ordersExportHost">
-            <thead><tr><th>Pedido</th><th>Fecha</th><th>Cliente</th><th class="num">Ítems</th><th class="num">Total</th><th>Estado</th><th data-no-export><span class="sr-only">Acciones</span></th></tr></thead>
+            <thead><tr><th class="sel" data-no-export><input type="checkbox" id="selectAll" aria-label="Seleccionar todos los pedidos de esta página"></th><th>Pedido</th><th>Fecha</th><th>Cliente</th><th class="num">Ítems</th><th class="num">Total</th><th>Estado</th><th data-no-export><span class="sr-only">Acciones</span></th></tr></thead>
             <tbody id="ordersBody"></tbody>
           </table>
         </div>
@@ -80,6 +87,8 @@
       </header>
 
       <div class="modal-body">
+        <div class="order-actions" id="modalActions"></div>
+
         <div class="order-parties">
           <div class="party">
             <span class="section-label">Cliente</span>
@@ -105,14 +114,22 @@
             <select id="statusSelect" name="status"></select>
           </label>
           <div id="statusHint" class="status-hint"></div>
-          <label>Nota interna / mensaje al cliente (opcional)
-            <textarea id="statusNote" name="note" rows="2" placeholder="Se incluye en el correo que recibe el cliente si lo completas."></textarea>
+          <label>Mensaje para el cliente (opcional)
+            <textarea id="statusNote" name="note" rows="2" maxlength="2000" placeholder="Se incluye en el correo de aviso que recibe el cliente."></textarea>
           </label>
           <button class="button primary" type="submit" id="statusSubmitBtn"><i data-lucide="check" aria-hidden="true"></i> Actualizar estado</button>
           <div id="statusMessage" class="message" role="status"></div>
         </form>
 
-        <span class="section-label timeline-label">Historial</span>
+        <form id="noteForm" class="status-form note-form">
+          <label>Nota interna <span class="label-hint">(solo la ve el equipo)</span>
+            <textarea id="noteText" name="internal_note" rows="2" maxlength="2000" placeholder="Ej.: el cliente pidió factura a nombre de su empresa."></textarea>
+          </label>
+          <button class="button small" type="submit" id="noteSubmitBtn"><i data-lucide="lock" aria-hidden="true"></i> Añadir nota</button>
+          <div id="noteMessage" class="message" role="status"></div>
+        </form>
+
+        <span class="section-label timeline-label">Línea de tiempo <span class="label-hint">(hora de Ecuador)</span></span>
         <div id="modalTimeline" class="timeline"></div>
       </div>
     </div>

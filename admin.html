@@ -12,15 +12,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap">
-  <script src="/assets/js/admin/admin-theme.js?v=ds-20261026"></script>
-  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261026">
-  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261026b">
-  <link rel="stylesheet" href="/assets/css/admin/admin-dashboard.css?v=ds-20261026">
-  <script src="/assets/vendor/lucide-icons.min.js?v=bb816557" defer></script>
-  <script src="/assets/js/admin/admin-nav.js?v=ds-20261026b" defer></script>
-  <script src="/assets/js/admin/admin-page.js?v=ds-20261026" defer></script>
-  <script src="/assets/js/admin/admin-charts.js?v=ds-20261026" defer></script>
-  <script src="/assets/js/admin/admin-dashboard.js?v=ds-20261026" defer></script>
+  <script src="/assets/js/admin/admin-theme.js?v=ds-20261027"></script>
+  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/admin-dashboard.css?v=ds-20261027">
+  <script src="/assets/vendor/lucide-icons.min.js?v=68df8f2b" defer></script>
+  <script src="/assets/js/admin/admin-nav.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/admin-page.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/admin-charts.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/admin-dashboard.js?v=ds-20261027" defer></script>
 </head>
 <body>
   <div id="smartisp-admin-nav" class="is-loading" data-active="inicio"></div>
@@ -113,7 +113,7 @@
         </section>
       </div>
 
-      <div class="dash-row r-half">
+      <div class="dash-row r-three">
         <section class="card" aria-labelledby="topTitle">
           <div class="card-head">
             <div><h2 id="topTitle">Productos más vendidos</h2><p>Pedidos no anulados del periodo.</p></div>
@@ -127,6 +127,10 @@
             <div class="segmented" id="catMetric" role="group" aria-label="Ordenar categorías por"><button type="button" data-metric="revenue" class="is-active" aria-pressed="true">Ingresos</button><button type="button" data-metric="units" aria-pressed="false">Unidades</button></div>
           </div>
           <div class="bars" id="categories"></div>
+        </section>
+        <section class="card" aria-labelledby="marginTitle">
+          <div class="card-head"><div><h2 id="marginTitle">Margen bruto</h2><p>Ventas menos costo de lo vendido, solo productos con costo.</p></div><a href="/estadisticas.html">Detalle</a></div>
+          <div id="margin"></div>
         </section>
       </div>
 

@@ -4,6 +4,12 @@
 // $method y los helpers (getAuthUser, isAdminUser, requireAdminAuth, etc.) ya estan definidos
 // cuando este archivo se incluye. Cada bloque se autogestiona con 'if ($action === ...) { ... exit; }',
 // igual que antes; solo cambio donde vive el codigo, no la logica.
+//
+// El costo (products_rows.cost, migración 041) es solo del panel: normalizeProductRow no lo
+// incluye y las respuestas públicas se arman con ella.
+
+const SMARTISP_BULK_MAX_IDS = 500;
+const SMARTISP_BULK_SELECT_MAX = 5000;
 
 // -------------------------------------------------------------
 // 1. CATÁLOGO PÚBLICO (/api/auth/catalog)
@@ -268,6 +274,19 @@ if ($action === 'admin-products') {
         }
 
         $whereSql = implode(' AND ', $where);
+        $hasCost = in_array('cost', smartispTableColumns($pdo, $pTable), true);
+
+        // compact=1: todas las filas que cumplen el filtro, con pocos campos, para "seleccionar todos
+        // los filtrados" en las acciones masivas.
+        if ((string)($_GET['compact'] ?? '') === '1') {
+            $stmt = $pdo->prepare("SELECT id, name, sku, category, subcategory, price, visible" . ($hasCost ? ', cost' : '') . " FROM `$pTable` WHERE $whereSql ORDER BY created_at DESC, id ASC LIMIT " . SMARTISP_BULK_SELECT_MAX);
+            $stmt->execute($params);
+            $rows = array_map(static fn($r) => ['id' => (string)$r['id'], 'name' => (string)$r['name'], 'sku' => (string)($r['sku'] ?? ''), 'category' => (string)($r['category'] ?? ''),
+                'subcategory' => (string)($r['subcategory'] ?? ''), 'price' => (float)$r['price'], 'visible' => (int)$r['visible'] === 1,
+                'cost' => isset($r['cost']) ? (float)$r['cost'] : null], $stmt->fetchAll(PDO::FETCH_ASSOC));
+            echo json_encode(['products' => $rows, 'truncated' => count($rows) >= SMARTISP_BULK_SELECT_MAX, 'max' => SMARTISP_BULK_SELECT_MAX]);
+            exit;
+        }
 
         $totalStmt = $pdo->prepare("SELECT COUNT(*) FROM `$pTable` WHERE $whereSql");
         $totalStmt->execute($params);
@@ -280,7 +299,24 @@ if ($action === 'admin-products') {
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
-        $products = array_map('normalizeProductRow', $stmt->fetchAll());
+        $rawRows = $stmt->fetchAll();
+        $products = array_map('normalizeProductRow', $rawRows);
+
+        // Solo para el panel: costo y stock de la página (normalizeProductRow es lo público).
+        $stock = [];
+        $ids = array_column($products, 'id');
+        if ($ids && smartispTableExists($pdo, 'product_inventory')) {
+            $invStmt = $pdo->prepare('SELECT product_id, CAST(quantity_available AS SIGNED) AS available, CAST(quantity_reserved AS SIGNED) AS reserved
+                FROM product_inventory WHERE product_id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')');
+            $invStmt->execute($ids);
+            foreach ($invStmt->fetchAll(PDO::FETCH_ASSOC) as $inv) $stock[(string)$inv['product_id']] = $inv;
+        }
+        foreach ($products as $i => &$product) {
+            $product['cost'] = $hasCost && isset($rawRows[$i]['cost']) ? (float)$rawRows[$i]['cost'] : null;
+            $inv = $stock[$product['id']] ?? null;
+            $product['stock'] = $inv ? ['available' => (int)$inv['available'], 'reserved' => (int)$inv['reserved'], 'free' => max(0, (int)$inv['available'] - (int)$inv['reserved'])] : null;
+        }
+        unset($product);
 
         echo json_encode([
             'products'   => $products,
@@ -350,6 +386,21 @@ if ($action === 'admin-products') {
         }
         $contentText = trim((string)($body['content_text'] ?? ($body['contentText'] ?? ''))) ?: null;
         $warrantyText = trim((string)($body['warranty_text'] ?? ($body['warrantyText'] ?? ''))) ?: null;
+        // Costo opcional: solo se toca si viene en el cuerpo; vacío lo borra (NULL = sin costo).
+        $hasCost = in_array('cost', smartispTableColumns($pdo, $pTable), true);
+        $costSent = $hasCost && array_key_exists('cost', $body);
+        $cost = null;
+        if ($costSent) {
+            $rawCost = is_string($body['cost']) ? trim($body['cost']) : $body['cost'];
+            if ($rawCost !== '' && $rawCost !== null) {
+                if (!is_numeric($rawCost) || (float)$rawCost < 0 || (float)$rawCost > 99999999) {
+                    http_response_code(400);
+                    echo json_encode(['error' => 'El costo debe ser un número mayor o igual a 0.']);
+                    exit;
+                }
+                $cost = round((float)$rawCost, 2);
+            }
+        }
 
         if (!$name) {
             http_response_code(400);
@@ -405,6 +456,7 @@ if ($action === 'admin-products') {
                 'specs_json'    => [$sent('specs'), $specsJson],
                 'content_text'  => [$sent('content_text', 'contentText'), $contentText],
                 'warranty_text' => [$sent('warranty_text', 'warrantyText'), $warrantyText],
+                'cost'          => [$costSent, $cost],
             ];
             $sets = ['name = :name', 'description = :description', 'price = :price', 'category = :category',
                 'subcategory = :subcategory', 'image_url = :image_url', 'sku = :sku', 'visible = :visible'];
@@ -435,10 +487,10 @@ if ($action === 'admin-products') {
                 'message' => 'Producto actualizado con éxito.'
             ]);
         } else {
-            $sql = "INSERT INTO `$pTable` (id, name, description, price, category, subcategory, image_url, external_url, sku, visible, specs_json, content_text, warranty_text)
-                    VALUES (:id, :name, :description, :price, :category, :subcategory, :image_url, :external_url, :sku, :visible, :specs_json, :content_text, :warranty_text)";
+            $sql = "INSERT INTO `$pTable` (id, name, description, price, category, subcategory, image_url, external_url, sku, visible, specs_json, content_text, warranty_text" . ($hasCost ? ', cost' : '') . ")
+                    VALUES (:id, :name, :description, :price, :category, :subcategory, :image_url, :external_url, :sku, :visible, :specs_json, :content_text, :warranty_text" . ($hasCost ? ', :cost' : '') . ")";
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([
+            $stmt->execute(($hasCost ? [':cost' => $cost] : []) + [
                 ':id'           => $id,
                 ':name'         => $name,
                 ':description'  => $description,
@@ -685,8 +737,9 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
         // Por nombre solo si es único: con dos productos homónimos se actualizaba uno cualquiera.
         $checkStmtName = $pdo->prepare("SELECT id FROM `$pTable` WHERE name = :name AND name != '' LIMIT 2");
 
-        $insertStmt = $pdo->prepare("INSERT INTO `$pTable` (id, name, description, price, category, subcategory, image_url, external_url, sku, visible)
-                VALUES (:id, :name, :description, :price, :category, :subcategory, :image_url, :external_url, :sku, :visible)");
+        $hasCost = in_array('cost', smartispTableColumns($pdo, $pTable), true);
+        $insertStmt = $pdo->prepare("INSERT INTO `$pTable` (id, name, description, price, category, subcategory, image_url, external_url, sku, visible" . ($hasCost ? ', cost' : '') . ")
+                VALUES (:id, :name, :description, :price, :category, :subcategory, :image_url, :external_url, :sku, :visible" . ($hasCost ? ', :cost' : '') . ")");
 
         // Columna -> claves aceptadas en la fila. Al actualizar solo se tocan las presentes, y un
         // texto vacío (celda vacía en el archivo) no borra lo que ya había.
@@ -700,6 +753,7 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
             'sku'          => ['sku'],
             'visible'      => ['visible'],
         ];
+        if ($hasCost) $importColumns['cost'] = ['cost', 'costo'];
 
         $inserted = 0;
         $errors = [];
@@ -730,6 +784,17 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
                     continue;
                 } else {
                     $values['price'] = (float)$rawPrice;
+                }
+            }
+            if (array_key_exists('cost', $values)) {
+                $rawCost = is_string($values['cost']) ? trim($values['cost']) : $values['cost'];
+                if ($rawCost === '' || $rawCost === null) {
+                    unset($values['cost']);
+                } elseif (!is_numeric($rawCost) || (float)$rawCost < 0 || (float)$rawCost > 99999999) {
+                    $errors[] = ['row' => $rowNumber, 'name' => $name, 'error' => 'Costo inválido: debe ser un número mayor o igual a 0.'];
+                    continue;
+                } else {
+                    $values['cost'] = round((float)$rawCost, 2);
                 }
             }
             foreach (['description', 'category', 'subcategory', 'image_url', 'external_url', 'sku'] as $column) {
@@ -773,7 +838,7 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
                     }
                     $pdo->prepare("UPDATE `$pTable` SET " . implode(', ', $sets) . ", updated_at = CURRENT_TIMESTAMP WHERE id = :id")->execute($params);
                 } else {
-                    $insertStmt->execute([
+                    $insertStmt->execute(($hasCost ? [':cost' => $values['cost'] ?? null] : []) + [
                         ':id'           => $id,
                         ':name'         => $name,
                         ':description'  => $values['description'] ?? '',
@@ -813,6 +878,132 @@ if ($action === 'admin-products-clear') {
     $pTable = getProductsTableName($pdo);
     $pdo->exec("DELETE FROM `$pTable`");
     echo json_encode(['ok' => true, 'cleared' => true]);
+    exit;
+}
+
+// -------------------------------------------------------------
+// 3b. ACCIONES MASIVAS (POST /api/auth/admin-products-bulk-update)
+// -------------------------------------------------------------
+// {ids, op, ...}. Cada operación toca solo sus columnas:
+//   visibility  {visible}
+//   category    {category, subcategory}
+//   price       {mode: percent|amount|set, value}; percent y amount no tocan productos a cotizar
+//   track_stock {track}
+// dry_run devuelve el antes/después del precio sin guardar.
+if ($action === 'admin-products-bulk-update') {
+    smartispRequirePost();
+    requireAdminAuth();
+    $pTable = getProductsTableName($pdo);
+    $fail = static function (int $status, string $message) use ($pdo): void {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        http_response_code($status);
+        echo json_encode(['error' => $message]);
+        exit;
+    };
+    $ids = $body['ids'] ?? [];
+    if (is_string($ids)) $ids = json_decode($ids, true);
+    $ids = is_array($ids) ? array_values(array_unique(array_filter(array_map(static fn($v) => is_scalar($v) ? trim((string)$v) : '', $ids), static fn($v) => $v !== ''))) : [];
+    if (!$ids) $fail(400, 'Selecciona al menos un producto.');
+    if (count($ids) > SMARTISP_BULK_MAX_IDS) $fail(400, 'Máximo ' . SMARTISP_BULK_MAX_IDS . ' productos por operación.');
+    $op = (string)($body['op'] ?? '');
+    if (!in_array($op, ['visibility', 'category', 'price', 'track_stock'], true)) $fail(400, 'Operación no permitida.');
+    $dryRun = !empty($body['dry_run']) && $body['dry_run'] !== '0';
+
+    $in = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $pdo->prepare("SELECT id, name, price FROM `$pTable` WHERE id IN ($in)");
+    $stmt->execute($ids);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $foundIds = array_map('strval', array_column($rows, 'id'));
+    $skipped = array_map(static fn($id) => ['id' => $id, 'name' => '', 'reason' => 'El producto ya no existe.'], array_values(array_diff($ids, $foundIds)));
+    $updated = 0;
+    $changes = [];
+
+    $pdo->beginTransaction();
+    try {
+        if ($op === 'visibility') {
+            $visible = !empty($body['visible']) && $body['visible'] !== '0' ? 1 : 0;
+            if (!$dryRun && $foundIds) {
+                $upd = $pdo->prepare("UPDATE `$pTable` SET visible = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (" . implode(',', array_fill(0, count($foundIds), '?')) . ')');
+                $upd->execute(array_merge([$visible], $foundIds));
+            }
+            $updated = count($foundIds);
+        } elseif ($op === 'category') {
+            $category = trim((string)($body['category'] ?? ''));
+            $subcategory = trim((string)($body['subcategory'] ?? ''));
+            if ($category === '' || mb_strlen($category) > 100 || mb_strlen($subcategory) > 100) $fail(400, 'Elige una categoría válida.');
+            if (!$dryRun && $foundIds) {
+                smartispEnsureCategory($pdo, $category, $subcategory);
+                $upd = $pdo->prepare("UPDATE `$pTable` SET category = ?, subcategory = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (" . implode(',', array_fill(0, count($foundIds), '?')) . ')');
+                $upd->execute(array_merge([$category, $subcategory], $foundIds));
+            }
+            $updated = count($foundIds);
+        } elseif ($op === 'price') {
+            $mode = (string)($body['mode'] ?? '');
+            $value = $body['value'] ?? null;
+            if (!in_array($mode, ['percent', 'amount', 'set'], true) || !is_numeric($value)) $fail(400, 'Indica el tipo de ajuste y un valor numérico.');
+            $value = (float)$value;
+            if ($mode === 'percent' && ($value <= -100 || $value > 1000)) $fail(400, 'El porcentaje debe estar entre -99 y 1000.');
+            if (abs($value) > 1000000 || ($mode === 'set' && $value < 0)) $fail(400, 'El valor del ajuste no es válido.');
+            foreach ($rows as $r) {
+                $before = round((float)$r['price'], 2);
+                if ($mode !== 'set' && $before <= 0) {
+                    $skipped[] = ['id' => (string)$r['id'], 'name' => (string)$r['name'], 'reason' => 'Sin precio (a cotizar).'];
+                    continue;
+                }
+                $after = round(max(0, $mode === 'set' ? $value : ($mode === 'percent' ? $before * (1 + $value / 100) : $before + $value)), 2);
+                if ($mode !== 'set' && $after <= 0) {
+                    $skipped[] = ['id' => (string)$r['id'], 'name' => (string)$r['name'], 'reason' => 'El precio quedaría en 0 o menos.'];
+                    continue;
+                }
+                $changes[] = ['id' => (string)$r['id'], 'name' => (string)$r['name'], 'before' => $before, 'after' => $after];
+            }
+            if (!$dryRun) {
+                $upd = $pdo->prepare("UPDATE `$pTable` SET price = :price, updated_at = CURRENT_TIMESTAMP WHERE id = :id");
+                foreach ($changes as $c) $upd->execute([':price' => $c['after'], ':id' => $c['id']]);
+            }
+            $updated = count($changes);
+        } else {
+            if (!smartispTableExists($pdo, 'product_inventory')) $fail(409, 'Falta la tabla product_inventory: aplica las migraciones (php scripts/migrate.php).');
+            $track = !empty($body['track']) && $body['track'] !== '0';
+            sort($foundIds, SORT_STRING);
+            if ($track) {
+                $ins = $pdo->prepare('INSERT IGNORE INTO product_inventory (product_id, quantity_available) VALUES (:id, 0)');
+                foreach ($foundIds as $id) {
+                    if ($dryRun) continue;
+                    $ins->execute([':id' => $id]);
+                    $updated += $ins->rowCount();
+                }
+            } else {
+                $names = array_column($rows, 'name', 'id');
+                $lock = $pdo->prepare('SELECT CAST(quantity_available AS SIGNED) AS available, CAST(quantity_reserved AS SIGNED) AS reserved FROM product_inventory WHERE product_id = :id FOR UPDATE');
+                $del = $pdo->prepare('DELETE FROM product_inventory WHERE product_id = :id AND quantity_reserved = 0');
+                foreach ($foundIds as $id) {
+                    $lock->execute([':id' => $id]);
+                    $inv = $lock->fetch(PDO::FETCH_ASSOC);
+                    if (!$inv) continue;
+                    if ((int)$inv['reserved'] > 0) {
+                        $skipped[] = ['id' => $id, 'name' => (string)($names[$id] ?? ''), 'reason' => 'Tiene ' . (int)$inv['reserved'] . ' unidad(es) reservada(s) por pedidos en curso.'];
+                        continue;
+                    }
+                    if (!$dryRun) {
+                        $del->execute([':id' => $id]);
+                        smartispRecordStockMovement($pdo, $id, [(int)$inv['available'], 0], [0, 0], 'untracked', null, 'Acción masiva');
+                    }
+                    $updated++;
+                }
+            }
+        }
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        error_log('SmartISP admin-products-bulk-update: ' . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(['error' => 'No se pudo aplicar la acción masiva. No se guardó ningún cambio.']);
+        exit;
+    }
+
+    echo json_encode(['ok' => true, 'op' => $op, 'dryRun' => $dryRun, 'requested' => count($ids), 'updated' => $updated,
+        'skipped' => $skipped, 'changes' => array_slice($changes, 0, 200)]);
     exit;
 }
 

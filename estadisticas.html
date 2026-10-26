@@ -9,16 +9,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap">
-  <script src="/assets/js/admin/admin-theme.js?v=ds-20261026"></script>
-  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261026">
-  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261026b">
-  <link rel="stylesheet" href="/assets/css/admin/admin-dashboard.css?v=ds-20261026">
-  <link rel="stylesheet" href="/assets/css/admin/estadisticas-page.css?v=ds-20261026">
-  <script src="/assets/vendor/lucide-icons.min.js?v=bb816557" defer></script>
-  <script src="/assets/js/admin/admin-nav.js?v=ds-20261026b" defer></script>
-  <script src="/assets/js/admin/admin-page.js?v=ds-20261026" defer></script>
-  <script src="/assets/js/admin/admin-charts.js?v=ds-20261026" defer></script>
-  <script src="/assets/js/admin/estadisticas-page.js?v=ds-20261026" defer></script>
+  <script src="/assets/js/admin/admin-theme.js?v=ds-20261027"></script>
+  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/admin-dashboard.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/estadisticas-page.css?v=ds-20261027">
+  <script src="/assets/vendor/lucide-icons.min.js?v=68df8f2b" defer></script>
+  <script src="/assets/js/admin/admin-nav.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/admin-page.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/admin-charts.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/estadisticas-page.js?v=ds-20261027" defer></script>
 </head>
 <body>
   <div id="smartisp-admin-nav" class="is-loading" data-active="estadisticas"></div>
@@ -119,6 +119,11 @@
           <section class="card"><div class="card-head"><div><h2>Sin movimiento</h2><p>Productos visibles sin ventas.</p></div></div><div id="idle"></div></section>
           <section class="card"><div class="card-head"><div><h2>Inventario</h2><p>Productos con stock controlado.</p></div><a href="/inventario.html">Gestionar</a></div><div id="inventory"></div></section>
         </div>
+        <div class="dash-row r-split">
+          <section class="card"><div class="card-head"><div><h2>Margen bruto</h2><p>Ventas de pedidos no anulados menos el costo actual de lo vendido; solo productos con costo.</p></div></div><div id="margin"></div></section>
+          <section class="card"><div class="card-head"><div><h2>Menor margen</h2><p>Productos vendidos en el periodo con el margen más bajo o negativo.</p></div></div>
+            <div class="table-wrap"><table data-export="margen-productos"><thead><tr><th>Producto</th><th class="num">Unidades</th><th class="num">Ventas</th><th class="num">Costo</th><th class="num">Margen</th><th class="num">Margen %</th></tr></thead><tbody id="marginRows"></tbody></table></div></section>
+        </div>
       </section>
 
       <section role="tabpanel" id="panel-operacion" aria-labelledby="tab-operacion" hidden>
@@ -129,6 +134,7 @@
               <dt>Ventas confirmadas</dt><dd>Pedidos no anulados con el pago confirmado (en pedidos manuales, al marcarlos como “Pago confirmado”).</dd>
               <dt>Pendiente de cobro</dt><dd>Pedidos no anulados que todavía no tienen el pago confirmado.</dd>
               <dt>Pedidos</dt><dd>Sin contar anulados ni solicitudes de cotización.</dd>
+              <dt>Margen bruto</dt><dd>Ventas de productos con costo cargado (pedidos no anulados) menos unidades × costo actual del producto.</dd>
               <dt>Ticket promedio</dt><dd>Ventas confirmadas ÷ pedidos cobrados.</dd>
               <dt>Cancelación</dt><dd>Anulados (cancelados o reembolsados) ÷ pedidos creados, sin cotizaciones.</dd>
               <dt>Conversión de cotizaciones</dt><dd>Cotizaciones de carrito del periodo que pasaron a un pedido activo.</dd>

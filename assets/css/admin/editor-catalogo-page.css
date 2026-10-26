@@ -830,3 +830,36 @@
   .tab-pane.active, .modal-dialog, .toast-msg, .prod-thumb-img, .category-card, .dropzone-box { animation: none; transition: none; transform: none; }
 }
 .spinner { display: inline-block; width: 18px; height: 18px; margin-right: 6px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; vertical-align: middle; animation: sa-spin .8s linear infinite; }
+/* Selección y acciones masivas */
+.bulk-bar { position: sticky; top: 8px; z-index: 15; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 16px 0 0; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border)); border-radius: var(--radius); background: var(--accent-soft); box-shadow: var(--shadow-1); }
+.bulk-bar[hidden] { display: none; }
+.bulk-bar strong { margin-right: 4px; font-size: 13px; }
+.bulk-sep { width: 1px; height: 22px; background: var(--border-strong); }
+.product-select, .product-select-head { width: 42px; text-align: center; }
+.product-check, #selectPageProducts { width: 17px; height: 17px; accent-color: var(--accent); cursor: pointer; }
+.product-row.is-selected td { background: color-mix(in srgb, var(--accent-soft) 60%, transparent); }
+.bulk-form { display: grid; gap: 12px; }
+.bulk-form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.bulk-form label { display: grid; gap: 5px; color: var(--text-3); font-size: 12px; font-weight: 700; }
+.bulk-form input, .bulk-form select { min-height: 38px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font: inherit; font-size: 14px; }
+.bulk-form > .button { justify-self: start; }
+.bulk-form-note { margin: 0; color: var(--text-2); font-size: 13px; line-height: 1.5; }
+.bulk-preview-table { max-height: 300px; margin-top: 8px; overflow: auto; border: 1px solid var(--border-soft); border-radius: var(--radius-sm); }
+.bulk-preview-table table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.bulk-preview-table th, .bulk-preview-table td { padding: 7px 10px; border-bottom: 1px solid var(--border-soft); text-align: left; }
+.bulk-preview-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Edición rápida de precio y stock */
+.inline-cell { display: flex; align-items: center; gap: 4px; }
+.inline-value { display: grid; gap: 2px; min-width: 0; cursor: text; }
+.inline-edit-btn { display: inline-grid; flex: none; place-items: center; width: 26px; height: 26px; padding: 0; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--text-3); cursor: pointer; opacity: .55; }
+.product-row:hover .inline-edit-btn, .inline-edit-btn:focus-visible { opacity: 1; }
+.inline-edit-btn:hover { border-color: var(--border); background: var(--surface-2); color: var(--text); }
+.inline-input { width: 100%; max-width: 110px; min-height: 34px; padding: 4px 8px; font-size: 14px; }
+.prod-cost { color: var(--text-3); font-size: 11px; white-space: nowrap; }
+.prod-cost.is-warn { color: var(--warning); }
+.prod-cost.is-bad { color: var(--danger); }
+.prod-stock { font-weight: 700; font-variant-numeric: tabular-nums; }
+.prod-stock.is-low { color: var(--warning); }
+.prod-stock.is-out { color: var(--danger); }
+@media (hover: none) { .inline-edit-btn { opacity: 1; } }

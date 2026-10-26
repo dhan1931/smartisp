@@ -22,14 +22,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <script src="/assets/js/admin/admin-theme.js?v=ds-20261026"></script>
-  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261026">
-  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261026b">
-  <link rel="stylesheet" href="/assets/css/admin/editor-catalogo-page.css?v=ds-20261026">
-  <link rel="stylesheet" href="/assets/css/admin/products-admin.css?v=ds-20261026">
-  <script src="/assets/vendor/lucide-icons.min.js?v=bb816557"></script>
+  <script src="/assets/js/admin/admin-theme.js?v=ds-20261027"></script>
+  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/editor-catalogo-page.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/products-admin.css?v=ds-20261027">
+  <script src="/assets/vendor/lucide-icons.min.js?v=68df8f2b"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAI062MaV8sfjQKYVGjOBaZBOA87z+IhZE9DA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/assets/js/admin/admin-nav.js?v=ds-20261026b" defer></script>
+  <script src="/assets/js/admin/admin-nav.js?v=ds-20261027" defer></script>
 </head>
 <body>
   <div id="smartisp-admin-nav" class="is-loading" data-active="productos"></div>
@@ -120,24 +120,40 @@
           </select>
         </div>
 
+        <div id="bulkBar" class="bulk-bar" role="region" aria-label="Acciones masivas" hidden>
+          <strong id="bulkCount">0 seleccionados</strong>
+          <button type="button" class="btn btn-secondary btn-sm" id="bulkSelectFiltered" hidden>Seleccionar los filtrados</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="bulkClear">Quitar selección</button>
+          <span class="bulk-sep" aria-hidden="true"></span>
+          <button type="button" class="btn btn-secondary btn-sm" data-bulk="hide"><i data-lucide="eye-off" width="14"></i> Ocultar</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-bulk="show"><i data-lucide="eye" width="14"></i> Mostrar</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-bulk="category"><i data-lucide="folder-input" width="14"></i> Cambiar categoría</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-bulk="price"><i data-lucide="percent" width="14"></i> Ajustar precio</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-bulk="track-on"><i data-lucide="boxes" width="14"></i> Controlar stock</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-bulk="track-off">Quitar control de stock</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-bulk="csv"><i data-lucide="download" width="14"></i> Exportar CSV</button>
+        </div>
+
         <!-- Table View -->
         <div class="data-table-wrap">
           <table class="data-table">
             <thead>
               <tr>
+                <th class="product-select-head"><input type="checkbox" id="selectPageProducts" aria-label="Seleccionar los productos de esta página"></th>
                 <th style="width:60px;">Foto</th>
                 <th>Producto & SKU</th>
                 <th>Categoría</th>
                 <th>Subcategoría</th>
                 <th>Precio Tienda</th>
+                <th>Stock</th>
                 <th style="text-align:center; width:80px;">Visible</th>
                 <th style="text-align:right; width:150px;">Acciones</th>
               </tr>
             </thead>
             <tbody id="productsTableBody">
-              <tr aria-hidden="true"><td><span class="sk" style="width:44px;height:44px"></span></td><td><span class="sk sk-line" style="width:80%"></span><span class="sk sk-line" style="width:40%"></span></td><td><span class="sk sk-line" style="width:70%"></span></td><td><span class="sk sk-line" style="width:60%"></span></td><td><span class="sk sk-line" style="width:50%"></span></td><td><span class="sk sk-line" style="width:40%"></span></td><td><span class="sk sk-line" style="width:70%"></span></td></tr>
-              <tr aria-hidden="true"><td><span class="sk" style="width:44px;height:44px"></span></td><td><span class="sk sk-line" style="width:70%"></span><span class="sk sk-line" style="width:35%"></span></td><td><span class="sk sk-line" style="width:60%"></span></td><td><span class="sk sk-line" style="width:50%"></span></td><td><span class="sk sk-line" style="width:45%"></span></td><td><span class="sk sk-line" style="width:40%"></span></td><td><span class="sk sk-line" style="width:70%"></span></td></tr>
-              <tr aria-hidden="true"><td><span class="sk" style="width:44px;height:44px"></span></td><td><span class="sk sk-line" style="width:75%"></span><span class="sk sk-line" style="width:45%"></span></td><td><span class="sk sk-line" style="width:65%"></span></td><td><span class="sk sk-line" style="width:55%"></span></td><td><span class="sk sk-line" style="width:50%"></span></td><td><span class="sk sk-line" style="width:40%"></span></td><td><span class="sk sk-line" style="width:70%"></span></td></tr>
+              <tr aria-hidden="true"><td><span class="sk sk-line" style="width:24%"></span></td><td><span class="sk" style="width:44px;height:44px"></span></td><td><span class="sk sk-line" style="width:80%"></span><span class="sk sk-line" style="width:40%"></span></td><td><span class="sk sk-line" style="width:70%"></span></td><td><span class="sk sk-line" style="width:60%"></span></td><td><span class="sk sk-line" style="width:50%"></span></td><td><span class="sk sk-line" style="width:40%"></span></td><td><span class="sk sk-line" style="width:40%"></span></td><td><span class="sk sk-line" style="width:70%"></span></td></tr>
+              <tr aria-hidden="true"><td><span class="sk sk-line" style="width:24%"></span></td><td><span class="sk" style="width:44px;height:44px"></span></td><td><span class="sk sk-line" style="width:70%"></span><span class="sk sk-line" style="width:35%"></span></td><td><span class="sk sk-line" style="width:60%"></span></td><td><span class="sk sk-line" style="width:50%"></span></td><td><span class="sk sk-line" style="width:45%"></span></td><td><span class="sk sk-line" style="width:40%"></span></td><td><span class="sk sk-line" style="width:40%"></span></td><td><span class="sk sk-line" style="width:70%"></span></td></tr>
+              <tr aria-hidden="true"><td><span class="sk sk-line" style="width:24%"></span></td><td><span class="sk" style="width:44px;height:44px"></span></td><td><span class="sk sk-line" style="width:75%"></span><span class="sk sk-line" style="width:45%"></span></td><td><span class="sk sk-line" style="width:65%"></span></td><td><span class="sk sk-line" style="width:55%"></span></td><td><span class="sk sk-line" style="width:50%"></span></td><td><span class="sk sk-line" style="width:40%"></span></td><td><span class="sk sk-line" style="width:40%"></span></td><td><span class="sk sk-line" style="width:70%"></span></td></tr>
             </tbody>
           </table>
         </div>
@@ -231,6 +247,10 @@
             <div>
               <label class="form-label" style="margin-bottom:3px;">Precio Base (Y):</label>
               <select id="mapColPrice" class="filter-select" style="width:100%;"></select>
+            </div>
+            <div>
+              <label class="form-label" style="margin-bottom:3px;" for="mapColCost">Costo de compra (opcional):</label>
+              <select id="mapColCost" class="filter-select" style="width:100%;"></select>
             </div>
             <div>
               <label class="form-label" style="margin-bottom:3px;">Categoría en Excel (Detectar Afinidad):</label>
@@ -346,6 +366,13 @@
             <span style="font-size:11px; color:var(--muted); margin-top:3px; display:block;">
               Marca "Solicitar cotización" para productos sin precio fijo en tienda.
             </span>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="prodCostInput">Costo de compra (USD, opcional):</label>
+            <input type="number" id="prodCostInput" class="form-control" step="0.01" min="0" placeholder="Sin costo">
+            <span id="prodMarginHint" style="font-size:11px; color:var(--muted); margin-top:3px; display:block;">Solo se ve en el panel: sirve para calcular tu margen. Nunca se muestra en la tienda.</span>
           </div>
         </div>
         <div class="form-row">
@@ -487,8 +514,9 @@
     <span id="toastText">Operación realizada</span>
   </div>
 
-  <script src="/assets/js/admin/editor-catalogo-page.js?v=ds-20261026" defer></script>
-  <script src="/assets/js/admin/products-layout.js?v=ds-20261026"></script>
+  <script src="/assets/js/admin/admin-page.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/editor-catalogo-page.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/products-layout.js?v=ds-20261027"></script>
 </body>
 </html>
 

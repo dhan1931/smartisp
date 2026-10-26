@@ -358,6 +358,183 @@ try {
   }
   assert.equal(last.status, 429, 'el límite debe aplicarse aunque cambie X-Forwarded-For');
 
+  // --- Costo, acciones masivas, historial de inventario y aviso de stock (migraciones 041 y 042)
+  {
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    await db.execute("DELETE FROM products_rows WHERE id IN ('smk-cost','smk-bulk1','smk-bulk2')");
+    await db.execute("DELETE FROM product_inventory WHERE product_id = 'smk-cost'");
+    await db.execute("DELETE FROM inventory_movements WHERE product_id = 'smk-cost'");
+    await db.execute("DELETE FROM settings_rows WHERE setting_key = 'stock_alert:smk-cost'");
+
+    const costSave = await req('admin-products', { method: 'POST', cookie: ac, body: { id: 'smk-cost', name: 'Producto Costo', price: 20, cost: 12.34, category: 'General', sku: 'SKU-COST' } });
+    assert.equal(costSave.status, 200, JSON.stringify(costSave.data));
+    const [[costRow]] = await db.query("SELECT cost FROM products_rows WHERE id = 'smk-cost'");
+    assert.equal(Number(costRow.cost), 12.34, 'el costo se guarda');
+    const adminCost = await req('admin-products?q=SKU-COST', { cookie: ac });
+    assert.equal(adminCost.data.products.find(p => p.id === 'smk-cost')?.cost, 12.34, 'el panel ve el costo');
+    for (const action of ['catalog?q=SKU-COST', 'catalog?q=smk-cost&details=1']) {
+      const pub = await req(action);
+      assert.equal(pub.status, 200);
+      assert.ok(pub.data.products.some(p => p.id === 'smk-cost'), `${action} encuentra el producto`);
+      assert.ok(pub.data.products.every(p => !('cost' in p)) && !JSON.stringify(pub.data).includes('12.34'), `${action} no debe exponer el costo`);
+    }
+    const publicPage = await (await fetch(`${baseUrl}/producto.php?slug=smk-cost`)).text();
+    assert.ok(!publicPage.includes('12.34') && !publicPage.includes('12,34'), 'la ficha pública no debe mostrar el costo');
+
+    await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku) VALUES ('smk-bulk1','Bulk 1',100,1,'General','SKU-B1'),('smk-bulk2','Bulk 2',0,1,'General','SKU-B2')");
+    const bulkIds = ['smk-bulk1', 'smk-bulk2'];
+    const anonBulk = await req('admin-products-bulk-update', { method: 'POST', body: { op: 'visibility', visible: false, ids: bulkIds } });
+    assert.equal(anonBulk.status, 401, 'las acciones masivas exigen sesión de admin');
+    assert.equal((await req('admin-products-bulk-update', { cookie: ac })).status, 405, 'acciones masivas solo por POST');
+    assert.equal((await req('admin-products-bulk-update', { method: 'POST', cookie: ac, body: { op: 'delete', ids: bulkIds } })).status, 400, 'operación fuera de la lista blanca');
+    assert.equal((await req('admin-products-bulk-update', { method: 'POST', cookie: ac, body: { op: 'visibility', visible: false, ids: Array.from({ length: 501 }, (_, i) => `x${i}`) } })).status, 400, 'límite de ids por llamada');
+    const hide = await req('admin-products-bulk-update', { method: 'POST', cookie: ac, body: { op: 'visibility', visible: false, ids: [...bulkIds, 'smk-no-existe'] } });
+    assert.equal(hide.status, 200, JSON.stringify(hide.data));
+    assert.equal(hide.data.updated, 2);
+    assert.equal(hide.data.skipped.length, 1, 'el id inexistente se informa como omitido');
+    const [hidden] = await db.query("SELECT visible FROM products_rows WHERE id IN ('smk-bulk1','smk-bulk2')");
+    assert.ok(hidden.every(r => Number(r.visible) === 0), 'ocultar en bloque');
+    const preview = await req('admin-products-bulk-update', { method: 'POST', cookie: ac, body: { op: 'price', mode: 'percent', value: 10, dry_run: true, ids: bulkIds } });
+    assert.equal(preview.status, 200, JSON.stringify(preview.data));
+    assert.deepEqual(preview.data.changes, [{ id: 'smk-bulk1', name: 'Bulk 1', before: 100, after: 110 }], 'vista previa del antes/después');
+    const [[notYet]] = await db.query("SELECT price FROM products_rows WHERE id = 'smk-bulk1'");
+    assert.equal(Number(notYet.price), 100, 'la vista previa no guarda');
+    const raise = await req('admin-products-bulk-update', { method: 'POST', cookie: ac, body: { op: 'price', mode: 'percent', value: 10, ids: bulkIds } });
+    assert.equal(raise.status, 200, JSON.stringify(raise.data));
+    const [prices] = await db.query("SELECT id, price, visible FROM products_rows WHERE id IN ('smk-bulk1','smk-bulk2') ORDER BY id");
+    assert.deepEqual(prices.map(r => [r.id, Number(r.price), Number(r.visible)]), [['smk-bulk1', 110, 0], ['smk-bulk2', 0, 0]], 'subir 10% solo toca el precio y no a los productos a cotizar');
+
+    const [[mailBefore]] = await db.query('SELECT admin_email FROM mail_settings WHERE id = 1');
+    await db.execute("UPDATE mail_settings SET admin_email = 'smk-ops@example.test' WHERE id = 1");
+    const set6 = await req('admin-inventory', { method: 'POST', cookie: ac, body: { product_id: 'smk-cost', available: 6, note: 'Compra inicial' } });
+    assert.equal(set6.status, 200, JSON.stringify(set6.data));
+    for (const f of fs.readdirSync(os.tmpdir())) if (/^(orders|orders_email)_[0-9a-f]{32}\.json$/.test(f)) fs.rmSync(path.join(os.tmpdir(), f), { force: true });
+    const movOrder = await req('orders', { method: 'POST', body: { customerName: 'Mov', customerEmail: 'smk-mov@example.test', items: [{ id: 'smk-cost', quantity: 2 }] } });
+    assert.equal(movOrder.status, 200, JSON.stringify(movOrder.data));
+    const [moves] = await db.query("SELECT reason, delta_available, delta_reserved, order_id, note FROM inventory_movements WHERE product_id = 'smk-cost' ORDER BY id");
+    assert.deepEqual(moves.map(m => [m.reason, Number(m.delta_available), Number(m.delta_reserved)]), [['manual', 6, 0], ['order_reserved', 0, 2]], 'ajuste manual y reserva del pedido quedan en el historial');
+    assert.equal(moves[1].order_id, movOrder.data.orderId);
+    assert.equal(moves[0].note, 'Compra inicial');
+    const history = await req('admin-inventory-movements?product_id=smk-cost', { cookie: ac });
+    assert.equal(history.status, 200, JSON.stringify(history.data));
+    assert.equal(history.data.total, 2);
+    assert.equal(history.data.items[0].reason, 'order_reserved', 'el historial va del más reciente al más antiguo');
+    assert.equal((await req('admin-inventory-movements?product_id=smk-cost')).status, 401, 'el historial exige sesión de admin');
+
+    // Libre 6 -> 4 cruza el umbral de stock bajo: deja la marca del aviso (se envía tras responder).
+    let mark;
+    for (let i = 0; i < 40 && !mark; i++) { [[mark]] = await db.query("SELECT setting_value FROM settings_rows WHERE setting_key = 'stock_alert:smk-cost'"); if (!mark) await sleep(150); }
+    assert.ok(mark, 'cruzar el umbral de stock bajo encola un aviso');
+    const toZero = await req('admin-inventory', { method: 'POST', cookie: ac, body: { product_id: 'smk-cost', delta: -4 } });
+    assert.equal(toZero.status, 200, JSON.stringify(toZero.data));
+    assert.equal(toZero.data.item.free, 0);
+    await sleep(600);
+    const [[mark2]] = await db.query("SELECT setting_value FROM settings_rows WHERE setting_key = 'stock_alert:smk-cost'");
+    assert.equal(mark2.setting_value, mark.setting_value, 'no más de un aviso por producto cada 24 h');
+    await db.execute('UPDATE mail_settings SET admin_email = ? WHERE id = 1', [mailBefore?.admin_email ?? null]);
+  }
+
+
+  // --- Migración 043: notas internas de pedidos, conversión de cotizaciones y chips con fechas
+  {
+    const noteText = `smk nota interna ${Date.now()}`;
+    const noted = await req('admin-order-note', { method: 'POST', cookie: ac, body: { id: ok.data.orderId, note: noteText } });
+    assert.equal(noted.status, 200, JSON.stringify(noted.data));
+    assert.equal((await req('admin-order-note', { method: 'POST', cookie: cc, body: { id: ok.data.orderId, note: 'x' } })).status, 403, 'un cliente no puede anotar pedidos');
+    assert.equal((await req('admin-order-note', { method: 'POST', cookie: ac, body: { id: 'smk-no-existe', note: 'x' } })).status, 404);
+    const noteDetail = await req(`admin-order?id=${encodeURIComponent(ok.data.orderId)}`, { cookie: ac });
+    assert.ok(noteDetail.data.activity.some(a => a.kind === 'note' && a.body === noteText && a.actor === admin.email), 'el admin ve la nota con su autor');
+    const customerView = await req('orders', { cookie: cc });
+    assert.equal(customerView.status, 200, JSON.stringify(customerView.data));
+    assert.ok(customerView.data.orders.some(o => o.id === ok.data.orderId), 'el cliente sigue viendo su pedido');
+    assert.ok(!JSON.stringify(customerView.data).includes(noteText), 'el cliente no ve las notas internas');
+    assert.equal((await req(`admin-order?id=${encodeURIComponent(ok.data.orderId)}`, { cookie: cc })).status, 403, 'el detalle con actividad es solo de admin');
+
+    await db.execute("DELETE FROM service_quote_requests WHERE id = 'smk-quote'");
+    await db.execute("INSERT INTO service_quote_requests (id, client_type, service_interest, description, company_name, email, phone) VALUES ('smk-quote', 'Empresa', 'Cableado estructurado', '20 puntos de red', 'Smk SA', 'smk-quote@example.test', '0991234567')");
+    const inventory = async () => (await db.query('SELECT product_id, quantity_available, quantity_reserved FROM product_inventory ORDER BY product_id'))[0];
+    const invBefore = await inventory();
+    const noPrice = await req('admin-service-quote-convert', { method: 'POST', cookie: ac, body: { id: 'smk-quote', description: 'Instalación', price: 0, status: 'pending' } });
+    assert.equal(noPrice.status, 400, 'un pedido pendiente de pago sin precio se rechaza');
+    assert.equal((await req('admin-service-quote-convert', { method: 'POST', cookie: cc, body: { id: 'smk-quote', description: 'x', price: 1 } })).status, 403);
+    const conv = await req('admin-service-quote-convert', { method: 'POST', cookie: ac, body: { id: 'smk-quote', description: 'Instalación de 20 puntos', price: 150.5, quantity: 2, status: 'pending', productId: 'smk-stock', stockTracked: true } });
+    assert.equal(conv.status, 200, JSON.stringify(conv.data));
+    assert.equal(conv.data.total, 301);
+    const [[convRow]] = await db.query('SELECT items, status, total, customer_email FROM orders_rows WHERE id = ?', [conv.data.orderId]);
+    const convItems = JSON.parse(convRow.items);
+    assert.equal(convItems.length, 1);
+    assert.deepEqual([convItems[0].productId, convItems[0].name, convItems[0].stockTracked], ['', 'Instalación de 20 puntos', undefined], 'la línea libre no apunta a un producto');
+    assert.deepEqual([convRow.status, Number(convRow.total), convRow.customer_email], ['pending', 301, 'smk-quote@example.test']);
+    for (const status of ['paid', 'shipped', 'cancelled']) {
+      const moved = await req('admin-order-status', { method: 'POST', cookie: ac, body: { id: conv.data.orderId, status } });
+      assert.equal(moved.status, 200, `${status}: ${JSON.stringify(moved.data)}`);
+    }
+    assert.deepEqual(await inventory(), invBefore, 'convertir y mover el pedido no toca el inventario');
+    const convAgain = await req('admin-service-quote-convert', { method: 'POST', cookie: ac, body: { id: 'smk-quote', description: 'Otra', price: 1, status: 'pending' } });
+    assert.equal(convAgain.status, 409, 'una cotización se convierte una sola vez');
+    const [[quoteRow]] = await db.query("SELECT order_id, status FROM service_quote_requests WHERE id = 'smk-quote'");
+    assert.deepEqual([quoteRow.order_id, quoteRow.status], [conv.data.orderId, 'contactado']);
+    const convDetail = await req(`admin-order?id=${encodeURIComponent(conv.data.orderId)}`, { cookie: ac });
+    assert.equal(convDetail.data.events[0].to_status, 'pending', 'la creación queda en el historial de estados');
+    assert.ok(convDetail.data.activity.some(a => a.kind === 'system' && a.body.includes('smk-quote')), 'la línea de tiempo enlaza la cotización');
+    const followup = await req('admin-service-quote-followup', { method: 'POST', cookie: ac, body: { id: 'smk-quote', next_action: 'Llamar al cliente', next_action_at: '2026-11-03T09:30' } });
+    assert.equal(followup.status, 200, JSON.stringify(followup.data));
+    const [[followRow]] = await db.query("SELECT next_action, DATE_FORMAT(next_action_at, '%Y-%m-%d %H:%i:%s') at FROM service_quote_requests WHERE id = 'smk-quote'");
+    assert.deepEqual([followRow.next_action, followRow.at], ['Llamar al cliente', '2026-11-03 14:30:00'], 'la próxima acción se guarda en UTC');
+    assert.equal((await req('admin-service-quote-note', { method: 'POST', cookie: ac, body: { id: 'smk-quote', note: 'Pidió propuesta formal' } })).status, 200);
+    const quoteDetail = await req('admin-service-quote?id=smk-quote', { cookie: ac });
+    assert.equal(quoteDetail.status, 200, JSON.stringify(quoteDetail.data));
+    assert.equal(quoteDetail.data.order.id, conv.data.orderId);
+    assert.deepEqual(quoteDetail.data.notes.map(n => n.body), [`Convertida en el pedido ${conv.data.orderId}.`, 'Pidió propuesta formal']);
+
+    const chips = [
+      { label: 'Smk vigente', icon: 'tag', target_url: '/tienda.html#catalogo', is_active: true, starts_at: '2020-01-01T08:00', ends_at: '2099-12-31T20:00' },
+      { label: 'Smk vencido', icon: 'star', target_url: '/tienda.html', is_active: true, starts_at: '2020-01-01T08:00', ends_at: '2020-02-01T08:00' },
+    ];
+    // La portada del CI no tiene banners: se guarda inactiva para poder publicar solo los chips.
+    const campaign = { name: 'Portada de la tienda', is_active: false };
+    const inverted = await req('admin-store-campaigns', { method: 'POST', cookie: ac, body: { zone: 'store-home', campaign, chips: [{ ...chips[0], ends_at: '2019-01-01T00:00' }] } });
+    assert.equal(inverted.status, 400, 'un chip con "hasta" antes de "desde" se rechaza');
+    assert.match(inverted.data.error, /posterior/);
+    const savedChips = await req('admin-store-campaigns', { method: 'POST', cookie: ac, body: { zone: 'store-home', campaign, chips } });
+    assert.equal(savedChips.status, 200, JSON.stringify(savedChips.data));
+    const chipDates = async () => (await db.query("SELECT label, DATE_FORMAT(starts_at, '%Y-%m-%d %H:%i') s, DATE_FORMAT(ends_at, '%Y-%m-%d %H:%i') e FROM storefront_promo_chips ORDER BY sort_order"))[0];
+    const expectedChips = [{ label: 'Smk vigente', s: '2020-01-01 13:00', e: '2100-01-01 01:00' }, { label: 'Smk vencido', s: '2020-01-01 13:00', e: '2020-02-01 13:00' }];
+    assert.deepEqual(await chipDates(), expectedChips, 'las fechas de los chips se guardan en UTC');
+    const adminChips = (await req('admin-store-campaigns?zone=store-home', { cookie: ac })).data.chips;
+    assert.deepEqual(adminChips.map(c => [c.starts_at, c.ends_at]), [['2020-01-01 13:00:00', '2100-01-01 01:00:00'], ['2020-01-01 13:00:00', '2020-02-01 13:00:00']], 'el GET admin devuelve las fechas de los chips');
+    // Igual que el editor: UTC de la base -> datetime-local de Ecuador -> guardar de nuevo.
+    const toLocal = value => new Date(new Date(`${value.replace(' ', 'T')}Z`).getTime() - 5 * 3600 * 1000).toISOString().slice(0, 16);
+    const resaved = await req('admin-store-campaigns', { method: 'POST', cookie: ac, body: { zone: 'store-home', campaign, chips: adminChips.map(c => ({ label: c.label, icon: c.icon, target_url: c.target_url, is_active: String(c.is_active) === '1', starts_at: toLocal(c.starts_at), ends_at: toLocal(c.ends_at) })) } });
+    assert.equal(resaved.status, 200, JSON.stringify(resaved.data));
+    assert.deepEqual(await chipDates(), expectedChips, 'las fechas sobreviven a un segundo guardado');
+    const publicChips = (await req('store-campaigns?zone=store-home')).data.chips.map(c => c.label);
+    assert.ok(publicChips.includes('Smk vigente') && !publicChips.includes('Smk vencido'), `la tienda solo muestra chips vigentes: ${JSON.stringify(publicChips)}`);
+  }
+
+  // --- Equipo y actividad: pantallas, cuenta propia y registro de escrituras
+  for (const f of fs.readdirSync(os.tmpdir())) if (/^(login|login_email|change_pwd)_[0-9a-f]{32}\.json$/.test(f)) fs.rmSync(path.join(os.tmpdir(), f), { force: true });
+  for (const page of ['/equipo.html', '/actividad.html', '/assets/js/admin/equipo-page.js', '/assets/js/admin/actividad-page.js']) {
+    assert.equal((await fetch(baseUrl + page)).status, 200, `${page} debe servirse`);
+  }
+  const tc = await login(admin.email, admin.password);
+  const myAccount = await req('admin-my-account', { cookie: tc });
+  assert.equal(myAccount.status, 200, JSON.stringify(myAccount.data));
+  assert.ok(myAccount.data.canManageTeam && myAccount.data.user.lastLoginAt, 'Mi cuenta debe mostrar el último acceso');
+  assert.ok(myAccount.data.recent.some(r => r.action === 'login'), 'Mi cuenta debe listar los accesos recientes');
+  const profile = await req('update-profile', { method: 'POST', cookie: tc, body: { name: 'Admin Humo', surname: 'CI' } });
+  assert.equal(profile.status, 200, `update-profile: ${JSON.stringify(profile.data)}`);
+  const other = await req('login', { method: 'POST', body: { email: admin.email, password: admin.password } });
+  const others = await req('revoke-other-sessions', { method: 'POST', cookie: tc });
+  assert.equal(others.status, 200);
+  assert.equal((await req('me', { cookie: others.cookie })).status, 200, 'La sesión que cierra las demás sigue abierta (con la cookie regenerada)');
+  assert.equal((await req('me', { cookie: other.cookie })).status, 401, 'Las demás sesiones quedan cerradas');
+  const [[profileAudit]] = await db.query("SELECT summary, status FROM admin_audit_log WHERE user_id = ? AND action = 'update-profile' ORDER BY id DESC LIMIT 1", [admin.id]);
+  assert.ok(profileAudit && profileAudit.status === 200 && profileAudit.summary.includes('Admin Humo'), 'update-profile del admin debe quedar registrado');
+  const [[custAudit]] = await db.query("SELECT COUNT(*) n FROM admin_audit_log WHERE user_id = ?", [customer.id]);
+  assert.equal(Number(custAudit.n), 0, 'Las acciones de clientes no se registran como actividad del equipo');
+  await db.execute('DELETE FROM admin_audit_log WHERE user_id = ?', [admin.id]);
+
   console.log('SMOKE-OK');
 } finally {
   php.kill();

@@ -69,5 +69,9 @@ jobs:
         run: node tests/admin-auth.integration.mjs
       - name: Smoke test of store, orders, stock and SEO endpoints
         run: node tests/smoke.integration.mjs
+      - name: Install Chromium for browser tests
+        run: npx playwright install --with-deps chromium
+      - name: Admin panel in a real browser
+        run: npm run test:e2e
       - name: Confirm migration runner is repeatable
         run: php scripts/migrate.php
