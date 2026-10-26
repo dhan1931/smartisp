@@ -274,8 +274,8 @@ foreach ($categories as $idx => $category) {
     </section>
   </main>
   <footer class="storefront-footer category-catalog-footer"><span>SmartISP Ecuador · Tecnología, conectividad e infraestructura TI.</span><a href="/tienda.html">Ir a la tienda <i data-lucide="arrow-up-right"></i></a></footer>
-  <script src="/assets/js/store/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
+  <script src="/assets/js/store/storefront-discovery.js?v=subcat-20261028" defer></script>
   <script src="/assets/js/store/public-account.js" defer></script>
-  <script src="/assets/js/store/category-catalog.js?v=seo2-20261025" defer></script>
+  <script src="/assets/js/store/category-catalog.js?v=subcat-20261028" defer></script>
 </body>
 </html>

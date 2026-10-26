@@ -38,16 +38,35 @@ categories_rows
 Column	Type	Null	Default	Comments
 id (Primary)	varchar(191)	No		
 name	varchar(255)	No		
-subcategories	text	Yes	NULL	
+subcategories	text	Yes	NULL	Etiquetas antiguas de texto libre; solo quedan las que no se pudieron convertir en subcategorías (migración 045)
 updated_at	timestamp	Yes	current_timestamp()	
 banner_image_url	varchar(500)	Yes	NULL	
 banner_alt	varchar(200)	Yes	NULL	
 description	varchar(500)	Yes	NULL	
 icon	varchar(64)	No	package	
 keywords	longtext	Yes	NULL	
+icon_image_url	varchar(500)	Yes	NULL	Imagen cuadrada de la tarjeta (migración 023)
+macro_group_id	varchar(100)	Yes	NULL	Familia (category_macro_groups.id). Una subcategoría usa la de su principal
+parent_category_id	varchar(100)	Yes	NULL	Categoría principal; si tiene, es subcategoría. Máximo dos niveles (migración 028)
 Indexes
 Keyname	Type	Unique	Packed	Column	Cardinality	Collation	Null	Comment
 PRIMARY	BTREE	Yes	No	id	57	A	No	
+idx_categories_parent	BTREE	No	No	parent_category_id		A	Yes	
+idx_categories_macro_group	BTREE	No	No	macro_group_id		A	Yes	
+category_macro_groups
+Column	Type	Null	Default	Comments
+id (Primary)	varchar(100)	No		
+name	varchar(255)	No		
+icon	varchar(64)	No	package	
+sort_order	int(11)	No	0	
+image_url	varchar(500)	Yes	NULL	
+visible	tinyint(1)	No	1	
+keywords	text	Yes	NULL	JSON de palabras para ubicar categorías nuevas sin familia (migración 045)
+created_at	timestamp	Yes	current_timestamp()	
+updated_at	timestamp	Yes	current_timestamp()	
+Indexes
+Keyname	Type	Unique	Packed	Column	Cardinality	Collation	Null	Comment
+PRIMARY	BTREE	Yes	No	id	12	A	No	
 categories_v2
 Column	Type	Null	Default	Comments
 id (Primary)	varchar(191)	No		

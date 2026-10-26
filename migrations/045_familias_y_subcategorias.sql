@@ -1,0 +1,271 @@
+-- Familias y subcategorías como datos. Las palabras clave que la tienda tenía escritas en el
+-- código (MACRO_CATEGORIES de tienda-page.js) pasan a category_macro_groups.keywords, y las
+-- categorías sin familia reciben una con las mismas reglas y el mismo orden que usaba la tienda:
+-- nombre de la familia, categorías declaradas para cada familia, palabra clave exacta y palabra
+-- clave contenida. Lo que no coincide va a otros. Nunca se pisa una familia ya asignada.
+-- Las etiquetas de texto libre se convierten en subcategorías reales desde el panel
+-- (Categorías, "Convertir etiquetas en subcategorías"): necesitan el mismo slug que genera PHP.
+ALTER TABLE category_macro_groups
+  ADD COLUMN IF NOT EXISTS keywords TEXT NULL;
+
+ALTER TABLE categories_rows
+  ADD INDEX IF NOT EXISTS idx_categories_macro_group (macro_group_id);
+
+UPDATE category_macro_groups SET keywords = '["computador","computadores","notebook","notebooks","laptop","laptops","portatil","portatiles","desktop","escritorio","tableta","tabletas","tablet","all-in-one","workstation"]' WHERE id = 'computacion' AND (keywords IS NULL OR TRIM(keywords) = '');
+UPDATE category_macro_groups SET keywords = '["componente","componentes","disco","discos","ssd","hdd","nvme","ram","memoria","memorias","procesador","procesadores","tarjeta madre","placa","motherboard","gpu","almacenamiento"]' WHERE id = 'componentes' AND (keywords IS NULL OR TRIM(keywords) = '');
+UPDATE category_macro_groups SET keywords = '["red","redes","comunicaciones","router","switch","cables","cable","adaptador","adaptadores","wifi","access point","fibra","patch cord","conector","mikrotik","ubiquiti"]' WHERE id = 'redes' AND (keywords IS NULL OR TRIM(keywords) = '');
+UPDATE category_macro_groups SET keywords = '["monitor","monitores","pantalla","pantallas","tv","televisor","televisores","display","proyector","proyectores"]' WHERE id = 'monitores' AND (keywords IS NULL OR TRIM(keywords) = '');
+UPDATE category_macro_groups SET keywords = '["periferico","perifericos","teclado","teclados","mouse","raton","audio","auricular","auriculares","audifono","audifonos","parlante","parlantes","mochila","mochilas","soporte","soportes","accesorio","accesorios","funda","maletin","webcam"]' WHERE id = 'perifericos' AND (keywords IS NULL OR TRIM(keywords) = '');
+UPDATE category_macro_groups SET keywords = '["impresora","impresoras","multifuncional","multifuncionales","toner","cartucho","cartuchos","tinta","consumible","consumibles","pos","punto de venta","puntos de venta","codigo de barras","escaner","escaneres"]' WHERE id = 'impresion' AND (keywords IS NULL OR TRIM(keywords) = '');
+UPDATE category_macro_groups SET keywords = '["seguridad","vigilancia","camara","camaras","cctv","dvr","nvr","alarma","alarmas","biometrico","sensor","sensores","control de acceso"]' WHERE id = 'seguridad' AND (keywords IS NULL OR TRIM(keywords) = '');
+UPDATE category_macro_groups SET keywords = '["energia","ups","bateria","baterias","regulador","reguladores","inversor","inversores","proteccion de poder","clima","climatizacion","ventilacion","ventilador","aire"]' WHERE id = 'energia' AND (keywords IS NULL OR TRIM(keywords) = '');
+UPDATE category_macro_groups SET keywords = '["celular","celulares","smartphone","smartphones","telefono","telefonos","reloj","smartwatch","vestible","vestibles","wearable"]' WHERE id = 'telefonia' AND (keywords IS NULL OR TRIM(keywords) = '');
+UPDATE category_macro_groups SET keywords = '["gaming","videojuegos","videojuego","consola","consolas","playstation","xbox","nintendo","silla gaming","sillas","linea blanca","electrodomesticos","electrodomestico","hogar"]' WHERE id = 'gaming' AND (keywords IS NULL OR TRIM(keywords) = '');
+UPDATE category_macro_groups SET keywords = '["software","licencia","licencias","antivirus","sistema operativo","office","windows"]' WHERE id = 'software' AND (keywords IS NULL OR TRIM(keywords) = '');
+
+-- tipo 0: id o nombre de la familia; 1: categoría declarada en la familia; 2: palabra clave.
+CREATE TEMPORARY TABLE IF NOT EXISTS tmp_045_reglas (
+  tipo TINYINT NOT NULL,
+  orden INT NOT NULL,
+  group_id VARCHAR(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  texto VARCHAR(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL
+) ENGINE=MEMORY;
+
+DELETE FROM tmp_045_reglas;
+
+INSERT INTO tmp_045_reglas (tipo, orden, group_id, texto) VALUES
+  (0, 1, 'computacion', 'computacion'),
+  (0, 1, 'computacion', 'Computación y Equipos'),
+  (1, 1, 'computacion', 'Computadores Portátiles'),
+  (1, 1, 'computacion', 'Computadores de Escritorio'),
+  (1, 1, 'computacion', 'Tabletas Digitales'),
+  (2, 1, 'computacion', 'computador'),
+  (2, 1, 'computacion', 'computadores'),
+  (2, 1, 'computacion', 'notebook'),
+  (2, 1, 'computacion', 'notebooks'),
+  (2, 1, 'computacion', 'laptop'),
+  (2, 1, 'computacion', 'laptops'),
+  (2, 1, 'computacion', 'portatil'),
+  (2, 1, 'computacion', 'portatiles'),
+  (2, 1, 'computacion', 'desktop'),
+  (2, 1, 'computacion', 'escritorio'),
+  (2, 1, 'computacion', 'tableta'),
+  (2, 1, 'computacion', 'tabletas'),
+  (2, 1, 'computacion', 'tablet'),
+  (2, 1, 'computacion', 'all-in-one'),
+  (2, 1, 'computacion', 'workstation'),
+  (0, 2, 'componentes', 'componentes'),
+  (0, 2, 'componentes', 'Componentes y Almacenamiento'),
+  (1, 2, 'componentes', 'Componentes Informáticos'),
+  (1, 2, 'componentes', 'Memorias RAM'),
+  (1, 2, 'componentes', 'Almacenamiento'),
+  (2, 2, 'componentes', 'componente'),
+  (2, 2, 'componentes', 'componentes'),
+  (2, 2, 'componentes', 'disco'),
+  (2, 2, 'componentes', 'discos'),
+  (2, 2, 'componentes', 'ssd'),
+  (2, 2, 'componentes', 'hdd'),
+  (2, 2, 'componentes', 'nvme'),
+  (2, 2, 'componentes', 'ram'),
+  (2, 2, 'componentes', 'memoria'),
+  (2, 2, 'componentes', 'memorias'),
+  (2, 2, 'componentes', 'procesador'),
+  (2, 2, 'componentes', 'procesadores'),
+  (2, 2, 'componentes', 'tarjeta madre'),
+  (2, 2, 'componentes', 'placa'),
+  (2, 2, 'componentes', 'motherboard'),
+  (2, 2, 'componentes', 'gpu'),
+  (2, 2, 'componentes', 'almacenamiento'),
+  (0, 3, 'redes', 'redes'),
+  (0, 3, 'redes', 'Redes y Conectividad'),
+  (1, 3, 'redes', 'Redes y Comunicaciones'),
+  (1, 3, 'redes', 'Cables y Adaptadores'),
+  (2, 3, 'redes', 'red'),
+  (2, 3, 'redes', 'redes'),
+  (2, 3, 'redes', 'comunicaciones'),
+  (2, 3, 'redes', 'router'),
+  (2, 3, 'redes', 'switch'),
+  (2, 3, 'redes', 'cables'),
+  (2, 3, 'redes', 'cable'),
+  (2, 3, 'redes', 'adaptador'),
+  (2, 3, 'redes', 'adaptadores'),
+  (2, 3, 'redes', 'wifi'),
+  (2, 3, 'redes', 'access point'),
+  (2, 3, 'redes', 'fibra'),
+  (2, 3, 'redes', 'patch cord'),
+  (2, 3, 'redes', 'conector'),
+  (2, 3, 'redes', 'mikrotik'),
+  (2, 3, 'redes', 'ubiquiti'),
+  (0, 4, 'monitores', 'monitores'),
+  (0, 4, 'monitores', 'Monitores y Pantallas'),
+  (1, 4, 'monitores', 'Monitores'),
+  (1, 4, 'monitores', 'Televisores y Pantallas'),
+  (2, 4, 'monitores', 'monitor'),
+  (2, 4, 'monitores', 'monitores'),
+  (2, 4, 'monitores', 'pantalla'),
+  (2, 4, 'monitores', 'pantallas'),
+  (2, 4, 'monitores', 'tv'),
+  (2, 4, 'monitores', 'televisor'),
+  (2, 4, 'monitores', 'televisores'),
+  (2, 4, 'monitores', 'display'),
+  (2, 4, 'monitores', 'proyector'),
+  (2, 4, 'monitores', 'proyectores'),
+  (0, 5, 'perifericos', 'perifericos'),
+  (0, 5, 'perifericos', 'Periféricos y Accesorios'),
+  (1, 5, 'perifericos', 'Periféricos de Entrada'),
+  (1, 5, 'perifericos', 'Audio y Auriculares'),
+  (1, 5, 'perifericos', 'Accesorios Generales'),
+  (1, 5, 'perifericos', 'Mochilas y Soportes'),
+  (2, 5, 'perifericos', 'periferico'),
+  (2, 5, 'perifericos', 'perifericos'),
+  (2, 5, 'perifericos', 'teclado'),
+  (2, 5, 'perifericos', 'teclados'),
+  (2, 5, 'perifericos', 'mouse'),
+  (2, 5, 'perifericos', 'raton'),
+  (2, 5, 'perifericos', 'audio'),
+  (2, 5, 'perifericos', 'auricular'),
+  (2, 5, 'perifericos', 'auriculares'),
+  (2, 5, 'perifericos', 'audifono'),
+  (2, 5, 'perifericos', 'audifonos'),
+  (2, 5, 'perifericos', 'parlante'),
+  (2, 5, 'perifericos', 'parlantes'),
+  (2, 5, 'perifericos', 'mochila'),
+  (2, 5, 'perifericos', 'mochilas'),
+  (2, 5, 'perifericos', 'soporte'),
+  (2, 5, 'perifericos', 'soportes'),
+  (2, 5, 'perifericos', 'accesorio'),
+  (2, 5, 'perifericos', 'accesorios'),
+  (2, 5, 'perifericos', 'funda'),
+  (2, 5, 'perifericos', 'maletin'),
+  (2, 5, 'perifericos', 'webcam'),
+  (0, 6, 'impresion', 'impresion'),
+  (0, 6, 'impresion', 'Impresión y Puntos de Venta'),
+  (1, 6, 'impresion', 'Impresoras y Multifuncionales'),
+  (1, 6, 'impresion', 'Consumibles de Impresión'),
+  (1, 6, 'impresion', 'Puntos de Venta'),
+  (2, 6, 'impresion', 'impresora'),
+  (2, 6, 'impresion', 'impresoras'),
+  (2, 6, 'impresion', 'multifuncional'),
+  (2, 6, 'impresion', 'multifuncionales'),
+  (2, 6, 'impresion', 'toner'),
+  (2, 6, 'impresion', 'cartucho'),
+  (2, 6, 'impresion', 'cartuchos'),
+  (2, 6, 'impresion', 'tinta'),
+  (2, 6, 'impresion', 'consumible'),
+  (2, 6, 'impresion', 'consumibles'),
+  (2, 6, 'impresion', 'pos'),
+  (2, 6, 'impresion', 'punto de venta'),
+  (2, 6, 'impresion', 'puntos de venta'),
+  (2, 6, 'impresion', 'codigo de barras'),
+  (2, 6, 'impresion', 'escaner'),
+  (2, 6, 'impresion', 'escaneres'),
+  (0, 7, 'seguridad', 'seguridad'),
+  (0, 7, 'seguridad', 'Seguridad y Vigilancia'),
+  (1, 7, 'seguridad', 'Seguridad y Vigilancia'),
+  (2, 7, 'seguridad', 'seguridad'),
+  (2, 7, 'seguridad', 'vigilancia'),
+  (2, 7, 'seguridad', 'camara'),
+  (2, 7, 'seguridad', 'camaras'),
+  (2, 7, 'seguridad', 'cctv'),
+  (2, 7, 'seguridad', 'dvr'),
+  (2, 7, 'seguridad', 'nvr'),
+  (2, 7, 'seguridad', 'alarma'),
+  (2, 7, 'seguridad', 'alarmas'),
+  (2, 7, 'seguridad', 'biometrico'),
+  (2, 7, 'seguridad', 'sensor'),
+  (2, 7, 'seguridad', 'sensores'),
+  (2, 7, 'seguridad', 'control de acceso'),
+  (0, 8, 'energia', 'energia'),
+  (0, 8, 'energia', 'Energía y Climatización'),
+  (1, 8, 'energia', 'Protección de Energía'),
+  (1, 8, 'energia', 'Climatización y Ventilación'),
+  (2, 8, 'energia', 'energia'),
+  (2, 8, 'energia', 'ups'),
+  (2, 8, 'energia', 'bateria'),
+  (2, 8, 'energia', 'baterias'),
+  (2, 8, 'energia', 'regulador'),
+  (2, 8, 'energia', 'reguladores'),
+  (2, 8, 'energia', 'inversor'),
+  (2, 8, 'energia', 'inversores'),
+  (2, 8, 'energia', 'proteccion de poder'),
+  (2, 8, 'energia', 'clima'),
+  (2, 8, 'energia', 'climatizacion'),
+  (2, 8, 'energia', 'ventilacion'),
+  (2, 8, 'energia', 'ventilador'),
+  (2, 8, 'energia', 'aire'),
+  (0, 9, 'telefonia', 'telefonia'),
+  (0, 9, 'telefonia', 'Telefonía y Móviles'),
+  (1, 9, 'telefonia', 'Celulares y Smartphones'),
+  (1, 9, 'telefonia', 'Dispositivos Vestibles'),
+  (2, 9, 'telefonia', 'celular'),
+  (2, 9, 'telefonia', 'celulares'),
+  (2, 9, 'telefonia', 'smartphone'),
+  (2, 9, 'telefonia', 'smartphones'),
+  (2, 9, 'telefonia', 'telefono'),
+  (2, 9, 'telefonia', 'telefonos'),
+  (2, 9, 'telefonia', 'reloj'),
+  (2, 9, 'telefonia', 'smartwatch'),
+  (2, 9, 'telefonia', 'vestible'),
+  (2, 9, 'telefonia', 'vestibles'),
+  (2, 9, 'telefonia', 'wearable'),
+  (0, 10, 'gaming', 'gaming'),
+  (0, 10, 'gaming', 'Gaming y Hogar'),
+  (1, 10, 'gaming', 'Gaming y Videojuegos'),
+  (1, 10, 'gaming', 'Consolas de Videojuegos'),
+  (1, 10, 'gaming', 'Sillas Gaming'),
+  (1, 10, 'gaming', 'Audio y Sonido para Hogar'),
+  (1, 10, 'gaming', 'Electrodomésticos y Línea Blanca'),
+  (2, 10, 'gaming', 'gaming'),
+  (2, 10, 'gaming', 'videojuegos'),
+  (2, 10, 'gaming', 'videojuego'),
+  (2, 10, 'gaming', 'consola'),
+  (2, 10, 'gaming', 'consolas'),
+  (2, 10, 'gaming', 'playstation'),
+  (2, 10, 'gaming', 'xbox'),
+  (2, 10, 'gaming', 'nintendo'),
+  (2, 10, 'gaming', 'silla gaming'),
+  (2, 10, 'gaming', 'sillas'),
+  (2, 10, 'gaming', 'linea blanca'),
+  (2, 10, 'gaming', 'electrodomesticos'),
+  (2, 10, 'gaming', 'electrodomestico'),
+  (2, 10, 'gaming', 'hogar'),
+  (0, 11, 'software', 'software'),
+  (0, 11, 'software', 'Software y Licencias'),
+  (1, 11, 'software', 'Software y Licencias'),
+  (2, 11, 'software', 'software'),
+  (2, 11, 'software', 'licencia'),
+  (2, 11, 'software', 'licencias'),
+  (2, 11, 'software', 'antivirus'),
+  (2, 11, 'software', 'sistema operativo'),
+  (2, 11, 'software', 'office'),
+  (2, 11, 'software', 'windows');
+
+-- utf8mb4_unicode_ci ignora mayúsculas y tildes, como normalizeCategoryText de la tienda.
+CREATE TEMPORARY TABLE IF NOT EXISTS tmp_045_sin_familia (
+  id VARCHAR(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL PRIMARY KEY,
+  n VARCHAR(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL
+) ENGINE=MEMORY;
+
+DELETE FROM tmp_045_sin_familia;
+
+INSERT INTO tmp_045_sin_familia (id, n)
+  SELECT CONVERT(id USING utf8mb4), CONVERT(TRIM(REPLACE(name, '_', ' ')) USING utf8mb4)
+  FROM categories_rows
+  WHERE (macro_group_id IS NULL OR macro_group_id = '') AND TRIM(REPLACE(name, '_', ' ')) <> '';
+
+UPDATE categories_rows c
+  JOIN tmp_045_sin_familia t ON t.id = CONVERT(c.id USING utf8mb4) COLLATE utf8mb4_unicode_ci
+  SET c.macro_group_id = COALESCE(
+    (SELECT r.group_id FROM tmp_045_reglas r
+      JOIN category_macro_groups g ON CONVERT(g.id USING utf8mb4) COLLATE utf8mb4_unicode_ci = r.group_id
+      WHERE r.texto = t.n
+         OR (r.tipo = 2 AND (t.n LIKE CONCAT('%', r.texto, '%') OR r.texto LIKE CONCAT('%', t.n, '%')))
+      ORDER BY CASE WHEN r.texto = t.n THEN r.tipo ELSE 3 END, r.orden
+      LIMIT 1),
+    (SELECT g2.id FROM category_macro_groups g2 WHERE g2.id = 'otros'),
+    c.macro_group_id)
+  WHERE c.macro_group_id IS NULL OR c.macro_group_id = '';
+
+DROP TEMPORARY TABLE IF EXISTS tmp_045_sin_familia;
+
+DROP TEMPORARY TABLE IF EXISTS tmp_045_reglas;

@@ -118,6 +118,22 @@ try {
 
   await open(page, '/editor-landing.html');
   assert.equal((await page.textContent('#statusMessageText')).trim(), 'Todos los cambios guardados');
+
+  await db.execute("DELETE FROM categories_rows WHERE id IN ('e2e-cat-padre','e2e-cat-hija')");
+  await db.execute("INSERT INTO categories_rows (id,name,subcategories,macro_group_id) VALUES ('e2e-cat-padre','E2E Principal','[]','redes'),('e2e-cat-hija','E2E Hija','[]','gaming')");
+  await open(page, '/categorias.html');
+  await page.fill('#search', 'E2E Principal');
+  await page.click('[data-edit="e2e-cat-padre"]');
+  await page.fill('#childSearch', 'E2E Hija');
+  await page.click('[data-pick-child="e2e-cat-hija"]');
+  assert.ok((await page.textContent('#childList')).includes('E2E Hija'), 'la hija aparece en la lista antes de guardar');
+  await page.click('#saveCategory');
+  await page.waitForFunction(() => !document.querySelector('#categoryDialog').open);
+  const [[hija]] = await db.query("SELECT parent_category_id, macro_group_id FROM categories_rows WHERE id = 'e2e-cat-hija'");
+  assert.deepEqual([hija.parent_category_id, hija.macro_group_id], ['e2e-cat-padre', 'redes'], 'la subcategoría se guarda con la familia de su principal');
+  await page.fill('#search', 'E2E');
+  assert.equal(await page.locator('.tree-children [data-category-id="e2e-cat-hija"]').count(), 1, 'el árbol muestra la hija bajo su principal');
+  await db.execute("DELETE FROM categories_rows WHERE id IN ('e2e-cat-padre','e2e-cat-hija')");
   await context.close();
 
   const mobile = await session({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });

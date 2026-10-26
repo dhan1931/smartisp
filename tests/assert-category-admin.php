@@ -37,3 +37,64 @@ try {
     $pdo->exec("DELETE FROM `$table` WHERE id='ci-category-product'");
     $pdo->exec("DELETE FROM categories_rows WHERE id IN ('ci-category-edit','ci-category-other','ci-category-invalid')");
 }
+
+$rejects = static function (callable $fn, string $message) use ($assert): void {
+    try { $fn(); } catch (InvalidArgumentException $error) { return; }
+    $assert(false, $message);
+};
+$treeIds = "'ci-tree-a','ci-tree-b','ci-tree-c','ci-tree-d','ci-tree-e','ci-etiqueta-nueva','ci-patch'";
+try {
+    $insert = $pdo->prepare('INSERT INTO categories_rows (id, name, subcategories, macro_group_id, parent_category_id) VALUES (?, ?, ?, ?, ?)');
+    $insert->execute(['ci-tree-a', 'CI Redes Árbol', '[]', 'redes', null]);
+    $insert->execute(['ci-tree-b', 'CI Switches', '[]', null, null]);
+    $insert->execute(['ci-tree-c', 'CI Cables', '[]', 'perifericos', null]);
+    $insert->execute(['ci-tree-d', 'CI Otra principal', '["CI Switches","CI Etiqueta Nueva","CI Hija Ajena"]', 'componentes', null]);
+    $insert->execute(['ci-tree-e', 'CI Hija Ajena', '[]', 'redes', 'ci-tree-a']);
+    $pdo->exec("INSERT INTO `$table` (id,name,price,category,subcategory,visible) VALUES ('ci-tree-p1','CI patch',1,'CI Redes Árbol','CI Patch',1),('ci-tree-p2','CI switch',1,'CI Switches','',1)");
+
+    $result = assignCategoryChildren($pdo, 'ci-tree-a', ['ci-tree-b', 'ci-tree-c'], []);
+    $assert($result['added'] === 2, 'No se agregaron las subcategorías.');
+    $assert($read('ci-tree-b')['parent_category_id'] === 'ci-tree-a' && $read('ci-tree-b')['macro_group_id'] === 'redes' && $read('ci-tree-c')['macro_group_id'] === 'redes', 'La subcategoría no heredó la familia de su principal.');
+    $rejects(fn() => assignCategoryChildren($pdo, 'ci-tree-b', ['ci-tree-d'], []), 'Debió rechazar un tercer nivel.');
+    $rejects(fn() => assignCategoryChildren($pdo, 'ci-tree-b', ['ci-tree-a'], []), 'Debió rechazar un ciclo.');
+    $rejects(fn() => assignCategoryChildren($pdo, 'ci-tree-a', ['ci-tree-a'], []), 'Debió rechazar que una categoría sea subcategoría de sí misma.');
+    $rejects(fn() => saveCategoryChanges($pdo, [['id' => 'ci-tree-d', 'name' => 'CI Otra principal', 'parentCategoryId' => 'ci-tree-b']]), 'Guardar con una subcategoría como principal debió rechazarse.');
+    $rejects(fn() => saveCategoryChanges($pdo, [['id' => 'ci-tree-a', 'name' => 'CI Redes Árbol', 'parentCategoryId' => 'ci-tree-d']]), 'Una principal con subcategorías no puede pasar a ser subcategoría.');
+
+    saveCategoryChanges($pdo, [['id' => 'ci-tree-a', 'name' => 'CI Redes Árbol', 'macroGroupId' => 'energia']]);
+    $assert($read('ci-tree-b')['macro_group_id'] === 'energia' && $read('ci-tree-e')['macro_group_id'] === 'energia', 'Cambiar la familia de la principal no llegó a sus subcategorías.');
+    saveCategoryChanges($pdo, [['id' => 'ci-tree-b', 'name' => 'CI Switches', 'macroGroupId' => 'software']]);
+    $assert($read('ci-tree-b')['macro_group_id'] === 'energia', 'Una subcategoría debe conservar la familia de su principal.');
+    $bulk = assignCategoriesFamily($pdo, ['ci-tree-a', 'ci-tree-c'], 'redes');
+    $assert($bulk['updated'] === 1 && $bulk['skipped'] === ['CI Cables'] && $read('ci-tree-b')['macro_group_id'] === 'redes', 'La familia en bloque no respetó la herencia.');
+
+    $preview = convertCategoryTags($pdo, false);
+    $assert($preview['pending'] > 0 && !$read('ci-etiqueta-nueva'), 'La vista previa de la conversión no debe escribir.');
+    convertCategoryTags($pdo, true);
+    $new = $read('ci-etiqueta-nueva');
+    $assert($new && $new['parent_category_id'] === 'ci-tree-d' && $new['macro_group_id'] === 'componentes', 'La etiqueta no se convirtió en subcategoría real con la familia de su principal.');
+    $assert(($read('ci-patch')['parent_category_id'] ?? '') === 'ci-tree-a', 'La subcategoría escrita en productos no se convirtió.');
+    $assert($read('ci-tree-b')['parent_category_id'] === 'ci-tree-a' && $read('ci-tree-e')['parent_category_id'] === 'ci-tree-a', 'La conversión no debe mover una categoría que ya tiene principal.');
+    $assert(json_decode($read('ci-tree-d')['subcategories'], true) === ['CI Switches', 'CI Hija Ajena'], 'La conversión debe dejar solo las etiquetas que no pudo convertir.');
+    $again = convertCategoryTags($pdo, true);
+    $assert($again['pending'] === 0 && !$again['created'] && !$again['linked'], 'Repetir la conversión no debe cambiar nada.');
+    $assert((int)$pdo->query("SELECT COUNT(*) FROM categories_rows WHERE name IN ('CI Etiqueta Nueva','CI Patch')")->fetchColumn() === 2, 'La conversión duplicó categorías.');
+    $assert($pdo->query("SELECT category FROM `$table` WHERE id='ci-tree-p1'")->fetchColumn() === 'CI Redes Árbol', 'La conversión no debe cambiar la categoría de los productos.');
+
+    $params = [];
+    $sql = smartispCategoryScopeSql($pdo, ['CI Patch'], $params, 's');
+    $stmt = $pdo->prepare("SELECT id FROM `$table` WHERE $sql ORDER BY id");
+    $stmt->execute($params);
+    $assert($stmt->fetchAll(PDO::FETCH_COLUMN) === ['ci-tree-p1'], 'Filtrar por la subcategoría debe incluir los productos de la principal marcados con ella.');
+    $params = [];
+    $stmt = $pdo->prepare("SELECT id FROM `$table` WHERE " . smartispCategoryScopeSql($pdo, ['CI Redes Árbol'], $params, 's') . ' ORDER BY id');
+    $stmt->execute($params);
+    $assert($stmt->fetchAll(PDO::FETCH_COLUMN) === ['ci-tree-p1', 'ci-tree-p2'], 'Filtrar por la principal debe incluir sus subcategorías.');
+
+    assignCategoryChildren($pdo, 'ci-tree-a', [], ['ci-tree-c']);
+    $assert($read('ci-tree-c')['parent_category_id'] === null, 'No se quitó la subcategoría.');
+    echo "Árbol de categorías: subcategorías, dos niveles, ciclos, familia heredada y conversión de etiquetas verificados.\n";
+} finally {
+    $pdo->exec("DELETE FROM `$table` WHERE id IN ('ci-tree-p1','ci-tree-p2')");
+    $pdo->exec("DELETE FROM categories_rows WHERE id IN ($treeIds)");
+}

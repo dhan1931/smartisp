@@ -79,6 +79,14 @@ if ($pdo && $slug !== '') {
             }
         }
 
+        // Una categoría principal puede no tener productos propios, solo en sus subcategorías.
+        if (!$categoryMatches && !$subcategoryMatches) {
+            foreach ($pdo->query('SELECT name FROM categories_rows')->fetchAll(PDO::FETCH_COLUMN) as $rowName) {
+                $rowName = trim((string)$rowName);
+                if ($rowName !== '' && slugifyCategoryPage($rowName) === $slug) { $categoryMatches[$rowName] = 0; break; }
+            }
+        }
+
         // Slugs del sitemap anterior (iconv): 301 a la URL actual.
         if (!$categoryMatches && !$subcategoryMatches && !headers_sent()) {
             foreach (array_keys($allCategoryNames) as $knownName) {
@@ -105,6 +113,8 @@ if ($pdo && $slug !== '') {
         }
 
         if ($categoryName !== '') {
+            $scope = smartispCategoryScope($pdo, $categoryName);
+            if ($categoryParentName === '') $categoryParentName = $scope['parent'];
             $facetStmt = $pdo->prepare("SELECT TRIM(subcategory) AS name, COUNT(*) AS product_count FROM `$pTable` WHERE visible = 1 AND (TRIM(category) = :category_name OR TRIM(subcategory) = :subcategory_name) AND TRIM(subcategory) <> '' GROUP BY TRIM(subcategory) ORDER BY TRIM(subcategory) ASC");
             $facetStmt->execute([':category_name' => $categoryName, ':subcategory_name' => $categoryName]);
             $audioVideoSubcategories = $facetStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -127,6 +137,20 @@ if ($pdo && $slug !== '') {
                 }
                 break;
             }
+            $childNames = array_slice($scope['names'], 1);
+            if ($childNames) {
+                $childParams = [];
+                $childStmt = $pdo->prepare("SELECT TRIM(category) AS name, COUNT(*) AS product_count FROM `$pTable` WHERE visible = 1 AND " . smartispCategoryScopeSql($pdo, $childNames, $childParams, 'child', 'TRIM(category)', 'TRIM(subcategory)') . ' AND TRIM(category) <> :parent_name GROUP BY TRIM(category)');
+                $childStmt->execute($childParams + [':parent_name' => $categoryName]);
+                foreach ($childStmt->fetchAll(PDO::FETCH_ASSOC) as $childRow) {
+                    foreach ($audioVideoSubcategories as &$facet) {
+                        if (strcasecmp((string)$facet['name'], (string)$childRow['name']) === 0) { $facet['product_count'] = (int)$facet['product_count'] + (int)$childRow['product_count']; continue 2; }
+                    }
+                    unset($facet);
+                    $audioVideoSubcategories[] = ['name' => (string)$childRow['name'], 'product_count' => (int)$childRow['product_count']];
+                }
+                unset($facet);
+            }
             usort($audioVideoSubcategories, fn($a, $b) => strcasecmp((string)$a['name'], (string)$b['name']));
 
             $requestedSubcategory = trim((string)($_GET['subcategoria'] ?? ''));
@@ -137,14 +161,15 @@ if ($pdo && $slug !== '') {
                 }
             }
 
-            $where = 'visible = 1 AND (TRIM(category) = :category_name OR TRIM(subcategory) = :subcategory_name)';
-            $params = [':category_name' => $categoryName, ':subcategory_name' => $categoryName];
+            $params = [':subcategory_name' => $categoryName];
+            $where = 'visible = 1 AND (' . smartispCategoryScopeSql($pdo, [$categoryName], $params, 'category_name', 'TRIM(category)', 'TRIM(subcategory)') . ' OR TRIM(subcategory) = :subcategory_name)';
             $allCountStmt = $pdo->prepare("SELECT COUNT(*) FROM `$pTable` WHERE $where");
             $allCountStmt->execute($params);
             $allProductCount = (int)$allCountStmt->fetchColumn();
             if ($selectedSubcategory !== '') {
-                $where .= ' AND TRIM(subcategory) = :filter_subcategory';
+                $where .= ' AND (TRIM(subcategory) = :filter_subcategory OR TRIM(category) = :filter_category)';
                 $params[':filter_subcategory'] = $selectedSubcategory;
+                $params[':filter_category'] = $selectedSubcategory;
             }
             if ($selectedPriceMin !== '' && is_numeric($selectedPriceMin) && (float)$selectedPriceMin >= 0) {
                 $where .= ' AND price >= :price_min';
@@ -180,10 +205,13 @@ if ($pdo && $slug !== '') {
                 $products[] = $product;
             }
 
-            $configName = $categoryParentName !== '' ? $categoryParentName : $categoryName;
             $configStmt = $pdo->prepare('SELECT banner_image_url, banner_alt, description, icon FROM categories_rows WHERE LOWER(name) = LOWER(:name) LIMIT 1');
-            $configStmt->execute([':name' => $configName]);
+            $configStmt->execute([':name' => $categoryName]);
             $categoryConfig = $configStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+            if ($categoryParentName !== '' && trim((string)($categoryConfig['banner_image_url'] ?? '')) === '') {
+                $configStmt->execute([':name' => $categoryParentName]);
+                $categoryConfig = $configStmt->fetch(PDO::FETCH_ASSOC) ?: $categoryConfig;
+            }
             $categoryBannerUrl = trim((string)($categoryConfig['banner_image_url'] ?? ''));
             $categoryBannerAlt = trim((string)($categoryConfig['banner_alt'] ?? ''));
             $customCategoryDescription = trim((string)($categoryConfig['description'] ?? ''));
@@ -529,7 +557,7 @@ foreach ($products as $idx => $product) {
   </footer>
   <link rel="stylesheet" href="/assets/css/store/site-footer.css?v=1">
   <script src="/assets/js/store/site-footer.js?v=1" defer></script>
-  <script src="/assets/js/store/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
+  <script src="/assets/js/store/storefront-discovery.js?v=subcat-20261028" defer></script>
   <?php if ($categoryName !== '' && $totalProducts > 0): ?>
   <script>
     (() => {
