@@ -21,6 +21,7 @@ export default defineConfig({
         configuracion: 'configuracion.html',
         campanas: 'campanas.html',
         pedidos: 'pedidos.html',
+        comprobante: 'comprobante.html',
         cotizaciones: 'cotizaciones.html',
         clientes: 'clientes.html',
         categorias: 'categorias.html',

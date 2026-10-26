@@ -136,6 +136,7 @@ dialog.confirm-dialog .confirm-actions{display:flex;justify-content:flex-end;gap
 .chip-list,.product-list{display:grid;gap:8px;margin:14px 0}
 .chip-row{display:grid;grid-template-columns:1fr 1fr 1.6fr auto;align-items:center;gap:8px;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2)}
 .campaign-editor .chip-row input,.campaign-editor .chip-row select{margin-top:0}
+.chip-row .chip-dates label{margin:0;font-size:12.5px}.campaign-editor .chip-row .chip-dates input{margin-top:4px}
 .product-row{display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;gap:12px;padding:9px;border:1px solid var(--border);border-radius:var(--radius-sm)}
 .product-row img{width:48px;height:48px;object-fit:contain;border-radius:4px;background:#f5f8fa}
 .product-row strong,.product-row small{display:block;overflow-wrap:anywhere}
@@ -264,6 +265,7 @@ dialog.confirm-dialog .confirm-actions{display:flex;justify-content:flex-end;gap
   .preview-promo{right:8px;bottom:8px;padding:6px 8px;font-size:11px}
   .chip-row{grid-template-columns:1fr 1fr}
   .chip-row input[data-field="target_url"]{grid-column:1/-1}
+  .chip-row .chip-dates{grid-column:1/-1;grid-template-columns:1fr 1fr}
   .feature-badge-row{grid-template-columns:1fr 1fr}
   .feature-badge-row input[data-fb-field="text"]{grid-column:1/-1}
   .gallery-list{grid-template-columns:repeat(2,minmax(0,1fr))}

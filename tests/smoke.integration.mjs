@@ -358,6 +358,83 @@ try {
   }
   assert.equal(last.status, 429, 'el límite debe aplicarse aunque cambie X-Forwarded-For');
 
+  // --- Migración 043: notas internas de pedidos, conversión de cotizaciones y chips con fechas
+  {
+    const noteText = `smk nota interna ${Date.now()}`;
+    const noted = await req('admin-order-note', { method: 'POST', cookie: ac, body: { id: ok.data.orderId, note: noteText } });
+    assert.equal(noted.status, 200, JSON.stringify(noted.data));
+    assert.equal((await req('admin-order-note', { method: 'POST', cookie: cc, body: { id: ok.data.orderId, note: 'x' } })).status, 403, 'un cliente no puede anotar pedidos');
+    assert.equal((await req('admin-order-note', { method: 'POST', cookie: ac, body: { id: 'smk-no-existe', note: 'x' } })).status, 404);
+    const noteDetail = await req(`admin-order?id=${encodeURIComponent(ok.data.orderId)}`, { cookie: ac });
+    assert.ok(noteDetail.data.activity.some(a => a.kind === 'note' && a.body === noteText && a.actor === admin.email), 'el admin ve la nota con su autor');
+    const customerView = await req('orders', { cookie: cc });
+    assert.equal(customerView.status, 200, JSON.stringify(customerView.data));
+    assert.ok(customerView.data.orders.some(o => o.id === ok.data.orderId), 'el cliente sigue viendo su pedido');
+    assert.ok(!JSON.stringify(customerView.data).includes(noteText), 'el cliente no ve las notas internas');
+    assert.equal((await req(`admin-order?id=${encodeURIComponent(ok.data.orderId)}`, { cookie: cc })).status, 403, 'el detalle con actividad es solo de admin');
+
+    await db.execute("DELETE FROM service_quote_requests WHERE id = 'smk-quote'");
+    await db.execute("INSERT INTO service_quote_requests (id, client_type, service_interest, description, company_name, email, phone) VALUES ('smk-quote', 'Empresa', 'Cableado estructurado', '20 puntos de red', 'Smk SA', 'smk-quote@example.test', '0991234567')");
+    const inventory = async () => (await db.query('SELECT product_id, quantity_available, quantity_reserved FROM product_inventory ORDER BY product_id'))[0];
+    const invBefore = await inventory();
+    const noPrice = await req('admin-service-quote-convert', { method: 'POST', cookie: ac, body: { id: 'smk-quote', description: 'Instalación', price: 0, status: 'pending' } });
+    assert.equal(noPrice.status, 400, 'un pedido pendiente de pago sin precio se rechaza');
+    assert.equal((await req('admin-service-quote-convert', { method: 'POST', cookie: cc, body: { id: 'smk-quote', description: 'x', price: 1 } })).status, 403);
+    const conv = await req('admin-service-quote-convert', { method: 'POST', cookie: ac, body: { id: 'smk-quote', description: 'Instalación de 20 puntos', price: 150.5, quantity: 2, status: 'pending', productId: 'smk-stock', stockTracked: true } });
+    assert.equal(conv.status, 200, JSON.stringify(conv.data));
+    assert.equal(conv.data.total, 301);
+    const [[convRow]] = await db.query('SELECT items, status, total, customer_email FROM orders_rows WHERE id = ?', [conv.data.orderId]);
+    const convItems = JSON.parse(convRow.items);
+    assert.equal(convItems.length, 1);
+    assert.deepEqual([convItems[0].productId, convItems[0].name, convItems[0].stockTracked], ['', 'Instalación de 20 puntos', undefined], 'la línea libre no apunta a un producto');
+    assert.deepEqual([convRow.status, Number(convRow.total), convRow.customer_email], ['pending', 301, 'smk-quote@example.test']);
+    for (const status of ['paid', 'shipped', 'cancelled']) {
+      const moved = await req('admin-order-status', { method: 'POST', cookie: ac, body: { id: conv.data.orderId, status } });
+      assert.equal(moved.status, 200, `${status}: ${JSON.stringify(moved.data)}`);
+    }
+    assert.deepEqual(await inventory(), invBefore, 'convertir y mover el pedido no toca el inventario');
+    const convAgain = await req('admin-service-quote-convert', { method: 'POST', cookie: ac, body: { id: 'smk-quote', description: 'Otra', price: 1, status: 'pending' } });
+    assert.equal(convAgain.status, 409, 'una cotización se convierte una sola vez');
+    const [[quoteRow]] = await db.query("SELECT order_id, status FROM service_quote_requests WHERE id = 'smk-quote'");
+    assert.deepEqual([quoteRow.order_id, quoteRow.status], [conv.data.orderId, 'contactado']);
+    const convDetail = await req(`admin-order?id=${encodeURIComponent(conv.data.orderId)}`, { cookie: ac });
+    assert.equal(convDetail.data.events[0].to_status, 'pending', 'la creación queda en el historial de estados');
+    assert.ok(convDetail.data.activity.some(a => a.kind === 'system' && a.body.includes('smk-quote')), 'la línea de tiempo enlaza la cotización');
+    const followup = await req('admin-service-quote-followup', { method: 'POST', cookie: ac, body: { id: 'smk-quote', next_action: 'Llamar al cliente', next_action_at: '2026-11-03T09:30' } });
+    assert.equal(followup.status, 200, JSON.stringify(followup.data));
+    const [[followRow]] = await db.query("SELECT next_action, DATE_FORMAT(next_action_at, '%Y-%m-%d %H:%i:%s') at FROM service_quote_requests WHERE id = 'smk-quote'");
+    assert.deepEqual([followRow.next_action, followRow.at], ['Llamar al cliente', '2026-11-03 14:30:00'], 'la próxima acción se guarda en UTC');
+    assert.equal((await req('admin-service-quote-note', { method: 'POST', cookie: ac, body: { id: 'smk-quote', note: 'Pidió propuesta formal' } })).status, 200);
+    const quoteDetail = await req('admin-service-quote?id=smk-quote', { cookie: ac });
+    assert.equal(quoteDetail.status, 200, JSON.stringify(quoteDetail.data));
+    assert.equal(quoteDetail.data.order.id, conv.data.orderId);
+    assert.deepEqual(quoteDetail.data.notes.map(n => n.body), [`Convertida en el pedido ${conv.data.orderId}.`, 'Pidió propuesta formal']);
+
+    const chips = [
+      { label: 'Smk vigente', icon: 'tag', target_url: '/tienda.html#catalogo', is_active: true, starts_at: '2020-01-01T08:00', ends_at: '2099-12-31T20:00' },
+      { label: 'Smk vencido', icon: 'star', target_url: '/tienda.html', is_active: true, starts_at: '2020-01-01T08:00', ends_at: '2020-02-01T08:00' },
+    ];
+    // La portada del CI no tiene banners: se guarda inactiva para poder publicar solo los chips.
+    const campaign = { name: 'Portada de la tienda', is_active: false };
+    const inverted = await req('admin-store-campaigns', { method: 'POST', cookie: ac, body: { zone: 'store-home', campaign, chips: [{ ...chips[0], ends_at: '2019-01-01T00:00' }] } });
+    assert.equal(inverted.status, 400, 'un chip con "hasta" antes de "desde" se rechaza');
+    assert.match(inverted.data.error, /posterior/);
+    const savedChips = await req('admin-store-campaigns', { method: 'POST', cookie: ac, body: { zone: 'store-home', campaign, chips } });
+    assert.equal(savedChips.status, 200, JSON.stringify(savedChips.data));
+    const chipDates = async () => (await db.query("SELECT label, DATE_FORMAT(starts_at, '%Y-%m-%d %H:%i') s, DATE_FORMAT(ends_at, '%Y-%m-%d %H:%i') e FROM storefront_promo_chips ORDER BY sort_order"))[0];
+    const expectedChips = [{ label: 'Smk vigente', s: '2020-01-01 13:00', e: '2100-01-01 01:00' }, { label: 'Smk vencido', s: '2020-01-01 13:00', e: '2020-02-01 13:00' }];
+    assert.deepEqual(await chipDates(), expectedChips, 'las fechas de los chips se guardan en UTC');
+    const adminChips = (await req('admin-store-campaigns?zone=store-home', { cookie: ac })).data.chips;
+    assert.deepEqual(adminChips.map(c => [c.starts_at, c.ends_at]), [['2020-01-01 13:00:00', '2100-01-01 01:00:00'], ['2020-01-01 13:00:00', '2020-02-01 13:00:00']], 'el GET admin devuelve las fechas de los chips');
+    // Igual que el editor: UTC de la base -> datetime-local de Ecuador -> guardar de nuevo.
+    const toLocal = value => new Date(new Date(`${value.replace(' ', 'T')}Z`).getTime() - 5 * 3600 * 1000).toISOString().slice(0, 16);
+    const resaved = await req('admin-store-campaigns', { method: 'POST', cookie: ac, body: { zone: 'store-home', campaign, chips: adminChips.map(c => ({ label: c.label, icon: c.icon, target_url: c.target_url, is_active: String(c.is_active) === '1', starts_at: toLocal(c.starts_at), ends_at: toLocal(c.ends_at) })) } });
+    assert.equal(resaved.status, 200, JSON.stringify(resaved.data));
+    assert.deepEqual(await chipDates(), expectedChips, 'las fechas sobreviven a un segundo guardado');
+    const publicChips = (await req('store-campaigns?zone=store-home')).data.chips.map(c => c.label);
+    assert.ok(publicChips.includes('Smk vigente') && !publicChips.includes('Smk vencido'), `la tienda solo muestra chips vigentes: ${JSON.stringify(publicChips)}`);
+  }
+
   console.log('SMOKE-OK');
 } finally {
   php.kill();

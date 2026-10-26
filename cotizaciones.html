@@ -12,11 +12,11 @@
   <script src="/assets/js/admin/admin-theme.js?v=ds-20261026"></script>
   <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261026">
   <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261026b">
-  <link rel="stylesheet" href="/assets/css/admin/cotizaciones-page.css?v=ds-20261026">
+  <link rel="stylesheet" href="/assets/css/admin/cotizaciones-page.css?v=ds-20261026c">
   <script src="/assets/vendor/lucide-icons.min.js?v=bb816557" defer></script>
   <script src="/assets/js/admin/admin-nav.js?v=ds-20261026b" defer></script>
   <script src="/assets/js/admin/admin-page.js?v=ds-20261026" defer></script>
-  <script src="/assets/js/admin/cotizaciones-page.js?v=ds-20261026" defer></script>
+  <script src="/assets/js/admin/cotizaciones-page.js?v=ds-20261026c" defer></script>
 </head>
 <body>
   <div id="smartisp-admin-nav" class="is-loading" data-active="cotizaciones"></div>
@@ -47,7 +47,7 @@
         <span class="result-count" id="count" aria-live="polite"></span>
         <div id="quotesExportHost"></div>
       </div>
-      <div class="table-wrap" id="tableWrap"><table data-export="cotizaciones" data-export-host="quotesExportHost"><thead><tr><th>Fecha</th><th>Tipo de cliente</th><th>Servicio</th><th>Contacto</th><th>Descripción</th><th>Estado</th></tr></thead><tbody id="rows"></tbody></table></div>
+      <div class="table-wrap" id="tableWrap"><table data-export="cotizaciones" data-export-host="quotesExportHost"><thead><tr><th>Fecha</th><th>Tipo de cliente</th><th>Servicio</th><th>Contacto</th><th>Descripción</th><th>Seguimiento</th><th>Estado</th><th data-no-export><span class="sr-only">Acciones</span></th></tr></thead><tbody id="rows"></tbody></table></div>
       <div id="empty" hidden></div>
       <div id="error" hidden></div>
       <footer class="pager"><button class="button small" id="prev" type="button"><i data-lucide="arrow-left" aria-hidden="true"></i> Anterior</button><span id="pageInfo"></span><button class="button small" id="next" type="button">Siguiente <i data-lucide="arrow-right" aria-hidden="true"></i></button></footer>

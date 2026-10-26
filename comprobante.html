@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>SmartISP | Comprobante de pedido</title>
+  <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicons/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261026">
+  <link rel="stylesheet" href="/assets/css/admin/comprobante-page.css?v=ds-20261026c">
+  <script src="/assets/vendor/lucide-icons.min.js?v=bb816557" defer></script>
+  <script src="/assets/js/admin/admin-page.js?v=ds-20261026" defer></script>
+  <script src="/assets/js/admin/comprobante-page.js?v=ds-20261026c" defer></script>
+</head>
+<body>
+  <main class="receipt-shell" id="app" hidden>
+    <div class="receipt-toolbar no-print">
+      <a class="button small" href="/pedidos.html"><i data-lucide="arrow-left" aria-hidden="true"></i> Pedidos</a>
+      <button class="button primary small" id="printBtn" type="button" disabled><i data-lucide="printer" aria-hidden="true"></i> Imprimir / Guardar PDF</button>
+    </div>
+    <article class="receipt" id="receipt" aria-live="polite"></article>
+  </main>
+</body>
+</html>
