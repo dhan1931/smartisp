@@ -8,8 +8,6 @@
 // -------------------------------------------------------------
 if ($action === 'orders' || $action === 'customer-orders') {
     if ($method === 'POST') {
-        smartispEnforceRateLimit('orders', 10, 600, 'Recibimos demasiados pedidos desde esta conexión. Por favor intenta de nuevo en unos minutos.');
-
         // Recortados al tamaño de su columna (orders_rows: customer_name/email 255, phone 50).
         $text = static fn($value, int $max): string => mb_substr(trim(is_scalar($value) ? (string)$value : ''), 0, $max);
         $shipping = is_array($body['shipping'] ?? null) ? $body['shipping'] : [];
@@ -19,6 +17,22 @@ if ($action === 'orders' || $action === 'customer-orders') {
         $customerAddress = $text($body['address'] ?? ($shipping['address'] ?? ''), 500);
         $customerCity = $text($body['city'] ?? ($shipping['city'] ?? ''), 120);
         $customerNotes = $text($body['notes'] ?? ($shipping['notes'] ?? ''), 2000);
+
+        // Reintento del mismo intento de compra (doble clic, red que corta la respuesta): se
+        // devuelve el pedido ya creado. Va antes del límite de pedidos para que el reintento no
+        // termine en un 429. Sin la columna de la migración 039 se ignora la clave.
+        $authUserId = isset(getAuthUser()['id']) ? (string)getAuthUser()['id'] : null;
+        $idempotencyKey = in_array('idempotency_key', smartispTableColumns($pdo, 'orders_rows'), true) ? smartispIdempotencyKey($body) : null;
+        if ($idempotencyKey !== null) {
+            $previous = smartispFindIdempotentOrder($pdo, $idempotencyKey, $authUserId, $customerEmail);
+            if ($previous && $previous['mine']) {
+                echo json_encode(smartispIdempotentOrderPayload($previous['row']));
+                exit;
+            }
+            if ($previous) $idempotencyKey = null;
+        }
+
+        smartispEnforceRateLimit('orders', 10, 600, 'Recibimos demasiados pedidos desde esta conexión. Por favor intenta de nuevo en unos minutos.');
 
         // El correo es a donde se envía el comprobante: sin uno válido el pedido queda sin
         // contacto y el mailer intentaría enviar a cualquier texto que llegue.
@@ -171,7 +185,7 @@ if ($action === 'orders' || $action === 'customer-orders') {
         if (in_array('user_id', $existingCols, true)) {
             // El historial del cliente se filtra solo por user_id: tomarlo de la sesión validada
             // contra la base, no de $_SESSION a secas (puede ser de un usuario ya borrado).
-            $insertData['user_id'] = getAuthUser()['id'] ?? null;
+            $insertData['user_id'] = $authUserId;
         }
         if (in_array('items', $existingCols, true)) {
             $insertData['items'] = json_encode($validItems, JSON_UNESCAPED_UNICODE);
@@ -205,6 +219,9 @@ if ($action === 'orders' || $action === 'customer-orders') {
         if ($stockEnabled) {
             $insertData['stock_state'] = $stockState;
         }
+        if ($idempotencyKey !== null) {
+            $insertData['idempotency_key'] = $idempotencyKey;
+        }
 
         $fields = array_keys($insertData);
         $placeholders = array_map(fn($f) => ':' . $f, $fields);
@@ -214,13 +231,20 @@ if ($action === 'orders' || $action === 'customer-orders') {
         // pedido existente es improbable pero posible, y antes terminaba en un 500 con el pedido
         // perdido. Ante clave duplicada se genera otro.
         for ($attempt = 1; ; $attempt++) {
-            $cleanShort = strtoupper(bin2hex(random_bytes(3)));
-            $orderId = 'PED-' . $cleanShort;
+            $orderId = 'PED-' . strtoupper(bin2hex(random_bytes(3)));
             $insertData['id'] = $orderId;
             try {
                 $stmt->execute($insertData);
                 break;
             } catch (PDOException $e) {
+                // Dos envíos simultáneos con la misma clave: el segundo responde con el primero.
+                if (($e->errorInfo[1] ?? null) === 1062 && $idempotencyKey !== null && str_contains($e->getMessage(), 'idempotency')) {
+                    $pdo->rollBack();
+                    $previous = smartispFindIdempotentOrder($pdo, $idempotencyKey, $authUserId, $customerEmail);
+                    if (!$previous || !$previous['mine']) throw $e;
+                    echo json_encode(smartispIdempotentOrderPayload($previous['row']));
+                    exit;
+                }
                 if ($attempt >= 5 || ($e->errorInfo[1] ?? null) !== 1062) throw $e;
             }
         }
@@ -236,31 +260,7 @@ if ($action === 'orders' || $action === 'customer-orders') {
         }
         $pdo->commit();
 
-        $payload = json_encode([
-            'ok'           => true,
-            'orderId'      => $orderId,
-            'id'           => $orderId,
-            'shortId'      => $cleanShort,
-            'isQuote'      => $isQuote,
-            'emailQueued'  => true,
-            'order'        => [
-                'id'     => $orderId,
-                'status' => $orderStatus,
-                'total'  => $total,
-                'items'  => array_map(static fn($i) => [
-                    'id' => $i['id'], 'name' => $i['name'], 'sku' => $i['sku'], 'price' => $i['price'], 'quantity' => $i['quantity'],
-                ], $validItems),
-            ],
-        ]);
-
-        // Los correos salen después de cerrar la respuesta: un SMTP lento hacía que el navegador
-        // diera el pedido por fallido, el cliente reintentara y quedaran pedidos duplicados.
-        if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
-        ignore_user_abort(true);
-        echo $payload;
-        if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
-        elseif (function_exists('litespeed_finish_request')) litespeed_finish_request();
-        else flush();
+        smartispFinishResponse(json_encode(smartispOrderSuccessPayload($orderId, $orderStatus, $total, $validItems)));
 
         $categories = array_map(static fn($p) => $p['category'] ?? '', $products);
         try {
@@ -312,17 +312,7 @@ if ($action === 'orders' || $action === 'customer-orders') {
                 $rows = [];
             }
 
-            $orders = array_map(function($r) {
-                if (isset($r['items']) && is_string($r['items'])) {
-                    $r['items'] = json_decode($r['items'], true) ?: [];
-                }
-                if (isset($r['shipping']) && is_string($r['shipping'])) {
-                    $r['shipping'] = json_decode($r['shipping'], true) ?: [];
-                }
-                return $r;
-            }, $rows);
-
-            echo json_encode(['orders' => $orders]);
+            echo json_encode(['orders' => array_map('smartispDecodeOrderRow', $rows)]);
             exit;
         } catch (Throwable $e) {
             // No devolver 200 con lista vacia: para el cliente eso es indistinguible de "nunca
@@ -343,16 +333,6 @@ if ($action === 'orders' || $action === 'customer-orders') {
 // 'received' es un estado legado de datos reales anteriores a este flujo; se acepta para
 // no romper el filtro sobre pedidos viejos, pero no es un destino nuevo que se promueva en la UI.
 const ADMIN_ORDER_STATUSES = ['quote_requested', 'pending', 'paid', 'preparing', 'shipped', 'delivered', 'cancelled', 'received'];
-
-function smartispDecodeOrderRow(array $r): array {
-    if (isset($r['items']) && is_string($r['items'])) {
-        $r['items'] = json_decode($r['items'], true) ?: [];
-    }
-    if (isset($r['shipping']) && is_string($r['shipping'])) {
-        $r['shipping'] = json_decode($r['shipping'], true) ?: [];
-    }
-    return $r;
-}
 
 if ($action === 'admin-orders') {
     requireAdminAuth();
@@ -410,8 +390,7 @@ if ($action === 'admin-orders') {
 if ($action === 'admin-orders-stats') {
     requireAdminAuth();
 
-    $confirmedPayment = "LOWER(COALESCE(payment_status, '')) IN ('paid', 'confirmed', 'succeeded', 'completed', 'approved', 'captured')";
-    $eligibleSale = "LOWER(COALESCE(status, '')) NOT IN ('cancelled', 'canceled', 'refunded') AND ($confirmedPayment)";
+    $eligibleSale = 'NOT ' . smartispSqlIsVoid() . ' AND ' . smartispSqlIsPaid();
     $byStatus = $pdo->query("SELECT status, COUNT(*) AS total,
         SUM(CASE WHEN $eligibleSale THEN total ELSE 0 END) AS revenue
         FROM orders_rows GROUP BY status")->fetchAll(PDO::FETCH_ASSOC);
@@ -564,13 +543,16 @@ if ($action === 'admin-order-status' && $method === 'POST') {
     $pdo->commit();
 
     $order['status'] = $newStatus;
-    $emailResult = sendOrderStatusUpdateEmail($pdo, $order, $newStatus, $note);
-
-    echo json_encode([
-        'ok'    => true,
-        'order' => smartispDecodeOrderRow($order),
-        'email' => $emailResult,
-    ]);
+    smartispFinishResponse(json_encode([
+        'ok'          => true,
+        'order'       => smartispDecodeOrderRow($order),
+        'emailQueued' => true,
+    ]));
+    try {
+        sendOrderStatusUpdateEmail($pdo, $order, $newStatus, $note);
+    } catch (Throwable $e) {
+        error_log('SmartISP correo de estado del pedido ' . $id . ': ' . $e->getMessage());
+    }
     exit;
 }
 

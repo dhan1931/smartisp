@@ -15,54 +15,63 @@
   <link rel="icon" type="image/png" sizes="512x512" href="/assets/favicons/favicon-512x512.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
   <link rel="manifest" href="/assets/site.webmanifest">
-  <meta name="theme-color" content="#102c3d">
-  <link rel="stylesheet" href="/assets/css/admin/configuracion-page.css?v=20261025">
-  <script src="/assets/vendor/lucide-icons.min.js?v=8707c619"></script>
-<link rel="stylesheet" href="/assets/css/admin/settings-layout.css?v=settings-v2"></head>
+  <meta name="theme-color" content="#102A43">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <script src="/assets/js/admin/admin-theme.js?v=ds-20261026"></script>
+  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261026">
+  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261026b">
+  <link rel="stylesheet" href="/assets/css/admin/configuracion-page.css?v=ds-20261026">
+  <link rel="stylesheet" href="/assets/css/admin/settings-layout.css?v=ds-20261026">
+  <script src="/assets/vendor/lucide-icons.min.js?v=bb816557"></script>
+  <script src="/assets/js/admin/admin-nav.js?v=ds-20261026b" defer></script>
+  <script src="/assets/js/admin/configuracion-page.js?v=ds-20261026" defer></script>
+  <script src="/assets/js/admin/settings-layout.js?v=ds-20261026" defer></script>
+</head>
 <body>
-  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=admin-brand-20261011">
   <div id="smartisp-admin-nav" class="is-loading" data-active="config"></div>
-  <script src="/assets/js/admin/admin-nav.js?v=20261025-a11y" defer></script>
-  <header class="top"><div><h1>SmartISP Administracion</h1><span>Configuración de apariencia, visibilidad y correo</span></div><div style="display:flex;gap:8px;"><a class="button secondary" href="/">Ver presentación</a></div></header>
   <main class="shell">
     <section id="accessDeniedPanel" class="login hidden">
-      <div style="text-align: center; padding: 10px 0;">
-        <div style="margin-bottom: 12px;"><i data-lucide="ban" style="width:42px;height:42px;color:#c2410c;"></i></div>
-        <h2 style="color: #c2410c; margin-bottom: 6px;">Acceso Restringido</h2>
-        <p style="color: var(--muted); font-size: 13.5px; line-height: 1.5; margin-bottom: 18px;">
-          Has iniciado sesión como <strong id="deniedUserEmail" style="color: var(--ink);"></strong>.<br>
-          Esta cuenta de cliente no posee permisos para gestionar el panel de administración.
-        </p>
-        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-          <a class="button" href="/tienda.html" style="text-decoration:none;">Ir a la tienda</a>
-          <button id="switchAccountBtn" class="button secondary" type="button">Cambiar de cuenta</button>
+      <div class="denied">
+        <i data-lucide="ban" class="denied-icon" aria-hidden="true"></i>
+        <h2>Acceso restringido</h2>
+        <p>Has iniciado sesión como <strong id="deniedUserEmail"></strong>.<br>Esta cuenta de cliente no tiene permisos para gestionar el panel de administración.</p>
+        <div class="head-actions denied-actions">
+          <a class="button" href="/tienda.html">Ir a la tienda</a>
+          <button id="switchAccountBtn" class="button primary" type="button">Cambiar de cuenta</button>
         </div>
       </div>
     </section>
     <section id="loginPanel" class="login hidden">
       <h2>Acceso de administrador</h2>
-      <p>Ingresa con tu cuenta autorizada para gestionar la tienda.</p>
+      <p class="muted">Ingresa con tu cuenta autorizada para gestionar la tienda.</p>
       <form id="loginForm" method="POST" action="javascript:void(0);">
         <label>Correo electrónico<input name="email" type="email" placeholder="admin@smart-isp.com.ec" required autocomplete="email"></label>
         <label>Contraseña<input name="password" type="password" placeholder="••••••••" required autocomplete="current-password"></label>
         <label class="remember-option"><input name="remember" type="checkbox" checked> Recordarme en este dispositivo</label>
-        <button class="button" type="submit">Entrar al Panel</button>
-        <div id="loginMessage" class="message"></div>
+        <button class="button primary" type="submit">Entrar al panel</button>
+        <div id="loginMessage" class="message" role="status"></div>
       </form>
     </section>
     <section id="adminPanel" class="hidden">
-      <div class="toolbar">
-        <div><h2>Configuración</h2><span id="adminIdentity"></span></div>
-      </div>
+      <header class="toolbar page-head settings-head">
+        <div>
+          <p class="eyebrow"><i data-lucide="settings" aria-hidden="true"></i> Sistema</p>
+          <h1>Configuración</h1>
+          <p>Marca, datos de contacto, catálogo público y correo de la tienda. <span id="adminIdentity" class="settings-identity"></span></p>
+        </div>
+        <div class="head-actions">
+          <a class="button" href="/" target="_blank" rel="noopener"><i data-lucide="external-link" aria-hidden="true"></i> Ver presentación</a>
+        </div>
+      </header>
       <div class="grid">
-        <section class="panel"><div class="section-heading"><h3>Apariencia y contenido</h3><button id="resetContentButton" class="button secondary" type="button">Restaurar predeterminado</button></div><form id="contentForm">
+        <section class="panel"><div class="section-heading"><h3>Apariencia y contenido</h3><button id="resetContentButton" class="button" type="button">Restaurar predeterminado</button></div><form id="contentForm">
           <div class="logo-customizer-card">
             <div class="logo-card-header">
               <div>
-                <h4 style="margin:0 0 3px; font-size:14px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:6px;">
-                  <i data-lucide="palette"></i> Diseño del Logotipo de la Tienda
-                </h4>
-                <span style="font-size:11.5px; color:var(--muted);">Personaliza el logo para el navbar claro, el pie de página oscuro y la versión tipográfica. Puedes agrandarlo hasta 140px.</span>
+                <h4 class="logo-card-title"><i data-lucide="palette" aria-hidden="true"></i> Diseño del logotipo de la tienda</h4>
+                <span class="logo-card-sub">Personaliza el logo para el navbar claro, el pie de página oscuro y la versión tipográfica. Puedes agrandarlo hasta 140px.</span>
               </div>
               <div class="logo-type-tabs">
                 <button type="button" class="logo-tab active" data-logo-mode="light" id="tabLogoLightBtn"><i data-lucide="sun"></i> Fondo Claro (Navbar)</button>
@@ -77,187 +86,155 @@
               <input type="hidden" name="logo_dark_invert" id="logoDarkInvertHidden" value="false">
             </div>
 
-            <!-- PANEL 1: LOGO PARA FONDO CLARO (NAVBAR) -->
             <div id="logoLightPanel" class="logo-panel">
-              <div style="margin-bottom:12px; font-size:12px; font-weight:700; color:var(--blue); display:flex; align-items:center; gap:6px;">
-                <span><i data-lucide="sun"></i> Logotipo para Barra Superior / Menú Claro</span>
-                <span style="font-weight:400; color:var(--muted); font-size:11px;">(Visible en el navbar principal de la tienda)</span>
+              <div class="logo-panel-title">
+                <span><i data-lucide="sun" aria-hidden="true"></i> Logotipo para barra superior / menú claro</span>
+                <span class="logo-panel-note">(Visible en el navbar principal de la tienda)</span>
               </div>
               <div class="logo-upload-zone" id="logoLightDropZone">
                 <div class="logo-upload-prompt" id="logoLightPrompt">
-                  <div class="logo-upload-icon-circle">
-                    <i data-lucide="image" style="width:24px;height:24px;"></i>
-                  </div>
-                  <div style="font-weight:700; font-size:13px; color:var(--ink); margin-top:8px;">
-                    Sube tu logotipo para <span style="color:var(--blue); font-weight:800;">fondo claro</span>
-                  </div>
-                  <div style="font-size:11.5px; color:var(--muted); margin-top:3px;">
-                    Recomendado: PNG con fondo transparente (también admite WebP, SVG o JPG). Máx. 3 MB.
-                  </div>
-                  <button type="button" class="button secondary" id="chooseLogoBtn" style="margin-top:10px; padding:6px 14px; font-size:12px;">
-                    <i data-lucide="folder-open" style="width:14px;height:14px;"></i> Seleccionar archivo PNG
-                  </button>
+                  <div class="logo-upload-icon-circle"><i data-lucide="image" aria-hidden="true"></i></div>
+                  <div class="upload-title">Sube tu logotipo para <span class="upload-accent">fondo claro</span></div>
+                  <div class="upload-hint">Recomendado: PNG con fondo transparente (también admite WebP, SVG o JPG). Máx. 3 MB.</div>
+                  <button type="button" class="button small upload-btn" id="chooseLogoBtn"><i data-lucide="folder-open" aria-hidden="true"></i> Seleccionar archivo PNG</button>
                 </div>
                 <input type="file" id="logoFileInput" name="logo_image_file" accept=".png, image/png, image/jpeg, image/webp, image/svg+xml" style="display:none;">
               </div>
 
-              <!-- Vista previa de imagen clara -->
-              <div id="logoLightPreviewWrap" style="display:none; margin-top:12px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                  <span style="font-size:12px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:6px;">
-                    <i data-lucide="check" style="color:#16a34a;width:16px;height:16px;"></i> Logotipo para fondo claro cargado:
-                  </span>
-                  <div style="display:flex; gap:6px;">
-                    <button type="button" class="button secondary" id="changeLogoBtn" style="padding:4px 10px; font-size:11px;"><i data-lucide="refresh-cw" style="width:12px;height:12px;"></i> Cambiar</button>
-                    <button type="button" class="button danger" id="deleteLogoBtn" style="padding:4px 10px; font-size:11px; background:#fff1f1; border:1px solid #fecaca; color:#b91c1c;"><i data-lucide="trash-2" style="width:12px;height:12px;"></i> Quitar imagen</button>
+              <div id="logoLightPreviewWrap" class="logo-preview-wrap" style="display:none;">
+                <div class="preview-head">
+                  <span class="preview-label"><i data-lucide="check" class="ok-icon" aria-hidden="true"></i> Logotipo para fondo claro cargado:</span>
+                  <div class="preview-actions">
+                    <button type="button" class="button small" id="changeLogoBtn"><i data-lucide="refresh-cw" aria-hidden="true"></i> Cambiar</button>
+                    <button type="button" class="button small danger-soft" id="deleteLogoBtn"><i data-lucide="trash-2" aria-hidden="true"></i> Quitar imagen</button>
                   </div>
                 </div>
                 <div class="logo-preview-canvas-box">
                   <div class="logo-checker-bg" id="logoPreviewChecker">
-                    <img id="logoImgPreview" src="" alt="Logotipo fondo claro" style="height:38px; max-height:140px; max-width:100%; object-fit:contain; display:block; margin:auto;">
+                    <img id="logoImgPreview" class="logo-preview-img" src="" alt="Logotipo fondo claro" style="height:38px;">
                   </div>
                 </div>
               </div>
 
-              <div class="logo-controls-grid" style="margin-top:14px; display:grid; grid-template-columns:1.2fr 1fr; gap:14px; align-items:end;">
+              <div class="logo-controls-grid">
                 <div>
-                  <label style="margin:0 0 4px; display:flex; justify-content:space-between;">
+                  <label class="range-label">
                     <span>Altura del logo en la barra superior:</span>
-                    <span id="logoHeightVal" style="color:var(--blue); font-weight:800;">38px</span>
+                    <span id="logoHeightVal" class="range-value">38px</span>
                   </label>
                   <div class="logo-size-slider-row">
                     <input type="range" id="logoHeightRange" min="20" max="140" step="2" value="38">
                     <input type="number" id="logoHeightNum" min="20" max="140" value="38">
-                    <span style="font-size:11.5px; color:var(--muted); font-weight:600;">px</span>
+                    <span class="unit">px</span>
                   </div>
                 </div>
                 <div>
-                  <label style="margin:0 0 4px;">Nombre comercial de la marca
+                  <label class="flush">Nombre comercial de la marca
                     <input name="brand_name" id="brandNameInput" placeholder="SmartISP Telecomunicaciones" autocomplete="off">
                   </label>
                 </div>
               </div>
             </div>
 
-            <!-- PANEL 2: LOGO PARA FONDO OSCURO (FOOTER) -->
             <div id="logoDarkPanel" class="logo-panel" style="display:none;">
-              <div style="margin-bottom:12px; font-size:12px; font-weight:700; color:#0e7490; display:flex; align-items:center; gap:6px;">
-                <span><i data-lucide="moon"></i> Logotipo para Pie de Página / Fondo Oscuro</span>
-                <span style="font-weight:400; color:var(--muted); font-size:11px;">(Visible en el footer oscuro de la tienda y páginas de compra)</span>
+              <div class="logo-panel-title">
+                <span><i data-lucide="moon" aria-hidden="true"></i> Logotipo para pie de página / fondo oscuro</span>
+                <span class="logo-panel-note">(Visible en el footer oscuro de la tienda y páginas de compra)</span>
               </div>
 
-              <!-- Quick Bar: Copiar del menú claro & auto invert -->
               <div class="logo-quick-bar">
-                <button type="button" class="button secondary" id="btnCopyLightToDark" style="padding:6px 12px; font-size:12px; display:inline-flex; align-items:center; gap:6px;">
-                  <i data-lucide="clipboard" style="width:14px;height:14px;"></i> Usar el mismo logo del menú claro
-                </button>
-                <label style="margin:0; font-size:12px; font-weight:600; color:var(--ink); display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
-                  <input type="checkbox" id="logoDarkAutoInvert" style="width:16px; height:16px; margin:0; accent-color:var(--blue);">
-                  <span><i data-lucide="circle" style="width:13px;height:13px;"></i> Invertir colores automáticamente a blanco (para logos oscuros)</span>
+                <button type="button" class="button small" id="btnCopyLightToDark"><i data-lucide="clipboard" aria-hidden="true"></i> Usar el mismo logo del menú claro</button>
+                <label class="check-inline">
+                  <input type="checkbox" id="logoDarkAutoInvert">
+                  <span>Invertir colores automáticamente a blanco (para logos oscuros)</span>
                 </label>
               </div>
 
               <div class="logo-upload-zone" id="logoDarkDropZone">
                 <div class="logo-upload-prompt" id="logoDarkPrompt">
-                  <div class="logo-upload-icon-circle" style="background:#e2e8f0;">
-                    <i data-lucide="moon" style="width:24px;height:24px;"></i>
-                  </div>
-                  <div style="font-weight:700; font-size:13px; color:var(--ink); margin-top:8px;">
-                    Sube tu logotipo para <span style="color:#0369a1; font-weight:800;">fondo oscuro</span>
-                  </div>
-                  <div style="font-size:11.5px; color:var(--muted); margin-top:3px;">
-                    Recomendado: PNG en blanco o colores claros con transparencia. Si no subes uno, se usará el del menú claro.
-                  </div>
-                  <button type="button" class="button secondary" id="chooseLogoDarkBtn" style="margin-top:10px; padding:6px 14px; font-size:12px;">
-                    <i data-lucide="folder-open" style="width:14px;height:14px;"></i> Seleccionar archivo PNG oscuro
-                  </button>
+                  <div class="logo-upload-icon-circle is-dark"><i data-lucide="moon" aria-hidden="true"></i></div>
+                  <div class="upload-title">Sube tu logotipo para <span class="upload-accent">fondo oscuro</span></div>
+                  <div class="upload-hint">Recomendado: PNG en blanco o colores claros con transparencia. Si no subes uno, se usará el del menú claro.</div>
+                  <button type="button" class="button small upload-btn" id="chooseLogoDarkBtn"><i data-lucide="folder-open" aria-hidden="true"></i> Seleccionar archivo PNG oscuro</button>
                 </div>
                 <input type="file" id="logoDarkFileInput" name="logo_dark_image_file" accept=".png, image/png, image/jpeg, image/webp, image/svg+xml" style="display:none;">
               </div>
 
-              <!-- Vista previa de imagen oscura -->
-              <div id="logoDarkPreviewWrap" style="display:none; margin-top:12px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                  <span style="font-size:12px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:6px;">
-                    <i data-lucide="check" style="color:#16a34a;width:16px;height:16px;"></i> Logotipo para fondo oscuro cargado:
-                  </span>
-                  <div style="display:flex; gap:6px;">
-                    <button type="button" class="button secondary" id="changeLogoDarkBtn" style="padding:4px 10px; font-size:11px;"><i data-lucide="refresh-cw" style="width:12px;height:12px;"></i> Cambiar</button>
-                    <button type="button" class="button danger" id="deleteLogoDarkBtn" style="padding:4px 10px; font-size:11px; background:#fff1f1; border:1px solid #fecaca; color:#b91c1c;"><i data-lucide="trash-2" style="width:12px;height:12px;"></i> Quitar imagen</button>
+              <div id="logoDarkPreviewWrap" class="logo-preview-wrap" style="display:none;">
+                <div class="preview-head">
+                  <span class="preview-label"><i data-lucide="check" class="ok-icon" aria-hidden="true"></i> Logotipo para fondo oscuro cargado:</span>
+                  <div class="preview-actions">
+                    <button type="button" class="button small" id="changeLogoDarkBtn"><i data-lucide="refresh-cw" aria-hidden="true"></i> Cambiar</button>
+                    <button type="button" class="button small danger-soft" id="deleteLogoDarkBtn"><i data-lucide="trash-2" aria-hidden="true"></i> Quitar imagen</button>
                   </div>
                 </div>
-                <div class="logo-preview-canvas-box" style="background:#071722;">
+                <div class="logo-preview-canvas-box is-dark">
                   <div class="logo-checker-bg dark-preview" id="logoDarkPreviewChecker">
-                    <img id="logoDarkImgPreview" src="" alt="Logotipo fondo oscuro" style="height:42px; max-height:140px; max-width:100%; object-fit:contain; display:block; margin:auto;">
+                    <img id="logoDarkImgPreview" class="logo-preview-img" src="" alt="Logotipo fondo oscuro" style="height:42px;">
                   </div>
                 </div>
               </div>
 
-              <div class="logo-controls-grid" style="margin-top:14px; display:grid; grid-template-columns:1.2fr 1fr; gap:14px; align-items:end;">
+              <div class="logo-controls-grid">
                 <div>
-                  <label style="margin:0 0 4px; display:flex; justify-content:space-between;">
+                  <label class="range-label">
                     <span>Altura del logo en el pie de página (footer):</span>
-                    <span id="logoDarkHeightVal" style="color:var(--blue); font-weight:800;">42px</span>
+                    <span id="logoDarkHeightVal" class="range-value">42px</span>
                   </label>
                   <div class="logo-size-slider-row">
                     <input type="range" id="logoDarkHeightRange" min="20" max="140" step="2" value="42">
                     <input type="number" id="logoDarkHeightNum" min="20" max="140" value="42">
-                    <span style="font-size:11.5px; color:var(--muted); font-weight:600;">px</span>
+                    <span class="unit">px</span>
                   </div>
                 </div>
                 <div>
-                  <span style="font-size:11.5px; color:var(--muted); line-height:1.4; display:block;">
-                    <i data-lucide="lightbulb" style="width:13px;height:13px;"></i> En el footer de la tienda el fondo es azul oscuro (<code>#102c3d</code>). Si activas invertir colores, el logo se convertirá en blanco puro automáticamente.
-                  </span>
+                  <span class="field-note"><i data-lucide="lightbulb" aria-hidden="true"></i> En el footer de la tienda el fondo es azul oscuro (<code>#102c3d</code>). Si activas invertir colores, el logo se convertirá en blanco puro automáticamente.</span>
                 </div>
               </div>
             </div>
 
-            <!-- PANEL 3: MODO TEXTO -->
             <div id="logoTextPanel" class="logo-panel" style="display:none;">
-              <div class="logo-controls-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                <label style="margin:0;">Texto del logo
+              <div class="logo-controls-grid two">
+                <label class="flush">Texto del logo
                   <input name="logo_text" id="logoTextInput" placeholder="smartisp" autocomplete="off">
                 </label>
-                <label style="margin:0;">Nombre comercial de la marca
+                <label class="flush">Nombre comercial de la marca
                   <input name="brand_name_alt" id="brandNameAltInput" placeholder="SmartISP" autocomplete="off">
                 </label>
               </div>
-              <div class="logo-text-preview-box" style="margin-top:12px; padding:12px 16px; background:white; border:1px solid var(--line); border-radius:8px; display:flex; align-items:center; gap:12px;">
-                <span style="font-size:12px; color:var(--muted); font-weight:600;">Vista previa en vivo:</span>
-                <div id="logoTextLivePreview" style="font-family:'Space Grotesk',sans-serif; font-size:24px; font-weight:700; color:#102c3d; letter-spacing:-0.06em;">
-                  smart<b style="color:#087ea4;">isp</b><span style="color:#f5a524;">.</span>
-                </div>
+              <div class="logo-text-preview-box">
+                <span class="field-note">Vista previa en vivo:</span>
+                <div id="logoTextLivePreview" class="logo-text-live">smart<b style="color:#087ea4;">isp</b><span style="color:#f5a524;">.</span></div>
               </div>
             </div>
           </div>
-          <div class="design-preview"><div class="design-preview-hero"><div class="design-preview-copy"><div class="design-preview-eyebrow" data-preview="hero_eyebrow"></div><h4 data-preview="hero_title"></h4><p data-preview="hero_text"></p><span class="design-preview-button" data-preview="hero_button_text"></span></div></div></div><div class="design-controls"><label class="full">Mensaje superior<input name="hero_eyebrow" placeholder="Infraestructura para proveedores de internet"></label><label class="full">Titulo principal<input name="hero_title" placeholder="Conecta mas. Opera mejor."></label><label class="full">Descripcion principal<textarea name="hero_text"></textarea></label><label>Texto del boton<input name="hero_button_text" placeholder="Explorar soluciones"></label><label>Enlace del boton<input name="hero_button_link" placeholder="#catalogo"></label><label>Imagen del banner<input name="hero_image_file" type="file" accept="image/*"><input name="hero_image" type="hidden"></label><label>Posicion de imagen<select name="hero_image_position"><option value="center">Centro</option><option value="left">Izquierda</option><option value="right">Derecha</option></select></label><label>Altura del banner<select name="hero_height"><option value="335">Compacto</option><option value="370">Estándar</option><option value="440">Amplio</option><option value="520">Alto</option></select></label><label>Ancho del contenido<select name="hero_content_width"><option value="400">Estrecho</option><option value="510">Estándar</option><option value="620">Amplio</option><option value="760">Muy amplio</option></select></label><label class="color-field">Color de acento<input name="primary_color" type="color" value="#087ea4"></label><label class="color-field">Color del texto<input name="hero_text_color" type="color" value="#102c3d"></label><label class="full">Opacidad de la capa <span class="range-value" data-range-value="hero_overlay_opacity">96%</span><input name="hero_overlay_opacity" type="range" min="0" max="100" value="96"></label></div><label>Texto del pie de pagina<textarea name="footer_text"></textarea></label><label>WhatsApp (footer)<input name="footer_whatsapp" placeholder="+593 99 123 4567" inputmode="tel"></label><label>Correo de contacto (footer)<input name="footer_email" type="email" placeholder="gestion@smart-isp.com.ec"></label><label>Dirección (footer)<input name="footer_address" placeholder="CC. Atrio Plaza, Daule, Ecuador"></label><label>Instagram<input name="footer_social_instagram" type="url" placeholder="https://instagram.com/smartisp"></label><label>Facebook<input name="footer_social_facebook" type="url" placeholder="https://facebook.com/smartisp"></label><label>YouTube<input name="footer_social_youtube" type="url" placeholder="https://youtube.com/@smartisp"></label><label>LinkedIn<input name="footer_social_linkedin" type="url" placeholder="https://linkedin.com/company/smartisp"></label><div class="form-actions"><button class="button" type="submit">Guardar apariencia</button><button id="clearContentButton" class="button secondary" type="button">Limpiar campos</button></div><div id="contentMessage" class="message"></div></form></section>
-        <section class="panel"><div class="section-heading"><h3>Visibilidad y catálogo público</h3><button id="resetVisibilityButton" class="button secondary" type="button">Restaurar predeterminado</button></div><form id="visibilityForm"><label>Catálogo visible<select name="catalog_visible"><option value="true">Sí</option><option value="false">No</option></select></label><label>Banner visible<select name="hero_visible"><option value="true">Sí</option><option value="false">No</option></select></label><label>Beneficios visibles<select name="benefits_visible"><option value="true">Sí</option><option value="false">No</option></select></label><label>Productos por fila en categorías y destacados<select name="storefront_product_columns"><option value="4">4 · Imágenes amplias</option><option value="6">6 · Vista compacta</option></select></label><label class="full">Franja de confianza del banner (Productos · Clientes · Proyectos ejecutados · Soporte) — valores por defecto<small class="help">Productos se calcula solo desde el catálogo real (solo su etiqueta es editable). Cada campo son 2 líneas: la primera el número/valor grande, la segunda la etiqueta chica debajo. Se usan en cualquier banner que active la franja, salvo que ese banner los sobreescriba.</small></label><label>Productos (etiqueta)<input name="trust_stats_products_label_default" maxlength="100" placeholder="Ej. Productos disponibles"></label><label>Clientes (valor y etiqueta)<textarea name="trust_stats_clients_default" maxlength="100" rows="2" placeholder="+500&#10;Clientes satisfechos"></textarea></label><label>Proyectos ejecutados (valor y etiqueta)<textarea name="trust_stats_projects_default" maxlength="100" rows="2" placeholder="+100&#10;Proyectos ejecutados"></textarea></label><label>Soporte (valor y etiqueta)<textarea name="trust_stats_support_default" maxlength="100" rows="2" placeholder="Soporte&#10;especializado"></textarea></label><small class="help full">Los botones de banner con ícono de WhatsApp o Correo usan el WhatsApp y el correo configurados en Apariencia y contenido → pie de página (footer_whatsapp / footer_email).</small><button class="button" type="submit">Guardar configuración</button><div id="visibilityMessage" class="message"></div></form></section>
+          <div class="design-preview"><div class="design-preview-hero"><div class="design-preview-copy"><div class="design-preview-eyebrow" data-preview="hero_eyebrow"></div><h4 data-preview="hero_title"></h4><p data-preview="hero_text"></p><span class="design-preview-button" data-preview="hero_button_text"></span></div></div></div><div class="design-controls"><label class="full">Mensaje superior<input name="hero_eyebrow" placeholder="Infraestructura para proveedores de internet"></label><label class="full">Titulo principal<input name="hero_title" placeholder="Conecta mas. Opera mejor."></label><label class="full">Descripcion principal<textarea name="hero_text"></textarea></label><label>Texto del boton<input name="hero_button_text" placeholder="Explorar soluciones"></label><label>Enlace del boton<input name="hero_button_link" placeholder="#catalogo"></label><label>Imagen del banner<input name="hero_image_file" type="file" accept="image/*"><input name="hero_image" type="hidden"></label><label>Posicion de imagen<select name="hero_image_position"><option value="center">Centro</option><option value="left">Izquierda</option><option value="right">Derecha</option></select></label><label>Altura del banner<select name="hero_height"><option value="335">Compacto</option><option value="370">Estándar</option><option value="440">Amplio</option><option value="520">Alto</option></select></label><label>Ancho del contenido<select name="hero_content_width"><option value="400">Estrecho</option><option value="510">Estándar</option><option value="620">Amplio</option><option value="760">Muy amplio</option></select></label><label class="color-field">Color de acento<input name="primary_color" type="color" value="#087ea4"></label><label class="color-field">Color del texto<input name="hero_text_color" type="color" value="#102c3d"></label><label class="full">Opacidad de la capa <span class="range-value" data-range-value="hero_overlay_opacity">96%</span><input name="hero_overlay_opacity" type="range" min="0" max="100" value="96"></label></div><label>Texto del pie de pagina<textarea name="footer_text"></textarea></label><label>WhatsApp (footer)<input name="footer_whatsapp" placeholder="+593 99 123 4567" inputmode="tel"></label><label>Correo de contacto (footer)<input name="footer_email" type="email" placeholder="gestion@smart-isp.com.ec"></label><label>Dirección (footer)<input name="footer_address" placeholder="CC. Atrio Plaza, Daule, Ecuador"></label><label>Instagram<input name="footer_social_instagram" type="url" placeholder="https://instagram.com/smartisp"></label><label>Facebook<input name="footer_social_facebook" type="url" placeholder="https://facebook.com/smartisp"></label><label>YouTube<input name="footer_social_youtube" type="url" placeholder="https://youtube.com/@smartisp"></label><label>LinkedIn<input name="footer_social_linkedin" type="url" placeholder="https://linkedin.com/company/smartisp"></label><div class="form-actions"><button class="button primary" type="submit">Guardar apariencia</button><button id="clearContentButton" class="button" type="button">Limpiar campos</button></div><div id="contentMessage" class="message" role="status"></div></form></section>
+        <section class="panel"><div class="section-heading"><h3>Visibilidad y catálogo público</h3><button id="resetVisibilityButton" class="button" type="button">Restaurar predeterminado</button></div><form id="visibilityForm"><label>Catálogo visible<select name="catalog_visible"><option value="true">Sí</option><option value="false">No</option></select></label><label>Banner visible<select name="hero_visible"><option value="true">Sí</option><option value="false">No</option></select></label><label>Beneficios visibles<select name="benefits_visible"><option value="true">Sí</option><option value="false">No</option></select></label><label>Productos por fila en categorías y destacados<select name="storefront_product_columns"><option value="4">4 · Imágenes amplias</option><option value="6">6 · Vista compacta</option></select></label><label class="full">Franja de confianza del banner (Productos · Clientes · Proyectos ejecutados · Soporte) — valores por defecto<small class="help">Productos se calcula solo desde el catálogo real (solo su etiqueta es editable). Cada campo son 2 líneas: la primera el número/valor grande, la segunda la etiqueta chica debajo. Se usan en cualquier banner que active la franja, salvo que ese banner los sobreescriba.</small></label><label>Productos (etiqueta)<input name="trust_stats_products_label_default" maxlength="100" placeholder="Ej. Productos disponibles"></label><label>Clientes (valor y etiqueta)<textarea name="trust_stats_clients_default" maxlength="100" rows="2" placeholder="+500&#10;Clientes satisfechos"></textarea></label><label>Proyectos ejecutados (valor y etiqueta)<textarea name="trust_stats_projects_default" maxlength="100" rows="2" placeholder="+100&#10;Proyectos ejecutados"></textarea></label><label>Soporte (valor y etiqueta)<textarea name="trust_stats_support_default" maxlength="100" rows="2" placeholder="Soporte&#10;especializado"></textarea></label><small class="help full">Los botones de banner con ícono de WhatsApp o Correo usan el WhatsApp y el correo configurados en Apariencia y contenido → pie de página (footer_whatsapp / footer_email).</small><div id="visibilityMessage" class="message" role="status"></div><div class="form-actions settings-savebar"><button class="button primary" type="submit">Guardar configuración</button></div></form></section>
         <section class="panel wide">
           <div class="section-heading">
             <div>
-              <h3 style="margin:0;">Notificaciones y Envío de Correos Reales (Gmail / SMTP)</h3>
-              <span style="color:var(--muted);font-size:12px;">Despacha comprobantes que llegan de verdad al correo del cliente y alertas con su número de celular al administrador.</span>
+              <h3>Notificaciones y envío de correos reales (Gmail / SMTP)</h3>
+              <span class="section-sub">Despacha comprobantes que llegan de verdad al correo del cliente y alertas con su número de celular al administrador.</span>
             </div>
             <div class="actions">
-              <button id="testEmailButton" class="button secondary" type="button" style="background:#f0fdf4;border:1px solid #86efac;color:#166534;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
-                <span><i data-lucide="flask-conical"></i> Probar Envío de Correo Real</span>
+              <button id="testEmailButton" class="button test-mail" type="button">
+                <span><i data-lucide="flask-conical" aria-hidden="true"></i> Probar envío de correo real</span>
               </button>
             </div>
           </div>
-          <form id="notificationsForm" style="margin-top:16px;">
-            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(min(100%, 280px), 1fr));gap:16px;margin-bottom:14px;">
+          <form id="notificationsForm" class="mail-form">
+            <div class="mail-grid">
               <div>
-                <label style="font-weight:700;">1. Correo de Destino de Notificaciones (Para recibir compras y datos del cliente)
+                <label class="strong">1. Correo de destino de notificaciones (para recibir compras y datos del cliente)
                   <input name="admin_email" type="email" placeholder="gestion@smart-isp.es" value="gestion@smart-isp.es" required>
                 </label>
-                <small style="color:var(--muted);display:block;margin-top:4px;font-size:12px;line-height:1.45;">
+                <small class="field-note">
                   A este correo (<code>gestion@smart-isp.es</code>) llegará la alerta inmediata con el <strong>número de celular del cliente, botón directo de WhatsApp y llamada</strong> para coordinar la atención y el pago. (Solo recepción de información, no otorga acceso de administrador).
                 </small>
               </div>
 
               <div>
-                <label style="font-weight:700;">2. Proveedor para Enviar Correos Reales por Internet
+                <label class="strong">2. Proveedor para enviar correos reales por internet
                   <select name="smtp_provider" id="smtpProviderSelect">
                     <option value="hostinger">Hostinger Correo Corporativo (@smart-isp.es / @smart-isp.com.ec)</option>
                     <option value="gmail" selected>Gmail (Recomendado - Gratuito con Contraseña de Aplicación)</option>
@@ -265,68 +242,56 @@
                     <option value="custom">Servidor SMTP Personalizado (Outlook, Yahoo, cPanel, etc.)</option>
                   </select>
                 </label>
-                <small style="color:var(--muted);display:block;margin-top:4px;font-size:12px;line-height:1.45;">
-                  Garantiza que los correos salgan del servidor y lleguen enseguida a la bandeja de entrada real de cualquier usuario.
-                </small>
+                <small class="field-note">Garantiza que los correos salgan del servidor y lleguen enseguida a la bandeja de entrada real de cualquier usuario.</small>
               </div>
             </div>
 
-            <!-- Panel de Configuración para Hostinger Correo Corporativo -->
-            <div id="hostingerConfigSection" class="hidden" style="background:#f0faf8;border:1px solid #a7e0d4;border-radius:10px;padding:16px;margin-bottom:16px;">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                <i data-lucide="globe" style="width:20px;height:20px;"></i>
-                <strong style="color:#065f46;font-size:14px;">Correo Corporativo de Hostinger (smtp.hostinger.com)</strong>
-              </div>
-              <p style="font-size:12.5px;color:#047857;line-height:1.5;margin:0 0 12px;">
+            <div id="hostingerConfigSection" class="provider-box hidden">
+              <div class="provider-title"><i data-lucide="globe" aria-hidden="true"></i><strong>Correo corporativo de Hostinger (smtp.hostinger.com)</strong></div>
+              <p>
                 Usa tu cuenta de correo creada en el panel de Hostinger (ejemplo: <code>gestion@smart-isp.es</code> o <code>admin@smart-isp.com.ec</code>):
                 <br>• Servidor SMTP: <strong>smtp.hostinger.com</strong> | Puerto: <strong>465 (SSL)</strong>
-                <br>• <i data-lucide="alert-triangle" style="width:13px;height:13px;"></i> <strong>Importante:</strong> Debes ingresar la <strong>contraseña real de ese correo en Hostinger</strong> (con la que entras al Webmail de Hostinger).
+                <br>• <i data-lucide="alert-triangle" aria-hidden="true"></i> <strong>Importante:</strong> Debes ingresar la <strong>contraseña real de ese correo en Hostinger</strong> (con la que entras al Webmail de Hostinger).
               </p>
-              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:14px;">
-                <label>Tu Correo de Hostinger
+              <div class="provider-grid">
+                <label>Tu correo de Hostinger
                   <input name="hostinger_user" id="hostingerUser" type="email" placeholder="gestion@smart-isp.es">
                 </label>
-                <label>Contraseña REAL del Correo en Hostinger
-                  <div style="position:relative;">
+                <label>Contraseña REAL del correo en Hostinger
+                  <div class="pass-field">
                     <input name="hostinger_pass" id="hostingerPass" type="password" placeholder="••••••••" autocomplete="new-password">
-                    <button type="button" id="toggleHostingerPass" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;font-size:14px;color:var(--muted);" title="Ver u ocultar contraseña"><i data-lucide="eye"></i></button>
+                    <button type="button" id="toggleHostingerPass" class="pass-toggle" title="Ver u ocultar contraseña" aria-label="Ver u ocultar contraseña"><i data-lucide="eye"></i></button>
                   </div>
                 </label>
               </div>
             </div>
 
-            <!-- Panel de Configuración para Gmail -->
-            <div id="gmailConfigSection" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:16px;margin-bottom:16px;">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                <i data-lucide="mail" style="width:20px;height:20px;"></i>
-                <strong style="color:#0369a1;font-size:14px;">Configuración Rápida de Gmail</strong>
-              </div>
-              <p style="font-size:12.5px;color:#0c4a6e;line-height:1.5;margin:0 0 12px;">
+            <div id="gmailConfigSection" class="provider-box">
+              <div class="provider-title"><i data-lucide="mail" aria-hidden="true"></i><strong>Configuración rápida de Gmail</strong></div>
+              <p>
                 Para despachar correos desde tu cuenta @gmail.com, Google requiere una <strong>Contraseña de Aplicación de 16 letras</strong> (no tu contraseña personal):
-                <br>1. Ve a tu cuenta de Google &gt; <a href="https://myaccount.google.com/security" target="_blank" style="color:#0284c7;font-weight:700;text-decoration:underline;">Seguridad</a> (activa verificación en 2 pasos si no está activa).
-                <br>2. Entra directo a <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:#0284c7;font-weight:700;text-decoration:underline;">Contraseñas de aplicaciones</a>.
+                <br>1. Ve a tu cuenta de Google &gt; <a href="https://myaccount.google.com/security" target="_blank" rel="noopener">Seguridad</a> (activa verificación en 2 pasos si no está activa).
+                <br>2. Entra directo a <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Contraseñas de aplicaciones</a>.
                 <br>3. En 'Nombre de la app', escribe <em>SmartISP</em> y pulsa <strong>Crear</strong>.
                 <br>4. Copia el código de 16 letras generado y pégalo abajo:
               </p>
-
-              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:14px;">
-                <label>Tu Cuenta de Gmail Emisora
+              <div class="provider-grid">
+                <label>Tu cuenta de Gmail emisora
                   <input name="smtp_user" id="gmailUser" type="email" placeholder="tu_tienda@gmail.com">
                 </label>
-                <label>Contraseña de Aplicación de Google (16 caracteres)
-                  <div style="position:relative;">
+                <label>Contraseña de aplicación de Google (16 caracteres)
+                  <div class="pass-field">
                     <input name="smtp_pass" id="gmailPass" type="password" placeholder="abcd efgh ijkl mnop" autocomplete="new-password">
-                    <button type="button" id="toggleGmailPass" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;cursor:pointer;font-size:14px;color:var(--muted);" title="Ver u ocultar contraseña"><i data-lucide="eye"></i></button>
+                    <button type="button" id="toggleGmailPass" class="pass-toggle" title="Ver u ocultar contraseña" aria-label="Ver u ocultar contraseña"><i data-lucide="eye"></i></button>
                   </div>
                 </label>
               </div>
             </div>
 
-            <!-- Panel de Configuración para SMTP Personalizado -->
-            <div id="customSmtpSection" class="hidden" style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:16px;margin-bottom:16px;">
-              <strong style="color:#1e293b;font-size:14px;display:block;margin-bottom:12px;"><i data-lucide="settings" style="width:14px;height:14px;"></i> Servidor SMTP Personalizado</strong>
-              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:12px;">
-                <label>Servidor Host SMTP
+            <div id="customSmtpSection" class="provider-box hidden">
+              <div class="provider-title"><i data-lucide="settings" aria-hidden="true"></i><strong>Servidor SMTP personalizado</strong></div>
+              <div class="provider-grid narrow">
+                <label>Servidor host SMTP
                   <input name="smtp_host" placeholder="smtp.ejemplo.com">
                 </label>
                 <label>Puerto
@@ -338,42 +303,38 @@
                 <label>Contraseña SMTP
                   <input name="smtp_custom_pass" type="password" placeholder="••••••••">
                 </label>
-                <label>Nombre y Correo Remitente
+                <label>Nombre y correo remitente
                   <input name="smtp_from" placeholder="SmartISP Ventas &lt;ventas@ejemplo.com&gt;">
                 </label>
-                <label style="display:flex;align-items:center;gap:8px;margin-top:28px;cursor:pointer;">
-                  <input name="smtp_secure" type="checkbox" value="true" style="width:auto;margin:0;">
-                  <span>Usar SSL/TLS Seguro (Puerto 465)</span>
+                <label class="check-inline secure-check">
+                  <input name="smtp_secure" type="checkbox" value="true">
+                  <span>Usar SSL/TLS seguro (puerto 465)</span>
                 </label>
               </div>
             </div>
 
-            <!-- Panel de Configuración para Resend -->
-            <div id="resendSection" class="hidden" style="background:#fdf2f8;border:1px solid #fbcfe8;border-radius:10px;padding:16px;margin-bottom:16px;">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-                <i data-lucide="rocket" style="width:20px;height:20px;"></i>
-                <strong style="color:#9d174d;font-size:14px;">Integración con Resend API (Opción de máxima velocidad y entrega inmediata)</strong>
-              </div>
-              <p style="font-size:12.5px;color:#831843;line-height:1.5;margin:0 0 12px;">
+            <div id="resendSection" class="provider-box hidden">
+              <div class="provider-title"><i data-lucide="rocket" aria-hidden="true"></i><strong>Integración con Resend API (máxima velocidad y entrega inmediata)</strong></div>
+              <p>
                 Resend entrega los correos en <strong>menos de 300ms</strong> vía HTTPS directo sin depender de puertos SMTP bloqueados:
-                <br>1. Crea una cuenta gratuita en <a href="https://resend.com" target="_blank" style="color:#be185d;font-weight:700;text-decoration:underline;">resend.com</a> (gratis 3,000 correos al mes).
+                <br>1. Crea una cuenta gratuita en <a href="https://resend.com" target="_blank" rel="noopener">resend.com</a> (gratis 3,000 correos al mes).
                 <br>2. Ve a <strong>API Keys &gt; Create API Key</strong>, copia el código que empieza con <code>re_</code> y pégalo abajo:
               </p>
-              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:14px;">
+              <div class="provider-grid">
                 <label>API Key de Resend
                   <input name="resend_api_key" id="resendApiKey" placeholder="re_123456789...">
                 </label>
-                <label>Correo Remitente Autorizado
+                <label>Correo remitente autorizado
                   <input name="email_from" id="emailFromInput" placeholder="SmartISP &lt;onboarding@resend.dev&gt;">
                 </label>
               </div>
             </div>
 
-            <div class="form-actions" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-              <button class="button" type="submit" style="background:var(--blue);"><i data-lucide="save" style="width:14px;height:14px;"></i> Guardar Configuración de Correo</button>
-              <span style="font-size:12px;color:var(--muted);">Se aplicará de inmediato a las compras en tienda y a las pruebas.</span>
+            <div id="notificationsMessage" class="message" role="status"></div>
+            <div class="form-actions settings-savebar">
+              <button class="button primary" type="submit"><i data-lucide="save" aria-hidden="true"></i> Guardar configuración de correo</button>
+              <span class="field-note">Se aplicará de inmediato a las compras en tienda y a las pruebas.</span>
             </div>
-            <div id="notificationsMessage" class="message"></div>
           </form>
         </section>
       </div>
@@ -381,9 +342,9 @@
   </main>
   <div id="cropModal" class="crop-modal" hidden>
     <section class="crop-dialog" role="dialog" aria-modal="true" aria-labelledby="cropTitle">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <h2 id="cropTitle" style="margin:0;">Ajustar y Recortar Imagen</h2>
-        <button type="button" class="button secondary" onclick="$('#cancelCropButton').click()" style="padding:4px 11px;font-size:15px;line-height:1;"><i data-lucide="x" style="width:15px;height:15px;"></i></button>
+      <div class="crop-head">
+        <h2 id="cropTitle">Ajustar y recortar imagen</h2>
+        <button type="button" class="icon-button" onclick="$('#cancelCropButton').click()" aria-label="Cerrar"><i data-lucide="x"></i></button>
       </div>
       <p class="crop-help">La imagen aparece completa. Arrastra el recuadro blanco o sus esquinas y laterales para elegir el encuadre deseado.</p>
       <div id="cropStage" class="crop-stage">
@@ -410,11 +371,10 @@
         </label>
       </div>
       <div class="crop-actions">
-        <button id="cancelCropButton" class="button secondary" type="button">Cancelar</button>
-        <button id="applyCropButton" class="button" type="button"><i data-lucide="scissors" style="width:14px;height:14px;"></i> Aplicar recorte</button>
+        <button id="cancelCropButton" class="button" type="button">Cancelar</button>
+        <button id="applyCropButton" class="button primary" type="button"><i data-lucide="scissors" aria-hidden="true"></i> Aplicar recorte</button>
       </div>
     </section>
   </div>
-  <script src="/assets/js/admin/configuracion-page.js?v=20261025-2"></script>
-<script src="/assets/js/admin/settings-layout.js?v=settings-v2"></script></body>
+</body>
 </html>

@@ -5,38 +5,47 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SmartISP | Portada</title>
   <link rel="icon" href="/assets/favicons/favicon.ico">
-  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=admin-brand-20261011">
-  <script src="/assets/vendor/lucide-icons.min.js?v=8707c619" defer></script>
-  <script src="/assets/js/admin/admin-nav.js?v=20261025-a11y" defer></script>
-  <link rel="stylesheet" href="/assets/css/admin/portada-page.css?v=20261025">
-  <script src="/assets/js/admin/admin-page.js?v=20261025-waf" defer></script>
-  <script src="/assets/js/admin/portada-page.js?v=20261025" defer></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <script src="/assets/js/admin/admin-theme.js?v=ds-20261026"></script>
+  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261026">
+  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261026b">
+  <link rel="stylesheet" href="/assets/css/admin/portada-page.css?v=ds-20261026">
+  <script src="/assets/vendor/lucide-icons.min.js?v=bb816557" defer></script>
+  <script src="/assets/js/admin/admin-nav.js?v=ds-20261026b" defer></script>
+  <script src="/assets/js/admin/admin-page.js?v=ds-20261026" defer></script>
+  <script src="/assets/js/admin/portada-page.js?v=ds-20261026" defer></script>
 </head>
 <body>
   <div id="smartisp-admin-nav" class="is-loading" data-active="portada"></div>
-  <header class="top"><h1>Portada de la tienda</h1><p>Textos de selección comercial, productos y categorías destacadas en tienda.html.</p></header>
   <main class="shell">
     <section id="app" hidden>
-      <div class="toolbar sticky-actions"><div><h2>Portada de la tienda</h2><p id="identity" class="muted"></p></div><div class="publish-group"><span id="dirtyNote" class="dirty-note" role="status" hidden><i data-lucide="circle-dot"></i> Cambios sin publicar</span><button id="save" class="button" type="button"><i data-lucide="save"></i> Publicar cambios</button></div></div>
-      <div class="toolbar-actions" style="display:flex;gap:8px;margin-bottom:14px"><a class="button secondary" href="/tienda.html" target="_blank" rel="noopener"><i data-lucide="external-link"></i> Ver tienda</a><a class="button secondary" href="/campanas.html"><i data-lucide="megaphone"></i> Ir a Banners</a></div>
+      <header class="page-head">
+        <div><span class="eyebrow"><i data-lucide="panels-top-left" aria-hidden="true"></i> Tienda</span><h1>Portada de la tienda</h1><p>Textos de selección comercial, productos y categorías destacadas en la tienda.</p></div>
+        <div class="head-actions"><a class="button" href="/tienda.html" target="_blank" rel="noopener"><i data-lucide="external-link"></i> Ver tienda</a><a class="button" href="/campanas.html"><i data-lucide="megaphone"></i> Ir a Banners</a></div>
+      </header>
+      <div class="sticky-actions"><p id="identity" class="muted"></p><div class="publish-group"><span id="dirtyNote" class="dirty-note" role="status" hidden><i data-lucide="circle-dot"></i> Cambios sin publicar</span><button id="save" class="button primary" type="button"><i data-lucide="save"></i> Publicar cambios</button></div></div>
       <section class="panel">
         <div class="section-heading"><div><h3>Textos de Selección comercial<span class="save-badge publish">Requiere «Publicar cambios»</span></h3><p class="muted">Encabezado y descripción de la vitrina de productos destacados.</p></div></div>
         <div class="grid2"><label>Etiqueta<input id="featuredEyebrow" maxlength="80"></label><label>Título<input id="featuredTitle" maxlength="180"></label></div>
         <label>Descripción<textarea id="featuredDescription" maxlength="500" rows="2"></textarea></label>
         <label>Texto auxiliar<textarea id="featuredNote" maxlength="300" rows="2"></textarea></label>
         <div class="grid2"><label>Título de productos<input id="featuredProductsTitle" maxlength="120"></label><label>Descripción de productos<input id="featuredProductsDescription" maxlength="300"></label></div>
-        <div id="featuredCopyPreview" class="help" aria-live="polite" style="padding:16px;border:1px solid var(--line);border-radius:7px;background:#f8fbfd;"></div>
+        <span class="preview-label">Vista previa</span>
+        <div id="featuredCopyPreview" class="help copy-preview" aria-live="polite"></div>
       </section>
       <section class="panel"><div class="section-heading"><div><h3>Categorías destacadas<span class="save-badge publish">Requiere «Publicar cambios»</span></h3><p class="muted">Escoge hasta siete categorías existentes para las mini-categorías de la portada y de /categorias-destacadas. Se usa su nombre, descripción, imagen y enlace actuales; sin ninguna elegida, se muestran automáticamente las de más productos.</p></div></div>
         <strong class="category-picker-label">Elegidas · se muestran en este orden (<span id="categorySelectedCount">0</span>/7)</strong>
         <div id="categorySelectedList" class="category-selected-list" aria-live="polite"></div>
         <strong class="category-picker-label">Disponibles · toca para añadir</strong>
-        <input id="categoryAvailableSearch" type="search" placeholder="Buscar categoría..." style="margin-bottom:10px">
+        <label class="sr-only" for="categoryAvailableSearch">Buscar categoría</label>
+        <input id="categoryAvailableSearch" class="choice-search" type="search" placeholder="Buscar categoría...">
         <div id="categoryAvailableList" class="category-choices" aria-live="polite"></div>
       </section>
       <section class="panel"><div class="section-heading"><div><h3>Imágenes de familias (mini-categorías)<span class="save-badge instant">Se guarda al instante</span></h3><p class="muted">Cuando no eliges categorías destacadas arriba, la portada muestra automáticamente las familias (Cómputo, Redes, Seguridad...). Aquí les subes una foto propia, las ocultas o cambias su orden.</p></div></div><div id="macroGroupList" class="macro-group-list" aria-live="polite"></div></section>
       <section class="panel"><div class="section-heading"><div><h3>Nuestras Marcas<span class="save-badge instant">Se guarda al instante</span></h3><p class="muted">Logos reales que se muestran en la portada, debajo de las garantías. Solo se ven las marcas activas, en el orden elegido.</p></div></div>
-        <div class="brand-add-row"><input id="newBrandName" type="text" placeholder="Nombre de la marca (ej. HP)" maxlength="150"><label class="button secondary" style="margin:0">Subir logo<input id="newBrandLogo" type="file" accept="image/jpeg,image/png,image/webp" hidden></label><button id="addBrand" class="button" type="button" disabled><i data-lucide="plus"></i> Agregar</button></div>
+        <div class="brand-add-row"><label class="sr-only" for="newBrandName">Nombre de la marca</label><input id="newBrandName" type="text" placeholder="Nombre de la marca (ej. HP)" maxlength="150"><label class="button secondary brand-upload">Subir logo<input id="newBrandLogo" type="file" accept="image/jpeg,image/png,image/webp" hidden></label><button id="addBrand" class="button primary" type="button" disabled><i data-lucide="plus"></i> Agregar</button></div>
         <div id="brandList" class="brand-list" aria-live="polite"></div>
       </section>
       <section class="panel"><div class="section-heading"><div><h3>Productos destacados<span class="save-badge publish">Requiere «Publicar cambios»</span></h3><p class="muted">Busca productos visibles y define el orden de la vitrina (máximo 12).</p></div></div><div class="search-row"><label>Buscar por nombre, SKU o categoría<input id="productSearch" type="search" placeholder="Ej. router, cámara, impresora"></label><button id="searchButton" class="button secondary" type="button"><i data-lucide="search"></i> Buscar</button></div><div id="results" class="product-list" aria-live="polite"></div><div id="selected" class="product-list"></div></section>

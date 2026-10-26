@@ -30,10 +30,6 @@ $created = $userColumn(['created_at', 'fecha_registro', 'created']);
 $orderId = $orderColumn(['id']);
 $orderUserId = $orderColumn(['user_id']);
 $orderEmail = $orderColumn(['customer_email', 'email']);
-$orderName = $orderColumn(['customer_name', 'name']);
-$orderPhone = $orderColumn(['customer_phone', 'phone']);
-$orderTotal = $orderColumn(['total', 'amount']);
-$orderStatus = $orderColumn(['status']);
 $orderCreated = $orderColumn(['created_at']);
 
 if (!$uid || !$email || !$orderId) {
@@ -45,54 +41,32 @@ if (!$uid || !$email || !$orderId) {
 $qName = static fn(?string $column, string $alias): string => $column ? "$alias.`$column`" : 'NULL';
 $accountNameParts = array_values(array_filter([$name ? "NULLIF(TRIM(u.`$name`), '')" : null, $surname ? "NULLIF(TRIM(u.`$surname`), '')" : null]));
 $accountName = $accountNameParts ? 'TRIM(CONCAT_WS(\' \', ' . implode(', ', $accountNameParts) . '))' : "''";
-$guestEmail = $orderEmail ? "LOWER(TRIM(NULLIF(o.`$orderEmail`, '')))" : "''";
-$guestName = $orderName ? "MAX(NULLIF(TRIM(o.`$orderName`), ''))" : "''";
-$guestPhone = $orderPhone ? "MAX(NULLIF(TRIM(o.`$orderPhone`), ''))" : 'NULL';
 $accountRoleCondition = $role ? "LOWER(COALESCE(u.`$role`, 'customer')) NOT IN ('admin','administrator','administrador')" : '1=1';
-$joinOrders = [];
-if ($orderUserId) $joinOrders[] = "o.`$orderUserId` = u.`$uid`";
-if ($orderEmail) $joinOrders[] = "LOWER(TRIM(o.`$orderEmail`)) = LOWER(TRIM(u.`$email`))";
-$orderJoin = $joinOrders ? '(' . implode(' OR ', $joinOrders) . ')' : '1=0';
-$accountCount = "COUNT(DISTINCT o.`$orderId`)";
-$accountSpend = $orderTotal ? "COALESCE(SUM(CASE WHEN o.`$orderId` IS NULL THEN 0" . ($orderStatus ? " WHEN LOWER(COALESCE(o.`$orderStatus`,'')) IN ('cancelled','canceled','refunded') THEN 0" : '') . " ELSE o.`$orderTotal` END),0)" : '0';
-$accountLastOrder = $orderCreated ? "MAX(o.`$orderCreated`)" : 'NULL';
 $accountCreated = $created ? "u.`$created`" : 'NULL';
 $accountPhone = $qName($phone, 'u');
 
-$parts = [];
-$parts[] = "SELECT CAST(u.`$uid` AS CHAR) AS customer_id, $accountName AS customer_name, u.`$email` AS customer_email, $accountPhone AS customer_phone, $accountCreated AS joined_at, 'account' AS source, $accountCount AS order_count, $accountSpend AS order_value, $accountLastOrder AS last_order FROM `$userTable` u LEFT JOIN orders_rows o ON $orderJoin WHERE $accountRoleCondition GROUP BY u.`$uid`, u.`$email`";
-
-if ($orderEmail) {
-    $matchedAccount = "EXISTS (SELECT 1 FROM `$userTable` u WHERE LOWER(TRIM(u.`$email`)) = $guestEmail)";
-    $guestCount = "COUNT(DISTINCT o.`$orderId`)";
-    $guestSpend = $orderTotal ? "COALESCE(SUM(CASE WHEN " . ($orderStatus ? "LOWER(COALESCE(o.`$orderStatus`,'')) IN ('cancelled','canceled','refunded')" : '1=0') . " THEN 0 ELSE o.`$orderTotal` END),0)" : '0';
-    $guestLast = $orderCreated ? "MAX(o.`$orderCreated`)" : 'NULL';
-    $guestJoined = $orderCreated ? "MIN(o.`$orderCreated`)" : 'NULL';
-    $parts[] = "SELECT CONCAT('guest:', $guestEmail) AS customer_id, $guestName AS customer_name, MAX(o.`$orderEmail`) AS customer_email, $guestPhone AS customer_phone, $guestJoined AS joined_at, 'guest' AS source, $guestCount AS order_count, $guestSpend AS order_value, $guestLast AS last_order FROM orders_rows o WHERE $guestEmail <> '' AND NOT $matchedAccount GROUP BY $guestEmail";
-}
-
-$baseSql = '(' . implode(' UNION ALL ', $parts) . ') customers';
-$filters = [];
-$params = [];
-$query = trim((string)($_GET['q'] ?? ''));
-$type = (string)($_GET['type'] ?? 'all');
-if ($query !== '') {
-    $filters[] = '(customers.customer_name LIKE :q_name OR customers.customer_email LIKE :q_email OR customers.customer_phone LIKE :q_phone)';
-    $params[':q_name'] = $params[':q_email'] = $params[':q_phone'] = '%' . $query . '%';
-}
-if (in_array($type, ['account', 'guest'], true)) {
-    $filters[] = 'customers.source = :source';
-    $params[':source'] = $type;
-}
-$whereSql = $filters ? ' WHERE ' . implode(' AND ', $filters) : '';
-$page = max(1, (int)($_GET['page'] ?? 1));
-$limit = min(100, max(10, (int)($_GET['limit'] ?? 25)));
-$offset = ($page - 1) * $limit;
+// Pedidos agrupados una sola vez por user_id y por correo (ver smartispCustomerOrderAggregates):
+// antes cada cuenta se cruzaba con todos los pedidos por "user_id = … OR correo = …", sin índice.
+$aggregates = smartispCustomerOrderAggregates($pdo, $userTable, $uid);
+$accountSql = static function (string $where = '', string $userWhere = '', string $emailWhere = '') use ($aggregates, $uid, $email, $userTable, $accountName, $accountPhone, $accountCreated, $accountRoleCondition): string {
+    $orders = smartispCustomerAccountJoin($aggregates, $uid, $email, $userWhere, $emailWhere);
+    return "SELECT CAST(u.`$uid` AS CHAR) AS customer_id, $accountName AS customer_name, u.`$email` AS customer_email, $accountPhone AS customer_phone, $accountCreated AS joined_at, 'account' AS source, {$orders['order_count']} AS order_count, {$orders['order_value']} AS order_value, {$orders['last_order']} AS last_order FROM `$userTable` u{$orders['joins']} WHERE $accountRoleCondition$where";
+};
+// Compradores sin cuenta: correos de pedidos que no pertenecen a ninguna cuenta.
+$guestSql = $aggregates['by_email'] ? static fn(string $emailWhere = ''): string => "SELECT CONCAT('guest:', be.customer_key) AS customer_id, be.customer_name, be.customer_email, be.customer_phone, be.first_order AS joined_at, 'guest' AS source, be.order_count, be.order_value, be.last_order FROM (" . $aggregates['by_email']($emailWhere) . ") be WHERE NOT EXISTS (SELECT 1 FROM `$userTable` ua WHERE ua.`$email` = be.customer_key)" : null;
 
 if (isset($_GET['id'])) {
-    $stmt = $pdo->prepare("SELECT * FROM $baseSql WHERE customers.customer_id = :id LIMIT 1");
-    $stmt->execute([':id' => (string)$_GET['id']]);
-    $customer = $stmt->fetch(PDO::FETCH_ASSOC);
+    $id = (string)$_GET['id'];
+    if (str_starts_with($id, 'guest:')) {
+        $stmt = $guestSql ? $pdo->prepare($guestSql(" AND {$aggregates['email_key']} = :guest_key")) : null;
+        $stmt?->execute([':guest_key' => substr($id, 6)]);
+    } else {
+        $userWhere = $aggregates['user_column'] ? " AND o.`{$aggregates['user_column']}` = :orders_uid" : '';
+        $emailWhere = $aggregates['email_key'] ? " AND {$aggregates['email_key']} = (SELECT LOWER(TRIM(ue.`$email`)) FROM `$userTable` ue WHERE ue.`$uid` = :email_uid)" : '';
+        $stmt = $pdo->prepare($accountSql(" AND u.`$uid` = :id", $userWhere, $emailWhere));
+        $stmt->execute(array_filter([':id' => $id, ':orders_uid' => $userWhere ? $id : null, ':email_uid' => $emailWhere ? $id : null], static fn($v) => $v !== null));
+    }
+    $customer = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
     if (!$customer) {
         http_response_code(404);
         echo json_encode(['error' => 'Cliente no encontrado.']);
@@ -119,25 +93,53 @@ if (isset($_GET['id'])) {
     exit;
 }
 
-$countStmt = $pdo->prepare("SELECT COUNT(*) FROM $baseSql$whereSql");
-$countStmt->execute($params);
-$total = (int)$countStmt->fetchColumn();
-$statsStmt = $pdo->prepare("SELECT COUNT(*) AS customers, SUM(source='account') AS accounts, SUM(source='guest') AS guests, SUM(order_count) AS orders, SUM(order_value) AS order_value FROM $baseSql$whereSql");
-$statsStmt->execute($params);
-$stats = $statsStmt->fetch(PDO::FETCH_ASSOC) ?: [];
-$stmt = $pdo->prepare("SELECT * FROM $baseSql$whereSql ORDER BY COALESCE(last_order, joined_at) DESC, customer_name ASC LIMIT :limit OFFSET :offset");
+$baseSql = '(' . implode(' UNION ALL ', array_filter([$accountSql(), $guestSql ? $guestSql() : null])) . ') customers';
+$filters = [];
+$params = [];
+$query = trim((string)($_GET['q'] ?? ''));
+$type = (string)($_GET['type'] ?? 'all');
+if ($query !== '') {
+    $filters[] = '(customers.customer_name LIKE :q_name OR customers.customer_email LIKE :q_email OR customers.customer_phone LIKE :q_phone)';
+    $params[':q_name'] = $params[':q_email'] = $params[':q_phone'] = '%' . $query . '%';
+}
+if (in_array($type, ['account', 'guest'], true)) {
+    $filters[] = 'customers.source = :source';
+    $params[':source'] = $type;
+}
+$whereSql = $filters ? ' WHERE ' . implode(' AND ', $filters) : '';
+$page = max(1, (int)($_GET['page'] ?? 1));
+$limit = min(100, max(10, (int)($_GET['limit'] ?? 25)));
+$offset = ($page - 1) * $limit;
+
+// Página, total y resumen en una sola pasada (funciones de ventana sobre el resultado filtrado).
+$statsColumns = ['_total' => 'COUNT(*)', '_accounts' => "SUM(customers.source = 'account')", '_guests' => "SUM(customers.source = 'guest')", '_orders' => 'SUM(customers.order_count)', '_order_value' => 'SUM(customers.order_value)'];
+$windowSql = implode(', ', array_map(static fn($alias, $expr) => "$expr OVER () AS $alias", array_keys($statsColumns), $statsColumns));
+$stmt = $pdo->prepare("SELECT customers.*, $windowSql FROM $baseSql$whereSql ORDER BY COALESCE(customers.last_order, customers.joined_at) DESC, customers.customer_name ASC LIMIT :limit OFFSET :offset");
 foreach ($params as $key => $value) $stmt->bindValue($key, $value);
 $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
 $stmt->execute();
+$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+if ($rows) {
+    $stats = array_intersect_key($rows[0], $statsColumns);
+} elseif ($page > 1) {
+    // Página fuera de rango: sin filas no llegan los totales de la ventana.
+    $statsStmt = $pdo->prepare('SELECT ' . implode(', ', array_map(static fn($alias, $expr) => "$expr AS $alias", array_keys($statsColumns), $statsColumns)) . " FROM $baseSql$whereSql");
+    $statsStmt->execute($params);
+    $stats = $statsStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+} else {
+    $stats = [];
+}
+$customers = array_map(static fn($row) => array_diff_key($row, $statsColumns), $rows);
+$total = (int)($stats['_total'] ?? 0);
 echo json_encode([
-    'customers' => $stmt->fetchAll(PDO::FETCH_ASSOC),
+    'customers' => $customers,
     'stats' => [
-        'customers' => (int)($stats['customers'] ?? 0),
-        'accounts' => (int)($stats['accounts'] ?? 0),
-        'guests' => (int)($stats['guests'] ?? 0),
-        'orders' => (int)($stats['orders'] ?? 0),
-        'order_value' => (float)($stats['order_value'] ?? 0),
+        'customers' => $total,
+        'accounts' => (int)($stats['_accounts'] ?? 0),
+        'guests' => (int)($stats['_guests'] ?? 0),
+        'orders' => (int)($stats['_orders'] ?? 0),
+        'order_value' => (float)($stats['_order_value'] ?? 0),
     ],
     'total' => $total,
     'page' => $page,

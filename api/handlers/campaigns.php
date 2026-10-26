@@ -202,8 +202,10 @@ if ($action === 'admin-store-campaigns') {
         $name = trim((string)($settings['name'] ?? ($existingCampaign['name'] ?? 'Portada de la tienda')));
         $rotation = max(4, min(20, (int)($settings['rotation_seconds'] ?? ($existingCampaign['rotation_seconds'] ?? 7))));
         $heroHeightPct = max(60, min(100, (int)($settings['hero_height_pct'] ?? ($existingCampaign['hero_height_pct'] ?? 100))));
-        $displayMode = in_array(($settings['display_mode'] ?? ($existingCampaign['display_mode'] ?? 'carousel')), ['carousel', 'single', 'split', 'triple', 'quad', 'grid', 'cards'], true) ? ($settings['display_mode'] ?? $existingCampaign['display_mode'] ?? 'carousel') : 'carousel';
-        $layoutWidth = in_array(($settings['layout_width'] ?? ($existingCampaign['layout_width'] ?? 'contained')), ['contained', 'full'], true) ? ($settings['layout_width'] ?? $existingCampaign['layout_width'] ?? 'contained') : 'contained';
+        $displayMode = $settings['display_mode'] ?? ($existingCampaign['display_mode'] ?? 'carousel');
+        if (!in_array($displayMode, ['carousel', 'single', 'split', 'triple', 'quad', 'grid', 'cards'], true)) $displayMode = 'carousel';
+        $layoutWidth = $settings['layout_width'] ?? ($existingCampaign['layout_width'] ?? 'contained');
+        if (!in_array($layoutWidth, ['contained', 'full'], true)) $layoutWidth = 'contained';
         $isActive = $touchesCampaignSettings ? !empty($settings['is_active']) : !empty($existingCampaign['is_active']);
         $mobileSwipe = $touchesCampaignSettings ? !empty($settings['mobile_swipe']) : !empty($existingCampaign['mobile_swipe']);
         try {
@@ -301,10 +303,18 @@ if ($action === 'admin-store-campaigns') {
                 exit;
             }
         }
-        foreach ($chips as $chip) {
-            if (trim((string)($chip['label'] ?? '')) === '' || strlen((string)$chip['label']) > 60 || !storefrontCampaignSafeUrl((string)($chip['target_url'] ?? ''))) {
+        foreach ($chips as $chipIndex => $chip) {
+            if (!is_array($chip) || trim((string)($chip['label'] ?? '')) === '' || strlen((string)$chip['label']) > 60 || !storefrontCampaignSafeUrl((string)($chip['target_url'] ?? ''))) {
                 http_response_code(400);
                 echo json_encode(['error' => 'Cada acceso promocional necesita un texto y un enlace válido.']);
+                exit;
+            }
+            try {
+                $chips[$chipIndex]['starts_at'] = storefrontCampaignDate($chip['starts_at'] ?? null);
+                $chips[$chipIndex]['ends_at'] = storefrontCampaignDate($chip['ends_at'] ?? null);
+            } catch (RuntimeException $error) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Acceso promocional "' . trim((string)$chip['label']) . '": ' . $error->getMessage()]);
                 exit;
             }
         }
@@ -427,8 +437,8 @@ if ($action === 'admin-store-campaigns') {
             }
             $productInsert = $pdo->prepare('INSERT INTO storefront_campaign_products (campaign_id, product_id, sort_order) VALUES (?, ?, ?)');
             if ($isPrimaryZone) foreach ($productIds as $index => $productId) $productInsert->execute([$campaignId, $productId, $index]);
-            $chipInsert = $pdo->prepare('INSERT INTO storefront_promo_chips (label, icon, target_url, sort_order, is_active) VALUES (?, ?, ?, ?, ?)');
-            if ($isPrimaryZone && array_key_exists('chips', $body)) foreach ($chips as $index => $chip) $chipInsert->execute([storefrontCampaignText((string)$chip['label'], 60), storefrontCampaignText((string)($chip['icon'] ?? 'tag'), 40) ?: 'tag', substr(trim((string)$chip['target_url']), 0, 500), $index, !empty($chip['is_active']) ? 1 : 0]);
+            $chipInsert = $pdo->prepare('INSERT INTO storefront_promo_chips (label, icon, target_url, sort_order, is_active, starts_at, ends_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
+            if ($isPrimaryZone && array_key_exists('chips', $body)) foreach ($chips as $index => $chip) $chipInsert->execute([storefrontCampaignText((string)$chip['label'], 60), storefrontCampaignText((string)($chip['icon'] ?? 'tag'), 40) ?: 'tag', substr(trim((string)$chip['target_url']), 0, 500), $index, !empty($chip['is_active']) ? 1 : 0, $chip['starts_at'], $chip['ends_at']]);
             $pdo->commit();
             echo json_encode(['ok' => true]);
         } catch (Throwable $error) {

@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Admin-Token');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Admin-Token, Idempotency-Key');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
@@ -73,12 +73,17 @@ if ($earlyAction === 'indexnow-key') {
 define('SMARTISP_SESSION_READONLY', in_array($requestMethod, ['GET', 'HEAD'], true) && $earlyAction !== 'logout');
 
 if (session_status() === PHP_SESSION_NONE) {
+    // Rechaza ids de sesión que el servidor no emitió (fijación de sesión).
+    ini_set('session.use_strict_mode', '1');
     if (!headers_sent()) {
+        // LiteSpeed/Hostinger puede terminar TLS en un proxy y dejar HTTPS vacío.
+        $isHttps = (isset($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) === 'on')
+            || strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
         @session_set_cookie_params([
             'lifetime' => 86400 * 30,
             'path'     => '/',
             'domain'   => '',
-            'secure'   => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
+            'secure'   => $isHttps,
             'httponly' => true,
             'samesite' => 'Lax'
         ]);
@@ -381,6 +386,7 @@ require __DIR__ . '/handlers/customers.php';
 require __DIR__ . '/handlers/quotes.php';
 require __DIR__ . '/handlers/inventory.php';
 require __DIR__ . '/handlers/analytics.php';
+require __DIR__ . '/handlers/insights.php';
 require __DIR__ . '/handlers/auth.php';
 
 // Acción no encontrada

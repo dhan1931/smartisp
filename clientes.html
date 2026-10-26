@@ -5,26 +5,55 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SmartISP | Clientes</title>
   <link rel="icon" href="/assets/favicons/favicon.ico">
-  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=admin-brand-20261011">
-  <script src="/assets/vendor/lucide-icons.min.js?v=8707c619" defer></script>
-  <script src="/assets/js/admin/admin-nav.js?v=20261025-a11y" defer></script>
-  <link rel="stylesheet" href="/assets/css/admin/clientes-page.css?v=20261025">
-  <script src="/assets/js/admin/admin-page.js?v=20261025-waf" defer></script>
-  <script src="/assets/js/admin/clientes-page.js?v=20261025" defer></script>
+  <meta name="theme-color" content="#102A43">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <script src="/assets/js/admin/admin-theme.js?v=ds-20261026"></script>
+  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261026">
+  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261026b">
+  <link rel="stylesheet" href="/assets/css/admin/clientes-page.css?v=ds-20261026">
+  <script src="/assets/vendor/lucide-icons.min.js?v=bb816557" defer></script>
+  <script src="/assets/js/admin/admin-nav.js?v=ds-20261026b" defer></script>
+  <script src="/assets/js/admin/admin-page.js?v=ds-20261026" defer></script>
+  <script src="/assets/js/admin/clientes-page.js?v=ds-20261026" defer></script>
 </head>
 <body>
   <div id="smartisp-admin-nav" class="is-loading" data-active="clientes"></div>
   <main class="shell" id="app" hidden>
-    <header class="page-head"><div><h1>Clientes</h1><p>Cuentas registradas y compradores de la tienda, reunidos en un solo lugar.</p></div><div class="head-actions"><button class="button" id="refresh" type="button"><i data-lucide="rotate-cw"></i> Actualizar</button></div></header>
+    <header class="page-head">
+      <div>
+        <p class="eyebrow"><i data-lucide="users" aria-hidden="true"></i> Operación</p>
+        <h1>Clientes</h1>
+        <p>Cuentas registradas y compradores de la tienda, reunidos en un solo lugar.</p>
+      </div>
+      <div class="head-actions">
+        <button class="button" id="refresh" type="button"><i data-lucide="refresh-cw" aria-hidden="true"></i> Actualizar</button>
+        <a class="button" href="/reportes.html"><i data-lucide="file-down" aria-hidden="true"></i> Exportar todo</a>
+      </div>
+    </header>
     <section class="stats" id="stats" aria-label="Resumen de clientes"></section>
-    <section class="workspace" aria-label="Directorio de clientes">
-      <div class="toolbar"><label class="search"><i data-lucide="search"></i><input id="search" type="search" placeholder="Buscar nombre, correo o teléfono" autocomplete="off"></label><select id="type" aria-label="Tipo de cliente"><option value="all">Todos los clientes</option><option value="account">Cuentas registradas</option><option value="guest">Compradores invitados</option></select><span class="result-count" id="count"></span></div>
-      <div class="table-wrap" id="tableWrap"><table><thead><tr><th>Cliente</th><th>Tipo</th><th>Contacto</th><th>Pedidos</th><th>Valor no cancelado</th><th>Última compra</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
-      <div class="empty" id="empty" hidden><i data-lucide="users-round"></i>No hay clientes que coincidan con la búsqueda.</div>
-      <div class="load-error" id="error" hidden></div>
-      <footer class="pager"><button class="button" id="prev" type="button">Anterior</button><span id="pageInfo"></span><button class="button" id="next" type="button">Siguiente</button></footer>
+    <section class="card workspace customers-card" aria-label="Directorio de clientes">
+      <div class="toolbar">
+        <div class="search">
+          <i data-lucide="search" aria-hidden="true"></i>
+          <label class="sr-only" for="search">Buscar clientes</label>
+          <input id="search" type="search" placeholder="Buscar nombre, correo o teléfono…  ( / )" autocomplete="off">
+        </div>
+        <div class="segmented" id="typeFilter" role="group" aria-label="Tipo de cliente">
+          <button type="button" data-type="all" aria-pressed="true">Todos</button>
+          <button type="button" data-type="account" aria-pressed="false">Registrados</button>
+          <button type="button" data-type="guest" aria-pressed="false">Invitados</button>
+        </div>
+        <span class="result-count" id="count" aria-live="polite"></span>
+        <div id="customersExportHost"></div>
+      </div>
+      <div class="table-wrap" id="tableWrap"><table data-export="clientes" data-export-host="customersExportHost"><thead><tr><th>Cliente</th><th>Tipo</th><th>Contacto</th><th class="num">Pedidos</th><th class="num">Valor no cancelado</th><th>Última compra</th><th data-no-export><span class="sr-only">Acciones</span></th></tr></thead><tbody id="rows"></tbody></table></div>
+      <div id="empty" hidden></div>
+      <div id="error" hidden></div>
+      <footer class="pager"><button class="button small" id="prev" type="button"><i data-lucide="arrow-left" aria-hidden="true"></i> Anterior</button><span id="pageInfo"></span><button class="button small" id="next" type="button">Siguiente <i data-lucide="arrow-right" aria-hidden="true"></i></button></footer>
     </section>
   </main>
-  <div class="modal" id="detail" hidden><section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="detailTitle"><header class="modal-head"><div><h2 id="detailTitle">Cliente</h2><p id="detailSource"></p></div><button class="icon-button" id="closeDetail" type="button" aria-label="Cerrar"><i data-lucide="x"></i></button></header><div class="profile-grid" id="profile"></div><h3>Pedidos recientes</h3><div class="history" id="history"></div></section></div>
+  <div class="modal" id="detail" hidden><section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="detailTitle"><header class="modal-head"><div><h2 id="detailTitle">Cliente</h2><p id="detailSource"></p></div><button class="icon-button" id="closeDetail" type="button" aria-label="Cerrar"><i data-lucide="x" aria-hidden="true"></i></button></header><div class="modal-scroll"><div class="profile-grid" id="profile"></div><div class="detail-actions" id="detailActions"></div><h3>Pedidos recientes</h3><div class="history" id="history"></div></div></section></div>
 </body>
 </html>

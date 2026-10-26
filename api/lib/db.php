@@ -463,6 +463,23 @@ function getCategoryMacroGroups(PDO $pdo): array {
     return $groups;
 }
 
+// Registra en categories_rows una categoría nueva escrita al guardar o importar productos.
+// Si falla (p. ej. el slug ya existe con otro nombre) el producto se guarda igual.
+function smartispEnsureCategory(PDO $pdo, string $category, string $subcategory = ''): void {
+    if ($category === '') return;
+    try {
+        $check = $pdo->prepare('SELECT id FROM `categories_rows` WHERE LOWER(name) = LOWER(:name) LIMIT 1');
+        $check->execute([':name' => $category]);
+        if ($check->fetchColumn()) return;
+        $insert = $pdo->prepare('INSERT INTO `categories_rows` (id, name, subcategories) VALUES (:id, :name, :subs)');
+        $insert->execute([
+            ':id' => smartispSlug($category, 80, 'articulo'),
+            ':name' => $category,
+            ':subs' => $subcategory !== '' ? json_encode([$subcategory], JSON_UNESCAPED_UNICODE) : '[]',
+        ]);
+    } catch (Throwable $e) {}
+}
+
 // getDynamicCategoriesList() unifica datos reales de products_rows con lo curado en
 // categories_rows (banners/iconos/keywords). Vive aqui (no en router.php) porque tanto
 // router.php (accion 'categories' del admin) como categoria.php (pagina publica) la

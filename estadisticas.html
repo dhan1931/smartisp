@@ -1,210 +1,144 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SmartISP | Estadísticas</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estadísticas | SmartISP</title>
   <link rel="icon" href="/assets/favicons/favicon.ico">
-  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=admin-brand-20261011">
-  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=20261025">
-  <script src="/assets/vendor/lucide-icons.min.js?v=8707c619" defer></script>
-  <script src="/assets/js/admin/admin-nav.js?v=20261025-a11y" defer></script>
-  <script src="/assets/js/admin/admin-page.js?v=20261025-waf" defer></script>
-  <script src="/assets/js/admin/admin-charts.js?v=seo2-20261025" defer></script>
-  <style>
-    .filters { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 18px; }
-    .custom-range { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
-    .custom-range input { height: 38px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); }
-    .range-label { margin-left: auto; color: var(--muted); font-size: 12px; }
-    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
-    @media (max-width: 950px) { .grid { grid-template-columns: 1fr; } .range-label { margin-left: 0; width: 100%; } }
-  </style>
+  <meta name="theme-color" content="#102A43">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <script src="/assets/js/admin/admin-theme.js?v=ds-20261026"></script>
+  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261026">
+  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261026b">
+  <link rel="stylesheet" href="/assets/css/admin/admin-dashboard.css?v=ds-20261026">
+  <link rel="stylesheet" href="/assets/css/admin/estadisticas-page.css?v=ds-20261026">
+  <script src="/assets/vendor/lucide-icons.min.js?v=bb816557" defer></script>
+  <script src="/assets/js/admin/admin-nav.js?v=ds-20261026b" defer></script>
+  <script src="/assets/js/admin/admin-page.js?v=ds-20261026" defer></script>
+  <script src="/assets/js/admin/admin-charts.js?v=ds-20261026" defer></script>
+  <script src="/assets/js/admin/estadisticas-page.js?v=ds-20261026" defer></script>
 </head>
 <body>
   <div id="smartisp-admin-nav" class="is-loading" data-active="estadisticas"></div>
   <main class="shell" id="app" hidden>
     <header class="page-head">
-      <div><h1>Estadísticas</h1><p>Cómo se mueven los pedidos, las ventas y el catálogo en el periodo elegido.</p></div>
-      <div class="head-actions"><a class="button" href="/reportes.html"><i data-lucide="download"></i> Exportar datos</a></div>
+      <div>
+        <p class="eyebrow"><i data-lucide="chart-column"></i> Análisis</p>
+        <h1>Estadísticas</h1>
+        <p id="periodText">Ventas, clientes, productos y operación del periodo elegido.</p>
+      </div>
+      <div class="head-actions">
+        <button class="button" type="button" id="exportPeriod"><i data-lucide="file-spreadsheet"></i> CSV del periodo</button>
+        <button class="button" type="button" id="exportOrders"><i data-lucide="download"></i> Pedidos del periodo</button>
+      </div>
     </header>
 
-    <div class="filters">
-      <div class="segmented" id="presets" role="group" aria-label="Periodo">
-        <button type="button" data-days="7">7 días</button>
-        <button type="button" data-days="30" class="is-active">30 días</button>
-        <button type="button" data-days="90">90 días</button>
-        <button type="button" data-days="365">12 meses</button>
+    <div class="dash-filters card" role="region" aria-label="Periodo">
+      <div class="segmented" id="period" role="group" aria-label="Periodo">
+        <button type="button" data-period="7d">7 días</button>
+        <button type="button" data-period="30d">30 días</button>
+        <button type="button" data-period="90d">90 días</button>
+        <button type="button" data-period="month">Este mes</button>
+        <button type="button" data-period="365">12 meses</button>
+        <button type="button" data-period="custom">Rango</button>
       </div>
-      <form class="custom-range" id="customRange">
-        <label>Desde <input type="date" id="from" required></label>
-        <label>hasta <input type="date" id="to" required></label>
-        <button class="button small" type="submit">Aplicar</button>
+      <form class="dash-range" id="range" hidden>
+        <label><span class="sr-only">Desde</span><input class="input" type="date" id="rangeFrom" required></label>
+        <span aria-hidden="true">→</span>
+        <label><span class="sr-only">Hasta</span><input class="input" type="date" id="rangeTo" required></label>
+        <button class="button small primary" type="submit">Aplicar</button>
       </form>
-      <span class="range-label" id="rangeLabel"></span>
+      <p class="dash-compare" id="compareText"></p>
     </div>
 
     <div id="content">
-      <section class="stats" id="stats" aria-label="Resumen del periodo"></section>
+      <section class="kpi-grid stats-kpis" id="kpis" aria-label="Resumen del periodo"></section>
 
-      <section class="card">
-        <div class="card-head">
-          <div><h2 id="trendTitle">Evolución</h2><p id="trendHint"></p></div>
-          <div class="segmented" id="metric" role="group" aria-label="Medida del gráfico">
-            <button type="button" data-metric="pipeline" class="is-active">Valor de pedidos</button>
-            <button type="button" data-metric="revenue">Ventas cobradas</button>
-            <button type="button" data-metric="orders">Pedidos</button>
+      <nav class="tabs" id="tabs" role="tablist" aria-label="Secciones de estadísticas">
+        <button type="button" role="tab" id="tab-ventas" aria-controls="panel-ventas" aria-selected="true">Ventas</button>
+        <button type="button" role="tab" id="tab-clientes" aria-controls="panel-clientes" aria-selected="false" tabindex="-1">Clientes</button>
+        <button type="button" role="tab" id="tab-productos" aria-controls="panel-productos" aria-selected="false" tabindex="-1">Productos</button>
+        <button type="button" role="tab" id="tab-operacion" aria-controls="panel-operacion" aria-selected="false" tabindex="-1">Operación</button>
+      </nav>
+
+      <section role="tabpanel" id="panel-ventas" aria-labelledby="tab-ventas">
+        <section class="card chart-card">
+          <div class="card-head">
+            <div><h2>Evolución del periodo</h2><p id="trendHint"></p></div>
+            <label class="toggle"><input type="checkbox" id="comparePrev" checked> <span>Comparar con el periodo anterior</span></label>
           </div>
+          <ul class="legend" id="trendLegend"></ul>
+          <div class="combo" id="trendChart"></div>
+          <details class="dash-table-toggle"><summary>Ver como tabla</summary><div class="data-table" id="trendTable"></div></details>
+        </section>
+        <div class="dash-row r-main">
+          <section class="card chart-card">
+            <div class="card-head"><div><h2>Últimos 12 meses</h2><p>Ventas confirmadas y pedidos por mes.</p></div></div>
+            <ul class="legend"><li><i class="sw line" style="background:var(--series-1)"></i>Ventas confirmadas</li><li><i class="sw" style="background:var(--series-2)"></i>Pedidos</li></ul>
+            <div class="combo" id="monthlyChart"></div>
+          </section>
+          <section class="card">
+            <div class="card-head"><div><h2>Por día de la semana</h2><p>Valor de pedidos en el periodo.</p></div></div>
+            <div class="bars" id="weekdays"></div>
+          </section>
         </div>
-        <div class="chart" id="trendChart"></div>
-        <button class="link-button" type="button" id="toggleTable">Ver tabla</button>
-        <div class="data-table" id="trendTable" hidden></div>
+        <div class="dash-row r-main">
+          <section class="card"><div class="card-head"><div><h2>¿Cuándo compran?</h2><p>Pedidos por día y hora (Ecuador).</p></div></div><div id="heatmap"></div></section>
+          <section class="card"><div class="card-head"><div><h2>Cobrado y por cobrar</h2><p>Pedidos del periodo según su pago.</p></div></div><div id="cash"></div>
+            <div class="stats-sep"></div>
+            <div class="card-head"><div><h2>Pedidos por estado</h2></div><a href="/pedidos.html">Ir a pedidos</a></div><div id="status"></div></section>
+        </div>
       </section>
 
-      <div class="grid">
-        <section class="card"><div class="card-head"><div><h2>Productos más vendidos</h2><p>Unidades en pedidos no anulados.</p></div></div><div class="bars" id="topProducts"></div></section>
-        <section class="card"><div class="card-head"><div><h2>Categorías</h2><p>Unidades vendidas según la categoría actual del producto.</p></div></div><div class="bars" id="categories"></div></section>
-        <section class="card"><div class="card-head"><div><h2>Pedidos por estado</h2><p>Todos los pedidos creados en el periodo.</p></div><a class="button small" href="/pedidos.html">Ir a pedidos</a></div><div class="bars" id="statuses"></div></section>
-        <section class="card"><div class="card-head"><div><h2>Cómo se calcula</h2></div></div>
-          <p class="muted" style="margin:0;line-height:1.6;font-size:13px"><strong>Ventas cobradas</strong>: pedidos con el pago confirmado (en pedidos manuales, al marcarlos como "Pago confirmado").<br><strong>Valor de pedidos</strong>: todo lo pedido sin contar cancelados ni reembolsados, se haya cobrado o no.<br><strong>Ticket promedio</strong>: ventas cobradas ÷ pedidos cobrados.<br>La variación compara con el periodo anterior del mismo largo.</p>
+      <section role="tabpanel" id="panel-clientes" aria-labelledby="tab-clientes" hidden>
+        <div class="dash-row r-half">
+          <section class="card"><div class="card-head"><div><h2>Nuevos y recurrentes</h2><p>Compradores con pedidos en el periodo.</p></div></div><div id="buyers"></div></section>
+          <section class="card"><div class="card-head"><div><h2>Ventas por ciudad</h2><p>Según la dirección de envío.</p></div></div>
+            <div class="table-wrap"><table data-export="ciudades"><thead><tr><th>Ciudad</th><th class="num">Pedidos</th><th class="num">Valor</th><th class="num">Participación</th></tr></thead><tbody id="cities"></tbody></table></div></section>
+        </div>
+        <section class="card">
+          <div class="card-head"><div><h2>Recurrencia por cohorte</h2><p>Clientes según el mes de su primer pedido y cuántos volvieron a comprar en los meses siguientes.</p></div></div>
+          <div class="table-wrap"><table class="cohorts" data-export="cohortes"><thead id="cohortHead"></thead><tbody id="cohorts"></tbody></table></div>
         </section>
-      </div>
+        <section class="card">
+          <div class="card-head"><div><h2>Mejores clientes</h2><p>Por valor de pedidos en el periodo.</p></div><a href="/clientes.html">Ver clientes</a></div>
+          <div class="table-wrap"><table data-export="mejores-clientes"><thead><tr><th>Cliente</th><th>Correo</th><th class="num">Pedidos</th><th class="num">Valor</th><th class="num">Cobrado</th><th>Último pedido</th></tr></thead><tbody id="customers"></tbody></table></div>
+        </section>
+      </section>
+
+      <section role="tabpanel" id="panel-productos" aria-labelledby="tab-productos" hidden>
+        <div class="dash-row r-half">
+          <section class="card"><div class="card-head"><div><h2>Productos por ingresos</h2><p>Pedidos no anulados del periodo.</p></div></div>
+            <div class="table-wrap"><table data-export="productos-periodo"><thead><tr><th>Producto</th><th class="num">Unidades</th><th class="num">Pedidos</th><th class="num">Ingresos</th></tr></thead><tbody id="products"></tbody></table></div></section>
+          <section class="card"><div class="card-head"><div><h2>Categorías</h2><p>Según la categoría actual del producto.</p></div></div>
+            <div class="table-wrap"><table data-export="categorias-periodo"><thead><tr><th>Categoría</th><th class="num">Productos</th><th class="num">Unidades</th><th class="num">Ingresos</th><th class="num">Participación</th></tr></thead><tbody id="categories"></tbody></table></div></section>
+        </div>
+        <div class="dash-row r-half">
+          <section class="card"><div class="card-head"><div><h2>Sin movimiento</h2><p>Productos visibles sin ventas.</p></div></div><div id="idle"></div></section>
+          <section class="card"><div class="card-head"><div><h2>Inventario</h2><p>Productos con stock controlado.</p></div><a href="/inventario.html">Gestionar</a></div><div id="inventory"></div></section>
+        </div>
+      </section>
+
+      <section role="tabpanel" id="panel-operacion" aria-labelledby="tab-operacion" hidden>
+        <div class="dash-row r-half">
+          <section class="card"><div class="card-head"><div><h2>Cotizaciones y tiempos</h2><p>Del periodo elegido.</p></div></div><div id="ops"></div></section>
+          <section class="card"><div class="card-head"><div><h2>Cómo se calcula</h2></div></div>
+            <dl class="definitions">
+              <dt>Ventas confirmadas</dt><dd>Pedidos no anulados con el pago confirmado (en pedidos manuales, al marcarlos como “Pago confirmado”).</dd>
+              <dt>Pendiente de cobro</dt><dd>Pedidos no anulados que todavía no tienen el pago confirmado.</dd>
+              <dt>Pedidos</dt><dd>Sin contar anulados ni solicitudes de cotización.</dd>
+              <dt>Ticket promedio</dt><dd>Ventas confirmadas ÷ pedidos cobrados.</dd>
+              <dt>Cancelación</dt><dd>Anulados (cancelados o reembolsados) ÷ pedidos creados, sin cotizaciones.</dd>
+              <dt>Conversión de cotizaciones</dt><dd>Cotizaciones de carrito del periodo que pasaron a un pedido activo.</dd>
+              <dt>Recurrentes</dt><dd>Compradores cuyo primer pedido es anterior al periodo (por cuenta o correo).</dd>
+              <dt>Comparación</dt><dd>Contra el periodo anterior del mismo largo (“Este mes”: mismos días del mes anterior). Días y horas de Ecuador.</dd>
+            </dl>
+          </section>
+        </div>
+      </section>
     </div>
   </main>
-
-  <script>
-    document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => {
-      const { $, esc, money, compact, number, api, toast } = SmartAdmin;
-      const STATUS_LABELS = { quote_requested: 'Cotización solicitada', pending: 'Pendiente de pago', paid: 'Pago confirmado', preparing: 'Preparando', shipped: 'Enviado / Retiro', delivered: 'Entregado', cancelled: 'Cancelado', received: 'Recibido (legado)', sin_estado: 'Sin estado' };
-      const METRICS = {
-        pipeline: { title: 'Valor de pedidos', format: money, axis: v => '$' + compact(v) },
-        revenue: { title: 'Ventas cobradas', format: money, axis: v => '$' + compact(v) },
-        orders: { title: 'Pedidos', format: number, axis: compact },
-      };
-      const state = { days: 30, from: '', to: '', metric: 'pipeline', data: null };
-
-      const iso = d => d.toISOString().slice(0, 10);
-      const shortDate = (day, opts) => new Date(day + 'T12:00:00').toLocaleDateString('es-EC', opts || { day: 'numeric', month: 'short' });
-
-      const delta = (now, before) => {
-        if (!before && !now) return '<small>Sin movimiento en ambos periodos</small>';
-        if (!before) return '<small><span class="up">Nuevo</span> vs periodo anterior</small>';
-        const pct = Math.round(((now - before) / before) * 100);
-        if (pct === 0) return '<small>Igual que el periodo anterior</small>';
-        return `<small><span class="${pct > 0 ? 'up' : 'down'}">${pct > 0 ? '▲' : '▼'} ${Math.abs(pct)}%</span> vs periodo anterior</small>`;
-      };
-
-      const renderStats = () => {
-        const t = state.data.totals, p = state.data.previous;
-        const tiles = [
-          ['Ventas cobradas', money(t.revenue), delta(t.revenue, p.revenue)],
-          ['Valor de pedidos', money(t.pipeline), delta(t.pipeline, p.pipeline)],
-          ['Pedidos', number(t.active_orders), delta(t.active_orders, p.active_orders)],
-          ['Ticket promedio', money(t.avg_ticket), delta(t.avg_ticket, p.avg_ticket)],
-          ['Cotizaciones', number(t.quotes), delta(t.quotes, p.quotes)],
-          ['Clientes nuevos', number(t.new_customers), delta(t.new_customers, p.new_customers)],
-        ];
-        $('#stats').innerHTML = tiles.map(([label, value, hint]) => `<article class="stat"><span>${label}</span><strong>${value}</strong>${hint}</article>`).join('');
-      };
-
-      // Más de ~2 meses de días sueltos dejan columnas de 2px: se agrupa por semana o por mes.
-      const bucketed = () => {
-        const daily = state.data.daily;
-        const mode = daily.length > 180 ? 'month' : daily.length > 62 ? 'week' : 'day';
-        if (mode === 'day') return { mode, points: daily.map(d => ({ ...d, label: shortDate(d.day), title: shortDate(d.day, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) })) };
-        const groups = new Map();
-        daily.forEach(d => {
-          const date = new Date(d.day + 'T12:00:00');
-          let key, label, title;
-          if (mode === 'month') {
-            key = d.day.slice(0, 7);
-            label = date.toLocaleDateString('es-EC', { month: 'short' });
-            title = date.toLocaleDateString('es-EC', { month: 'long', year: 'numeric' });
-          } else {
-            const monday = new Date(date); monday.setDate(date.getDate() - ((date.getDay() + 6) % 7));
-            key = iso(monday);
-            label = shortDate(key);
-            title = 'Semana del ' + shortDate(key, { day: 'numeric', month: 'long', year: 'numeric' });
-          }
-          if (!groups.has(key)) groups.set(key, { label, title, orders: 0, revenue: 0, pipeline: 0 });
-          const g = groups.get(key);
-          g.orders += d.orders; g.revenue += d.revenue; g.pipeline += d.pipeline;
-        });
-        return { mode, points: [...groups.values()] };
-      };
-
-      const renderTrend = () => {
-        const metric = METRICS[state.metric];
-        const { mode, points } = bucketed();
-        const per = { day: 'por día', week: 'por semana', month: 'por mes' }[mode];
-        $('#trendTitle').textContent = `${metric.title} ${per}`;
-        const total = points.reduce((sum, p) => sum + p[state.metric], 0);
-        $('#trendHint').textContent = `Total del periodo: ${metric.format(total)}`;
-
-        SmartCharts.columns($('#trendChart'), points, {
-          key: state.metric, format: metric.format, axis: metric.axis, label: `${metric.title} ${per}`,
-          emptyText: `No hay ${metric.title.toLowerCase()} en este periodo.`,
-          detail: p => `${number(p.orders)} pedido${p.orders === 1 ? '' : 's'}`,
-        });
-
-        $('#trendTable').innerHTML = `<table><thead><tr><th>Periodo</th><th class="num">Pedidos</th><th class="num">Valor de pedidos</th><th class="num">Ventas cobradas</th></tr></thead><tbody>${
-          points.map(p => `<tr><td>${esc(p.title)}</td><td class="num">${number(p.orders)}</td><td class="num">${money(p.pipeline)}</td><td class="num">${money(p.revenue)}</td></tr>`).join('')}</tbody></table>`;
-      };
-
-      const bars = SmartCharts.bars;
-
-      const renderLists = () => {
-        const d = state.data;
-        $('#topProducts').innerHTML = bars(d.top_products.map(p => ({ label: p.name, value: p.units, valueText: `${number(p.units)} u.`, extra: p.revenue ? money(p.revenue) : '' })), 'Todavía no hay ventas en este periodo.');
-        $('#categories').innerHTML = bars(d.categories.map(c => ({ label: c.category, value: c.units, valueText: `${number(c.units)} u.`, extra: c.revenue ? money(c.revenue) : '' })), 'Todavía no hay ventas en este periodo.');
-        $('#statuses').innerHTML = bars(d.by_status.map(s => ({ label: STATUS_LABELS[s.status] || s.status, value: s.orders, valueText: `${number(s.orders)}`, extra: money(s.value) })), 'No se crearon pedidos en este periodo.');
-      };
-
-      const load = async () => {
-        const query = state.from ? `from=${state.from}&to=${state.to}` : `days=${state.days}`;
-        $('#content').classList.add('is-refreshing');
-        try {
-          state.data = await api(`admin-analytics?${query}`);
-          $('#from').value = state.data.from;
-          $('#to').value = state.data.to;
-          $('#rangeLabel').textContent = `${shortDate(state.data.from, { day: 'numeric', month: 'short', year: 'numeric' })} – ${shortDate(state.data.to, { day: 'numeric', month: 'short', year: 'numeric' })}`;
-          renderStats(); renderTrend(); renderLists();
-        } catch (error) {
-          toast(error.message, true);
-        } finally {
-          $('#content').classList.remove('is-refreshing');
-        }
-      };
-
-      $('#presets').addEventListener('click', event => {
-        const button = event.target.closest('[data-days]');
-        if (!button) return;
-        $('#presets').querySelectorAll('button').forEach(b => b.classList.toggle('is-active', b === button));
-        state.days = Number(button.dataset.days); state.from = ''; state.to = '';
-        load();
-      });
-      $('#customRange').addEventListener('submit', event => {
-        event.preventDefault();
-        if ($('#from').value > $('#to').value) { toast('La fecha inicial debe ser anterior a la final.', true); return; }
-        $('#presets').querySelectorAll('button').forEach(b => b.classList.remove('is-active'));
-        state.from = $('#from').value; state.to = $('#to').value;
-        load();
-      });
-      $('#metric').addEventListener('click', event => {
-        const button = event.target.closest('[data-metric]');
-        if (!button || !state.data) return;
-        $('#metric').querySelectorAll('button').forEach(b => b.classList.toggle('is-active', b === button));
-        state.metric = button.dataset.metric;
-        renderTrend();
-      });
-      $('#toggleTable').addEventListener('click', event => {
-        const table = $('#trendTable');
-        table.hidden = !table.hidden;
-        event.currentTarget.textContent = table.hidden ? 'Ver tabla' : 'Ocultar tabla';
-      });
-      SmartCharts.onResize(() => state.data && renderTrend());
-
-      await load();
-    }));
-  </script>
 </body>
 </html>
