@@ -54,17 +54,19 @@ if ($action === 'test-db' || $action === 'test-products' || $action === 'test-su
             'usersList'     => $uList
         ]);
     } catch (Exception $e) {
+        error_log('SmartISP test-db error: ' . $e->getMessage());
         http_response_code(500);
         echo json_encode([
             'success' => false,
             'rowsFound' => 0,
-            'error' => $e->getMessage()
+            'error' => 'No se pudo leer el esquema de la base de datos. Revisa el registro de errores del servidor.'
         ]);
     }
     exit;
 }
 
 if ($action === 'test-email') {
+    smartispRequirePost();
     requireAdminAuth();
     $targetEmail = trim($body['to'] ?? ($body['admin_email'] ?? ''));
     $testResult = testEmailConnection($pdo, $body, $targetEmail);

@@ -164,7 +164,7 @@ foreach ($categories as $idx => $category) {
           'name' => 'Categorías destacadas',
           'itemListElement' => $categoryItemList
       ]
-  ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
+  ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_HEX_TAG | JSON_HEX_AMP) ?>
   </script>
   <style>
     body{background:#f3f7f9;color:#102c3d}
@@ -276,7 +276,6 @@ foreach ($categories as $idx => $category) {
   <footer class="storefront-footer category-catalog-footer"><span>SmartISP Ecuador · Tecnología, conectividad e infraestructura TI.</span><a href="/tienda.html">Ir a la tienda <i data-lucide="arrow-up-right"></i></a></footer>
   <script src="/assets/js/store/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
   <script src="/assets/js/store/public-account.js" defer></script>
-  <script src="/assets/js/store/storefront-product-card.js" defer></script>
   <script src="/assets/js/store/category-catalog.js?v=seo2-20261025" defer></script>
 </body>
 </html>

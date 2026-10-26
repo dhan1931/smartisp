@@ -24,12 +24,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
   <script src="/assets/vendor/lucide-icons.min.js?v=8707c619"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAI062MaV8sfjQKYVGjOBaZBOA87z+IhZE9DA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <link rel="stylesheet" href="/assets/css/admin/editor-catalogo-page.css?v=extract-20261015">
+  <link rel="stylesheet" href="/assets/css/admin/editor-catalogo-page.css?v=20261025">
 <link rel="stylesheet" href="/assets/css/admin/products-admin.css?v=products-v2"></head>
 <body>
   <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=admin-brand-20261011">
   <div id="smartisp-admin-nav" class="is-loading" data-active="productos"></div>
-  <script src="/assets/js/admin/admin-nav.js?v=admin-inventario-20261023" defer></script>
+  <script src="/assets/js/admin/admin-nav.js?v=20261025-a11y" defer></script>
 
 <!-- Main Content Shell -->
   <main class="main-shell">
@@ -292,6 +292,8 @@
           </div>
         </div>
 
+        <div id="importSummary" class="import-summary" role="status" hidden></div>
+
         <!-- Footer Actions -->
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
           <button type="button" class="btn btn-secondary" onclick="resetImportFile()">Cancelar</button>
@@ -306,10 +308,10 @@
 
   <!-- MODAL: CREAR / EDITAR PRODUCTO -->
   <div class="modal-overlay" id="productModal">
-    <div class="modal-dialog" style="max-width:700px;">
+    <div class="modal-dialog" style="max-width:700px;" role="dialog" aria-modal="true" aria-labelledby="prodModalTitle">
       <div class="modal-head">
         <h3 class="modal-title" id="prodModalTitle">Editar Producto</h3>
-        <button type="button" class="modal-close-btn" onclick="closeModal('productModal')">✕</button>
+        <button type="button" class="modal-close-btn" onclick="requestCloseModal('productModal')" aria-label="Cerrar">✕</button>
       </div>
       <form id="productForm">
         <input type="hidden" id="prodId">
@@ -424,44 +426,9 @@
     </div>
   </div>
 
-  <!-- MODAL: PRODUCTO GUARDADO / ENLACE SEO INDEXABLE -->
-  <div class="modal-overlay" id="productSavedModal">
-    <div class="modal-dialog" style="max-width:560px; text-align:center;">
-      <div style="width:60px; height:60px; border-radius:50%; background:#ecfdf5; color:#059669; display:flex; align-items:center; justify-content:center; margin:0 auto 14px auto;">
-        <i data-lucide="check-circle-2" width="34" height="34"></i>
-      </div>
-      <h3 class="modal-title" id="savedModalTitle" style="margin-bottom:6px; color:#065f46;">¡Producto Guardado con Éxito!</h3>
-      <p style="font-size:13.5px; color:#475569; margin-bottom:16px;" id="savedModalDesc">
-        El producto ya está registrado en la base de datos y cuenta con su enlace SEO permanente indexable para Google.
-      </p>
-
-      <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:14px; text-align:left; margin-bottom:20px;">
-        <label style="font-size:12px; font-weight:700; color:#334155; display:block; margin-bottom:6px;">Enlace público indexable en Google:</label>
-        <div style="display:flex; gap:6px;">
-          <input type="text" id="savedProductUrlInput" readonly class="form-control" style="font-family:monospace; font-size:12px; background:#fff; color:#0f172a; font-weight:600;">
-          <button type="button" class="btn btn-secondary" id="btnCopySavedUrl" title="Copiar enlace al portapapeles">
-            <i data-lucide="copy" width="15"></i> Copiar
-          </button>
-        </div>
-        <small style="font-size:11px; color:#64748b; margin-top:6px; display:flex; align-items:center; gap:5px;">
-          <i data-lucide="sparkles" width="12"></i> Este enlace cuenta con microdatos Schema.org Product y etiquetas Open Graph listas para ser rastreadas por Google.
-        </small>
-      </div>
-
-      <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
-        <a href="#" id="savedProductLinkBtn" target="_blank" class="btn btn-primary" style="padding:10px 18px; font-weight:700; background:#059669; border-color:#047857;">
-          <i data-lucide="external-link" width="16"></i> Ver Ficha Web del Producto ↗
-        </a>
-        <button type="button" class="btn btn-secondary" onclick="closeModal('productSavedModal')">
-          Aceptar y Cerrar
-        </button>
-      </div>
-    </div>
-  </div>
-
   <!-- MODAL: CONFIRMAR ELIMINAR TODOS LOS PRODUCTOS -->
   <div class="modal-overlay" id="deleteAllModal">
-    <div class="modal-dialog" style="max-width:480px; text-align:center;">
+    <div class="modal-dialog" style="max-width:480px; text-align:center;" role="alertdialog" aria-modal="true" aria-label="Eliminar todos los productos">
       <div style="width:64px; height:64px; border-radius:50%; background:#fee2e2; color:#dc2626; display:flex; align-items:center; justify-content:center; margin:0 auto 16px auto;">
         <i data-lucide="alert-triangle" width="34" height="34"></i>
       </div>
@@ -486,13 +453,13 @@
 
   <!-- MODAL: BUSCADOR DE FOTOS AMAZON / GOOGLE -->
   <div class="modal-overlay" id="imageSearchModal">
-    <div class="modal-dialog" style="max-width:780px;">
+    <div class="modal-dialog" style="max-width:780px;" role="dialog" aria-modal="true" aria-label="Buscar foto del producto">
       <div class="modal-head">
         <div>
           <h3 class="modal-title" style="display:flex; align-items:center; gap:7px;"><i data-lucide="search" width="17"></i> Buscar Foto en Amazon e Internet</h3>
           <small id="searchModalProductTitle" style="color:var(--muted); font-size:12px;"></small>
         </div>
-        <button type="button" class="modal-close-btn" onclick="closeModal('imageSearchModal')">✕</button>
+        <button type="button" class="modal-close-btn" onclick="closeModal('imageSearchModal')" aria-label="Cerrar">✕</button>
       </div>
       <form id="imageSearchForm" style="display:flex; gap:8px; margin-bottom:14px;">
         <input type="text" id="imageSearchQuery" class="form-control" placeholder="Escribe el modelo o marca del producto..." required>
@@ -516,7 +483,7 @@
   </div>
 
   <!-- Main Application Script -->
-  <script src="/assets/js/admin/editor-catalogo-page.js?v=extract-20261015" defer></script>
+  <script src="/assets/js/admin/editor-catalogo-page.js?v=20261025" defer></script>
 <script src="/assets/js/admin/products-layout.js?v=products-v2"></script></body>
 </html>
 

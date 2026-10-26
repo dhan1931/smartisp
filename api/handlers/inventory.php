@@ -124,8 +124,17 @@ if ($method === 'POST') {
     }
 
     if (array_key_exists('track', $body) && !$body['track']) {
-        // Dejar de controlar: el producto vuelve a venderse sin límite.
-        $pdo->prepare('DELETE FROM product_inventory WHERE product_id = :id')->execute([':id' => $productId]);
+        // Dejar de controlar: el producto vuelve a venderse sin límite. Con unidades apartadas
+        // por pedidos en curso no se permite: al cerrarlos no habría dónde liberarlas o descontarlas.
+        $reservedStmt = $pdo->prepare('SELECT quantity_reserved FROM product_inventory WHERE product_id = :id');
+        $reservedStmt->execute([':id' => $productId]);
+        $reserved = (int)$reservedStmt->fetchColumn();
+        if ($reserved > 0) {
+            http_response_code(409);
+            echo json_encode(['error' => 'No se puede dejar de controlar el stock: hay ' . $reserved . ' unidad(es) reservada(s) por pedidos en curso. Cancela o entrega esos pedidos primero.']);
+            exit;
+        }
+        $pdo->prepare('DELETE FROM product_inventory WHERE product_id = :id AND quantity_reserved = 0')->execute([':id' => $productId]);
     } elseif (isset($body['delta'])) {
         // Entrada/salida de mercadería: suma atómica sobre lo que haya en la base.
         $delta = (int)$body['delta'];

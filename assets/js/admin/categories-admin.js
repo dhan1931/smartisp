@@ -48,6 +48,10 @@ function descendantIds(id) {
   walk(id);
   return result;
 }
+// Foto del formulario al abrir el diálogo: cerrar con cambios pide confirmación.
+const formSnapshot=form=>JSON.stringify([...form.elements].filter(el=>el.name&&el.type!=='file').map(el=>[el.name,el.type==='checkbox'?el.checked:el.value]));
+const openDialog=dialog=>{dialog.showModal();const form=dialog.querySelector('form');if(form)form.dataset.snapshot=formSnapshot(form);};
+const canDiscard=dialog=>{const form=dialog.querySelector('form');return !form||!form.dataset.snapshot||formSnapshot(form)===form.dataset.snapshot||confirm('Hay cambios sin guardar. ¿Cerrar y descartarlos?');};
 function editCategory(id='') {
   editingId=id; const cat=categories.find(item=>item.id===id)||{}, form=$('#categoryForm'); form.reset();
   form.querySelectorAll('details').forEach(details=>details.open=false);
@@ -59,13 +63,13 @@ function editCategory(id='') {
   if(!form.elements.icon.value){const option=new Option(cat.icon,cat.icon);form.elements.icon.add(option);form.elements.icon.value=cat.icon;}
   form.elements.subcategories.value=(cat.subcategories||[]).join('\n'); form.elements.keywords.value=(cat.keywords||[]).join('\n'); form.elements.id.readOnly=Boolean(id);
   $('#categoryTitle').textContent=id?`Editar ${cat.name}`:'Nueva categoría'; $('#categoryError').hidden=true; $('#uploadStatus').textContent='';
-  ['iconImageUrl','bannerImageUrl'].forEach(field=>preview(form,field)); $('#categoryDialog').showModal();
+  ['iconImageUrl','bannerImageUrl'].forEach(field=>preview(form,field)); openDialog($('#categoryDialog'));
 }
 function editFamily(id='') {
   const group=families.find(item=>item.id===id)||{}, form=$('#familyForm'); form.reset();
   for(const field of ['id','name','icon','imageUrl'])form.elements[field].value=group[field]|| (field==='icon'?'package':'');
   form.elements.sortOrder.value=group.sortOrder||0;form.elements.visible.checked=group.visible!==false;
-  $('#familyTitle').textContent=id?`Editar ${group.name}`:'Nueva familia';$('#familyError').hidden=true;$('#familyUploadStatus').textContent='';preview(form,'imageUrl');$('#familyDialog').showModal();
+  $('#familyTitle').textContent=id?`Editar ${group.name}`:'Nueva familia';$('#familyError').hidden=true;$('#familyUploadStatus').textContent='';preview(form,'imageUrl');openDialog($('#familyDialog'));
 }
 $('#categoryForm [name="name"]').addEventListener('input',event=>{if(!editingId)$('#categoryForm [name="id"]').value=slug(event.target.value);});
 for(const form of [$('#categoryForm'),$('#familyForm')]) {
@@ -98,7 +102,7 @@ $('#familyForm').addEventListener('submit',async event=>{
 $('#moveForm').addEventListener('submit',async event=>{event.preventDefault();await submit(event.target,$('#moveError'),'categories-reassign',Object.fromEntries(new FormData(event.target)),'Productos movidos.');});
 document.addEventListener('click',async event=>{
   const button=event.target.closest('button,[data-clear]');if(!button)return;
-  if(button.hasAttribute('data-close')) {if(!pendingUploads)button.closest('dialog').close();return;}
+  if(button.hasAttribute('data-close')) {const dialog=button.closest('dialog');if(!pendingUploads&&canDiscard(dialog))dialog.close();return;}
   if(button.dataset.clear){const form=button.closest('form');form.elements[button.dataset.clear].value='';preview(form,button.dataset.clear);return;}
   if(button.dataset.edit){editCategory(button.dataset.edit);return;}
   if(button.dataset.editFamily){editFamily(button.dataset.editFamily);return;}
@@ -106,13 +110,13 @@ document.addEventListener('click',async event=>{
   if(button.dataset.move){
     const cat=categories.find(item=>item.id===button.dataset.move),form=$('#moveForm');form.elements.fromCategory.value=cat.name;
     form.elements.toCategory.innerHTML=categories.filter(item=>item.id!==cat.id).map(item=>`<option value="${escapeHtml(item.name)}">${escapeHtml(item.name)}</option>`).join('');
-    $('#moveDescription').textContent=`Mover todos los productos de ${cat.name} a otra categoría.`;$('#moveError').hidden=true;$('#moveDialog').showModal();return;
+    $('#moveDescription').textContent=`Mover todos los productos de ${cat.name} a otra categoría.`;$('#moveError').hidden=true;openDialog($('#moveDialog'));return;
   }
   if(button.dataset.delete){const cat=categories.find(item=>item.id===button.dataset.delete);if(!confirm(`¿Eliminar ${cat.name}? Solo se puede eliminar si no tiene productos.`))return;try{await api(`categories?id=${encodeURIComponent(cat.id)}`,{method:'DELETE'});await load();notice('Categoría eliminada.');}catch(error){notice(error.message,'error');}}
 });
 $('#newCategory').addEventListener('click',()=>editCategory());$('#newFamily').addEventListener('click',()=>editFamily());
 $('#search').addEventListener('input',render);$('#familyFilter').addEventListener('change',render);$('#reload').addEventListener('click',()=>load().catch(error=>notice(error.message,'error')));
-for(const dialog of document.querySelectorAll('dialog'))dialog.addEventListener('cancel',event=>{if(pendingUploads)event.preventDefault();});
+for(const dialog of document.querySelectorAll('dialog'))dialog.addEventListener('cancel',event=>{if(pendingUploads||!canDiscard(dialog))event.preventDefault();});
 (async()=>{
   try {const {user}=await api('me');if(!['admin','administrator','administrador'].includes(String(user?.role).trim().toLowerCase()))throw new Error('Tu cuenta no tiene acceso a la administración.');await load();$('#app').hidden=false;$('#status').hidden=true;}
   catch(error){if(error.status===401)location.assign(`/login.html?admin=1&redirect=${encodeURIComponent('/categorias.html')}`);else notice(error.message,'error');}

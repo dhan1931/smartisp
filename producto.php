@@ -90,10 +90,26 @@ if (!$product) {
     http_response_code(404);
 }
 
+// Cualquier variante de la URL (slug viejo, fallback por nombre, ?id=) redirige a la canónica:
+// sin esto el fallback LIKE respondía 200 a infinitas URLs con el mismo contenido.
+if ($product && in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['GET', 'HEAD'], true)) {
+    $canonicalPathSlug = $product['id'] . '-' . slugify($product['name']);
+    if ($slug !== $canonicalPathSlug) {
+        $query = $_GET;
+        unset($query['slug'], $query['id'], $query['p']);
+        $location = '/producto/' . str_replace('%3A', ':', rawurlencode((string)$product['id'])) . '-' . slugify($product['name']);
+        header('Location: ' . $location . ($query ? '?' . http_build_query($query) : ''), true, 301);
+        exit;
+    }
+}
+
 // Datos calculados para SEO
 $siteUrl = 'https://smart-isp.com.ec';
 $productName = $product ? htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8') : 'Producto no encontrado';
 $productCategory = $product ? htmlspecialchars($product['category'] ?: 'Equipos TI', ENT_QUOTES, 'UTF-8') : 'Catálogo';
+$productCategoryUrl = $product && trim((string)$product['category']) !== ''
+    ? '/categoria/' . smartispSlug(trim((string)$product['category']), 90, 'categoria') . '/'
+    : '/categorias-destacadas';
 $productSku = $product ? htmlspecialchars($product['sku'] ?: $product['id'], ENT_QUOTES, 'UTF-8') : '';
 $productPrice = $product ? (float)$product['price'] : 0.0;
 $formattedPrice = number_format($productPrice, 2, '.', ',');
@@ -183,7 +199,8 @@ if ($pdo) {
 $waUrl = '';
 if ($product && $waNumber !== '') {
     $waDigits = preg_replace('/\D+/', '', $waNumber);
-    $waMessage = rawurlencode("Hola SmartISP, estoy interesado en comprar el producto:\n*{$productName}*\nPrecio: \${$formattedPrice}\nEnlace: {$canonicalUrl}");
+    $waPriceLine = $productPrice > 0 ? "Precio: \${$formattedPrice}" : 'Precio: a cotizar';
+    $waMessage = rawurlencode("Hola SmartISP, estoy interesado en comprar el producto:\n*{$product['name']}*\n{$waPriceLine}\nEnlace: {$canonicalUrl}");
     $waUrl = "https://wa.me/{$waDigits}?text={$waMessage}";
 }
 
@@ -228,7 +245,7 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $product ? "{$productName} - Precio \${$formattedPrice} | SmartISP Ecuador" : "Producto no encontrado | SmartISP" ?></title>
+    <title><?= $product ? ($productPrice > 0 ? "{$productName} - Precio \${$formattedPrice} | SmartISP Ecuador" : "{$productName} | SmartISP Ecuador") : "Producto no encontrado | SmartISP" ?></title>
     <meta name="description" content="<?= $metaDesc ?>">
     <link rel="canonical" href="<?= $canonicalUrl ?>">
     <meta name="robots" content="<?= $robotsMeta ?>">
@@ -291,14 +308,14 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
         {
           "@type": "ListItem",
           "position": 3,
-          "name": <?= json_encode($product['category'], JSON_UNESCAPED_UNICODE) ?>,
-          "item": "https://smart-isp.com.ec/tienda.html?categoria=<?= urlencode($product['category']) ?>"
+          "name": <?= json_encode($product['category'], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+          "item": <?= json_encode($siteUrl . $productCategoryUrl, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) ?>
         },
         {
           "@type": "ListItem",
           "position": 4,
-          "name": <?= json_encode($product['name'], JSON_UNESCAPED_UNICODE) ?>,
-          "item": <?= json_encode($canonicalUrl, JSON_UNESCAPED_SLASHES) ?>
+          "name": <?= json_encode($product['name'], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
+          "item": <?= json_encode($canonicalUrl, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) ?>
         }
       ]
     }
@@ -402,6 +419,7 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
         .btn-action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 20px; border-radius: 10px; font-size: 15px; font-weight: 700; text-decoration: none; cursor: pointer; border: 0; transition: all .2s; }
         .btn-cart { background: var(--blue); color: #fff; }
         .btn-cart:hover { background: var(--blue-hover); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(17,119,201,0.3); }
+        .btn-cart:disabled { background: #94a3b8; cursor: not-allowed; transform: none; box-shadow: none; }
         .btn-wa { background: #25d366; color: #fff; }
         .btn-wa:hover { background: #1eb855; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(37,211,102,0.3); }
         .btn-share { background: #fff; color: var(--navy); border: 1px solid var(--border); font-size: 13.5px; padding: 11px; }
@@ -444,7 +462,7 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
                 <span>›</span>
                 <a href="/tienda.html">Tienda</a>
                 <span>›</span>
-                <a href="/tienda.html?categoria=<?= urlencode($product['category']) ?>"><?= $productCategory ?></a>
+                <a href="<?= htmlspecialchars($productCategoryUrl, ENT_QUOTES, 'UTF-8') ?>"><?= $productCategory ?></a>
                 <span>›</span>
                 <span class="current"><?= mb_strimwidth($productName, 0, 45, '...') ?></span>
             </nav>
@@ -457,6 +475,7 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
                         <span class="tag-category"><?= $productCategory ?></span>
                         <img id="mainProductImage" src="<?= htmlspecialchars($galleryImages[0]['image_url'], ENT_QUOTES, 'UTF-8') ?>"
                              alt="<?= htmlspecialchars($galleryImages[0]['image_alt'] ?: $productName, ENT_QUOTES, 'UTF-8') ?>"
+                             width="640" height="640"
                              loading="eager"
                              fetchpriority="high"
                              onerror="this.src='/assets/favicons/favicon-512x512.png'">
@@ -490,7 +509,7 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
                     <div class="price-box">
                         <?php if ($productPrice > 0): ?>
                             <div class="price-value">$<?= $formattedPrice ?> <span style="font-size:15px;font-weight:500;color:var(--muted);">USD</span></div>
-                            <div class="price-tax">Precios incluye IVA (15% Ecuador) · Facturación oficial</div>
+                            <div class="price-tax">Precios incluyen IVA (15% Ecuador) · Facturación oficial</div>
                         <?php else: ?>
                             <div class="price-quote">Precio disponible bajo cotización</div>
                             <div class="price-tax">Contáctanos por WhatsApp para recibir una cotización al instante</div>
@@ -499,18 +518,24 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
 
                     <!-- Botones de Acción -->
                     <div class="actions-grid">
-                        <button class="btn-action btn-cart" id="btnAddToCart">
+                        <?php if ($stockStatus === 'out'): ?>
+                        <button class="btn-action btn-cart" id="btnAddToCart" type="button" disabled>
+                            <i data-lucide="ban" width="18"></i> Agotado
+                        </button>
+                        <?php else: ?>
+                        <button class="btn-action btn-cart" id="btnAddToCart" type="button" data-open-cart-after data-add-to-cart="<?= htmlspecialchars(base64_encode(json_encode(['id' => (string)$product['id'], 'name' => (string)$product['name'], 'price' => $productPrice, 'category' => (string)$product['category'], 'image' => (string)$product['imageUrl'], 'sku' => (string)($product['sku'] ?? '')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)), ENT_QUOTES, 'UTF-8') ?>">
                             <i data-lucide="shopping-cart" width="18"></i> Agregar al Carrito
                         </button>
+                        <?php endif; ?>
                         <?php if ($waUrl !== ''): ?>
                         <a href="<?= htmlspecialchars($waUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" class="btn-action btn-wa">
-                            <i data-lucide="message-circle" width="18"></i> Pedir por WhatsApp
+                            <i data-lucide="message-circle" width="18"></i> <?= $stockStatus === 'out' ? 'Consultar por WhatsApp' : 'Pedir por WhatsApp' ?>
                         </a>
                         <?php endif; ?>
                         <button class="btn-action btn-share" id="btnShareProduct">
                             <i data-lucide="share-2" width="16"></i> Copiar enlace único
                         </button>
-                        <a href="/tienda.html?p=<?= urlencode($product['id']) ?>" class="btn-action btn-catalog">
+                        <a href="<?= htmlspecialchars($productCategoryUrl, ENT_QUOTES, 'UTF-8') ?>" class="btn-action btn-catalog">
                             <i data-lucide="layout-grid" width="16"></i> Explorar en catálogo
                         </a>
                     </div>
@@ -543,14 +568,14 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
             <section class="product-tabs" aria-label="Detalles del producto">
                 <div class="product-tabs-nav" role="tablist">
                     <?php foreach ($tabs as $tabKey => $tabLabel): ?>
-                        <button type="button" class="product-tab-btn<?= $tabKey === 'caracteristicas' ? ' is-active' : '' ?>" data-tab-target="tab-<?= $tabKey ?>" role="tab"><?= $tabLabel ?></button>
+                        <button type="button" class="product-tab-btn<?= $tabKey === 'caracteristicas' ? ' is-active' : '' ?>" id="tabbtn-<?= $tabKey ?>" data-tab-target="tab-<?= $tabKey ?>" role="tab" aria-controls="tab-<?= $tabKey ?>" aria-selected="<?= $tabKey === 'caracteristicas' ? 'true' : 'false' ?>"<?= $tabKey === 'caracteristicas' ? '' : ' tabindex="-1"' ?>><?= $tabLabel ?></button>
                     <?php endforeach; ?>
                 </div>
-                <div class="product-tab-panel is-active" id="tab-caracteristicas" role="tabpanel">
+                <div class="product-tab-panel is-active" id="tab-caracteristicas" role="tabpanel" aria-labelledby="tabbtn-caracteristicas">
                     <div class="desc-text"><?= nl2br(htmlspecialchars($rawDesc, ENT_QUOTES, 'UTF-8')) ?></div>
                 </div>
                 <?php if (!empty($productSpecs)): ?>
-                <div class="product-tab-panel" id="tab-especificaciones" role="tabpanel" hidden>
+                <div class="product-tab-panel" id="tab-especificaciones" role="tabpanel" aria-labelledby="tabbtn-especificaciones" hidden>
                     <table class="product-specs-table">
                         <?php foreach ($productSpecs as $spec): ?>
                             <tr><th><?= htmlspecialchars((string)($spec['label'] ?? ''), ENT_QUOTES, 'UTF-8') ?></th><td><?= htmlspecialchars((string)($spec['value'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td></tr>
@@ -559,12 +584,12 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
                 </div>
                 <?php endif; ?>
                 <?php if ($productContentText !== ''): ?>
-                <div class="product-tab-panel" id="tab-contenido" role="tabpanel" hidden>
+                <div class="product-tab-panel" id="tab-contenido" role="tabpanel" aria-labelledby="tabbtn-contenido" hidden>
                     <div class="desc-text"><?= nl2br(htmlspecialchars($productContentText, ENT_QUOTES, 'UTF-8')) ?></div>
                 </div>
                 <?php endif; ?>
                 <?php if ($productWarrantyText !== ''): ?>
-                <div class="product-tab-panel" id="tab-garantia" role="tabpanel" hidden>
+                <div class="product-tab-panel" id="tab-garantia" role="tabpanel" aria-labelledby="tabbtn-garantia" hidden>
                     <div class="desc-text"><?= nl2br(htmlspecialchars($productWarrantyText, ENT_QUOTES, 'UTF-8')) ?></div>
                 </div>
                 <?php endif; ?>
@@ -576,7 +601,7 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
                     <h2 class="related-title">Otros productos en <?= $productCategory ?></h2>
                     <div class="store-product-grid">
                         <?php foreach ($relatedProducts as $index => $rel): ?>
-                            <?php $storeProduct = $rel; $storeProductUrl = '/producto/' . $rel['id'] . '-' . slugify($rel['name']); $storeProductIndex = $index; require __DIR__ . '/includes/storefront-product-card.php'; ?>
+                            <?php $storeProduct = $rel; $storeProductUrl = '/producto/' . str_replace('%3A', ':', rawurlencode((string)$rel['id'])) . '-' . slugify($rel['name']); $storeProductIndex = $index; require __DIR__ . '/includes/storefront-product-card.php'; ?>
                         <?php endforeach; ?>
                     </div>
                 </section>
@@ -587,7 +612,7 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
             <div style="text-align:center; padding: 60px 20px; background:#fff; border-radius:16px; border:1px solid var(--border);">
                 <i data-lucide="alert-circle" width="48" style="color:var(--orange); margin-bottom:14px;"></i>
                 <h1 style="font-family:'Space Grotesk',sans-serif; color:var(--navy); margin-bottom:10px;">Producto no encontrado</h1>
-                <p style="color:var(--muted); max-width:500px; margin: 0 auto 24px;">El producto que estás buscando no existe o fue retirado del catálogo activo. Puedes explorar los más de 2,700 productos disponibles en nuestra tienda.</p>
+                <p style="color:var(--muted); max-width:500px; margin: 0 auto 24px;">El producto que estás buscando no existe o fue retirado del catálogo activo. Puedes explorar el resto de productos disponibles en nuestra tienda.</p>
                 <a href="/tienda.html" class="btn-nav primary" style="padding: 12px 24px; font-size:15px;">
                     <i data-lucide="arrow-left" width="16"></i> Ver Catálogo Completo
                 </a>
@@ -691,13 +716,25 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
         });
 
         // Pestañas de detalles del producto
-        document.querySelectorAll('.product-tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.product-tab-btn').forEach(b => b.classList.remove('is-active'));
-                document.querySelectorAll('.product-tab-panel').forEach(p => { p.classList.remove('is-active'); p.hidden = true; });
-                btn.classList.add('is-active');
-                const panel = document.querySelector('#' + btn.dataset.tabTarget);
-                if (panel) { panel.classList.add('is-active'); panel.hidden = false; }
+        const tabButtons = Array.from(document.querySelectorAll('.product-tab-btn'));
+        const selectTab = btn => {
+            tabButtons.forEach(b => {
+                const active = b === btn;
+                b.classList.toggle('is-active', active);
+                b.setAttribute('aria-selected', String(active));
+                b.tabIndex = active ? 0 : -1;
+            });
+            document.querySelectorAll('.product-tab-panel').forEach(p => { p.classList.remove('is-active'); p.hidden = true; });
+            const panel = document.querySelector('#' + btn.dataset.tabTarget);
+            if (panel) { panel.classList.add('is-active'); panel.hidden = false; }
+        };
+        tabButtons.forEach((btn, index) => {
+            btn.addEventListener('click', () => selectTab(btn));
+            btn.addEventListener('keydown', event => {
+                if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+                const next = tabButtons[(index + (event.key === 'ArrowRight' ? 1 : -1) + tabButtons.length) % tabButtons.length];
+                selectTab(next);
+                next.focus();
             });
         });
 
@@ -730,47 +767,6 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
                 document.execCommand('copy');
                 document.body.removeChild(tempInput);
                 showToast('¡Enlace del producto copiado!');
-            });
-        }
-
-        // Agregar al Carrito (guarda en localStorage compatible con tienda.html y checkout.html)
-        const btnCart = document.querySelector('#btnAddToCart');
-        if (btnCart) {
-            btnCart.addEventListener('click', () => {
-                const currentProduct = <?= $product ? json_encode([
-                    'id' => (string)$product['id'],
-                    'name' => (string)$product['name'],
-                    'price' => (float)$product['price'],
-                    'category' => (string)$product['category'],
-                    'image' => (string)$product['imageUrl'],
-                    'sku' => (string)($product['sku'] ?? '')
-                ], JSON_UNESCAPED_UNICODE) : 'null' ?>;
-
-                if (!currentProduct) return;
-
-                try {
-                    const cartKey = 'smartisp.cart';
-                    const rawCart = JSON.parse(localStorage.getItem(cartKey) || '[]');
-                    const existingIdx = rawCart.findIndex(item => String(item.id || item.name) === String(currentProduct.id || currentProduct.name));
-                    
-                    if (existingIdx >= 0) {
-                        rawCart[existingIdx].quantity = Math.min(99, Number(rawCart[existingIdx].quantity || 1) + 1);
-                    } else {
-                        rawCart.push({
-                            ...currentProduct,
-                            quantity: 1
-                        });
-                    }
-
-                    localStorage.setItem(cartKey, JSON.stringify(rawCart));
-                    showToast('¡Producto agregado al carrito!');
-                    
-                    setTimeout(() => {
-                        window.location.href = '/tienda.html?openCart=1';
-                    }, 600);
-                } catch (e) {
-                    window.location.href = '/tienda.html?p=' + encodeURIComponent(currentProduct.id);
-                }
             });
         }
     </script>

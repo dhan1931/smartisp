@@ -138,25 +138,33 @@
 			`).join('');
 		};
 		const productKey = product => String(product?.id || product?.sku || product?.name || 'item');
+		const toCartItem = (product, quantity) => ({
+			id: product.id ?? '',
+			sku: product.sku || '',
+			name: String(product.name || ''),
+			price: Math.max(0, Number(product.price || 0)),
+			image: product.image || product.imageUrl || '',
+			category: product.category || '',
+			quantity
+		});
 		const normalizeCart = list => {
 			const map = new Map();
 			(Array.isArray(list) ? list : []).forEach(item => {
-				if (!item) return;
+				if (!item || typeof item !== 'object') return;
 				const key = productKey(item);
 				const qty = Math.max(1, Math.min(99, Number(item.quantity) || 1));
 				if (map.has(key)) {
 					const existing = map.get(key);
 					existing.quantity = Math.min(99, existing.quantity + qty);
 				} else {
-					map.set(key, {
-						...item,
-						quantity: qty,
-						price: Math.max(0, Number(item.price || 0))
-					});
+					map.set(key, toCartItem(item, qty));
 				}
 			});
 			return Array.from(map.values());
 		};
+		const storeGet = (key, session = false) => { try { return (session ? sessionStorage : localStorage).getItem(key); } catch (e) { return null; } };
+		const storeSet = (key, value, session = false) => { try { (session ? sessionStorage : localStorage).setItem(key, value); } catch (e) {} };
+		const storeRemove = (key, session = false) => { try { (session ? sessionStorage : localStorage).removeItem(key); } catch (e) {} };
 		let cart = [];
 		try {
 			cart = normalizeCart(JSON.parse(localStorage.getItem('smartisp.cart') || '[]'));
@@ -541,7 +549,7 @@
 			];
 
 			list.innerHTML = rows.map(row => `
-				<a href="${row.href}" data-nav-cat="${escapeHtml(normalizeCategoryText(row.search))}">
+				<a href="${escapeHtml(row.href)}" data-nav-cat="${escapeHtml(normalizeCategoryText(row.search))}">
 					<span>${escapeHtml(row.label)}</span>
 					<small>${row.count ? `${row.count} productos` : ''}</small>
 					<i data-lucide="chevron-right" width="18"></i>
@@ -590,25 +598,25 @@
 				const iconName = group.icon || getCategoryIcon(group.name, group.id);
 
 				html += `
-					<div class="sidebar-group ${isExpanded ? 'is-expanded' : ''} ${isMacroActive ? 'is-active-group' : ''} ${hasActiveChild ? 'has-active-child' : ''}" data-macro-id="${group.id}">
+					<div class="sidebar-group ${isExpanded ? 'is-expanded' : ''} ${isMacroActive ? 'is-active-group' : ''} ${hasActiveChild ? 'has-active-child' : ''}" data-macro-id="${escapeHtml(group.id)}">
 						<div class="sidebar-group-header">
-							<button type="button" class="sidebar-group-btn" data-filter-action="macro" data-macro-id="${group.id}" title="Ver todos los productos de ${group.name}">
-								<span class="sidebar-cat-icon"><i data-lucide="${iconName}" width="16" height="16"></i></span>
-								<span class="sidebar-cat-name">${group.name}</span>
+							<button type="button" class="sidebar-group-btn" data-filter-action="macro" data-macro-id="${escapeHtml(group.id)}" title="Ver todos los productos de ${escapeHtml(group.name)}">
+								<span class="sidebar-cat-icon"><i data-lucide="${escapeHtml(iconName)}" width="16" height="16"></i></span>
+								<span class="sidebar-cat-name">${escapeHtml(group.name)}</span>
 								<span class="sidebar-cat-count">${group.totalCount}</span>
 							</button>
-							<button type="button" class="sidebar-group-toggle" data-toggle-macro="${group.id}" aria-label="Expandir o contraer subcategorías de ${group.name}" title="Expandir/Contraer">
+							<button type="button" class="sidebar-group-toggle" data-toggle-macro="${escapeHtml(group.id)}" aria-label="Expandir o contraer subcategorías de ${escapeHtml(group.name)}" title="Expandir/Contraer">
 								<i data-lucide="chevron-down" width="15" height="15"></i>
 							</button>
 						</div>
-						<div class="sidebar-subcat-list" id="subcat-list-${group.id}">
+						<div class="sidebar-subcat-list" id="subcat-list-${escapeHtml(group.id)}">
 							${group.subcategories.map(sub => {
 								const isSubActive = !isAllActive && ['category', 'sub'].includes(selectedFilter.type) &&
 									normalizeCategoryText(selectedFilter.category) === normalizeCategoryText(sub.rawName);
 								return `
-									<button type="button" class="sidebar-subcat-btn ${isSubActive ? 'active' : ''}" data-filter-action="sub" data-macro-id="${group.id}" data-category="${sub.rawName}" title="Filtrar por ${sub.displayName}">
+									<button type="button" class="sidebar-subcat-btn ${isSubActive ? 'active' : ''}" data-filter-action="sub" data-macro-id="${escapeHtml(group.id)}" data-category="${escapeHtml(sub.rawName)}" title="Filtrar por ${escapeHtml(sub.displayName)}">
 										<span class="sidebar-subcat-bullet"></span>
-										<span class="sidebar-subcat-name">${sub.displayName}</span>
+										<span class="sidebar-subcat-name">${escapeHtml(sub.displayName)}</span>
 										<span class="sidebar-subcat-count">${sub.count}</span>
 									</button>
 								`;
@@ -786,11 +794,13 @@
 				const pUrl = getProductUrl(product);
 				const hasReviews = Number(product.reviews || 0) > 0;
 				const reviewsHtml = hasReviews
-					? `<div><span class="stars">★★★★★</span><span class="reviews">(${product.reviews})</span></div>`
+					? `<div><span class="stars">★★★★★</span><span class="reviews">(${Number(product.reviews)})</span></div>`
 					: `<div><span class="reviews" style="margin-left:0;font-style:italic;">Sin reseñas aún</span></div>`;
 				const productIndex = productIndexMap.get(product);
 				const priority = productIndex < 4;
-				return `<article class="product" data-index="${productIndex}" tabindex="0" role="group" aria-label="Ver especificaciones de ${product.name}"><div class="product-image">${product.tag ? `<span class="tag">${product.tag}</span>` : ''}<button class="heart" aria-label="Agregar a favoritos"><i data-lucide="heart" width="16"></i></button><a href="${pUrl}" class="product-card-link" aria-label="${product.name}" tabindex="-1"><img src="${pImg}" alt="${product.name}" width="320" height="278" loading="${priority ? 'eager' : 'lazy'}" fetchpriority="${productIndex < 2 ? 'high' : 'auto'}" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${fbImg}';}"></a></div><div class="product-info"><div class="product-brand">${product.brand}</div><a href="${pUrl}" class="product-title-link" title="${product.name}"><h3>${product.name}</h3></a>${reviewsHtml}<div class="price-row"><div class="price-block"><span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span>${Number(product.price || 0) > 0 ? '<span class="price-tax-label">Precios incluye iva</span>' : ''}</div><a href="${pUrl}" class="btn-card-view" title="Ver producto en página completa" aria-label="Ver ficha completa de ${product.name}"><i data-lucide="external-link" width="15"></i></a></div><button class="add" data-index="${productIndex}" aria-label="Agregar ${product.name} al carrito"><i data-lucide="shopping-cart" width="16"></i> Agregar</button></div></article>`;
+				const pName = escapeHtml(product.name);
+				const saved = wishlistIds.has(productKey(product));
+				return `<article class="product" data-index="${productIndex}" tabindex="0" role="group" aria-label="Ver especificaciones de ${pName}"><div class="product-image">${product.tag ? `<span class="tag">${escapeHtml(product.tag)}</span>` : ''}<button class="heart${saved ? ' is-saved' : ''}" aria-label="Agregar a favoritos" aria-pressed="${saved}"><i data-lucide="heart" width="16"></i></button><a href="${escapeHtml(pUrl)}" class="product-card-link" aria-label="${pName}" tabindex="-1"><img src="${escapeHtml(pImg)}" alt="${pName}" width="320" height="278" loading="${priority ? 'eager' : 'lazy'}" fetchpriority="${productIndex < 2 ? 'high' : 'auto'}" data-fallback="${escapeHtml(fbImg)}" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src=this.dataset.fallback;}"></a></div><div class="product-info"><div class="product-brand">${escapeHtml(product.brand)}</div><a href="${escapeHtml(pUrl)}" class="product-title-link" title="${pName}"><h3>${pName}</h3></a>${reviewsHtml}<div class="price-row"><div class="price-block"><span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span>${Number(product.price || 0) > 0 ? '<span class="price-tax-label">Precios incluyen IVA</span>' : ''}</div><a href="${escapeHtml(pUrl)}" class="btn-card-view" title="Ver producto en página completa" aria-label="Ver ficha completa de ${pName}"><i data-lucide="external-link" width="15"></i></a></div><button class="add" data-index="${productIndex}" aria-label="Agregar ${pName} al carrito"><i data-lucide="shopping-cart" width="16"></i> Agregar</button></div></article>`;
 			}).join('');
 
 			const paginationHtml = buildPaginationHtml(currentPageNum, totalPagesNum);
@@ -836,7 +846,6 @@
 				const card = button.closest('.product');
 				const prod = card ? products[card.dataset.index] : null;
 				if (prod) {
-					button.classList.toggle('is-saved', wishlistIds.has(productKey(prod)));
 					button.addEventListener('click', event => {
 						event.stopPropagation();
 						toggleWishlist(prod, button);
@@ -977,11 +986,7 @@
 				}
 				existing.quantity = Math.min(99, (existing.quantity || 1) + 1);
 			} else {
-				cart.push({
-					...product,
-					quantity: 1,
-					price: Math.max(0, Number(product.price || 0))
-				});
+				cart.push(toCartItem(product, 1));
 			}
 			updateCart(true);
 			showCartToast(product);
@@ -999,7 +1004,7 @@
 		};
 
 		const updateCart = (animate = true) => {
-			localStorage.setItem('smartisp.cart', JSON.stringify(cart));
+			storeSet('smartisp.cart', JSON.stringify(cart));
 			const totalQuantity = cart.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
 			const count = document.querySelector('#cartCount');
 			if (count) count.textContent = totalQuantity;
@@ -1030,9 +1035,9 @@
 						const pImg = getProductImageUrl(item);
 						return `
 							<div class="cart-item">
-								<img src="${pImg}" alt="${item.name}" onerror="this.src='${fallbackImage(item)}'">
+								<img src="${escapeHtml(pImg)}" alt="${escapeHtml(item.name)}" data-fallback="${escapeHtml(fallbackImage(item))}" onerror="this.onerror=null;this.src=this.dataset.fallback">
 								<div class="cart-item-copy">
-									<strong>${item.name}</strong>
+									<strong>${escapeHtml(item.name)}</strong>
 									<small>${unitPrice > 0 ? money(unitPrice) : 'Cotizar'}</small>
 									<div class="cart-qty-ctrls">
 										<button type="button" class="cart-qty-btn" data-cart-qty-delta="-1" data-cart-index="${index}" aria-label="Restar una unidad">－</button>
@@ -1041,7 +1046,7 @@
 										${lineTotal > 0 ? `<span style="margin-left:6px; font-weight:700; color:var(--blue); font-size:12px;">= ${money(lineTotal)}</span>` : ''}
 									</div>
 								</div>
-								<button class="remove-item" data-remove-index="${index}" aria-label="Eliminar ${item.name} del carrito">
+								<button class="remove-item" data-remove-index="${index}" aria-label="Eliminar ${escapeHtml(item.name)} del carrito">
 									<i data-lucide="trash-2" width="16"></i>
 								</button>
 							</div>
@@ -1286,11 +1291,23 @@
 		});
 		document.querySelector('#sortSelect').addEventListener('change', () => { refreshView(true); });
 		const cartDrawer = document.querySelector('#drawer');
+		let cartReturnFocus = null;
 		const setCartOpen = open => {
 			if (!cartDrawer) return;
+			const wasOpen = cartDrawer.classList.contains('open');
 			cartDrawer.classList.toggle('open', open);
 			document.body.classList.toggle('cart-open', open);
+			if (open && !wasOpen) {
+				cartReturnFocus = document.activeElement;
+				setTimeout(() => document.querySelector('#closeCart')?.focus(), 50);
+			} else if (!open && wasOpen) {
+				cartReturnFocus?.focus?.();
+				cartReturnFocus = null;
+			}
 		};
+		document.addEventListener('keydown', event => {
+			if (event.key === 'Escape' && cartDrawer?.classList.contains('open')) setCartOpen(false);
+		});
 		document.querySelector('#openCart').addEventListener('click', () => setCartOpen(true));
 		document.querySelector('#closeCart').addEventListener('click', () => setCartOpen(false));
 		cartDrawer?.addEventListener('click', event => { if (event.target.id === 'drawer') setCartOpen(false); });
@@ -2378,6 +2395,7 @@
 									<label class="form-field">Apellido<input data-edit="surname" type="text"></label>
 								</div>
 								<label class="form-field">Email<input data-edit="email" type="email" required></label>
+								<label class="form-field" data-current-password-field hidden>Contraseña actual (necesaria para cambiar el correo)<input data-current-password type="password" autocomplete="current-password"></label>
 								<label class="form-field">Teléfono<input data-edit="phone" type="tel"></label>
 								<button class="primary account-submit" type="button" data-save-profile>Guardar cambios <i data-lucide="check" width="16"></i></button>
 								<div class="form-message" data-account-message></div>
@@ -2422,8 +2440,8 @@
 		// ESTADO GLOBAL DE LA CUENTA
 		const accountState = {
 			user: null,
-			theme: localStorage.getItem('smartisp.theme') || 'natural',
-			compact: localStorage.getItem('smartisp.compact') === 'true'
+			theme: storeGet('smartisp.theme') || 'natural',
+			compact: storeGet('smartisp.compact') === 'true'
 		};
 
 		const customerData = { wishlist: [], orders: [], ordersError: false };
@@ -2529,12 +2547,15 @@
 			return result;
 		};
 
+		const setHeartState = (heart, saved) => {
+			if (!heart) return;
+			heart.classList.toggle('is-saved', saved);
+			heart.setAttribute('aria-pressed', String(saved));
+		};
 		const syncWishlistButtons = () => {
 			document.querySelectorAll('.product').forEach(card => {
 				const prod = products[card.dataset.index];
-				if (prod) {
-					card.querySelector('.heart')?.classList.toggle('is-saved', wishlistIds.has(productKey(prod)));
-				}
+				if (prod) setHeartState(card.querySelector('.heart'), wishlistIds.has(productKey(prod)));
 			});
 		};
 
@@ -2545,10 +2566,10 @@
 			if (!list) return;
 			list.innerHTML = customerData.wishlist.length ? customerData.wishlist.map((item, index) => `
 				<div class="hub-item" data-wishlist-item="${index}">
-					<img src="${getProductImageUrl(item)}" alt="" onerror="this.src='${fallbackImage(item)}'">
+					<img src="${escapeHtml(getProductImageUrl(item))}" alt="" data-fallback="${escapeHtml(fallbackImage(item))}" onerror="this.onerror=null;this.src=this.dataset.fallback">
 					<div style="flex:1;min-width:0;">
-						<strong style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}</strong>
-						<small>${money(Number(item.price || 0))} · ${item.category || 'SmartISP'}</small>
+						<strong style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(item.name)}</strong>
+						<small>${money(Number(item.price || 0))} · ${escapeHtml(item.category || 'SmartISP')}</small>
 					</div>
 					<div class="wishlist-tools">
 						<button type="button" data-wishlist-action="up" aria-label="Subir" ${index === 0 ? 'disabled' : ''} title="Subir prioridad">↑</button>
@@ -2560,6 +2581,13 @@
 			window.lucide && window.lucide.createIcons();
 		};
 
+		const ORDER_STATUS_LABELS = { quote_requested: 'Cotización solicitada', pending: 'Pendiente', received: 'Recibido', paid: 'Pagado', preparing: 'En preparación', processing: 'En proceso', shipped: 'Enviado', delivered: 'Entregado', completed: 'Completado', cancelled: 'Cancelado', canceled: 'Cancelado', refunded: 'Reembolsado' };
+		const formatOrderDate = order => {
+			const raw = String(order.created_at || order.createdAt || '').trim();
+			if (!raw) return '';
+			const date = new Date(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/.test(raw) ? `${raw.replace(' ', 'T')}Z` : raw);
+			return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('es-EC', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'America/Guayaquil' });
+		};
 		const renderOrders = () => {
 			const list = accountProfileView.querySelector('[data-orders-list]');
 			const countEl = accountProfileView.querySelector('[data-orders-count]');
@@ -2568,10 +2596,10 @@
 			list.innerHTML = customerData.ordersError ? '<div class="hub-empty">No se pudo cargar tu historial de pedidos. Intenta de nuevo en un momento.</div>' : customerData.orders.length ? customerData.orders.map(order => `
 				<div class="hub-item order-item">
 					<div class="order-head">
-						<strong>Pedido #${String(order.id).slice(0, 8)}</strong>
-						<small>${new Date(order.createdAt).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })}</small>
+						<strong>Pedido ${escapeHtml(String(order.id || ''))}</strong>
+						<small>${formatOrderDate(order)}</small>
 					</div>
-					<small>${order.items?.items?.length || order.items?.length || 0} producto(s) · <b style="color:var(--navy);">${money(Number(order.total || 0))}</b> · <span style="text-transform:capitalize;color:var(--blue);">${order.status === 'completed' ? 'Completado' : order.status === 'processing' ? 'En proceso' : 'Pendiente'}</span></small>
+					<small>${order.items?.items?.length || order.items?.length || 0} producto(s) · <b style="color:var(--navy);">${money(Number(order.total || 0))}</b> · <span style="color:var(--blue);">${escapeHtml(ORDER_STATUS_LABELS[String(order.status || '').toLowerCase()] || order.status || 'Pendiente')}</span></small>
 				</div>
 			`).join('') : '<div class="hub-empty">Aún no tienes pedidos registrados. Tus compras aparecerán aquí para seguimiento.</div>';
 					window.lucide && window.lucide.createIcons();
@@ -2600,7 +2628,6 @@
 			}
 			renderWishlist();
 			renderOrders();
-			render();
 			syncWishlistButtons();
 		};
 
@@ -2609,7 +2636,7 @@
 			if (!signedIn) return openAccountSystem();
 			const id = productKey(product);
 			const saved = wishlistIds.has(id);
-			if (heart) heart.classList.toggle('is-saved', !saved);
+			setHeartState(heart, !saved);
 			try {
 				await customerApi(`customer-wishlist${saved ? `?productId=${encodeURIComponent(id)}` : ''}`, {
 					method: saved ? 'DELETE' : 'POST',
@@ -2623,11 +2650,10 @@
 					customerData.wishlist.unshift({ productId: id, name: product.name, price: product.price, image: product.image, category: product.category });
 				}
 				renderWishlist();
-				render();
 				syncWishlistButtons();
 				showWishlistToast(saved ? 'Lo eliminaste de tu wishlist' : 'Se agregó a tu wishlist', saved);
 			} catch (error) {
-				if (heart) heart.classList.toggle('is-saved', saved);
+				setHeartState(heart, saved);
 			}
 		};
 
@@ -2659,7 +2685,6 @@
 					await saveWishlistOrder();
 				}
 				renderWishlist();
-				render();
 				syncWishlistButtons();
 				if (action === 'remove') showWishlistToast('Lo eliminaste de tu wishlist', true);
 			} catch (error) {
@@ -2678,8 +2703,8 @@
 		const applyAccountPreferences = () => {
 			document.body.dataset.accountTheme = accountState.theme;
 			document.body.classList.toggle('account-compact', accountState.compact);
-			localStorage.setItem('smartisp.theme', accountState.theme);
-			localStorage.setItem('smartisp.compact', accountState.compact);
+			storeSet('smartisp.theme', accountState.theme);
+			storeSet('smartisp.compact', accountState.compact);
 		};
 
 		const updateAdminAccess = user => {
@@ -2711,6 +2736,12 @@
 			accountSystem.querySelectorAll('[data-edit]').forEach(input => {
 				input.value = user[input.dataset.edit] || '';
 			});
+			const passwordField = accountSystem.querySelector('[data-current-password-field]');
+			if (passwordField) {
+				passwordField.hidden = true;
+				passwordField.querySelector('input').value = '';
+				passwordField.querySelector('input').required = false;
+			}
 			const themeSel = accountSystem.querySelector('[data-theme-select]');
 			if (themeSel) themeSel.value = accountState.theme;
 			const compactTog = accountSystem.querySelector('[data-compact-toggle]');
@@ -2737,14 +2768,14 @@
 			}
 		};
 
-		const setAccountUser = (user, remember = localStorage.getItem('smartisp.accountRemembered') === 'true') => {
+		const setAccountUser = (user, remember = storeGet('smartisp.accountRemembered') === 'true') => {
 			accountState.user = user;
 			const displayUser = { id: user?.id, name: user?.name, email: user?.email, role: user?.role };
-			(remember ? localStorage : sessionStorage).setItem('smartisp.accountUser', JSON.stringify(displayUser));
-			if (remember) localStorage.setItem('smartisp.accountRemembered', 'true');
+			storeSet('smartisp.accountUser', JSON.stringify(displayUser), !remember);
+			if (remember) storeSet('smartisp.accountRemembered', 'true');
 			else {
-				localStorage.removeItem('smartisp.accountUser');
-				localStorage.removeItem('smartisp.accountRemembered');
+				storeRemove('smartisp.accountUser');
+				storeRemove('smartisp.accountRemembered');
 			}
 			signedIn = true;
 			const label = document.querySelector('#accountLabel');
@@ -2761,9 +2792,9 @@
 
 		const resetAccountUser = () => {
 			accountState.user = null;
-			localStorage.removeItem('smartisp.accountUser');
-			localStorage.removeItem('smartisp.accountRemembered');
-			sessionStorage.removeItem('smartisp.accountUser');
+			storeRemove('smartisp.accountUser');
+			storeRemove('smartisp.accountRemembered');
+			storeRemove('smartisp.accountUser', true);
 			signedIn = false;
 			updateAdminAccess(null);
 			const label = document.querySelector('#accountLabel');
@@ -2777,8 +2808,13 @@
 			customerData.wishlist = [];
 			customerData.orders = [];
 			wishlistIds.clear();
-			render();
+			syncWishlistButtons();
 			showAccountTab('login');
+		};
+
+		const loginRedirectTarget = () => {
+			const target = new URLSearchParams(window.location.search).get('redirect') || '';
+			return /^\/(?![\/\\])/.test(target) ? target : '';
 		};
 
 		// Botón Mi cuenta en barra superior
@@ -2818,8 +2854,9 @@
 				if (!response.ok) throw new Error(result.error);
 				setAccountUser(result.user, true);
 				if (result.token) {
-					localStorage.setItem('smartisp.adminToken', result.token);
+					storeSet('smartisp.adminToken', result.token);
 				}
+				if (loginRedirectTarget()) window.location.href = loginRedirectTarget();
 			} catch (error) {
 				showAccountMessage(form, error.message || 'No se pudo iniciar sesión.', true);
 			} finally {
@@ -2846,6 +2883,7 @@
 				const result = await readApiResponse(response);
 				if (!response.ok) throw new Error(result.error);
 				setAccountUser(result.user);
+				if (loginRedirectTarget()) window.location.href = loginRedirectTarget();
 			} catch (error) {
 				showAccountMessage(form, error.message || 'No se pudo crear la cuenta.', true);
 			} finally {
@@ -2865,30 +2903,47 @@
 			}
 		});
 
+		const profileEmailInput = accountSystem.querySelector('[data-edit="email"]');
+		const currentPasswordField = accountSystem.querySelector('[data-current-password-field]');
+		const currentPasswordInput = accountSystem.querySelector('[data-current-password]');
+		const profileEmailChanged = () => Boolean(accountState.user) && profileEmailInput.value.trim().toLowerCase() !== String(accountState.user.email || '').trim().toLowerCase();
+		const syncCurrentPasswordField = () => {
+			const changed = profileEmailChanged();
+			currentPasswordField.hidden = !changed;
+			currentPasswordInput.required = changed;
+			if (!changed) currentPasswordInput.value = '';
+		};
+		profileEmailInput.addEventListener('input', syncCurrentPasswordField);
+
 		accountSystem.querySelector('[data-save-profile]').addEventListener('click', async () => {
 			if (!accountState.user) return;
+			const panel = accountSystem.querySelector('[data-hub-panel="profile"]');
+			const values = {};
 			accountSystem.querySelectorAll('[data-edit]').forEach(input => {
-				accountState.user[input.dataset.edit] = input.value.trim();
+				values[input.dataset.edit] = input.value.trim();
 			});
-			renderAccountProfile();
+			const emailChanged = profileEmailChanged();
+			if (emailChanged && !currentPasswordInput.value) {
+				showAccountMessage(panel, 'Ingresa tu contraseña actual para cambiar el correo.', true);
+				currentPasswordInput.focus();
+				return;
+			}
+			const payload = { name: values.name, surname: values.surname, phone: values.phone, email: values.email };
+			if (emailChanged) payload.currentPassword = currentPasswordInput.value;
 			try {
 				const response = await fetch('/api/router.php?action=update-profile', {
 					method: 'POST',
 					credentials: 'include',
 					headers: { 'Content-Type': 'application/json' },
-					body: securePostJson({
-						name: accountState.user.name,
-						surname: accountState.user.surname,
-						phone: accountState.user.phone,
-						email: accountState.user.email
-					})
+					body: securePostJson(payload)
 				});
 				const result = await readApiResponse(response);
 				if (!response.ok) throw new Error(result.error);
-				if (result.user) setAccountUser(result.user);
-				showAccountMessage(accountSystem.querySelector('[data-hub-panel="profile"]'), 'Datos guardados correctamente.');
+				setAccountUser(result.user || { ...accountState.user, ...values });
+				switchProfilePanel('profile');
+				showAccountMessage(panel, 'Datos guardados correctamente.');
 			} catch (err) {
-				showAccountMessage(accountSystem.querySelector('[data-hub-panel="profile"]'), err.message || 'Error al guardar datos.', true);
+				showAccountMessage(panel, err.message || 'Error al guardar datos.', true);
 			}
 		});
 
@@ -2908,7 +2963,7 @@
 			button.disabled = true;
 			try {
 				const reqHeaders = { 'Content-Type': 'application/json' };
-				const token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
+				const token = storeGet('smartisp.adminToken') || storeGet('smartisp.adminToken', true);
 				if (token) {
 					reqHeaders['Authorization'] = `Bearer ${token}`;
 					reqHeaders['X-Admin-Token'] = token;
@@ -2924,6 +2979,7 @@
 				});
 				const result = await readApiResponse(response);
 				if (!response.ok) throw new Error(result.error);
+				if (result.token && storeGet('smartisp.adminToken')) storeSet('smartisp.adminToken', result.token);
 				form.reset();
 				showAccountMessage(form, '¡Contraseña actualizada correctamente!');
 			} catch (error) {
@@ -2952,11 +3008,11 @@
 
 		// Restaurar sesión de localStorage / sessionStorage inmediatamente al cargar la página
 		try {
-			const savedUserRaw = localStorage.getItem('smartisp.accountUser') || sessionStorage.getItem('smartisp.accountUser');
+			const savedUserRaw = storeGet('smartisp.accountUser') || storeGet('smartisp.accountUser', true);
 			if (savedUserRaw) {
 				const savedUser = JSON.parse(savedUserRaw);
 				if (savedUser && (savedUser.name || savedUser.email)) {
-					setAccountUser(savedUser, localStorage.getItem('smartisp.accountRemembered') === 'true');
+					setAccountUser(savedUser, storeGet('smartisp.accountRemembered') === 'true');
 				}
 			}
 		} catch (e) {
@@ -2971,7 +3027,9 @@
 			})
 			.then(result => {
 				if (result && result.user) {
-					setAccountUser(result.user, localStorage.getItem('smartisp.accountRemembered') === 'true');
+					setAccountUser(result.user, storeGet('smartisp.accountRemembered') === 'true');
+				} else if (result && 'user' in result) {
+					resetAccountUser();
 				}
 			})
 			.catch(() => {});

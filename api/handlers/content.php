@@ -222,7 +222,8 @@ if ($action === 'landing-content' || $action === 'site-content') {
         $hasLandingDarkLogo = false;
         foreach ($rows as $r) {
             $k = $r['key'] ?? '';
-            if (in_array($k, $sensitiveKeys, true) || stripos($k, 'pass') !== false || stripos($k, 'secret') !== false) {
+            if (in_array($k, $sensitiveKeys, true) || stripos($k, 'pass') !== false || stripos($k, 'secret') !== false
+                || stripos($k, 'api_key') !== false || $k === 'payload') {
                 continue;
             }
             if ($k === 'landing_logo_image' && !empty($r['value'])) {
@@ -235,7 +236,7 @@ if ($action === 'landing-content' || $action === 'site-content') {
         }
 
         if ($hasLandingLogo || $hasLandingDarkLogo) {
-            $safeRows = array_values(array_filter($safeRows, static function ($r) use ($action, $hasLandingLogo, $hasLandingDarkLogo) {
+            $safeRows = array_values(array_filter($safeRows, static function ($r) use ($hasLandingLogo, $hasLandingDarkLogo) {
                 $key = $r['key'] ?? '';
                 if ($hasLandingLogo && $key === 'logo_image') return false;
                 if ($hasLandingDarkLogo && $key === 'logo_dark_image') return false;
@@ -243,7 +244,10 @@ if ($action === 'landing-content' || $action === 'site-content') {
             }));
         }
 
-        if ($action === 'site-content') {
+        // landing-content completo (logos en base64 incluidos) solo para el editor del panel; el
+        // público recibe los logos como URL cacheable, igual que site-content.
+        $publicView = $action === 'site-content' || !isAdminUser();
+        if ($publicView) {
             foreach ($safeRows as &$row) {
                 $key = (string)($row['key'] ?? '');
                 $value = (string)($row['value'] ?? '');
@@ -291,6 +295,7 @@ if ($action === 'landing-content' || $action === 'site-content') {
 
 
 if ($action === 'landing-content-reset' || $action === 'landing-content/reset') {
+    smartispRequirePost();
     requireAdminAuth();
     $pdo->exec("DELETE FROM settings_rows WHERE setting_key LIKE 'landing_%' OR setting_key LIKE 'hero_%'");
     echo json_encode(['ok' => true]);

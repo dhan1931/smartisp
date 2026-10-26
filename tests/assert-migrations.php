@@ -96,4 +96,7 @@ $transitionColumn = $pdo->query("SHOW COLUMNS FROM storefront_campaign_slides LI
 $assert($bulletColumn && $bulletColumn['Type'] === 'varchar(20)', 'El estilo de viñeta debe admitir check-circle sin truncarse.');
 $assert($transitionColumn && (int)$transitionColumn['Default'] === 1000, 'Falta la duración predeterminada de transición de 1000 ms.');
 
+$tokenVersion = $pdo->query("SHOW COLUMNS FROM users_rows LIKE 'token_version'")->fetch();
+$assert($tokenVersion && $tokenVersion['Null'] === 'NO' && (int)$tokenVersion['Default'] === 0, 'Falta users_rows.token_version (revocación de sesiones).');
+
 echo "Migraciones verificadas: claves, tipos, fecha, correo, historial y esquema de campañas correctos.\n";
