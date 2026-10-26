@@ -311,8 +311,10 @@
 		const getMacroCategory = categoryName => {
 			const norm = normalizeCategoryText(categoryName);
 			const row = findCategoryRow(categoryName);
-			const source = row && row.macroGroupId ? row : findParentRow(row);
-			if (source && source.macroGroupId) {
+			// «otros» no cuenta como elección: el antiguo script de familias mandaba ahí lo que no reconocía.
+			const assigned = item => item && item.macroGroupId && item.macroGroupId !== 'otros';
+			const source = assigned(row) ? row : findParentRow(row);
+			if (assigned(source)) {
 				return getFamily(source.macroGroupId) || { id: source.macroGroupId, name: source.macroGroupName || OTHER_FAMILY.name, icon: source.macroGroupIcon || 'package', sortOrder: 999, keywords: [] };
 			}
 			if (norm) {
