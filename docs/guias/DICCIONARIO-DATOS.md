@@ -199,6 +199,7 @@ updated_at	timestamp	Yes	NULL
 external_url	text	Yes	NULL	
 sku	text	Yes	NULL	
 subcategory	text	Yes	NULL	
+cost	decimal(10,2)	Yes	NULL	Costo de compra, solo panel (migración 041)
 Indexes
 Keyname	Type	Unique	Packed	Column	Cardinality	Collation	Null	Comment
 PRIMARY	BTREE	Yes	No	id	2657	A	No	
@@ -241,6 +242,23 @@ updated_at	timestamp	No	current_timestamp()
 Indexes
 Keyname	Type	Unique	Packed	Column	Cardinality	Collation	Null	Comment
 PRIMARY	BTREE	Yes	No	product_id	0	A	No	
+inventory_movements
+Column	Type	Null	Default	Comments
+id (Primary)	bigint(20) unsigned	No		
+product_id	varchar(191)	No		
+delta_available	int(11)	No	0	Cambio en quantity_available
+delta_reserved	int(11)	No	0	Cambio en quantity_reserved
+reason	varchar(30)	No		manual, order_reserved, order_released, order_shipped, order_cancelled, order_returned, untracked
+order_id	varchar(191)	Yes	NULL	
+user_id	varchar(191)	Yes	NULL	Admin que hizo el ajuste
+note	varchar(255)	Yes	NULL	
+created_at	timestamp	No	current_timestamp()	UTC
+Indexes
+Keyname	Type	Unique	Packed	Column	Cardinality	Collation	Null	Comment
+PRIMARY	BTREE	Yes	No	id	0	A	No	
+idx_inventory_movements_product	BTREE	No	No	product_id	0	A	No	
+created_at	0	A	No
+idx_inventory_movements_order	BTREE	No	No	order_id	0	A	Yes	
 settings_rows
 Column	Type	Null	Default	Comments
 id (Primary)	int(11)	No		
