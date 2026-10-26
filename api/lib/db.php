@@ -448,9 +448,12 @@ function getSmartispUploadsDir(string $category): string {
 function getCategoryMacroGroups(PDO $pdo): array {
     // La tabla (con image_url y visible) la crean las migraciones 017 en adelante. Aquí había un
     // CREATE TABLE IF NOT EXISTS sin esas columnas que corría en cada carga del catálogo público.
-    $stmt = $pdo->query("SELECT id, name, icon, image_url, sort_order, visible FROM category_macro_groups ORDER BY sort_order, name");
+    // keywords llega con la migración 045; sin ella el catálogo sigue respondiendo.
+    $hasKeywords = in_array('keywords', smartispTableColumns($pdo, 'category_macro_groups'), true);
+    $stmt = $pdo->query("SELECT id, name, icon, image_url, sort_order, visible" . ($hasKeywords ? ', keywords' : '') . " FROM category_macro_groups ORDER BY sort_order, name");
     $groups = [];
     foreach (($stmt ? $stmt->fetchAll() : []) as $g) {
+        $keywords = json_decode((string)($g['keywords'] ?? ''), true);
         $groups[] = [
             'id' => (string)$g['id'],
             'name' => (string)$g['name'],
@@ -458,25 +461,103 @@ function getCategoryMacroGroups(PDO $pdo): array {
             'imageUrl' => (string)($g['image_url'] ?? ''),
             'sortOrder' => (int)($g['sort_order'] ?? 0),
             'visible' => $g['visible'] === null ? true : (string)$g['visible'] === '1',
+            'keywords' => is_array($keywords) ? array_values(array_filter(array_map('strval', $keywords), 'strlen')) : [],
         ];
     }
     return $groups;
 }
 
-// Registra en categories_rows una categoría nueva escrita al guardar o importar productos.
-// Si falla (p. ej. el slug ya existe con otro nombre) el producto se guarda igual.
+// Igual que normalizeCategoryText de la tienda: minúsculas, sin tildes, "_" como espacio.
+function smartispCategoryKey(string $text): string {
+    $text = strtr($text, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','ñ'=>'n','ü'=>'u','Á'=>'a','É'=>'e','Í'=>'i','Ó'=>'o','Ú'=>'u','Ñ'=>'n','Ü'=>'u', '_' => ' ']);
+    return trim(mb_strtolower($text, 'UTF-8'));
+}
+
+// Familia sugerida para una categoría nueva: nombre de la familia, palabra clave exacta y luego
+// contenida (mismas reglas que la migración 045). '' si nada coincide.
+function smartispGuessMacroGroup(array $groups, string $categoryName): string {
+    $norm = smartispCategoryKey($categoryName);
+    if ($norm === '') return '';
+    foreach ($groups as $g) {
+        if (smartispCategoryKey($g['id']) === $norm || smartispCategoryKey($g['name']) === $norm) return $g['id'];
+    }
+    foreach ($groups as $g) {
+        foreach ($g['keywords'] ?? [] as $kw) if (smartispCategoryKey($kw) === $norm) return $g['id'];
+    }
+    foreach ($groups as $g) {
+        foreach ($g['keywords'] ?? [] as $kw) {
+            $kw = smartispCategoryKey($kw);
+            if ($kw !== '' && (str_contains($norm, $kw) || str_contains($kw, $norm))) return $g['id'];
+        }
+    }
+    return '';
+}
+
+// Nombres de categoría que abarca un filtro: la categoría y sus subcategorías. Si es una
+// subcategoría, también cuentan los productos de su padre con ese nombre como subcategoría.
+function smartispCategoryScope(PDO $pdo, string $name): array {
+    static $tree = null;
+    $scope = ['names' => [$name], 'parent' => ''];
+    if ($tree === null) {
+        $tree = ['byKey' => [], 'byId' => [], 'children' => []];
+        if (in_array('parent_category_id', smartispTableColumns($pdo, 'categories_rows'), true)) {
+            foreach ($pdo->query('SELECT id, name, parent_category_id FROM categories_rows')->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $id = (string)$row['id'];
+                $parent = trim((string)($row['parent_category_id'] ?? ''));
+                $tree['byId'][$id] = ['name' => trim((string)$row['name']), 'parent' => $parent];
+                $tree['byKey'][smartispCategoryKey((string)$row['name'])] ??= $id;
+                if ($parent !== '') $tree['children'][$parent][] = trim((string)$row['name']);
+            }
+        }
+    }
+    $id = $tree['byKey'][smartispCategoryKey($name)] ?? null;
+    if ($name === '' || $id === null) return $scope;
+    $parentId = $tree['byId'][$id]['parent'];
+    $scope['parent'] = $parentId !== '' ? ($tree['byId'][$parentId]['name'] ?? '') : '';
+    foreach ($tree['children'][$id] ?? [] as $child) {
+        if ($child !== '' && !in_array($child, $scope['names'], true)) $scope['names'][] = $child;
+    }
+    return $scope;
+}
+
+// Condición SQL de smartispCategoryScope para una o varias categorías (sobre category/subcategory).
+function smartispCategoryScopeSql(PDO $pdo, array $names, array &$params, string $prefix = 'scope', string $column = 'category', string $subColumn = 'subcategory'): string {
+    $all = [];
+    $pairs = [];
+    foreach ($names as $name) {
+        $name = trim((string)$name);
+        if ($name === '') continue;
+        $scope = smartispCategoryScope($pdo, $name);
+        foreach ($scope['names'] as $n) $all[mb_strtolower($n)] = $n;
+        if ($scope['parent'] !== '') $pairs[] = [$scope['parent'], $name];
+    }
+    if (!$all) return '1 = 0';
+    $holders = [];
+    foreach (array_values($all) as $i => $n) {
+        $holders[] = ":{$prefix}_{$i}";
+        $params[":{$prefix}_{$i}"] = $n;
+    }
+    $sql = "$column IN (" . implode(', ', $holders) . ')';
+    foreach ($pairs as $i => [$parent, $child]) {
+        $sql .= " OR ($column = :{$prefix}_p{$i} AND $subColumn = :{$prefix}_s{$i})";
+        $params[":{$prefix}_p{$i}"] = $parent;
+        $params[":{$prefix}_s{$i}"] = $child;
+    }
+    return "($sql)";
+}
+
+// Registra en categories_rows la categoría escrita al guardar o importar productos (con la familia
+// que sugieren sus palabras clave) y su subcategoría como subcategoría real. Si falla, el
+// producto se guarda igual.
 function smartispEnsureCategory(PDO $pdo, string $category, string $subcategory = ''): void {
-    if ($category === '') return;
+    static $done = [];
+    $category = trim($category);
+    $key = smartispCategoryKey($category) . '|' . smartispCategoryKey($subcategory);
+    if ($category === '' || isset($done[$key])) return;
+    $done[$key] = true;
     try {
-        $check = $pdo->prepare('SELECT id FROM `categories_rows` WHERE LOWER(name) = LOWER(:name) LIMIT 1');
-        $check->execute([':name' => $category]);
-        if ($check->fetchColumn()) return;
-        $insert = $pdo->prepare('INSERT INTO `categories_rows` (id, name, subcategories) VALUES (:id, :name, :subs)');
-        $insert->execute([
-            ':id' => smartispSlug($category, 80, 'articulo'),
-            ':name' => $category,
-            ':subs' => $subcategory !== '' ? json_encode([$subcategory], JSON_UNESCAPED_UNICODE) : '[]',
-        ]);
+        require_once __DIR__ . '/category-admin.php';
+        categoryTreeEnsurePair($pdo, $category, $subcategory);
     } catch (Throwable $e) {}
 }
 
@@ -505,6 +586,10 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
         $sName = trim((string)($r['subcategory'] ?? ''));
         if ($sName && !in_array($sName, $catMap[$cName]['subcategories'], true)) {
             $catMap[$cName]['subcategories'][] = $sName;
+        }
+        if ($sName) {
+            $subKey = smartispCategoryKey($sName);
+            $catMap[$cName]['subCounts'][$subKey] = ($catMap[$cName]['subCounts'][$subKey] ?? 0) + (int)($r['p_count'] ?? 1);
         }
     }
 
@@ -572,6 +657,7 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
     foreach ($catMap as $cName => $info) {
         if (!isset($existingNames[strtolower($cName)])) {
             $cId = smartispSlug($cName, 80, '') ?: uniqid('cat_');
+            $macro = $resolveMacroGroup(smartispGuessMacroGroup(array_values($macroGroups), $cName));
             $newCat = [
                 'id'            => $cId,
                 'name'          => $cName,
@@ -582,12 +668,13 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
                 'icon' => 'package',
                 'keywords' => [],
                 'productCount'  => $info['count'],
-                'macroGroupId'   => '',
-                'macroGroupName' => '',
-                'macroGroupIcon' => '',
-                'macroGroupImage' => '',
-                'macroGroupSortOrder' => 0,
-                'macroGroupVisible' => true,
+                'parentCategoryId' => '',
+                'macroGroupId'   => $macro['id'],
+                'macroGroupName' => $macro['name'],
+                'macroGroupIcon' => $macro['icon'],
+                'macroGroupImage' => $macro['imageUrl'] ?? '',
+                'macroGroupSortOrder' => $macro['sortOrder'] ?? 0,
+                'macroGroupVisible' => $macro['visible'] ?? true,
                 'updated_at'    => date('Y-m-d H:i:s')
             ];
             $cats[] = $newCat;
@@ -600,18 +687,40 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
     // choque renombraba la categoría existente y la lista oscilaba en cada carga.
     if (!empty($toInsert) && !$visibleOnly) {
         try {
-            $ins = $pdo->prepare("INSERT IGNORE INTO categories_rows (id, name, subcategories, banner_image_url, banner_alt, description) VALUES (:id, :name, :sub, :banner, :alt, :description)");
+            $ins = $pdo->prepare("INSERT IGNORE INTO categories_rows (id, name, subcategories, banner_image_url, banner_alt, description, macro_group_id) VALUES (:id, :name, :sub, :banner, :alt, :description, :family)");
             foreach ($toInsert as $tc) {
                 $ins->execute([
                     ':id'   => $tc['id'],
                     ':name' => $tc['name'],
-                    ':sub'  => json_encode($tc['subcategories'], JSON_UNESCAPED_UNICODE),
+                    ':sub'  => '[]',
+                    ':family' => $tc['macroGroupId'] !== '' ? $tc['macroGroupId'] : null,
                     ':banner' => '',
                     ':alt' => '',
                     ':description' => ''
                 ]);
             }
         } catch (Throwable $e) {}
+    }
+
+    // totalCount: lo que muestra filtrar por la categoría. Una principal suma sus subcategorías;
+    // una subcategoría suma los productos de su principal que la llevan como subcategoría.
+    $byId = [];
+    foreach ($cats as $i => $cat) $byId[$cat['id']] = $i;
+    $childrenOf = [];
+    foreach ($cats as $i => $cat) {
+        if ($cat['parentCategoryId'] !== '' && isset($byId[$cat['parentCategoryId']])) $childrenOf[$cat['parentCategoryId']][] = $i;
+    }
+    foreach ($cats as $i => $cat) {
+        $total = (int)$cat['productCount'];
+        foreach ($childrenOf[$cat['id']] ?? [] as $childIndex) {
+            $total += (int)$cats[$childIndex]['productCount'];
+            if (!in_array($cats[$childIndex]['name'], $cats[$i]['subcategories'], true)) $cats[$i]['subcategories'][] = $cats[$childIndex]['name'];
+        }
+        if (isset($byId[$cat['parentCategoryId']])) {
+            $parentName = $cats[$byId[$cat['parentCategoryId']]]['name'];
+            $total += (int)($catMap[$parentName]['subCounts'][smartispCategoryKey($cat['name'])] ?? 0);
+        }
+        $cats[$i]['totalCount'] = $total;
     }
 
     usort($cats, function($a, $b) {

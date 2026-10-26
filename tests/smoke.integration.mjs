@@ -512,6 +512,58 @@ try {
     assert.ok(publicChips.includes('Smk vigente') && !publicChips.includes('Smk vencido'), `la tienda solo muestra chips vigentes: ${JSON.stringify(publicChips)}`);
   }
 
+  // --- Categorías: migración 045, subcategorías reales y filtro por categoría principal
+  await db.execute("DELETE FROM categories_rows WHERE id LIKE 'smk-cat-%' OR name IN ('Smk Etiqueta', 'Smk Patch')");
+  await db.execute("DELETE FROM products_rows WHERE id LIKE 'smk-cat-%'");
+  await db.execute(`INSERT INTO categories_rows (id, name, subcategories, macro_group_id) VALUES
+    ('smk-cat-camaras', 'Smk Cámaras IP', '[]', NULL), ('smk-cat-tv', 'TV', '[]', NULL), ('smk-cat-manual', 'Smk Router manual', '[]', 'gaming'),
+    ('smk-cat-rara', 'Smk Zzz', '[]', ''), ('smk-cat-padre', 'Smk Redes padre', '["Smk Etiqueta"]', 'redes'), ('smk-cat-hija', 'Smk Switch hija', '[]', 'gaming')`);
+  await db.execute("DELETE FROM schema_migrations WHERE migration = '045_familias_y_subcategorias.sql'");
+  execFileSync('php', ['scripts/migrate.php'], { cwd: root, env: process.env });
+  assert.match(execFileSync('php', ['scripts/migrate.php'], { cwd: root, env: process.env }).toString(), /Sin migraciones pendientes/);
+  const familyOf = async () => Object.fromEntries((await db.query("SELECT id, macro_group_id FROM categories_rows WHERE id LIKE 'smk-cat-%'"))[0].map(r => [r.id, r.macro_group_id]));
+  const migrated = await familyOf();
+  assert.equal(migrated['smk-cat-camaras'], 'seguridad', 'la migración 045 ubica por palabra clave contenida');
+  assert.equal(migrated['smk-cat-tv'], 'monitores', 'la migración 045 ubica por palabra clave exacta');
+  assert.equal(migrated['smk-cat-manual'], 'gaming', 'la migración 045 no pisa la familia elegida en el panel');
+  assert.equal(migrated['smk-cat-rara'], 'otros', 'sin coincidencias la categoría va a Otras Soluciones IT');
+  await db.execute(`INSERT INTO products_rows (id, name, price, visible, category, subcategory) VALUES
+    ('smk-cat-p1', 'Smk switch', 10, 1, 'Smk Switch hija', ''), ('smk-cat-p2', 'Smk patch', 10, 1, 'Smk Redes padre', 'Smk Patch'), ('smk-cat-p3', 'Smk router', 10, 1, 'Smk Redes padre', '')`);
+  const linkChild = await req('admin-category-children', { method: 'POST', cookie: ac, body: { parentId: 'smk-cat-padre', add: ['smk-cat-hija'], remove: [] } });
+  assert.equal(linkChild.status, 200, JSON.stringify(linkChild.data));
+  assert.equal((await familyOf())['smk-cat-hija'], 'redes', 'la subcategoría hereda la familia de su principal');
+  assert.equal((await req('admin-category-children', { method: 'POST', cookie: ac, body: { parentId: 'smk-cat-hija', add: ['smk-cat-padre'] } })).status, 400, 'un ciclo se rechaza');
+  assert.equal((await req('admin-category-children', { method: 'POST', cookie: ac, body: { parentId: 'smk-cat-hija', add: ['smk-cat-manual'] } })).status, 400, 'un tercer nivel se rechaza');
+  assert.equal((await req('admin-category-children', { method: 'POST', body: {} })).status, 401, 'las subcategorías requieren sesión de administrador');
+  const beforeConvert = await req('categories', { cookie: ac });
+  assert.ok(beforeConvert.data.tagConversion.pending >= 2, `hay etiquetas por convertir: ${JSON.stringify(beforeConvert.data.tagConversion)}`);
+  const converted = await req('admin-category-convert-tags', { method: 'POST', cookie: ac, body: {} });
+  assert.equal(converted.status, 200, JSON.stringify(converted.data));
+  assert.ok(converted.data.created.includes('Smk Etiqueta → Smk Redes padre') && converted.data.created.includes('Smk Patch → Smk Redes padre'), JSON.stringify(converted.data.created));
+  const again = await req('admin-category-convert-tags', { method: 'POST', cookie: ac, body: {} });
+  assert.deepEqual([again.data.created.length, again.data.linked.length, again.data.pending], [0, 0, 0], 'convertir otra vez no cambia nada');
+  const [[dupes]] = await db.query("SELECT COUNT(*) n FROM categories_rows WHERE name IN ('Smk Etiqueta', 'Smk Patch')");
+  assert.equal(Number(dupes.n), 2, 'las etiquetas convertidas no se duplican');
+  const parentView = await req(`catalog?category=${encodeURIComponent('Smk Redes padre')}&limit=50`);
+  assert.deepEqual(parentView.data.products.map(p => p.id).sort(), ['smk-cat-p1', 'smk-cat-p2', 'smk-cat-p3'], 'filtrar por la principal incluye sus subcategorías');
+  const childView = await req(`catalog?category=${encodeURIComponent('Smk Patch')}&limit=50`);
+  assert.deepEqual(childView.data.products.map(p => p.id), ['smk-cat-p2'], 'filtrar por la subcategoría incluye los productos de la principal marcados con ella');
+  const pairView = await req(`catalog?category=${encodeURIComponent('Smk Redes padre')}&subcategory=${encodeURIComponent('Smk Switch hija')}&limit=50`);
+  assert.deepEqual(pairView.data.products.map(p => p.id), ['smk-cat-p1'], 'categoría + subcategoría real (categorias-destacadas) muestra los productos de la subcategoría');
+  const listView = await req(`catalog?category_list=${encodeURIComponent(JSON.stringify(['Smk Redes padre']))}&limit=50`);
+  assert.equal(listView.data.total, 3, 'la lista de categorías de una familia también incluye subcategorías');
+  assert.ok(parentView.data.macroGroups.some(g => g.id === 'redes' && g.keywords.includes('router')), 'el catálogo trae las familias con sus palabras clave');
+  const tree = Object.fromEntries(parentView.data.categories.filter(c => c.name.startsWith('Smk')).map(c => [c.name, c]));
+  assert.equal(tree['Smk Switch hija'].parentCategoryId, 'smk-cat-padre');
+  assert.equal(tree['Smk Redes padre'].totalCount, 3, 'el conteo de la principal suma sus subcategorías');
+  assert.equal(tree['Smk Patch'].totalCount, 1, 'el conteo de la subcategoría cuenta los productos marcados en la principal');
+  const parentSearch = await req(`admin-categories-search?q=${encodeURIComponent('smk')}&for=smk-cat-hija&mode=parent`, { cookie: ac });
+  assert.ok(!parentSearch.data.categories.some(c => c.parentCategoryId), 'como principal solo se ofrecen categorías principales');
+  const categoryPage = await (await fetch(`${baseUrl}/categoria.php?slug=smk-redes-padre`)).text();
+  assert.ok(categoryPage.includes('Smk switch') && categoryPage.includes('Smk router'), 'la página de la categoría principal muestra los productos de sus subcategorías');
+  await db.execute("DELETE FROM products_rows WHERE id LIKE 'smk-cat-%'");
+  await db.execute("DELETE FROM categories_rows WHERE id LIKE 'smk-cat-%' OR name IN ('Smk Etiqueta', 'Smk Patch')");
+
   // --- Equipo y actividad: pantallas, cuenta propia y registro de escrituras
   for (const f of fs.readdirSync(os.tmpdir())) if (/^(login|login_email|change_pwd)_[0-9a-f]{32}\.json$/.test(f)) fs.rmSync(path.join(os.tmpdir(), f), { force: true });
   for (const page of ['/equipo.html', '/actividad.html', '/assets/js/admin/equipo-page.js', '/assets/js/admin/actividad-page.js']) {

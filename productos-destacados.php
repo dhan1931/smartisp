@@ -19,6 +19,8 @@ $allowedSorts = ['relevancia', 'precio_asc', 'precio_desc', 'nombre'];
 $sortOrder = in_array((string)($_GET['orden'] ?? ''), $allowedSorts, true) ? (string)$_GET['orden'] : 'relevancia';
 $categoryOptions = [];
 $subcategoryOptions = [];
+$categoryScope = ['names' => [], 'parent' => ''];
+$subcategoryScope = ['names' => [], 'parent' => ''];
 $featuredPage = [
     'eyebrow' => 'Selección comercial',
     'title' => 'Productos destacados para redes, empresas y tecnología',
@@ -47,6 +49,8 @@ if ($pdo) {
             $product['_featured_order'] = count($featuredProducts);
             $featuredProducts[] = $product;
         }
+        if ($filterCategory !== '') $categoryScope = smartispCategoryScope($pdo, $filterCategory);
+        if ($filterSubcategory !== '') $subcategoryScope = smartispCategoryScope($pdo, $filterSubcategory);
     } catch (Throwable $e) {
         error_log('Error cargando productos-destacados.php: ' . $e->getMessage());
     }
@@ -65,9 +69,13 @@ foreach ($featuredProducts as $product) {
 uksort($categoryOptions, 'strcasecmp');
 uksort($subcategoryOptions, 'strcasecmp');
 
-$products = array_values(array_filter($featuredProducts, static function (array $product) use ($filterQuery, $filterCategory, $filterSubcategory, $filterPriceMin, $filterPriceMax, $filterInStock): bool {
-    if ($filterCategory !== '' && (string)($product['category'] ?? '') !== $filterCategory) return false;
-    if ($filterSubcategory !== '' && (string)($product['subcategory'] ?? '') !== $filterSubcategory) return false;
+$products = array_values(array_filter($featuredProducts, static function (array $product) use ($filterQuery, $filterCategory, $filterSubcategory, $filterPriceMin, $filterPriceMax, $filterInStock, $categoryScope, $subcategoryScope): bool {
+    $category = (string)($product['category'] ?? '');
+    $subcategory = (string)($product['subcategory'] ?? '');
+    $inScope = static fn(array $scope, string $name): bool => in_array(mb_strtolower($category), array_map('mb_strtolower', $scope['names'] ?: [$name]), true)
+        || ($scope['parent'] !== '' && strcasecmp($category, $scope['parent']) === 0 && strcasecmp($subcategory, $name) === 0);
+    if ($filterCategory !== '' && !$inScope($categoryScope, $filterCategory)) return false;
+    if ($filterSubcategory !== '' && $subcategory !== $filterSubcategory && !$inScope($subcategoryScope, $filterSubcategory)) return false;
     $price = (float)($product['price'] ?? 0);
     if ($filterPriceMin !== '' && $price < (float)$filterPriceMin) return false;
     if ($filterPriceMax !== '' && $price > (float)$filterPriceMax) return false;
@@ -291,7 +299,7 @@ foreach ($products as $idx => $product) {
   </footer>
   <link rel="stylesheet" href="/assets/css/store/site-footer.css?v=1">
   <script src="/assets/js/store/site-footer.js?v=1" defer></script>
-  <script src="/assets/js/store/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
+  <script src="/assets/js/store/storefront-discovery.js?v=subcat-20261028" defer></script>
   <script src="/assets/js/store/public-account.js" defer></script>
   <script>
     const featuredFilterPanel = document.getElementById('featuredFilterPanel');
