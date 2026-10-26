@@ -1,7 +1,7 @@
 (function(){
   const pane=document.getElementById('tab-products'),card=pane.querySelector('.content-card'),header=card.querySelector('.card-header');
-  const heading=document.createElement('div');heading.className='products-page-heading';heading.innerHTML='<div><h1>Productos</h1><p>Revisa el catálogo, organiza tus productos y completa lo que falta.</p></div>';
-  const actions=header.lastElementChild;actions.className='products-primary-actions';heading.append(actions);pane.prepend(heading);
+  const heading=document.createElement('header');heading.className='page-head products-page-heading';heading.innerHTML='<div><span class="eyebrow">Catálogo</span><h1>Productos</h1><p>Revisa el catálogo, organiza tus productos y completa lo que falta.</p></div>';
+  const actions=header.lastElementChild;actions.className='products-primary-actions head-actions';heading.append(actions);pane.prepend(heading);
   const create=document.getElementById('btnNewProduct');create.textContent='+ Nuevo producto';
   const importer=[...actions.querySelectorAll('button')].find(button=>button!==create&&button.id!=='btnDeleteAllProducts');if(importer)importer.textContent='Importar Excel';
   header.querySelector('.card-desc').textContent='Busca un producto o combina los filtros para encontrar lo que necesitas.';
