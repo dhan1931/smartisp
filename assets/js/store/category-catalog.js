@@ -86,12 +86,12 @@
   const renderSidebar = () => {
     $('#catalogProductTotal').textContent = (state.catalogTotal || state.total).toLocaleString('es-EC');
     $('#showAllCategories').classList.toggle('is-active', !state.macro && !state.category && !state.subcategory);
-    const categories = state.categories.filter(category => !state.macro || category.macroGroupId === state.macro);
+    const categories = state.categories.filter(category => !category.parentCategoryId && (!state.macro || category.macroGroupId === state.macro));
     $('#categoryFilterList').innerHTML = categories.map((category, index) => {
       const subs = Array.isArray(category.subcategories) ? category.subcategories.filter(Boolean) : [];
       const subsId = `category-subs-${index}`;
       return `<section class="catalog-category-entry" data-category-search="${escapeHtml(`${category.name} ${subs.join(' ')}`.toLocaleLowerCase())}">
-        <div class="catalog-category-row"><button class="catalog-category-select${categoryIsActive(category.name) ? ' is-active' : ''}" type="button" data-category="${escapeHtml(category.name)}">${icon(category.icon)}<span>${escapeHtml(category.name)}</span><small>${Number(category.productCount || 0).toLocaleString('es-EC')}</small></button>${subs.length ? `<button class="catalog-category-expand" type="button" aria-label="Ver subcategorías de ${escapeHtml(category.name)}" aria-expanded="${state.category === category.name}" aria-controls="${subsId}">${icon('chevron-down')}</button>` : ''}</div>
+        <div class="catalog-category-row"><button class="catalog-category-select${categoryIsActive(category.name) ? ' is-active' : ''}" type="button" data-category="${escapeHtml(category.name)}">${icon(category.icon)}<span>${escapeHtml(category.name)}</span><small>${Number(category.totalCount ?? category.productCount ?? 0).toLocaleString('es-EC')}</small></button>${subs.length ? `<button class="catalog-category-expand" type="button" aria-label="Ver subcategorías de ${escapeHtml(category.name)}" aria-expanded="${state.category === category.name}" aria-controls="${subsId}">${icon('chevron-down')}</button>` : ''}</div>
         ${subs.length ? `<div class="catalog-subcategories" id="${subsId}" ${state.category === category.name ? '' : 'hidden'}>${subs.map(sub => `<button class="catalog-subcategory-select${state.subcategory === sub ? ' is-active' : ''}" type="button" data-category="${escapeHtml(category.name)}" data-subcategory="${escapeHtml(sub)}">${escapeHtml(sub)}</button>`).join('')}</div>` : ''}
       </section>`;
     }).join('') || '<div class="catalog-loading">No hay categorías disponibles.</div>';

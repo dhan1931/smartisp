@@ -56,6 +56,7 @@
 
 		let selectedFilter = 'all';
 		let expandedGroups = new Set();
+		let expandedCategories = new Set();
 
 		// Todas las vistas del catálogo se consultan por páginas. Las categorías exactas usan
 		// category/subcategory y los macrogrupos envían la lista de categorías asociadas.
@@ -247,86 +248,19 @@
 			}
 		};
 
-		/* Relación de Categorías Afines y Macro-Categorías Jerárquicas */
-		let MACRO_CATEGORIES = [
-			{
-				id: 'computacion',
-				name: 'Computación y Equipos',
-				icon: 'laptop',
-				subcategories: ['Computadores Portátiles', 'Computadores de Escritorio', 'Tabletas Digitales'],
-				keywords: ['computador', 'computadores', 'notebook', 'notebooks', 'laptop', 'laptops', 'portatil', 'portatiles', 'desktop', 'escritorio', 'tableta', 'tabletas', 'tablet', 'all-in-one', 'workstation']
-			},
-			{
-				id: 'componentes',
-				name: 'Componentes y Almacenamiento',
-				icon: 'hard-drive',
-				subcategories: ['Componentes Informáticos', 'Memorias RAM', 'Almacenamiento'],
-				keywords: ['componente', 'componentes', 'disco', 'discos', 'ssd', 'hdd', 'nvme', 'ram', 'memoria', 'memorias', 'procesador', 'procesadores', 'tarjeta madre', 'placa', 'motherboard', 'gpu', 'almacenamiento']
-			},
-			{
-				id: 'redes',
-				name: 'Redes y Conectividad',
-				icon: 'network',
-				subcategories: ['Redes y Comunicaciones', 'Cables y Adaptadores'],
-				keywords: ['red', 'redes', 'comunicaciones', 'router', 'switch', 'cables', 'cable', 'adaptador', 'adaptadores', 'wifi', 'access point', 'fibra', 'patch cord', 'conector', 'mikrotik', 'ubiquiti']
-			},
-			{
-				id: 'monitores',
-				name: 'Monitores y Pantallas',
-				icon: 'monitor',
-				subcategories: ['Monitores', 'Televisores y Pantallas'],
-				keywords: ['monitor', 'monitores', 'pantalla', 'pantallas', 'tv', 'televisor', 'televisores', 'display', 'proyector', 'proyectores']
-			},
-			{
-				id: 'perifericos',
-				name: 'Periféricos y Accesorios',
-				icon: 'mouse',
-				subcategories: ['Periféricos de Entrada', 'Audio y Auriculares', 'Accesorios Generales', 'Mochilas y Soportes'],
-				keywords: ['periferico', 'perifericos', 'teclado', 'teclados', 'mouse', 'raton', 'audio', 'auricular', 'auriculares', 'audifono', 'audifonos', 'parlante', 'parlantes', 'mochila', 'mochilas', 'soporte', 'soportes', 'accesorio', 'accesorios', 'funda', 'maletin', 'webcam']
-			},
-			{
-				id: 'impresion',
-				name: 'Impresión y Puntos de Venta',
-				icon: 'printer',
-				subcategories: ['Impresoras y Multifuncionales', 'Consumibles de Impresión', 'Puntos de Venta'],
-				keywords: ['impresora', 'impresoras', 'multifuncional', 'multifuncionales', 'toner', 'cartucho', 'cartuchos', 'tinta', 'consumible', 'consumibles', 'pos', 'punto de venta', 'puntos de venta', 'codigo de barras', 'escaner', 'escaneres']
-			},
-			{
-				id: 'seguridad',
-				name: 'Seguridad y Vigilancia',
-				icon: 'shield-check',
-				subcategories: ['Seguridad y Vigilancia'],
-				keywords: ['seguridad', 'vigilancia', 'camara', 'camaras', 'cctv', 'dvr', 'nvr', 'alarma', 'alarmas', 'biometrico', 'sensor', 'sensores', 'control de acceso']
-			},
-			{
-				id: 'energia',
-				name: 'Energía y Climatización',
-				icon: 'zap',
-				subcategories: ['Protección de Energía', 'Climatización y Ventilación'],
-				keywords: ['energia', 'ups', 'bateria', 'baterias', 'regulador', 'reguladores', 'inversor', 'inversores', 'proteccion de poder', 'clima', 'climatizacion', 'ventilacion', 'ventilador', 'aire']
-			},
-			{
-				id: 'telefonia',
-				name: 'Telefonía y Móviles',
-				icon: 'smartphone',
-				subcategories: ['Celulares y Smartphones', 'Dispositivos Vestibles'],
-				keywords: ['celular', 'celulares', 'smartphone', 'smartphones', 'telefono', 'telefonos', 'reloj', 'smartwatch', 'vestible', 'vestibles', 'wearable']
-			},
-			{
-				id: 'gaming',
-				name: 'Gaming y Hogar',
-				icon: 'gamepad-2',
-				subcategories: ['Gaming y Videojuegos', 'Consolas de Videojuegos', 'Sillas Gaming', 'Audio y Sonido para Hogar', 'Electrodomésticos y Línea Blanca'],
-				keywords: ['gaming', 'videojuegos', 'videojuego', 'consola', 'consolas', 'playstation', 'xbox', 'nintendo', 'silla gaming', 'sillas', 'linea blanca', 'electrodomesticos', 'electrodomestico', 'hogar']
-			},
-			{
-				id: 'software',
-				name: 'Software y Licencias',
-				icon: 'file-code',
-				subcategories: ['Software y Licencias'],
-				keywords: ['software', 'licencia', 'licencias', 'antivirus', 'sistema operativo', 'office', 'windows']
-			}
-		];
+		// Familias del catálogo (category_macro_groups), con sus palabras clave, desde la API.
+		// Respaldo si la API no las trae: las familias que vienen en cada categoría.
+		let catalogFamilies = [];
+		const OTHER_FAMILY = { id: 'otros', name: 'Otras Soluciones IT', icon: 'package', sortOrder: 99, keywords: [] };
+		const getFamilies = () => {
+			if (catalogFamilies.length) return catalogFamilies;
+			const derived = new Map();
+			catalogCategoryRows.forEach(row => {
+				if (row.macroGroupId && !derived.has(row.macroGroupId)) derived.set(row.macroGroupId, { id: row.macroGroupId, name: row.macroGroupName || row.macroGroupId, icon: row.macroGroupIcon || 'package', sortOrder: Number(row.macroGroupSortOrder || 0), keywords: [] });
+			});
+			return [...derived.values()].sort((a, b) => a.sortOrder - b.sortOrder);
+		};
+		const getFamily = id => getFamilies().find(family => family.id === id) || (id === 'otros' ? OTHER_FAMILY : null);
 
 		let catalogCategoryRows = [];
 		let categoriasPageBanner = null;
@@ -366,61 +300,42 @@
 			return 'package';
 		};
 
+		const findCategoryRow = name => {
+			const norm = normalizeCategoryText(name);
+			return norm ? catalogCategoryRows.find(cat => normalizeCategoryText(cat.name) === norm) || null : null;
+		};
+		const findParentRow = row => row && row.parentCategoryId ? catalogCategoryRows.find(cat => String(cat.id) === String(row.parentCategoryId)) || null : null;
+
+		// La familia asignada en el panel manda; una subcategoría sigue a su principal. Solo una
+		// categoría sin familia se ubica por el nombre y las palabras clave de cada familia.
 		const getMacroCategory = categoryName => {
 			const norm = normalizeCategoryText(categoryName);
-			if (!norm) return MACRO_CATEGORIES[0];
-
-			// La familia asignada en el panel manda sobre la deducida por nombre.
-			const row = catalogCategoryRows.find(cat => normalizeCategoryText(cat.name) === norm);
-			if (row && row.macroGroupId) {
-				return MACRO_CATEGORIES.find(macro => macro.id === row.macroGroupId)
-					|| { id: row.macroGroupId, name: row.macroGroupName || 'Otras Soluciones IT', icon: row.macroGroupIcon || 'package', subcategories: [] };
+			const row = findCategoryRow(categoryName);
+			const source = row && row.macroGroupId ? row : findParentRow(row);
+			if (source && source.macroGroupId) {
+				return getFamily(source.macroGroupId) || { id: source.macroGroupId, name: source.macroGroupName || OTHER_FAMILY.name, icon: source.macroGroupIcon || 'package', sortOrder: 999, keywords: [] };
 			}
-
-			// 0. Coincidencia directa con id o nombre de macro-categoría
-			for (const macro of MACRO_CATEGORIES) {
-				if (normalizeCategoryText(macro.id) === norm || normalizeCategoryText(macro.name) === norm) {
-					return macro;
-				}
+			if (norm) {
+				const families = getFamilies().filter(family => family.id !== 'otros');
+				const keywordsOf = family => (family.keywords || []).map(normalizeCategoryText).filter(Boolean);
+				const match = families.find(family => normalizeCategoryText(family.id) === norm || normalizeCategoryText(family.name) === norm)
+					|| families.find(family => keywordsOf(family).includes(norm))
+					|| families.find(family => keywordsOf(family).some(kw => norm.includes(kw) || kw.includes(norm)));
+				if (match) return match;
 			}
+			return getFamily('otros') || OTHER_FAMILY;
+		};
 
-			// 1. Coincidencia con alguna subcategoría declarada
-			for (const macro of MACRO_CATEGORIES) {
-				if (Array.isArray(macro.subcategories)) {
-					for (const sub of macro.subcategories) {
-						if (normalizeCategoryText(sub) === norm) {
-							return macro;
-						}
-					}
-				}
-			}
-
-			// 2. Coincidencia exacta con palabras clave
-			for (const macro of MACRO_CATEGORIES) {
-				if (macro.id === 'otros') continue;
-				if (Array.isArray(macro.keywords)) {
-					for (const kw of macro.keywords) {
-						if (norm === normalizeCategoryText(kw)) {
-							return macro;
-						}
-					}
-				}
-			}
-
-			// 3. Subcadena / inclusión
-			for (const macro of MACRO_CATEGORIES) {
-				if (macro.id === 'otros') continue;
-				if (Array.isArray(macro.keywords)) {
-					for (const kw of macro.keywords) {
-						const normKw = normalizeCategoryText(kw);
-						if (norm.includes(normKw) || normKw.includes(norm)) {
-							return macro;
-						}
-					}
-				}
-			}
-
-			return { id: 'otros', name: 'Otras Soluciones IT', icon: 'package', subcategories: [] };
+		// Filtrar por una categoría principal incluye sus subcategorías; por una subcategoría,
+		// también los productos de su principal que la llevan como subcategoría.
+		const productInCategory = (product, name) => {
+			const row = findCategoryRow(name);
+			const parent = findParentRow(row);
+			const target = normalizeCategoryText(name);
+			const cat = normalizeCategoryText(product.category);
+			if (cat === target) return true;
+			if (row && catalogCategoryRows.some(child => String(child.parentCategoryId || '') === String(row.id) && normalizeCategoryText(child.name) === cat)) return true;
+			return Boolean(parent) && cat === normalizeCategoryText(parent.name) && normalizeCategoryText(product.subcategory) === target;
 		};
 
 		const productMatchesFilter = (product, filter) => {
@@ -432,11 +347,10 @@
 				return macro && (macro.id === filter.id || normalizeCategoryText(macro.name) === normalizeCategoryText(filter.id));
 			}
 			if (filter.type === 'category') {
-				return normalizeCategoryText(prodCat) === normalizeCategoryText(filter.category);
+				return productInCategory(product, filter.category);
 			}
 			if (filter.type === 'sub') {
-				const target = normalizeCategoryText(filter.category);
-				return normalizeCategoryText(prodCat) === target || normalizeCategoryText(prodSub) === target;
+				return productInCategory(product, filter.category) || normalizeCategoryText(prodSub) === normalizeCategoryText(filter.category);
 			}
 			if (typeof filter === 'string') {
 				if (filter.toLowerCase() === 'all') return true;
@@ -451,81 +365,43 @@
 			return true;
 		};
 
+		// Familia → categorías principales → subcategorías, con los conteos que calcula la API.
 		const buildCategoryTree = () => {
-			const usedMacros = new Map();
-
-			// Inicializar en el orden de las macrocategorías predefinidas
-			MACRO_CATEGORIES.forEach(m => {
-				usedMacros.set(m.id, {
-					id: m.id,
-					name: m.name,
-					icon: m.icon,
-					totalCount: 0,
-					subcategoriesMap: new Map()
+			const groups = new Map();
+			const ensureGroup = family => {
+				if (!groups.has(family.id)) groups.set(family.id, { id: family.id, name: family.name, icon: family.icon, sortOrder: Number(family.sortOrder ?? 999), totalCount: 0, subcategories: [] });
+				return groups.get(family.id);
+			};
+			getFamilies().forEach(ensureGroup);
+			const byCount = (a, b) => b.count - a.count || a.displayName.localeCompare(b.displayName, 'es');
+			if (catalogCategoryRows.length) {
+				const ids = new Set(catalogCategoryRows.map(row => String(row.id)));
+				const countOf = row => Number(row.totalCount ?? row.productCount ?? 0);
+				const isChild = row => Boolean(row.parentCategoryId) && ids.has(String(row.parentCategoryId));
+				catalogCategoryRows.forEach(row => {
+					const top = isChild(row) ? findParentRow(row) : row;
+					ensureGroup(getMacroCategory(top.name)).totalCount += Number(row.productCount || 0);
+					if (isChild(row) || countOf(row) <= 0) return;
+					const children = catalogCategoryRows
+						.filter(child => isChild(child) && String(child.parentCategoryId) === String(row.id) && countOf(child) > 0)
+						.map(child => ({ rawName: child.name, displayName: formatCategoryName(child.name), count: countOf(child) }))
+						.sort(byCount);
+					ensureGroup(getMacroCategory(row.name)).subcategories.push({ rawName: row.name, displayName: formatCategoryName(row.name), count: countOf(row), children });
 				});
-			});
-
-			const categoryRows = catalogCategoryRows.length
-				? catalogCategoryRows.filter(row => Number(row.productCount || 0) > 0).map(row => ({ name: row.name, count: Number(row.productCount) }))
-				: products.map(product => ({ name: product.category || 'Otros', count: 1 }));
-			categoryRows.forEach(row => {
-				const cat = String(row.name || 'Otros').trim();
-				const macro = getMacroCategory(cat);
-				const macroId = macro ? macro.id : 'otros';
-
-				if (!usedMacros.has(macroId)) {
-					usedMacros.set(macroId, {
-						id: macroId,
-						name: macro ? macro.name : 'Otras Soluciones IT',
-						icon: macro ? macro.icon : 'package',
-						totalCount: 0,
-						subcategoriesMap: new Map()
-					});
-				}
-				const group = usedMacros.get(macroId);
-				group.totalCount += row.count;
-				group.subcategoriesMap.set(cat, (group.subcategoriesMap.get(cat) || 0) + row.count);
-			});
-
-			const groups = [];
-			MACRO_CATEGORIES.forEach(macro => {
-				const g = usedMacros.get(macro.id);
-				if (g && g.totalCount > 0) {
-					const subcategories = Array.from(g.subcategoriesMap.entries()).map(([rawName, count]) => ({
-						rawName,
-						displayName: formatCategoryName(rawName),
-						count
-					})).sort((a, b) => b.count - a.count || a.displayName.localeCompare(b.displayName, 'es'));
-
-					groups.push({
-						id: g.id,
-						name: g.name,
-						icon: g.icon,
-						totalCount: g.totalCount,
-						subcategories
-					});
-				}
-			});
-
-			// Agregar posibles huérfanos que hayan caído fuera de MACRO_CATEGORIES
-			usedMacros.forEach((g, key) => {
-				if (!MACRO_CATEGORIES.some(m => m.id === key) && g.totalCount > 0) {
-					const subcategories = Array.from(g.subcategoriesMap.entries()).map(([rawName, count]) => ({
-						rawName,
-						displayName: formatCategoryName(rawName),
-						count
-					})).sort((a, b) => b.count - a.count || a.displayName.localeCompare(b.displayName, 'es'));
-					groups.push({
-						id: g.id,
-						name: g.name,
-						icon: g.icon || 'package',
-						totalCount: g.totalCount,
-						subcategories
-					});
-				}
-			});
-
-			return { totalProducts: catalogTotalCount || products.length, groups };
+			} else {
+				products.forEach(product => {
+					const name = String(product.category || 'Otros').trim();
+					const group = ensureGroup(getMacroCategory(name));
+					let sub = group.subcategories.find(item => item.rawName === name);
+					if (!sub) group.subcategories.push(sub = { rawName: name, displayName: formatCategoryName(name), count: 0, children: [] });
+					sub.count++;
+					group.totalCount++;
+				});
+			}
+			const result = [...groups.values()].filter(group => group.totalCount > 0);
+			result.forEach(group => group.subcategories.sort(byCount));
+			result.sort((a, b) => a.sortOrder - b.sortOrder);
+			return { totalProducts: catalogTotalCount || products.length, groups: result };
 		};
 
 		const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -618,14 +494,24 @@
 						</div>
 						<div class="sidebar-subcat-list" id="subcat-list-${escapeHtml(group.id)}">
 							${group.subcategories.map(sub => {
-								const isSubActive = !isAllActive && ['category', 'sub'].includes(selectedFilter.type) &&
-									normalizeCategoryText(selectedFilter.category) === normalizeCategoryText(sub.rawName);
-								return `
-									<button type="button" class="sidebar-subcat-btn ${isSubActive ? 'active' : ''}" data-filter-action="sub" data-macro-id="${escapeHtml(group.id)}" data-category="${escapeHtml(sub.rawName)}" title="Filtrar por ${escapeHtml(sub.displayName)}">
+								const isActiveCategory = name => !isAllActive && ['category', 'sub'].includes(selectedFilter.type) &&
+									normalizeCategoryText(selectedFilter.category) === normalizeCategoryText(name);
+								const button = (item, extraClass = '') => `
+									<button type="button" class="sidebar-subcat-btn${extraClass} ${isActiveCategory(item.rawName) ? 'active' : ''}" data-filter-action="sub" data-macro-id="${escapeHtml(group.id)}" data-category="${escapeHtml(item.rawName)}" title="Filtrar por ${escapeHtml(item.displayName)}">
 										<span class="sidebar-subcat-bullet"></span>
-										<span class="sidebar-subcat-name">${escapeHtml(sub.displayName)}</span>
-										<span class="sidebar-subcat-count">${sub.count}</span>
+										<span class="sidebar-subcat-name">${escapeHtml(item.displayName)}</span>
+										<span class="sidebar-subcat-count">${item.count}</span>
 									</button>
+								`;
+								if (!sub.children || !sub.children.length) return button(sub);
+								const key = normalizeCategoryText(sub.rawName);
+								const isOpen = expandedCategories.has(key) || isActiveCategory(sub.rawName) || sub.children.some(child => isActiveCategory(child.rawName));
+								return `
+									<div class="sidebar-subcat-row ${isOpen ? 'is-open' : ''}">
+										${button(sub)}
+										<button type="button" class="sidebar-subcat-toggle" data-toggle-category="${escapeHtml(key)}" aria-expanded="${isOpen}" aria-label="Ver subcategorías de ${escapeHtml(sub.displayName)}"><i data-lucide="chevron-down" width="13" height="13"></i></button>
+									</div>
+									<div class="sidebar-subcat-children">${sub.children.map(child => button(child, ' is-child')).join('')}</div>
 								`;
 							}).join('')}
 						</div>
@@ -729,11 +615,11 @@
 
 			if (selectedFilter && selectedFilter !== 'all') {
 				if (selectedFilter.type === 'macro') {
-					const macro = MACRO_CATEGORIES.find(m => m.id === selectedFilter.id);
+					const macro = getFamily(selectedFilter.id);
 					activeFilterLabel = macro ? macro.name : selectedFilter.name || 'Categoría';
 					breadcrumbLabel = activeFilterLabel;
 				} else if (['category', 'sub'].includes(selectedFilter.type)) {
-					const macro = MACRO_CATEGORIES.find(m => m.id === selectedFilter.macroId) || getMacroCategory(selectedFilter.category);
+					const macro = getFamily(selectedFilter.macroId) || getMacroCategory(selectedFilter.category);
 					const subName = formatCategoryName(selectedFilter.category);
 					activeFilterLabel = `${macro ? macro.name + ' › ' : ''}${subName}`;
 					breadcrumbLabel = activeFilterLabel;
@@ -1097,6 +983,7 @@
 				if (['category', 'sub'].includes(filter.type)) expandedGroups.add(filter.macroId);
 			}
 			updateSidebarActiveStates();
+			try { syncMiniActive(); } catch (e) { /* aún no definido durante la carga */ }
 			refreshView(true);
 		};
 		const openCategoryDrawer = () => {
@@ -1210,6 +1097,19 @@
 				return;
 			}
 
+			const categoryToggle = event.target.closest('[data-toggle-category]');
+			if (categoryToggle) {
+				event.preventDefault();
+				event.stopPropagation();
+				const key = categoryToggle.dataset.toggleCategory;
+				const row = categoryToggle.closest('.sidebar-subcat-row');
+				const open = row ? row.classList.toggle('is-open') : false;
+				categoryToggle.setAttribute('aria-expanded', String(open));
+				if (open) expandedCategories.add(key);
+				else expandedCategories.delete(key);
+				return;
+			}
+
 			// 4. Clic en Subcategoría anidada
 			const subBtn = event.target.closest('.sidebar-subcat-btn') || event.target.closest('[data-filter-action="sub"]');
 			if (subBtn) {
@@ -1278,6 +1178,10 @@
 			input.addEventListener('input', event => { if (!typed && event.isTrusted && discard()) event.stopImmediatePropagation(); }, true);
 			[300, 1200, 3000].forEach(delay => setTimeout(() => { try { if (input.matches(':autofill, :-webkit-autofill')) discard(); } catch (e) { if (/@/.test(input.value)) discard(); } }, delay));
 		};
+		document.querySelectorAll('#sidebarCatSearch, #searchInput').forEach(input => {
+			const unlock = () => input.removeAttribute('readonly');
+			['pointerdown', 'touchstart', 'focus', 'keydown'].forEach(type => input.addEventListener(type, unlock, { once: true, passive: true }));
+		});
 		guardAgainstAutofill(document.querySelector('#sidebarCatSearch'));
 		guardAgainstAutofill(document.querySelector('#searchInput'));
 
@@ -1538,6 +1442,7 @@
 				}
 				if (!remote) throw lastError || new Error('catalog unavailable');
 				catalogCategoryRows = Array.isArray(remote.categories) ? remote.categories : [];
+				catalogFamilies = Array.isArray(remote.macroGroups) ? remote.macroGroups : [];
 				catalogTotalCount = Number(remote.total) || 0;
 				if (remote.products && remote.products.length) {
 					products = remote.products.map(product => ({
@@ -1792,6 +1697,43 @@
 		setTimeout(() => { storefrontCampaignsSettled = true; document.querySelectorAll('#campaignFeatured, #miniCategories').forEach(el => el.classList.remove('is-pending')); }, 5000);
 		let miniCategoryItems = new Map();
 		let featuredRequest = 0;
+		const isMiniActive = (key, item) => {
+			if (!window.isCategoriasView) return Boolean(featuredFilter && featuredFilter.key === key);
+			if (!item || !selectedFilter || selectedFilter === 'all') return false;
+			if (selectedFilter.type === 'macro') return item.categories.length !== 1 && String(selectedFilter.id) === key;
+			if (selectedFilter.type === 'category' || selectedFilter.type === 'sub') return item.categories.length === 1 && normalizeCategoryText(item.categories[0]) === normalizeCategoryText(selectedFilter.category);
+			return false;
+		};
+		const syncMiniActive = () => {
+			document.querySelectorAll('#miniCategoriesGrid [data-mini-key]').forEach(card => {
+				const on = isMiniActive(card.dataset.miniKey, miniCategoryItems.get(card.dataset.miniKey));
+				card.classList.toggle('is-active', on);
+				card.setAttribute('aria-pressed', String(on));
+			});
+		};
+		// En el catálogo la tarjeta cambia el filtro igual que el menú lateral: sin recargar ni volver arriba.
+		const selectMiniCategoryInCatalog = key => {
+			const item = miniCategoryItems.get(key);
+			if (!item) return;
+			const params = new URLSearchParams();
+			if (isMiniActive(key, item)) setCategoryFilter('all');
+			else if (item.categories.length === 1) { setCategoryFilter(item.categories[0]); params.set('category', item.categories[0]); }
+			else { setCategoryFilter({ type: 'macro', id: key }); params.set('macro', key); }
+			const search = document.querySelector('#searchInput');
+			if (search && search.value) search.value = '';
+			history.pushState({ miniCategory: true }, '', `${window.location.pathname}${params.toString() ? `?${params}` : ''}`);
+			syncMiniActive();
+			const catalog = document.querySelector('#catalogo');
+			if (catalog && catalog.getBoundingClientRect().top > window.innerHeight * .6) catalog.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		};
+		window.addEventListener('popstate', () => {
+			if (!window.isCategoriasView) return;
+			const params = new URLSearchParams(window.location.search);
+			const category = params.get('category') || params.get('categoria');
+			const macro = params.get('macro');
+			setCategoryFilter(category || (macro ? { type: 'macro', id: macro } : 'all'));
+			syncMiniActive();
+		});
 		const selectMiniCategory = async key => {
 			const item = miniCategoryItems.get(key);
 			if (!item || !item.categories.length || (featuredFilter && featuredFilter.key === key)) featuredFilter = null;
@@ -1799,11 +1741,7 @@
 				const card = document.querySelector(`#miniCategoriesGrid [data-mini-key="${CSS.escape(key)}"]`);
 				featuredFilter = { key, label: item.name, href: card?.getAttribute('href') || '/categorias-destacadas', loading: true, products: [] };
 			}
-			document.querySelectorAll('#miniCategoriesGrid [data-mini-key]').forEach(card => {
-				const on = Boolean(featuredFilter && card.dataset.miniKey === featuredFilter.key);
-				card.classList.toggle('is-active', on);
-				card.setAttribute('aria-pressed', String(on));
-			});
+			syncMiniActive();
 			renderStorefrontFeatured();
 			const section = document.querySelector('#campaignFeatured');
 			if (section && section.getBoundingClientRect().top > window.innerHeight * .7) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1827,9 +1765,10 @@
 		};
 		document.querySelector('#miniCategoriesGrid')?.addEventListener('click', event => {
 			const card = event.target.closest('[data-mini-key]');
-			if (!card || window.isCategoriasView || event.ctrlKey || event.metaKey || event.shiftKey || event.button) return;
+			if (!card || event.ctrlKey || event.metaKey || event.shiftKey || event.button) return;
 			event.preventDefault();
-			selectMiniCategory(card.dataset.miniKey);
+			if (window.isCategoriasView) selectMiniCategoryInCatalog(card.dataset.miniKey);
+			else selectMiniCategory(card.dataset.miniKey);
 		});
 		const renderMiniCategories = () => {
 			settleStorefrontPlaceholders();
@@ -1840,9 +1779,10 @@
 			catalogCategoryRows.forEach(cat => {
 				const count = Number(cat.productCount || 0);
 				if (!count) return;
-				const groupId = cat.macroGroupId || 'otros';
+				const family = getMacroCategory(cat.name);
+				const groupId = family.id;
 				if (!groups.has(groupId)) {
-					groups.set(groupId, { id: groupId, name: cat.macroGroupName || 'Otras Soluciones IT', icon: cat.macroGroupIcon || 'package', macroImage: cat.macroGroupImage || '', sortOrder: Number(cat.macroGroupSortOrder || 0), visible: cat.macroGroupVisible !== false, count: 0, topCategory: null, topCount: 0, image: '', alt: '' });
+					groups.set(groupId, { id: groupId, name: family.name, icon: family.icon || 'package', macroImage: family.imageUrl || '', sortOrder: Number(family.sortOrder ?? 999), visible: family.visible !== false, count: 0, topCategory: null, topCount: 0, image: '', alt: '' });
 				}
 				const g = groups.get(groupId);
 				g.count += count;
@@ -1855,11 +1795,11 @@
 				: [];
 			const displayItems = chosen.length
 				? chosen.map(cat => ({ id:cat.id, name:cat.name, icon:cat.icon || cat.macroGroupIcon || 'package', categories:[cat.name], image:cat.iconImageUrl || '', alt:cat.name, description:cat.description || '' }))
-				: sorted.slice(0, 7).map(g => ({ ...g, categories: catalogCategoryRows.filter(cat => (cat.macroGroupId || 'otros') === g.id && Number(cat.productCount || 0) > 0).map(cat => cat.name) }));
+				: sorted.slice(0, 7).map(g => ({ ...g, categories: catalogCategoryRows.filter(cat => getMacroCategory(cat.name).id === g.id && Number(cat.productCount || 0) > 0).map(cat => cat.name) }));
 			miniCategoryItems = new Map(displayItems.map(g => [String(g.id), g]));
 			const cardsHtml = displayItems.map(g => {
 				const href = g.categories.length === 1 ? `/categorias-destacadas?category=${encodeURIComponent(g.categories[0])}` : (g.id && g.id !== 'otros' ? `/categorias-destacadas?macro=${encodeURIComponent(g.id)}` : '/categorias-destacadas');
-				const active = Boolean(featuredFilter && featuredFilter.key === String(g.id));
+				const active = isMiniActive(String(g.id), g);
 				return `<a class="mini-category-card${active ? ' is-active' : ''}" href="${escapeHtml(href)}" data-mini-key="${escapeHtml(String(g.id))}" role="button" aria-pressed="${active}">
 					<span class="mini-category-visual">${g.image ? `<img src="${escapeHtml(g.image)}" alt="${escapeHtml(g.alt)}" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><i data-lucide="${escapeHtml(g.icon)}" width="24" hidden></i>` : `<i data-lucide="${escapeHtml(g.icon)}" width="24"></i>`}</span>
 					<span class="mini-category-name">${escapeHtml(g.name)}</span>
@@ -2239,8 +2179,8 @@
 			if (window.isCategoriasView) {
 				document.querySelector('#catalogView').hidden = false;
 				document.querySelectorAll('#mNavHome,#mNavCategories').forEach(el => el.classList.toggle('active', el.id === 'mNavCategories'));
-				document.querySelectorAll('.public-nav a').forEach(a => a.removeAttribute('aria-current'));
-				document.querySelector('.public-nav a[href="/categorias-destacadas"]')?.setAttribute('aria-current', 'page');
+				document.querySelectorAll('.public-nav a, .public-nav-strip a').forEach(a => a.removeAttribute('aria-current'));
+				document.querySelectorAll('.public-nav a[href="/categorias-destacadas"], .public-nav-strip a[href="/categorias-destacadas"]').forEach(a => a.setAttribute('aria-current', 'page'));
 			}
 
 			if (catParam) {

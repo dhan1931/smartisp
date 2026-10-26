@@ -43,12 +43,12 @@ if ($action === 'catalog' && $method === 'GET') {
         // 100% del lado del cliente -- forzaba a descargar el catalogo completo (2700+ productos)
         // solo para mostrar una subcategoria de 15. admin-products ya filtraba asi por SQL; se
         // repite el mismo patron aqui para el catalogo publico.
+        // Una categoría principal incluye sus subcategorías (smartispCategoryScope).
         if ($category !== '') {
-            $where .= ' AND category = :category';
-            $params[':category'] = $category;
+            $where .= ' AND ' . smartispCategoryScopeSql($pdo, [$category], $params, 'category');
         }
         if ($subcategory !== '') {
-            $where .= ' AND subcategory = :subcategory';
+            $where .= ' AND (subcategory = :subcategory OR ' . smartispCategoryScopeSql($pdo, [$subcategory], $params, 'subcategory_scope') . ')';
             $params[':subcategory'] = $subcategory;
         }
         if ($minPrice !== '' && is_numeric($minPrice) && (float)$minPrice >= 0) {
@@ -64,17 +64,7 @@ if ($action === 'catalog' && $method === 'GET') {
             $categoryList = is_array($categoryList)
                 ? array_values(array_unique(array_filter(array_map(static fn($value) => trim((string)$value), $categoryList), static fn($value) => $value !== '')))
                 : [];
-            if (!$categoryList) {
-                $where .= ' AND 1 = 0';
-            } else {
-                $placeholders = [];
-                foreach ($categoryList as $index => $categoryName) {
-                    $placeholder = ':category_list_' . $index;
-                    $placeholders[] = $placeholder;
-                    $params[$placeholder] = $categoryName;
-                }
-                $where .= ' AND category IN (' . implode(', ', $placeholders) . ')';
-            }
+            $where .= ' AND ' . smartispCategoryScopeSql($pdo, array_slice($categoryList, 0, 200), $params, 'category_list');
         }
 
         $totalStmt = $pdo->prepare("SELECT COUNT(*) FROM `$pTable` WHERE $where");
@@ -118,6 +108,7 @@ if ($action === 'catalog' && $method === 'GET') {
                 'footer_social_instagram', 'footer_social_facebook', 'footer_social_youtube', 'footer_social_linkedin')")->fetchAll();
 
         $categories = $page === 1 ? getDynamicCategoriesList($pdo, true) : [];
+        $macroGroups = $page === 1 ? getCategoryMacroGroups($pdo) : [];
 
         // Catálogo público: caché corta en el navegador/CDN en vez del no-store global (DEV-20261005-022).
         header('Cache-Control: public, max-age=30');
@@ -129,7 +120,8 @@ if ($action === 'catalog' && $method === 'GET') {
             'limit'      => $limit,
             'totalPages' => (int)ceil($total / max(1, $limit)),
             'content'    => $content,
-            'categories' => $categories
+            'categories' => $categories,
+            'macroGroups' => $macroGroups
         ]);
     } catch (Exception $e) {
         error_log('SmartISP catalog error: ' . $e->getMessage());
@@ -1016,8 +1008,10 @@ if ($action === 'categories') {
     requireAdminAuth();
 
     if ($method === 'GET') {
+        require_once __DIR__ . '/../lib/category-admin.php';
         $cats = getDynamicCategoriesList($pdo);
-        echo json_encode(['categories' => $cats, 'macroGroups' => getCategoryMacroGroups($pdo)]);
+        $conversion = convertCategoryTags($pdo, false);
+        echo json_encode(['categories' => $cats, 'macroGroups' => getCategoryMacroGroups($pdo), 'tagConversion' => ['pending' => $conversion['pending'], 'created' => array_slice($conversion['created'], 0, 300), 'linked' => array_slice($conversion['linked'], 0, 300), 'skipped' => $conversion['skipped']]]);
         exit;
     }
 
@@ -1068,6 +1062,33 @@ if ($action === 'categories') {
 }
 
 
+// Árbol de categorías del panel: subcategorías, familia en bloque, conversión de etiquetas y búsqueda.
+if (in_array($action, ['admin-category-children', 'admin-category-family', 'admin-category-convert-tags', 'admin-categories-search'], true)) {
+    requireAdminAuth();
+    require_once __DIR__ . '/../lib/category-admin.php';
+    if ($action === 'admin-categories-search') {
+        $mode = in_array($_GET['mode'] ?? '', ['parent', 'child'], true) ? $_GET['mode'] : 'any';
+        echo json_encode(['categories' => searchCategoriesForTree($pdo, trim((string)($_GET['q'] ?? '')), trim((string)($_GET['for'] ?? '')), $mode, (int)($_GET['limit'] ?? 20))]);
+        exit;
+    }
+    smartispRequirePost();
+    try {
+        if ($action === 'admin-category-children') {
+            $result = assignCategoryChildren($pdo, trim((string)($body['parentId'] ?? '')), (array)($body['add'] ?? []), (array)($body['remove'] ?? []));
+        } elseif ($action === 'admin-category-family') {
+            $result = assignCategoriesFamily($pdo, (array)($body['ids'] ?? []), trim((string)($body['macroGroupId'] ?? '')));
+        } else {
+            $result = convertCategoryTags($pdo, empty($body['dryRun']));
+        }
+    } catch (InvalidArgumentException $error) {
+        http_response_code(400);
+        echo json_encode(['error' => $error->getMessage()]);
+        exit;
+    }
+    echo json_encode(['ok' => true] + $result);
+    exit;
+}
+
 // Familias visuales del sidebar (antes hardcodeadas en tienda.html, ver migracion 017).
 if ($action === 'macro-groups') {
     requireAdminAuth();
@@ -1100,6 +1121,11 @@ if ($action === 'macro-groups') {
         }
         $stmt = $pdo->prepare("INSERT INTO category_macro_groups (id, name, icon, sort_order, image_url, visible) VALUES (:id, :name, :icon, :sort, :image, :visible) ON DUPLICATE KEY UPDATE name = VALUES(name), icon = VALUES(icon), sort_order = VALUES(sort_order), image_url = VALUES(image_url), visible = VALUES(visible)");
         $stmt->execute([':id' => $groupId, ':name' => $name, ':icon' => $icon, ':sort' => $sortOrder, ':image' => $imageUrl ?: null, ':visible' => $visible]);
+        if (array_key_exists('keywords', $body) && in_array('keywords', smartispTableColumns($pdo, 'category_macro_groups'), true)) {
+            $keywords = is_array($body['keywords']) ? $body['keywords'] : preg_split('/[\n,]+/', (string)$body['keywords']);
+            $keywords = array_values(array_unique(array_filter(array_map(static fn($kw) => mb_substr(trim((string)$kw), 0, 80), $keywords), 'strlen')));
+            $pdo->prepare('UPDATE category_macro_groups SET keywords = :keywords WHERE id = :id')->execute([':keywords' => json_encode(array_slice($keywords, 0, 200), JSON_UNESCAPED_UNICODE), ':id' => $groupId]);
+        }
         echo json_encode(['ok' => true, 'id' => $groupId]);
         exit;
     }
