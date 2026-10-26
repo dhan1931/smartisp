@@ -358,6 +358,29 @@ try {
   }
   assert.equal(last.status, 429, 'el límite debe aplicarse aunque cambie X-Forwarded-For');
 
+  // --- Equipo y actividad: pantallas, cuenta propia y registro de escrituras
+  for (const f of fs.readdirSync(os.tmpdir())) if (/^(login|login_email|change_pwd)_[0-9a-f]{32}\.json$/.test(f)) fs.rmSync(path.join(os.tmpdir(), f), { force: true });
+  for (const page of ['/equipo.html', '/actividad.html', '/assets/js/admin/equipo-page.js', '/assets/js/admin/actividad-page.js']) {
+    assert.equal((await fetch(baseUrl + page)).status, 200, `${page} debe servirse`);
+  }
+  const tc = await login(admin.email, admin.password);
+  const myAccount = await req('admin-my-account', { cookie: tc });
+  assert.equal(myAccount.status, 200, JSON.stringify(myAccount.data));
+  assert.ok(myAccount.data.canManageTeam && myAccount.data.user.lastLoginAt, 'Mi cuenta debe mostrar el último acceso');
+  assert.ok(myAccount.data.recent.some(r => r.action === 'login'), 'Mi cuenta debe listar los accesos recientes');
+  const profile = await req('update-profile', { method: 'POST', cookie: tc, body: { name: 'Admin Humo', surname: 'CI' } });
+  assert.equal(profile.status, 200, `update-profile: ${JSON.stringify(profile.data)}`);
+  const other = await req('login', { method: 'POST', body: { email: admin.email, password: admin.password } });
+  const others = await req('revoke-other-sessions', { method: 'POST', cookie: tc });
+  assert.equal(others.status, 200);
+  assert.equal((await req('me', { cookie: others.cookie })).status, 200, 'La sesión que cierra las demás sigue abierta (con la cookie regenerada)');
+  assert.equal((await req('me', { cookie: other.cookie })).status, 401, 'Las demás sesiones quedan cerradas');
+  const [[profileAudit]] = await db.query("SELECT summary, status FROM admin_audit_log WHERE user_id = ? AND action = 'update-profile' ORDER BY id DESC LIMIT 1", [admin.id]);
+  assert.ok(profileAudit && profileAudit.status === 200 && profileAudit.summary.includes('Admin Humo'), 'update-profile del admin debe quedar registrado');
+  const [[custAudit]] = await db.query("SELECT COUNT(*) n FROM admin_audit_log WHERE user_id = ?", [customer.id]);
+  assert.equal(Number(custAudit.n), 0, 'Las acciones de clientes no se registran como actividad del equipo');
+  await db.execute('DELETE FROM admin_audit_log WHERE user_id = ?', [admin.id]);
+
   console.log('SMOKE-OK');
 } finally {
   php.kill();

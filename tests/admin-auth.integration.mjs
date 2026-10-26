@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import net from 'node:net';
 import { readFile } from 'node:fs/promises';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import mysql from 'mysql2/promise';
@@ -30,6 +32,11 @@ const settingKey = 'ci_auth_integration';
 const storefrontColumnsKey = 'storefront_product_columns';
 const secretSetting = 'smtp_pass';
 const secretValue = 'ci-secret-must-not-be-public';
+const team = {
+  second: { id: 'ci-auth-admin-2', email: 'ci-admin2-auth@example.test', password: 'ci-admin2-pass-2026' },
+  created: { id: '', email: 'ci-team-created@example.test' },
+};
+const otherAdminIds = [];
 let php;
 let cookie = '';
 
@@ -229,8 +236,95 @@ try {
     }
   }
 
+  // --- Equipo y registro de actividad (migración 044)
+  for (const f of fs.readdirSync(os.tmpdir())) if (/^(login|login_email|change_pwd)_[0-9a-f]{32}\.json$/.test(f)) fs.rmSync(path.join(os.tmpdir(), f), { force: true });
+  const [otherAdmins] = await db.query("SELECT id FROM users_rows WHERE LOWER(TRIM(role)) IN ('admin','administrator','administrador') AND active = 1 AND id NOT IN (?, ?)", [fixtures.admin.id, team.second.id]);
+  otherAdminIds.push(...otherAdmins.map(row => row.id));
+  if (otherAdminIds.length) await db.query('UPDATE users_rows SET active = 0 WHERE id IN (?)', [otherAdminIds]);
+  await db.query('DELETE FROM users_rows WHERE id = ? OR email IN (?, ?)', [team.second.id, team.second.email, team.created.email]);
+  await db.execute('INSERT INTO users_rows (id, email, password_hash, name, role) VALUES (?, ?, ?, ?, ?)', [team.second.id, team.second.email, await bcrypt.hash(team.second.password, 10), 'Segundo admin', 'admin']);
+  const sessionOf = async user => { const r = await request('login', { method: 'POST', body: { email: user.email, password: user.password, adminOnly: true }, session: '' }); assert.equal(r.status, 200, `login de ${user.email}: ${JSON.stringify(r.data)}`); return { cookie, token: r.data.token }; };
+
+  const failed = await request('login', { method: 'POST', body: { email: fixtures.admin.email, password: 'contraseña-incorrecta', adminOnly: true }, session: '' });
+  assert.equal(failed.status, 401);
+  const adminSession = (await sessionOf(fixtures.admin)).cookie;
+  const [[loginRows]] = await db.query("SELECT SUM(action = 'login') AS ok, SUM(action = 'login-failed') AS failed FROM admin_audit_log WHERE user_id = ?", [fixtures.admin.id]);
+  assert.ok(Number(loginRows.ok) >= 1 && Number(loginRows.failed) >= 1, 'Los inicios de sesión correctos y fallidos del admin deben quedar registrados');
+
+  const auditSecret = 'ci-audit-secret-value';
+  const wafBody = { payload: Buffer.from(JSON.stringify({ content: [{ key: settingKey, value: 'audit-ok' }], password: auditSecret, api_key: auditSecret, token: auditSecret })).toString('base64') };
+  assert.equal((await request('admin-content', { method: 'POST', body: wafBody, session: adminSession })).status, 200, 'El payload base64 del WAF debe seguir funcionando');
+  const [[auditRow]] = await db.query("SELECT * FROM admin_audit_log WHERE user_id = ? AND action = 'admin-content' ORDER BY id DESC LIMIT 1", [fixtures.admin.id]);
+  assert.ok(auditRow, 'Un POST admin debe quedar en el registro de actividad');
+  assert.equal(auditRow.status, 200, 'El registro debe guardar el código HTTP final');
+  assert.equal(auditRow.method, 'POST');
+  const auditText = JSON.stringify(auditRow);
+  assert.ok(!auditText.includes(auditSecret) && !auditText.includes(wafBody.payload.slice(0, 40)), 'El registro no debe guardar contraseñas, tokens, claves ni el payload');
+  assert.ok(auditRow.summary.includes('password=(oculto)') && auditRow.summary.includes(settingKey), `Resumen inesperado: ${auditRow.summary}`);
+
+  const customerSession = (await (async () => { await login(fixtures.customer); return cookie; })());
+  for (const [action, method, body] of [['admin-team', 'GET'], ['admin-audit-log', 'GET'], ['admin-team-create', 'POST', { name: 'X', email: 'ci-intruso@example.test', role: 'admin' }], ['admin-team-role', 'POST', { id: fixtures.customer.id, role: 'admin' }], ['admin-team-revoke', 'POST', { id: fixtures.admin.id }]]) {
+    assert.equal((await request(action, { method, body, session: customerSession })).status, 403, `Un cliente no puede usar ${action}`);
+  }
+  const [[intruder]] = await db.query("SELECT COUNT(*) AS n FROM users_rows WHERE email = 'ci-intruso@example.test' OR (id = ? AND role <> 'customer')", [fixtures.customer.id]);
+  assert.equal(Number(intruder.n), 0, 'Un cliente no debe poder crear cuentas ni subirse el rol');
+
+  const teamList = await request('admin-team', { session: adminSession });
+  assert.equal(teamList.status, 200);
+  assert.ok(teamList.data.members.some(m => m.id === fixtures.admin.id && m.isSelf) && teamList.data.members.some(m => m.id === team.second.id), 'La lista del equipo debe incluir a los admins');
+  assert.ok(!teamList.data.members.some(m => m.id === fixtures.customer.id), 'Los clientes no son parte del equipo');
+  assert.equal((await request('admin-team-role', { method: 'POST', body: { id: team.second.id, role: 'superadmin' }, session: adminSession })).status, 400, 'No se aceptan roles fuera de la jerarquía');
+
+  const created = await request('admin-team-create', { method: 'POST', body: { name: 'Nuevo', email: team.created.email, role: 'admin', mode: 'password' }, session: adminSession });
+  assert.equal(created.status, 200, JSON.stringify(created.data));
+  assert.ok(created.data.temporaryPassword && created.data.temporaryPassword.length >= 12, 'Debe devolverse una contraseña temporal');
+  team.created.id = created.data.member.id;
+  const [[createdAudit]] = await db.query("SELECT summary FROM admin_audit_log WHERE action = 'admin-team-create' AND target = ? ORDER BY id DESC LIMIT 1", [team.created.id]);
+  assert.ok(createdAudit && !createdAudit.summary.includes(created.data.temporaryPassword), 'La contraseña temporal no debe quedar en el registro');
+  assert.equal((await request('admin-team-create', { method: 'POST', body: { name: 'Otro', email: team.created.email.toUpperCase(), role: 'admin' }, session: adminSession })).status, 409, 'El correo del equipo debe ser único');
+  assert.equal((await request('admin-team-create', { method: 'POST', body: { name: 'Otro', email: fixtures.customer.email, role: 'admin' }, session: adminSession })).status, 409, 'Un cliente existente no se convierte en admin sin confirmación');
+  await sessionOf({ email: team.created.email, password: created.data.temporaryPassword });
+
+  // El último admin activo no puede quitarse el rol ni desactivarse.
+  const secondSession = await sessionOf(team.second);
+  assert.equal((await request('admin-team-status', { method: 'POST', body: { id: team.created.id, active: false }, session: adminSession })).status, 200);
+  assert.equal((await request('admin-team-status', { method: 'POST', body: { id: team.second.id, active: false }, session: adminSession })).status, 200, 'Un admin puede desactivar a otro admin');
+  assert.equal((await request('me', { session: secondSession.cookie })).status, 401, 'Desactivar una cuenta invalida su sesión abierta');
+  const disabledLogin = await request('login', { method: 'POST', body: { email: team.second.email, password: team.second.password }, session: '' });
+  assert.equal(disabledLogin.status, 403, 'Una cuenta desactivada no puede iniciar sesión');
+  assert.equal(disabledLogin.data.user, undefined);
+  assert.equal((await request('admin-team-status', { method: 'POST', body: { id: fixtures.admin.id, active: false }, session: adminSession })).status, 409, 'Nadie puede desactivarse a sí mismo');
+  const lastDemote = await request('admin-team-role', { method: 'POST', body: { id: fixtures.admin.id, role: 'customer' }, session: adminSession });
+  assert.equal(lastDemote.status, 409, `El último admin activo no puede quitarse el rol: ${JSON.stringify(lastDemote.data)}`);
+  const [[stillAdmin]] = await db.query('SELECT role, active FROM users_rows WHERE id = ?', [fixtures.admin.id]);
+  assert.equal(stillAdmin.role, 'Administrator', 'El rol del último admin no debe cambiar');
+  assert.equal(Number(stillAdmin.active), 1);
+
+  // "Cerrar sesiones" invalida la sesión y el token emitidos antes.
+  assert.equal((await request('admin-team-status', { method: 'POST', body: { id: team.second.id, active: true }, session: adminSession })).status, 200);
+  const revoked = await sessionOf(team.second);
+  assert.equal((await request('me', { session: revoked.cookie })).status, 200);
+  assert.equal((await request('admin-team-revoke', { method: 'POST', body: { id: team.second.id }, session: adminSession })).status, 200);
+  assert.equal((await request('me', { session: revoked.cookie })).status, 401, 'La sesión previa debe quedar cerrada');
+  const byToken = await fetch(`${baseUrl}/api/router.php?action=me`, { headers: { Authorization: `Bearer ${revoked.token}` } });
+  assert.equal(byToken.status, 401, 'El token previo también debe quedar invalidado');
+
+  const log = await request('admin-audit-log?act=admin-team-*&limit=20', { session: adminSession });
+  assert.equal(log.status, 200);
+  assert.ok(log.data.entries.some(e => e.action === 'admin-team-revoke' && e.target === team.second.id), 'La actividad del equipo debe poder consultarse');
+  const csv = await fetch(`${baseUrl}/api/router.php?action=admin-audit-log&format=csv&user=${encodeURIComponent(fixtures.admin.id)}`, { headers: { Cookie: adminSession } });
+  assert.equal(csv.status, 200);
+  assert.match(csv.headers.get('content-type') || '', /text\/csv/);
+  assert.ok(!(await csv.text()).includes(auditSecret), 'El CSV no debe exponer secretos');
+  const alerts = await request('admin-insights-alerts', { session: adminSession });
+  assert.equal(alerts.status, 200);
+  assert.equal(typeof alerts.data.admin_login_failures, 'number', 'Los avisos deben incluir los accesos fallidos al panel');
+
   console.log('Autenticación admin/customer, revocación de sesión, endpoints y métricas verificadas contra MariaDB CI.');
 } finally {
+  if (otherAdminIds.length) await db.query('UPDATE users_rows SET active = 1 WHERE id IN (?)', [otherAdminIds]).catch(() => {});
+  await db.query('DELETE FROM users_rows WHERE id = ? OR email = ?', [team.second.id, team.created.email]).catch(() => {});
+  await db.query('DELETE FROM admin_audit_log WHERE user_id IN (?)', [[fixtures.admin.id, fixtures.customer.id, team.second.id, team.created.id || '-']]).catch(() => {});
   if (php && php.exitCode === null) {
     php.kill();
     await new Promise(resolve => php.once('exit', resolve));
