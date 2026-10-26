@@ -1263,6 +1263,24 @@
 			}
 		});
 
+		// Chrome ignora autocomplete="off" si cree que es un campo de usuario y mete el correo guardado:
+		// un valor que llega sin teclear, pegar ni soltar se descarta.
+		const guardAgainstAutofill = input => {
+			if (!input) return;
+			let typed = false;
+			['keydown', 'paste', 'drop', 'compositionstart'].forEach(type => input.addEventListener(type, () => { typed = true; }, true));
+			const discard = () => {
+				if (typed || !input.value) return false;
+				input.value = '';
+				input.dispatchEvent(new Event('input', { bubbles: true }));
+				return true;
+			};
+			input.addEventListener('input', event => { if (!typed && event.isTrusted && discard()) event.stopImmediatePropagation(); }, true);
+			[300, 1200, 3000].forEach(delay => setTimeout(() => { try { if (input.matches(':autofill, :-webkit-autofill')) discard(); } catch (e) { if (/@/.test(input.value)) discard(); } }, delay));
+		};
+		guardAgainstAutofill(document.querySelector('#sidebarCatSearch'));
+		guardAgainstAutofill(document.querySelector('#searchInput'));
+
 		// Filtro en tiempo real para la lista de categorías en la barra lateral
 		const sidebarCatSearch = document.querySelector('#sidebarCatSearch');
 		if (sidebarCatSearch) {
