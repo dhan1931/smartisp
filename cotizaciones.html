@@ -5,25 +5,52 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SmartISP | Cotizaciones</title>
   <link rel="icon" href="/assets/favicons/favicon.ico">
-  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=admin-brand-20261011">
+  <meta name="theme-color" content="#102A43">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <script src="/assets/js/admin/admin-theme.js?v=ds-20261026"></script>
+  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261026">
+  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261026">
+  <link rel="stylesheet" href="/assets/css/admin/cotizaciones-page.css?v=ds-20261026">
   <script src="/assets/vendor/lucide-icons.min.js?v=8707c619" defer></script>
-  <script src="/assets/js/admin/admin-nav.js?v=20261025-a11y" defer></script>
-  <link rel="stylesheet" href="/assets/css/admin/cotizaciones-page.css?v=20261025">
-  <script src="/assets/js/admin/admin-page.js?v=20261025-waf" defer></script>
-  <script src="/assets/js/admin/cotizaciones-page.js?v=20261025" defer></script>
+  <script src="/assets/js/admin/admin-nav.js?v=ds-20261026" defer></script>
+  <script src="/assets/js/admin/admin-page.js?v=ds-20261026" defer></script>
+  <script src="/assets/js/admin/cotizaciones-page.js?v=ds-20261026" defer></script>
 </head>
 <body>
   <div id="smartisp-admin-nav" class="is-loading" data-active="cotizaciones"></div>
   <main class="shell" id="app" hidden>
-    <header class="page-head"><div><h1>Cotizaciones</h1><p>Solicitudes enviadas desde el formulario de Servicios.</p></div><div class="head-actions"><button class="button" id="refresh" type="button"><i data-lucide="rotate-cw"></i> Actualizar</button></div></header>
+    <header class="page-head">
+      <div>
+        <p class="eyebrow"><i data-lucide="file-text" aria-hidden="true"></i> Operación</p>
+        <h1>Cotizaciones</h1>
+        <p>Solicitudes enviadas desde el formulario de Servicios. Contacta pronto a las nuevas: la rapidez decide la venta.</p>
+      </div>
+      <div class="head-actions"><button class="button" id="refresh" type="button"><i data-lucide="refresh-cw" aria-hidden="true"></i> Actualizar</button></div>
+    </header>
     <section class="stats" id="stats" aria-label="Resumen de cotizaciones"></section>
-    <section class="workspace" aria-label="Solicitudes de cotizacion">
-      <div class="migrate-notice" id="migrateNotice" hidden><i data-lucide="alert-triangle"></i> La tabla de cotizaciones todavia no existe en la base de datos. Corre <code>migrations/035_service_quote_requests.sql</code> para empezar a recibir solicitudes aqui.</div>
-      <div class="toolbar"><label class="search"><i data-lucide="search"></i><input id="search" type="search" placeholder="Buscar empresa, correo, telefono o servicio" autocomplete="off"></label><select id="status" aria-label="Estado"><option value="all">Todos los estados</option><option value="nuevo">Nuevo</option><option value="contactado">Contactado</option><option value="cerrado">Cerrado</option></select><span class="result-count" id="count"></span></div>
-      <div class="table-wrap" id="tableWrap"><table><thead><tr><th>Fecha</th><th>Tipo de cliente</th><th>Servicio</th><th>Contacto</th><th>Descripcion</th><th>Estado</th></tr></thead><tbody id="rows"></tbody></table></div>
-      <div class="empty" id="empty" hidden><i data-lucide="file-text"></i>No hay solicitudes que coincidan con la busqueda.</div>
-      <div class="load-error" id="error" hidden></div>
-      <footer class="pager"><button class="button" id="prev" type="button">Anterior</button><span id="pageInfo"></span><button class="button" id="next" type="button">Siguiente</button></footer>
+    <section class="card workspace quotes-card" aria-label="Solicitudes de cotización">
+      <div class="callout warn migrate-notice" id="migrateNotice" hidden><i data-lucide="triangle-alert" aria-hidden="true"></i><span>La tabla de cotizaciones todavía no existe en la base de datos. Corre <code>migrations/035_service_quote_requests.sql</code> para empezar a recibir solicitudes aquí.</span></div>
+      <div class="toolbar">
+        <div class="search">
+          <i data-lucide="search" aria-hidden="true"></i>
+          <label class="sr-only" for="search">Buscar cotizaciones</label>
+          <input id="search" type="search" placeholder="Buscar empresa, correo, teléfono o servicio…  ( / )" autocomplete="off">
+        </div>
+        <div class="segmented" id="statusFilter" role="group" aria-label="Filtrar por estado">
+          <button type="button" data-status="all" aria-pressed="true">Todas</button>
+          <button type="button" data-status="nuevo" aria-pressed="false">Nuevas</button>
+          <button type="button" data-status="contactado" aria-pressed="false">Contactadas</button>
+          <button type="button" data-status="cerrado" aria-pressed="false">Cerradas</button>
+        </div>
+        <span class="result-count" id="count" aria-live="polite"></span>
+        <div id="quotesExportHost"></div>
+      </div>
+      <div class="table-wrap" id="tableWrap"><table data-export="cotizaciones" data-export-host="quotesExportHost"><thead><tr><th>Fecha</th><th>Tipo de cliente</th><th>Servicio</th><th>Contacto</th><th>Descripción</th><th>Estado</th></tr></thead><tbody id="rows"></tbody></table></div>
+      <div id="empty" hidden></div>
+      <div id="error" hidden></div>
+      <footer class="pager"><button class="button small" id="prev" type="button"><i data-lucide="arrow-left" aria-hidden="true"></i> Anterior</button><span id="pageInfo"></span><button class="button small" id="next" type="button">Siguiente <i data-lucide="arrow-right" aria-hidden="true"></i></button></footer>
     </section>
   </main>
 </body>
