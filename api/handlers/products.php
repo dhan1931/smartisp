@@ -357,19 +357,7 @@ if ($action === 'admin-products') {
             exit;
         }
 
-        // Si se especificó una nueva categoría, asegurar que esté registrada en categories_rows
-        if (!empty($category)) {
-            try {
-                $chkCat = $pdo->prepare("SELECT id FROM `categories_rows` WHERE LOWER(name) = LOWER(:name) LIMIT 1");
-                $chkCat->execute([':name' => $category]);
-                if (!$chkCat->fetchColumn()) {
-                    $catId = slugify($category);
-                    $insCat = $pdo->prepare("INSERT INTO `categories_rows` (id, name, subcategories) VALUES (:id, :name, :subs)");
-                    $subsJson = !empty($subcategory) ? json_encode([$subcategory], JSON_UNESCAPED_UNICODE) : '[]';
-                    $insCat->execute([':id' => $catId, ':name' => $category, ':subs' => $subsJson]);
-                }
-            } catch (Throwable $e) {}
-        }
+        smartispEnsureCategory($pdo, (string)$category, (string)$subcategory);
 
         // Comprobar si ya existe por id o por SKU
         $checkStmt = $pdo->prepare("SELECT id FROM `$pTable` WHERE id = :id LIMIT 1");
@@ -757,19 +745,7 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
             $subcat = $values['subcategory'] ?? '';
             $sku = $values['sku'] ?? '';
 
-            // Auto-crear categoría en categories_rows si no existe
-            if (!empty($cat)) {
-                try {
-                    $chkCat = $pdo->prepare("SELECT id FROM `categories_rows` WHERE LOWER(name) = LOWER(:name) LIMIT 1");
-                    $chkCat->execute([':name' => $cat]);
-                    if (!$chkCat->fetchColumn()) {
-                        $catId = slugify($cat);
-                        $insCat = $pdo->prepare("INSERT INTO `categories_rows` (id, name, subcategories) VALUES (:id, :name, :subs)");
-                        $subsJson = !empty($subcat) ? json_encode([$subcat], JSON_UNESCAPED_UNICODE) : '[]';
-                        $insCat->execute([':id' => $catId, ':name' => $cat, ':subs' => $subsJson]);
-                    }
-                } catch (Throwable $e) {}
-            }
+            smartispEnsureCategory($pdo, (string)$cat, (string)$subcat);
 
             // Identificar si el producto ya existe (por id, sku o nombre único)
             $existingId = null;
