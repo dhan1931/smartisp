@@ -370,6 +370,13 @@
 			const norm = normalizeCategoryText(categoryName);
 			if (!norm) return MACRO_CATEGORIES[0];
 
+			// La familia asignada en el panel manda sobre la deducida por nombre.
+			const row = catalogCategoryRows.find(cat => normalizeCategoryText(cat.name) === norm);
+			if (row && row.macroGroupId) {
+				return MACRO_CATEGORIES.find(macro => macro.id === row.macroGroupId)
+					|| { id: row.macroGroupId, name: row.macroGroupName || 'Otras Soluciones IT', icon: row.macroGroupIcon || 'package', subcategories: [] };
+			}
+
 			// 0. Coincidencia directa con id o nombre de macro-categoría
 			for (const macro of MACRO_CATEGORIES) {
 				if (normalizeCategoryText(macro.id) === norm || normalizeCategoryText(macro.name) === norm) {
@@ -1532,7 +1539,14 @@
 					};
 					rebuildProductIndex();
 					isCatalogLoading = false;
-					render();
+					if (selectedFilter && selectedFilter.type === 'category') {
+						const macro = getMacroCategory(selectedFilter.category);
+						selectedFilter.macroId = macro.id;
+						expandedGroups.add(macro.id);
+					}
+					// La página 1 sin filtro solo sirve si la URL no pide categoría, familia o búsqueda.
+					if (isServerMode() && selectedFilter !== 'all' && (selectedFilter || document.querySelector('#searchInput').value.trim())) await refreshView(true);
+					else render();
 					if (typeof renderSidebarCategories === 'function') renderSidebarCategories();
 					renderMiniCategories();
 					checkDirectProductLanding();
@@ -1711,11 +1725,33 @@
 			document.querySelectorAll('.store-campaign-dot').forEach((dot, dotIndex) => dot.setAttribute('aria-current', dotIndex === storefrontSlideIndex ? 'true' : 'false'));
 			window.lucide?.createIcons();
 		};
+		let featuredFilter = null;
+		let featuredShown = [];
 		const renderStorefrontFeatured = () => {
 			const section = document.querySelector('#campaignFeatured');
 			const grid = document.querySelector('#campaignProductsGrid');
-			if (!section || !grid || !storefrontFeaturedProducts.length) return;
-			grid.innerHTML = storefrontFeaturedProducts.map((product, index) => {
+			if (!section || !grid || (!storefrontFeaturedProducts.length && !featuredFilter)) return;
+			const title = document.querySelector('#campaignFeaturedTitle');
+			const aside = title?.nextElementSibling;
+			if (title) title.textContent = featuredFilter ? featuredFilter.label : 'Productos destacados';
+			if (aside) aside.innerHTML = featuredFilter
+				? `<a class="campaign-featured-all" href="${escapeHtml(featuredFilter.href)}">Ver todo${featuredFilter.total ? ` (${featuredFilter.total})` : ''} <i data-lucide="arrow-right" width="14"></i></a>`
+				: 'Selección SmartISP';
+			section.classList.toggle('is-filtered', Boolean(featuredFilter));
+			section.setAttribute('aria-busy', featuredFilter?.loading ? 'true' : 'false');
+			featuredShown = featuredFilter ? (featuredFilter.products || []) : storefrontFeaturedProducts;
+			section.classList.add('is-visible');
+			section.classList.remove('is-pending');
+			if (featuredFilter?.loading) {
+				grid.innerHTML = Array.from({ length: 6 }, () => '<article class="campaign-product is-skeleton" aria-hidden="true"><div class="campaign-product-image"></div><div class="campaign-product-title"></div></article>').join('');
+				return;
+			}
+			if (featuredFilter && !featuredShown.length) {
+				grid.innerHTML = `<p class="campaign-featured-empty">${featuredFilter.error ? 'No se pudieron cargar los productos. Intenta de nuevo.' : 'Aún no hay productos visibles en esta categoría.'}</p>`;
+				window.lucide?.createIcons();
+				return;
+			}
+			grid.innerHTML = featuredShown.map((product, index) => {
 				const imageUrl = getProductImageUrl(product);
 				const productUrl = getProductUrl(product);
 				return `<article class="campaign-product">
@@ -1736,6 +1772,47 @@
 			if (storefrontCampaignsSettled && !isCatalogLoading) document.querySelector('#miniCategories')?.classList.remove('is-pending');
 		};
 		setTimeout(() => { storefrontCampaignsSettled = true; document.querySelectorAll('#campaignFeatured, #miniCategories').forEach(el => el.classList.remove('is-pending')); }, 5000);
+		let miniCategoryItems = new Map();
+		let featuredRequest = 0;
+		const selectMiniCategory = async key => {
+			const item = miniCategoryItems.get(key);
+			if (!item || !item.categories.length || (featuredFilter && featuredFilter.key === key)) featuredFilter = null;
+			else {
+				const card = document.querySelector(`#miniCategoriesGrid [data-mini-key="${CSS.escape(key)}"]`);
+				featuredFilter = { key, label: item.name, href: card?.getAttribute('href') || '/categorias-destacadas', loading: true, products: [] };
+			}
+			document.querySelectorAll('#miniCategoriesGrid [data-mini-key]').forEach(card => {
+				const on = Boolean(featuredFilter && card.dataset.miniKey === featuredFilter.key);
+				card.classList.toggle('is-active', on);
+				card.setAttribute('aria-pressed', String(on));
+			});
+			renderStorefrontFeatured();
+			const section = document.querySelector('#campaignFeatured');
+			if (section && section.getBoundingClientRect().top > window.innerHeight * .7) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			if (!featuredFilter) return;
+			const filter = featuredFilter;
+			const request = ++featuredRequest;
+			const params = new URLSearchParams({ page: 1, limit: 12 });
+			if (item.categories.length === 1) params.set('category', item.categories[0]);
+			else params.set('category_list', JSON.stringify(item.categories));
+			try {
+				const res = await fetch(`/api/auth/catalog?${params.toString()}`, { cache: 'no-store' });
+				if (!res.ok) throw new Error(String(res.status));
+				const data = await res.json();
+				filter.products = (data.products || []).map(product => ({ ...product, brand: product.category || 'SmartISP', image: getProductImageUrl(product), reviews: 0, tag: '', specs: [] }));
+				filter.total = Number(data.total) || filter.products.length;
+			} catch (e) {
+				filter.error = true;
+			}
+			filter.loading = false;
+			if (request === featuredRequest && featuredFilter === filter) renderStorefrontFeatured();
+		};
+		document.querySelector('#miniCategoriesGrid')?.addEventListener('click', event => {
+			const card = event.target.closest('[data-mini-key]');
+			if (!card || window.isCategoriasView || event.ctrlKey || event.metaKey || event.shiftKey || event.button) return;
+			event.preventDefault();
+			selectMiniCategory(card.dataset.miniKey);
+		});
 		const renderMiniCategories = () => {
 			settleStorefrontPlaceholders();
 			const section = document.querySelector('#miniCategories');
@@ -1758,10 +1835,14 @@
 			const chosen = storefrontFeaturedCategoryIds.length
 				? storefrontFeaturedCategoryIds.map(id => catalogCategoryRows.find(cat => String(cat.id) === String(id))).filter(cat => cat && Number(cat.productCount || 0) > 0).slice(0, 7)
 				: [];
-			const displayItems = chosen.length ? chosen.map(cat => ({ id:cat.id, name:cat.name, icon:cat.icon || cat.macroGroupIcon || 'package', topCategory:cat.name, image:cat.iconImageUrl || '', alt:cat.name, description:cat.description || '' })) : sorted.slice(0, 7);
+			const displayItems = chosen.length
+				? chosen.map(cat => ({ id:cat.id, name:cat.name, icon:cat.icon || cat.macroGroupIcon || 'package', categories:[cat.name], image:cat.iconImageUrl || '', alt:cat.name, description:cat.description || '' }))
+				: sorted.slice(0, 7).map(g => ({ ...g, categories: catalogCategoryRows.filter(cat => (cat.macroGroupId || 'otros') === g.id && Number(cat.productCount || 0) > 0).map(cat => cat.name) }));
+			miniCategoryItems = new Map(displayItems.map(g => [String(g.id), g]));
 			const cardsHtml = displayItems.map(g => {
-				const href = g.topCategory ? `/categorias-destacadas?category=${encodeURIComponent(g.topCategory)}` : '/categorias-destacadas';
-				return `<a class="mini-category-card" href="${escapeHtml(href)}">
+				const href = g.categories.length === 1 ? `/categorias-destacadas?category=${encodeURIComponent(g.categories[0])}` : (g.id && g.id !== 'otros' ? `/categorias-destacadas?macro=${encodeURIComponent(g.id)}` : '/categorias-destacadas');
+				const active = Boolean(featuredFilter && featuredFilter.key === String(g.id));
+				return `<a class="mini-category-card${active ? ' is-active' : ''}" href="${escapeHtml(href)}" data-mini-key="${escapeHtml(String(g.id))}" role="button" aria-pressed="${active}">
 					<span class="mini-category-visual">${g.image ? `<img src="${escapeHtml(g.image)}" alt="${escapeHtml(g.alt)}" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><i data-lucide="${escapeHtml(g.icon)}" width="24" hidden></i>` : `<i data-lucide="${escapeHtml(g.icon)}" width="24"></i>`}</span>
 					<span class="mini-category-name">${escapeHtml(g.name)}</span>
 					${g.description ? `<span class="mini-category-description">${escapeHtml(g.description)}</span>` : ''}
@@ -2082,7 +2163,7 @@
 		document.querySelector('#campaignProductsGrid')?.addEventListener('click', event => {
 			const button = event.target.closest('[data-campaign-add]');
 			if (!button) return;
-			const product = storefrontFeaturedProducts[Number(button.dataset.campaignAdd)];
+			const product = featuredShown[Number(button.dataset.campaignAdd)];
 			if (product) addToCart(product);
 		});
 
