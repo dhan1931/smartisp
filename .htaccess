@@ -64,6 +64,13 @@ DirectoryIndex tienda.html index.html index.htm index.php
 </IfModule>
 
 <IfModule mod_headers.c>
+    # Cabeceras de seguridad. Sin CSP de scripts: el sitio usa JS inline y CDNs.
+    Header always set Strict-Transport-Security "max-age=31536000"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Content-Security-Policy "frame-ancestors 'self'"
+
     # Panel y checkout fuera de los buscadores
     <FilesMatch "^(admin|pedidos|cotizaciones|clientes|configuracion|categorias|editor-catalogo|editor-landing|portada|campanas|inventario|estadisticas|reportes|login|checkout|reset-password)\.html$">
         Header set X-Robots-Tag "noindex, nofollow"

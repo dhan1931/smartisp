@@ -116,9 +116,9 @@ function smtpSendSocket(
     $socketAddress = $scheme . $host . ':' . $port;
     $context = stream_context_create([
         'ssl' => [
-            'verify_peer'       => false,
-            'verify_peer_name'  => false,
-            'allow_self_signed' => true
+            'verify_peer'       => !smartispInsecureTls(),
+            'verify_peer_name'  => !smartispInsecureTls(),
+            'allow_self_signed' => smartispInsecureTls()
         ]
     ]);
 

@@ -32,6 +32,12 @@ function storefrontImageToWebp(string $data, int $quality = 82): ?string {
     return ($encoded && is_string($webpData) && $webpData !== '') ? $webpData : null;
 }
 
+// Escape para servidores con certificados rotos: SMTP_INSECURE_TLS=1 en .env desactiva la
+// verificación TLS del SMTP y del proxy de imágenes sin curl. Por defecto se verifica.
+function smartispInsecureTls(): bool {
+    return getenv('SMTP_INSECURE_TLS') === '1';
+}
+
 function getDbConnection() {
     static $pdo = null;
     if ($pdo !== null) {
@@ -548,9 +554,7 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
     $toInsert = [];
     foreach ($catMap as $cName => $info) {
         if (!isset($existingNames[strtolower($cName)])) {
-            $cId = preg_replace('/[^a-z0-9_-]/', '-', strtolower($cName));
-            $cId = trim(preg_replace('/-+/', '-', $cId), '-');
-            if (!$cId) $cId = uniqid('cat_');
+            $cId = smartispSlug($cName, 80, '') ?: uniqid('cat_');
             $newCat = [
                 'id'            => $cId,
                 'name'          => $cName,
@@ -574,9 +578,12 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
         }
     }
 
-    if (!empty($toInsert)) {
+    // Solo el panel (no las páginas públicas) registra categorías nuevas. INSERT IGNORE: si el id
+    // ya lo usa otra categoría no se pisa su nombre ni sus subcategorías curadas; antes ese
+    // choque renombraba la categoría existente y la lista oscilaba en cada carga.
+    if (!empty($toInsert) && !$visibleOnly) {
         try {
-            $ins = $pdo->prepare("INSERT INTO categories_rows (id, name, subcategories, banner_image_url, banner_alt, description) VALUES (:id, :name, :sub, :banner, :alt, :description) ON DUPLICATE KEY UPDATE name = VALUES(name), subcategories = VALUES(subcategories)");
+            $ins = $pdo->prepare("INSERT IGNORE INTO categories_rows (id, name, subcategories, banner_image_url, banner_alt, description) VALUES (:id, :name, :sub, :banner, :alt, :description)");
             foreach ($toInsert as $tc) {
                 $ins->execute([
                     ':id'   => $tc['id'],
