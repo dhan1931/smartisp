@@ -381,6 +381,7 @@ require __DIR__ . '/handlers/customers.php';
 require __DIR__ . '/handlers/quotes.php';
 require __DIR__ . '/handlers/inventory.php';
 require __DIR__ . '/handlers/analytics.php';
+require __DIR__ . '/handlers/insights.php';
 require __DIR__ . '/handlers/auth.php';
 
 // Acción no encontrada
