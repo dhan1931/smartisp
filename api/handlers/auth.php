@@ -5,53 +5,31 @@
 // cuando este archivo se incluye. Cada bloque se autogestiona con 'if ($action === ...) { ... exit; }',
 // igual que antes; solo cambio donde vive el codigo, no la logica.
 
-// IP para los límites de intentos. Solo REMOTE_ADDR: X-Forwarded-For y CF-Connecting-IP los
-// escribe el cliente, y con cambiarlos en cada petición el límite no se aplicaba nunca.
-function smartispClientIp(): string {
-    return (string)($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
-}
-
 // Verifica una contraseña contra lo guardado: hash moderno, o formatos heredados (texto plano,
-// MD5, SHA1) que se migran al iniciar sesión. El texto plano solo se acepta si lo guardado no es
-// un hash moderno; si no, enviar el hash bcrypt tal cual (p. ej. filtrado de un respaldo)
-// abría la cuenta.
+// MD5, SHA1) que se migran al iniciar sesión. Lo guardado decide el formato: si es un hash, se
+// compara el hash de la contraseña, nunca la contraseña en bruto (enviar el hash filtrado de un
+// respaldo no debe abrir la cuenta).
 function smartispPasswordMatches(string $password, string $stored): bool {
     if ($stored === '' || $password === '') return false;
     if (password_verify($password, $stored)) return true;
     // password_get_info() solo reconoce $2y$; los $2a$ (bcryptjs) también son hashes modernos.
     if (preg_match('/^\$(2[abxy]|argon2id?)\$/', $stored)) return false;
-    return hash_equals($stored, $password)
-        || hash_equals($stored, md5($password))
-        || hash_equals($stored, sha1($password));
+    if (preg_match('/^[a-f0-9]{32}$/i', $stored)) return hash_equals(strtolower($stored), md5($password));
+    if (preg_match('/^[a-f0-9]{40}$/i', $stored)) return hash_equals(strtolower($stored), sha1($password));
+    return hash_equals($stored, $password);
 }
 
-// Límite de intentos por IP con ventana deslizante, guardado en el tmp del servidor. Corta la
-// petición con 429 si ya se alcanzó; si no, registra este intento. El flock evita que dos
-// peticiones simultáneas lean el mismo conteo y ambas pasen.
-function smartispEnforceRateLimit(string $bucket, int $maxAttempts, int $windowSeconds, string $message): void {
-    $file = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $bucket . '_' . md5(smartispClientIp()) . '.json';
-    $handle = @fopen($file, 'c+');
-    if (!$handle) return; // Sin tmp escribible no se bloquea el login; queda en el log.
-    flock($handle, LOCK_EX);
-    $now = time();
-    $attempts = json_decode((string)stream_get_contents($handle), true);
-    $attempts = array_values(array_filter(is_array($attempts) ? $attempts : [], fn($t) => ($now - (int)$t) < $windowSeconds));
-    $limited = count($attempts) >= $maxAttempts;
-    if (!$limited) {
-        $attempts[] = $now;
-        ftruncate($handle, 0);
-        rewind($handle);
-        fwrite($handle, json_encode($attempts));
-    }
-    flock($handle, LOCK_UN);
-    fclose($handle);
+// Mismo costo que un password_verify real cuando el correo no existe, para no revelar por el
+// tiempo de respuesta qué cuentas están registradas.
+const SMARTISP_DUMMY_PASSWORD_HASH = '$2y$10$Ws1db6I7cHGVFpxcLfwupOm3hmCaSPUkomFnUgLmKPqi2iDmpRwKe';
 
-    if ($limited) {
-        http_response_code(429);
-        header('Retry-After: ' . $windowSeconds);
-        echo json_encode(['ok' => false, 'error' => $message, 'retry_after' => $windowSeconds]);
-        exit;
-    }
+function smartispBumpTokenVersion(PDO $pdo, string $column, string $value): ?int {
+    if (!smartispUsersHaveTokenVersion($pdo)) return null;
+    $pdo->prepare("UPDATE users_rows SET token_version = token_version + 1 WHERE `$column` = :v")->execute([':v' => $value]);
+    $stmt = $pdo->prepare("SELECT token_version FROM users_rows WHERE `$column` = :v LIMIT 1");
+    $stmt->execute([':v' => $value]);
+    $version = $stmt->fetchColumn();
+    return $version === false ? null : (int)$version;
 }
 
 // Base de los enlaces que salen por correo (recuperar contraseña). Nunca de Origin/Referer: los
@@ -98,6 +76,17 @@ if ($action === 'update-profile' && $method === 'POST') {
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 http_response_code(400);
                 echo json_encode(['error' => 'Ingresa un correo electrónico válido.']);
+                exit;
+            }
+            // El correo es la llave para recuperar la contraseña: con una sesión robada bastaba
+            // cambiarlo para quedarse con la cuenta.
+            smartispEnforceRateLimit('change_pwd', 10, 900, 'Demasiados intentos. Por favor intenta de nuevo en 15 minutos.');
+            $currentPassword = (string)($body['currentPassword'] ?? ($body['current_password'] ?? ''));
+            $pwdStmt = $pdo->prepare('SELECT password_hash FROM users_rows WHERE id = :id LIMIT 1');
+            $pwdStmt->execute([':id' => $user['id']]);
+            if ($currentPassword === '' || !smartispPasswordMatches($currentPassword, (string)$pwdStmt->fetchColumn())) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Ingresa tu contraseña actual para cambiar el correo.']);
                 exit;
             }
             $check = $pdo->prepare("SELECT id FROM `$uTable` WHERE LOWER(email) = :email AND id != :id LIMIT 1");
@@ -167,13 +156,25 @@ if ($action === 'login' && $method === 'POST') {
             exit;
         }
 
-        $stmt = $pdo->prepare('SELECT id, email, password_hash, name, surname, phone, role FROM users_rows WHERE email = :email LIMIT 1');
+        // Por correo solo cuentan los fallos: un ataque repartido entre muchas IP contra una
+        // misma cuenta también se frena, sin que los inicios de sesión correctos sumen.
+        $emailLimitMessage = 'Demasiados intentos fallidos para esta cuenta. Por favor intenta de nuevo en 15 minutos.';
+        if (smartispRateLimited('login_email', 10, 900, $email, false)) {
+            smartispRespondRateLimited(900, $emailLimitMessage);
+        }
+
+        $hasVersion = smartispUsersHaveTokenVersion($pdo);
+        $stmt = $pdo->prepare('SELECT id, email, password_hash, name, surname, phone, role' . ($hasVersion ? ', token_version' : '') . ' FROM users_rows WHERE email = :email LIMIT 1');
         $stmt->execute([':email' => $email]);
         $user = $stmt->fetch();
 
         $storedPass = (string)($user['password_hash'] ?? '');
+        if (!$user) {
+            password_verify($password, SMARTISP_DUMMY_PASSWORD_HASH);
+        }
         $modernHashValid = $user && password_verify($password, $storedPass);
         if (!$user || (!$modernHashValid && !smartispPasswordMatches($password, $storedPass))) {
+            smartispRateLimited('login_email', 10, 900, $email);
             http_response_code(401);
             echo json_encode(['error' => 'Correo o contraseña incorrectos.']);
             exit;
@@ -200,9 +201,10 @@ if ($action === 'login' && $method === 'POST') {
         }
         if (session_status() === PHP_SESSION_ACTIVE) session_regenerate_id(true);
         $_SESSION['user'] = $normUser;
+        $_SESSION['tv'] = (int)($user['token_version'] ?? 0);
         $token = null;
         if (isAdminUser($normUser)) {
-            try { $token = generateAdminAuthToken($normUser); } catch (Throwable $e) { $token = null; }
+            try { $token = generateAdminAuthToken($normUser + ['token_version' => $_SESSION['tv']]); } catch (Throwable $e) { $token = null; }
         }
         echo json_encode(['user' => $normUser, 'token' => $token]);
     } catch (Throwable $e) {
@@ -215,6 +217,7 @@ if ($action === 'login' && $method === 'POST') {
 
 
 if ($action === 'register' && $method === 'POST') {
+    smartispEnforceRateLimit('register', 5, 3600, 'Demasiadas cuentas creadas desde esta conexión. Por favor intenta de nuevo más tarde.');
     try {
         $id = uniqid('usr_');
         $name = trim($body['name'] ?? '');
@@ -251,6 +254,7 @@ if ($action === 'register' && $method === 'POST') {
         ];
         if (session_status() === PHP_SESSION_ACTIVE) session_regenerate_id(true);
         $_SESSION['user'] = $regUser;
+        $_SESSION['tv'] = 0;
         echo json_encode(['user' => $regUser]);
     } catch (Throwable $e) {
         // No devolver el mensaje de MySQL: incluía la fila duplicada ("Duplicate entry '<correo>'").
@@ -290,6 +294,7 @@ if ($action === 'me' && $method === 'GET') {
 
 
 if ($action === 'logout') {
+    smartispRequirePost();
     $_SESSION = [];
     if (ini_get('session.use_cookies')) {
         $params = session_get_cookie_params();
@@ -327,21 +332,20 @@ if ($action === 'request-password-reset' && $method === 'POST') {
             exit;
         }
 
+        // En la base solo queda el SHA-256 del token: quien lea la tabla no puede usar los enlaces.
         $token = bin2hex(random_bytes(32));
         $pdo->prepare('DELETE FROM password_resets WHERE email = :email')->execute([':email' => $email]);
         $pdo->prepare('INSERT INTO password_resets (email, token, expires_at) VALUES (:email, :token, :expires_at)')->execute([
             ':email'      => $email,
-            ':token'      => $token,
+            ':token'      => hash('sha256', $token),
             ':expires_at' => date('Y-m-d H:i:s', time() + 3600) // 1 hora de validez
         ]);
 
         $resetUrl = smartispPublicBaseUrl() . '/reset-password.html?token=' . urlencode($token);
         $mailRes = sendSmartEmail($pdo, $email, '🔐 Restablece tu contraseña - SmartISP', buildPasswordResetHtml($email, $resetUrl));
+        // Misma respuesta que con un correo no registrado: un error distinto revelaba que la cuenta existe.
         if (!$mailRes['ok']) {
             error_log("Fallo al enviar correo de recuperación a $email: " . ($mailRes['error'] ?? ''));
-            http_response_code(500);
-            echo json_encode(['ok' => false, 'error' => 'No se pudo enviar el correo de recuperación. Inténtalo más tarde.']);
-            exit;
         }
 
         echo json_encode($genericOk);
@@ -378,8 +382,9 @@ if ($action === 'reset-password' && $method === 'POST') {
             exit;
         }
 
+        $tokenHash = hash('sha256', $token);
         $stmt = $pdo->prepare('SELECT email, expires_at FROM password_resets WHERE token = :token LIMIT 1');
-        $stmt->execute([':token' => $token]);
+        $stmt->execute([':token' => $tokenHash]);
         $resetRow = $stmt->fetch();
 
         if (!$resetRow) {
@@ -399,9 +404,10 @@ if ($action === 'reset-password' && $method === 'POST') {
             ':hash'  => password_hash($password, PASSWORD_BCRYPT),
             ':email' => $email
         ]);
+        smartispBumpTokenVersion($pdo, 'email', $email);
 
         // Consumir el token (y cualquier otro de ese correo) para que no se pueda reutilizar.
-        $pdo->prepare('DELETE FROM password_resets WHERE token = :token OR email = :email')->execute([':token' => $token, ':email' => $email]);
+        $pdo->prepare('DELETE FROM password_resets WHERE token = :token OR email = :email')->execute([':token' => $tokenHash, ':email' => $email]);
 
         echo json_encode([
             'ok'      => true,
@@ -421,6 +427,7 @@ if ($action === 'reset-password' && $method === 'POST') {
 // -------------------------------------------------------------
 
 if (($action === 'change-password' || $action === 'change_password') && $method === 'POST') {
+    smartispEnforceRateLimit('change_pwd', 10, 900, 'Demasiados intentos. Por favor intenta de nuevo en 15 minutos.');
     try {
         // Solo con sesión. Antes, sin sesión, bastaba mandar 'email' para buscar la cuenta: eso
         // permitía probar contraseñas de cualquier cuenta aquí, sin el límite de intentos del login.
@@ -478,9 +485,22 @@ if (($action === 'change-password' || $action === 'change_password') && $method 
             ':id'   => $user['id']
         ]);
 
+        // Cierra las demás sesiones y tokens; esta sigue abierta con la versión nueva.
+        $newVersion = smartispBumpTokenVersion($pdo, 'id', (string)$user['id']);
+        $token = null;
+        if ($newVersion !== null) {
+            if (session_status() === PHP_SESSION_ACTIVE) session_regenerate_id(true);
+            $_SESSION['user'] = $user;
+            $_SESSION['tv'] = $newVersion;
+            if (isAdminUser($user)) {
+                try { $token = generateAdminAuthToken($user + ['token_version' => $newVersion]); } catch (Throwable $e) { $token = null; }
+            }
+        }
+
         echo json_encode([
             'ok'      => true,
-            'message' => 'Contraseña actualizada exitosamente.'
+            'message' => 'Contraseña actualizada exitosamente.',
+            'token'   => $token
         ]);
         exit;
     } catch (Throwable $e) {

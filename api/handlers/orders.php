@@ -8,13 +8,17 @@
 // -------------------------------------------------------------
 if ($action === 'orders' || $action === 'customer-orders') {
     if ($method === 'POST') {
+        smartispEnforceRateLimit('orders', 10, 600, 'Recibimos demasiados pedidos desde esta conexión. Por favor intenta de nuevo en unos minutos.');
+
+        // Recortados al tamaño de su columna (orders_rows: customer_name/email 255, phone 50).
+        $text = static fn($value, int $max): string => mb_substr(trim(is_scalar($value) ? (string)$value : ''), 0, $max);
         $shipping = is_array($body['shipping'] ?? null) ? $body['shipping'] : [];
-        $customerName = trim($body['customerName'] ?? ($body['name'] ?? ($shipping['name'] ?? '')));
-        $customerEmail = trim($body['customerEmail'] ?? ($body['email'] ?? ($shipping['email'] ?? '')));
-        $customerPhone = trim($body['customerPhone'] ?? ($body['phone'] ?? ($shipping['phone'] ?? '')));
-        $customerAddress = trim($body['address'] ?? ($shipping['address'] ?? ''));
-        $customerCity = trim($body['city'] ?? ($shipping['city'] ?? ''));
-        $customerNotes = trim($body['notes'] ?? ($shipping['notes'] ?? ''));
+        $customerName = $text($body['customerName'] ?? ($body['name'] ?? ($shipping['name'] ?? '')), 255);
+        $customerEmail = $text($body['customerEmail'] ?? ($body['email'] ?? ($shipping['email'] ?? '')), 255);
+        $customerPhone = $text($body['customerPhone'] ?? ($body['phone'] ?? ($shipping['phone'] ?? '')), 50);
+        $customerAddress = $text($body['address'] ?? ($shipping['address'] ?? ''), 500);
+        $customerCity = $text($body['city'] ?? ($shipping['city'] ?? ''), 120);
+        $customerNotes = $text($body['notes'] ?? ($shipping['notes'] ?? ''), 2000);
 
         // El correo es a donde se envía el comprobante: sin uno válido el pedido queda sin
         // contacto y el mailer intentaría enviar a cualquier texto que llegue.
@@ -23,22 +27,46 @@ if ($action === 'orders' || $action === 'customer-orders') {
             echo json_encode(['error' => 'Ingresa tu nombre y un correo electrónico válido.']);
             exit;
         }
+        smartispEnforceRateLimit('orders_email', 5, 600, 'Recibimos varios pedidos con este correo hace poco. Por favor intenta de nuevo en unos minutos.', strtolower($customerEmail));
 
-        $rawItems = is_array($body['items'] ?? null) ? $body['items'] : [];
+        $rawItems = is_array($body['items'] ?? null) ? array_values($body['items']) : [];
         if (empty($rawItems)) {
             http_response_code(400);
             echo json_encode(['error' => 'El carrito está vacío.']);
             exit;
         }
+        if (count($rawItems) > 100) {
+            http_response_code(400);
+            echo json_encode(['error' => 'El carrito tiene demasiados productos distintos.']);
+            exit;
+        }
 
-        $calculatedTotal = 0;
+        // Del carrito solo se toman el id y la cantidad. Nombre, SKU, precio y si el stock se
+        // controla salen de la base: antes se guardaba la línea tal como llegaba y un productId
+        // o stockTracked inventados apartaban o descontaban stock de otro producto.
+        $lines = [];
+        $requestedByProduct = [];
         $totalUnits = 0;
-        $hasPrice = false;
-        $validItems = [];
+        foreach ($rawItems as $it) {
+            $qty = filter_var(is_array($it) ? ($it['quantity'] ?? 1) : null, FILTER_VALIDATE_INT);
+            if ($qty === false || $qty < 1 || $qty > 99) {
+                http_response_code(400);
+                echo json_encode(['error' => 'La cantidad por producto debe estar entre 1 y 99 unidades.']);
+                exit;
+            }
+            $productId = mb_substr(trim((string)(is_scalar($it['id'] ?? null) ? $it['id'] : '')), 0, 191);
+            $lines[] = ['id' => $productId, 'quantity' => $qty];
+            $requestedByProduct[$productId] = ($requestedByProduct[$productId] ?? 0) + $qty;
+            $totalUnits += $qty;
+        }
+        if ($totalUnits > 500) {
+            http_response_code(400);
+            echo json_encode(['error' => 'El pedido supera el límite máximo permitido de 500 unidades en total.']);
+            exit;
+        }
+        // Mismo orden de bloqueo en todos los pedidos: evita interbloqueos (error 1213).
+        ksort($requestedByProduct, SORT_STRING);
 
-        // El precio y el stock SIEMPRE se verifican contra la base de datos -- nunca se confia
-        // en lo que manda el navegador, que cualquiera puede alterar desde la consola (ej. bajar
-        // el precio a $0.01 antes de enviar el formulario).
         $pTable = getProductsTableName($pdo);
         $hasInventoryTable = smartispTableExists($pdo, 'product_inventory');
         $stockEnabled = smartispOrderStockEnabled($pdo);
@@ -48,73 +76,78 @@ if ($action === 'orders' || $action === 'customer-orders') {
         $inventoryStmt = $hasInventoryTable
             ? $pdo->prepare('SELECT GREATEST(CAST(quantity_available AS SIGNED) - CAST(quantity_reserved AS SIGNED), 0) AS available_qty FROM product_inventory WHERE product_id = :id LIMIT 1' . ($stockEnabled ? ' FOR UPDATE' : ''))
             : null;
-        $fail = static function (string $message) use ($pdo): void {
-            if ($pdo->inTransaction()) $pdo->rollBack();
-            http_response_code(400);
-            echo json_encode(['error' => $message]);
-            exit;
-        };
-        $requestedByProduct = [];
 
         $pdo->beginTransaction();
-        foreach ($rawItems as $it) {
-            $qty = (int)($it['quantity'] ?? 1);
-            if ($qty < 1 || $qty > 99) {
-                $fail('La cantidad por producto debe estar entre 1 y 99 unidades.');
-            }
-            $totalUnits += $qty;
-
-            $productId = trim((string)($it['id'] ?? ''));
+        $products = [];
+        $tracked = [];
+        $invalidItems = [];
+        $stockProblems = [];
+        foreach ($requestedByProduct as $productId => $requested) {
             $productRow = null;
             if ($productId !== '') {
                 $productStmt->execute([':id' => $productId]);
                 $productRow = $productStmt->fetch(PDO::FETCH_ASSOC);
             }
-            if (!$productRow) {
-                $fail('Uno o más productos de tu carrito ya no están disponibles. Actualiza la página e intenta de nuevo.');
+            $product = $productRow ? normalizeProductRow($productRow) : null;
+            if (!$product || !$product['visible']) {
+                $invalidItems[] = (string)$productId;
+                continue;
             }
-            $product = normalizeProductRow($productRow);
-            if (!$product['visible']) {
-                $fail('Uno o más productos de tu carrito ya no están disponibles. Actualiza la página e intenta de nuevo.');
-            }
-
+            $products[$productId] = $product;
             if ($inventoryStmt) {
                 $inventoryStmt->execute([':id' => $productId]);
                 $availableQty = $inventoryStmt->fetchColumn();
                 if ($availableQty !== false) {
                     // El mismo producto puede venir en dos líneas del carrito: se compara la suma.
-                    $requestedByProduct[$productId] = ($requestedByProduct[$productId] ?? 0) + $qty;
-                    if ((int)$availableQty < $requestedByProduct[$productId]) {
-                        $fail('No hay stock suficiente de "' . $product['name'] . '" (disponible: ' . (int)$availableQty . ').');
+                    if ((int)$availableQty < $requested) {
+                        $invalidItems[] = (string)$productId;
+                        $stockProblems[] = ['id' => (string)$productId, 'name' => $product['name'], 'available' => (int)$availableQty];
                     }
-                    if ($stockEnabled) $it['stockTracked'] = true;
+                    $tracked[$productId] = $stockEnabled;
                 }
             }
-
-            $prc = max(0, (float)$product['price']);
-            if ($prc > 0) {
-                $hasPrice = true;
-            }
-            $calculatedTotal += ($qty * $prc);
-            $it['quantity'] = $qty;
-            $it['price'] = $prc;
-            // Igual que el precio: el nombre y el SKU que quedan en el pedido y en los correos
-            // salen de la base, no de lo que diga el carrito.
-            $it['name'] = $product['name'];
-            if ($product['sku'] !== '') $it['sku'] = $product['sku'];
-            $validItems[] = $it;
         }
 
-        if ($totalUnits > 500) {
-            $fail('El pedido supera el límite máximo permitido de 500 unidades en total.');
+        if ($invalidItems) {
+            $pdo->rollBack();
+            $message = count($stockProblems) === 1 && count($invalidItems) === 1
+                ? 'No hay stock suficiente de "' . $stockProblems[0]['name'] . '" (disponible: ' . $stockProblems[0]['available'] . ').'
+                : 'Uno o más productos de tu carrito ya no están disponibles o no tienen stock suficiente. Actualiza el carrito e intenta de nuevo.';
+            http_response_code(400);
+            echo json_encode([
+                'error' => $message,
+                'invalidItems' => $invalidItems,
+                'stock' => array_map(static fn($p) => ['id' => $p['id'], 'available' => $p['available']], $stockProblems),
+            ]);
+            exit;
         }
 
-        // El total del pedido es siempre el calculado con los precios reales de la base
-        // (ver bucle arriba) -- nunca el que manda el body, que ya probamos que se puede
-        // falsificar sin tocar los items.
-        $total = $calculatedTotal;
+        $validItems = [];
+        $calculatedTotal = 0;
+        $hasFreeItem = false;
+        foreach ($lines as $line) {
+            $product = $products[$line['id']];
+            $price = max(0, (float)$product['price']);
+            if ($price <= 0) $hasFreeItem = true;
+            $calculatedTotal += $line['quantity'] * $price;
+            $item = [
+                'id'        => (string)$line['id'],
+                'productId' => (string)$line['id'],
+                'name'      => $product['name'],
+                'sku'       => $product['sku'],
+                'price'     => $price,
+                'quantity'  => $line['quantity'],
+            ];
+            if (!empty($tracked[$line['id']])) $item['stockTracked'] = true;
+            $validItems[] = $item;
+        }
 
-        $isQuote = !$hasPrice || $total <= 0;
+        // El total es siempre el calculado con los precios de la base, nunca el del body.
+        $total = round($calculatedTotal, 2);
+
+        // Un artículo sin precio necesita cotización: el pedido entero se trata como cotización,
+        // si no se cobraba solo lo que tenía precio.
+        $isQuote = $hasFreeItem || $total <= 0;
         $orderStatus = $isQuote ? 'quote_requested' : 'pending';
 
         $shippingData = [
@@ -161,11 +194,12 @@ if ($action === 'orders' || $action === 'customer-orders') {
         if (in_array('payment_provider', $existingCols, true)) {
             $insertData['payment_provider'] = 'manual';
         }
+        // Fechas en UTC, como el resto de la base (los reportes las pasan a hora de Ecuador).
         if (in_array('created_at', $existingCols, true)) {
-            $insertData['created_at'] = date('Y-m-d H:i:s');
+            $insertData['created_at'] = gmdate('Y-m-d H:i:s');
         }
         if (in_array('updated_at', $existingCols, true)) {
-            $insertData['updated_at'] = date('Y-m-d H:i:s');
+            $insertData['updated_at'] = gmdate('Y-m-d H:i:s');
         }
         $stockState = $stockEnabled ? smartispOrderStockTarget($orderStatus) : null;
         if ($stockEnabled) {
@@ -191,34 +225,60 @@ if ($action === 'orders' || $action === 'customer-orders') {
             }
         }
         if ($stockEnabled) {
-            smartispApplyOrderStock($pdo, $validItems, 'released', $stockState);
+            try {
+                smartispApplyOrderStock($pdo, $validItems, 'released', $stockState);
+            } catch (SmartispStockException $e) {
+                $pdo->rollBack();
+                http_response_code(400);
+                echo json_encode(['error' => $e->getMessage(), 'invalidItems' => []]);
+                exit;
+            }
         }
         $pdo->commit();
 
-        // Despachar correos automáticos (Comprobante al cliente y Alerta con WhatsApp al admin)
-        $orderDataForMail = [
-            'id'            => $orderId,
-            'customerName'  => $customerName,
-            'customerEmail' => $customerEmail,
-            'customerPhone' => $customerPhone,
-            'address'       => $customerAddress,
-            'city'          => $customerCity,
-            'notes'         => $customerNotes,
-            'items'         => $validItems,
-            'total'         => $total,
-            'isQuote'       => $isQuote
-        ];
-
-        $emailResults = sendOrderEmails($pdo, $orderDataForMail);
-
-        echo json_encode([
+        $payload = json_encode([
             'ok'           => true,
             'orderId'      => $orderId,
             'id'           => $orderId,
             'shortId'      => $cleanShort,
             'isQuote'      => $isQuote,
-            'emailResults' => $emailResults
+            'emailQueued'  => true,
+            'order'        => [
+                'id'     => $orderId,
+                'status' => $orderStatus,
+                'total'  => $total,
+                'items'  => array_map(static fn($i) => [
+                    'id' => $i['id'], 'name' => $i['name'], 'sku' => $i['sku'], 'price' => $i['price'], 'quantity' => $i['quantity'],
+                ], $validItems),
+            ],
         ]);
+
+        // Los correos salen después de cerrar la respuesta: un SMTP lento hacía que el navegador
+        // diera el pedido por fallido, el cliente reintentara y quedaran pedidos duplicados.
+        if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
+        ignore_user_abort(true);
+        echo $payload;
+        if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+        elseif (function_exists('litespeed_finish_request')) litespeed_finish_request();
+        else flush();
+
+        $categories = array_map(static fn($p) => $p['category'] ?? '', $products);
+        try {
+            sendOrderEmails($pdo, [
+                'id'            => $orderId,
+                'customerName'  => $customerName,
+                'customerEmail' => $customerEmail,
+                'customerPhone' => $customerPhone,
+                'address'       => $customerAddress,
+                'city'          => $customerCity,
+                'notes'         => $customerNotes,
+                'items'         => array_map(static fn($i) => $i + ['category' => $categories[$i['id']] ?? ''], $validItems),
+                'total'         => $total,
+                'isQuote'       => $isQuote
+            ]);
+        } catch (Throwable $e) {
+            error_log('SmartISP correos del pedido ' . $orderId . ': ' . $e->getMessage());
+        }
         exit;
     }
 
@@ -313,8 +373,14 @@ if ($action === 'admin-orders') {
         $columns = smartispTableColumns($pdo, 'orders_rows');
         $searchColumns = array_values(array_intersect(['id', 'customer_name', 'customer_email', 'customer_phone', 'shipping'], $columns));
         if (!$searchColumns) $searchColumns = ['id'];
-        $where[] = '(' . implode(' OR ', array_map(static fn($column) => "`$column` LIKE :q", $searchColumns)) . ')';
-        $params[':q'] = '%' . $q . '%';
+        // Un marcador por columna: con ATTR_EMULATE_PREPARES=false no se puede repetir :q.
+        $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $q) . '%';
+        $conditions = [];
+        foreach ($searchColumns as $i => $column) {
+            $conditions[] = "`$column` LIKE :q$i";
+            $params[":q$i"] = $like;
+        }
+        $where[] = '(' . implode(' OR ', $conditions) . ')';
     }
     $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 
@@ -349,17 +415,24 @@ if ($action === 'admin-orders-stats') {
     $byStatus = $pdo->query("SELECT status, COUNT(*) AS total,
         SUM(CASE WHEN $eligibleSale THEN total ELSE 0 END) AS revenue
         FROM orders_rows GROUP BY status")->fetchAll(PDO::FETCH_ASSOC);
-    $totals = $pdo->query("SELECT COUNT(*) AS total,
+    // "Hoy" y los 7 días son días de Ecuador; created_at está en UTC.
+    $today = smartispLocalToday();
+    $totalsStmt = $pdo->prepare("SELECT COUNT(*) AS total,
         SUM(CASE WHEN $eligibleSale THEN total ELSE 0 END) AS revenue,
         SUM(CASE WHEN $eligibleSale THEN 1 ELSE 0 END) AS paid_count,
         SUM(CASE WHEN LOWER(status) IN ('delivered', 'completed') THEN 1 ELSE 0 END) AS completed_count,
         SUM(CASE WHEN LOWER(status) = 'pending' THEN 1 ELSE 0 END) AS pending_count,
-        SUM(CASE WHEN DATE(created_at) = CURDATE() THEN 1 ELSE 0 END) AS today_count
-        FROM orders_rows")->fetch(PDO::FETCH_ASSOC) ?: [];
-    $daily = $pdo->query("SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS day, COUNT(*) AS orders,
+        SUM(CASE WHEN created_at >= :today_start THEN 1 ELSE 0 END) AS today_count
+        FROM orders_rows");
+    $totalsStmt->execute([':today_start' => smartispLocalDayStartUtc($today)]);
+    $totals = $totalsStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    $localDay = smartispSqlLocalDay('created_at');
+    $dailyStmt = $pdo->prepare("SELECT DATE_FORMAT($localDay, '%Y-%m-%d') AS day, COUNT(*) AS orders,
         SUM(CASE WHEN $eligibleSale THEN total ELSE 0 END) AS revenue
-        FROM orders_rows WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
-        GROUP BY DATE(created_at) ORDER BY day ASC")->fetchAll(PDO::FETCH_ASSOC);
+        FROM orders_rows WHERE created_at >= :week_start
+        GROUP BY $localDay ORDER BY day ASC");
+    $dailyStmt->execute([':week_start' => smartispLocalDayStartUtc(smartispLocalDayShift($today, -6))]);
+    $daily = $dailyStmt->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode([
         'by_status'  => array_map(fn($r) => [
@@ -463,7 +536,14 @@ if ($action === 'admin-order-status' && $method === 'POST') {
         $fromStock = (string)($order['stock_state'] ?? '') ?: 'released';
         $toStock = smartispOrderStockTarget($newStatus);
         if ($fromStock !== $toStock) {
-            smartispApplyOrderStock($pdo, smartispDecodeOrderRow($order)['items'] ?? [], $fromStock, $toStock);
+            try {
+                smartispApplyOrderStock($pdo, smartispDecodeOrderRow($order)['items'] ?? [], $fromStock, $toStock);
+            } catch (SmartispStockException $e) {
+                $pdo->rollBack();
+                http_response_code(409);
+                echo json_encode(['error' => $e->getMessage()]);
+                exit;
+            }
             $sets[] = 'stock_state = :stock_state';
             $params[':stock_state'] = $toStock;
         }

@@ -9,6 +9,43 @@ const SMARTISP_VOID_STATUSES = ['cancelled', 'canceled', 'refunded'];
 // Pagos que sí cuentan como cobrados (mismo criterio que admin-orders-stats).
 const SMARTISP_CONFIRMED_PAYMENTS = ['paid', 'confirmed', 'succeeded', 'completed', 'approved', 'captured'];
 
+// -------------------------------------------------------------
+// DÍAS DE REPORTE
+// -------------------------------------------------------------
+// created_at se guarda en UTC (pedidos con gmdate, columnas con CURRENT_TIMESTAMP en un servidor
+// UTC). Los reportes cuentan días de Ecuador: America/Guayaquil es UTC-5 fijo, sin horario de
+// verano, así que en SQL basta restar el desfase y no hacen falta las tablas de zonas de MySQL.
+const SMARTISP_REPORT_TIMEZONE = 'America/Guayaquil';
+
+function smartispReportTimezone(): DateTimeZone {
+    static $tz = null;
+    return $tz ??= new DateTimeZone(SMARTISP_REPORT_TIMEZONE);
+}
+
+function smartispLocalToday(): string {
+    return (new DateTimeImmutable('now', smartispReportTimezone()))->format('Y-m-d');
+}
+
+function smartispLocalDayShift(string $day, int $days): string {
+    return (new DateTimeImmutable($day, smartispReportTimezone()))->modify(($days >= 0 ? '+' : '') . $days . ' days')->format('Y-m-d');
+}
+
+// Inicio (00:00 en Ecuador) del día local Y-m-d, expresado en UTC para comparar con created_at.
+function smartispLocalDayStartUtc(string $day): string {
+    return (new DateTimeImmutable($day . ' 00:00:00', smartispReportTimezone()))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+}
+
+// Último segundo del día local Y-m-d, en UTC.
+function smartispLocalDayEndUtc(string $day): string {
+    return (new DateTimeImmutable($day . ' 23:59:59', smartispReportTimezone()))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+}
+
+// Expresión SQL con el día de Ecuador de una columna UTC.
+function smartispSqlLocalDay(string $column): string {
+    $offsetHours = intdiv(smartispReportTimezone()->getOffset(new DateTimeImmutable('now', new DateTimeZone('UTC'))), 3600);
+    return "DATE(DATE_ADD($column, INTERVAL $offsetHours HOUR))";
+}
+
 // Los artículos de un pedido viven en orders_rows.items como JSON, con formas distintas según la
 // época del pedido: lista plana, {items: [...]}, {products: [...]} o un solo artículo suelto.
 function smartispDecodeOrderItems($raw): array {
@@ -112,24 +149,47 @@ function smartispOrderStockTarget(string $status): string {
     return 'reserved';
 }
 
+class SmartispStockException extends RuntimeException {}
+
+// Debe correr dentro de una transacción. Si el cambio necesita unidades libres (reservar o
+// descontar) y no las hay, lanza SmartispStockException sin tocar nada: antes se recortaba a 0
+// en silencio y el inventario quedaba descuadrado.
 function smartispApplyOrderStock(PDO $pdo, array $items, string $from, string $to): void {
     if ($from === $to) return;
     // [disponible, reservado] que ocupa una unidad en cada situación.
     $weights = ['released' => [0, 0], 'reserved' => [0, 1], 'consumed' => [-1, 0]];
     $fromWeight = $weights[$from] ?? $weights['released'];
     $toWeight = $weights[$to] ?? $weights['released'];
-    $stmt = $pdo->prepare('UPDATE product_inventory
-        SET quantity_available = GREATEST(CAST(quantity_available AS SIGNED) + :da, 0),
-            quantity_reserved = GREATEST(CAST(quantity_reserved AS SIGNED) + :dr, 0)
-        WHERE product_id = :id');
+    $da = $toWeight[0] - $fromWeight[0];
+    $dr = $toWeight[1] - $fromWeight[1];
+
+    $quantities = [];
+    $names = [];
     foreach (smartispDecodeOrderItems($items) as $item) {
         if (!$item['stock_tracked'] || $item['product_id'] === '') continue;
-        $stmt->execute([
-            ':da' => ($toWeight[0] - $fromWeight[0]) * $item['quantity'],
-            ':dr' => ($toWeight[1] - $fromWeight[1]) * $item['quantity'],
-            ':id' => $item['product_id'],
-        ]);
+        $quantities[$item['product_id']] = ($quantities[$item['product_id']] ?? 0) + $item['quantity'];
+        $names[$item['product_id']] = $item['name'];
     }
+    // Bloquear siempre en el mismo orden evita interbloqueos entre pedidos simultáneos.
+    ksort($quantities, SORT_STRING);
+    $lock = $pdo->prepare('SELECT CAST(quantity_available AS SIGNED) AS available, CAST(quantity_reserved AS SIGNED) AS reserved
+        FROM product_inventory WHERE product_id = :id FOR UPDATE');
+    $update = $pdo->prepare('UPDATE product_inventory SET quantity_available = :available, quantity_reserved = :reserved WHERE product_id = :id');
+    $pending = [];
+    foreach ($quantities as $productId => $qty) {
+        $lock->execute([':id' => $productId]);
+        $row = $lock->fetch(PDO::FETCH_ASSOC);
+        if (!$row) continue; // Dejó de controlarse: se vende sin límite.
+        $available = (int)$row['available'] + $da * $qty;
+        $reserved = (int)$row['reserved'] + $dr * $qty;
+        if ($available < 0 || ($da - $dr < 0 && $available - max(0, $reserved) < 0)) {
+            $free = max(0, (int)$row['available'] - (int)$row['reserved']);
+            throw new SmartispStockException('No hay stock libre suficiente de "' . $names[$productId] . '" (libre: ' . $free . ', necesita: ' . $qty . '). Ajusta el inventario antes de cambiar el estado.');
+        }
+        // Liberar más de lo reservado solo pasa con datos descuadrados de antes: se deja en 0.
+        $pending[] = [':available' => $available, ':reserved' => max(0, $reserved), ':id' => $productId];
+    }
+    foreach ($pending as $params) $update->execute($params);
 }
 
 // El inventario por pedido solo se activa cuando la migración 037 agregó stock_state; sin ella

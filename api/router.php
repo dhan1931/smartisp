@@ -23,7 +23,10 @@ require_once __DIR__ . '/lib/db.php';
 if ($earlyAction === 'serve-upload' && in_array($requestMethod, ['GET', 'HEAD'], true)) {
     $category = (string)($_GET['category'] ?? '');
     $file = (string)($_GET['file'] ?? '');
+    $uploadTypes = ['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp', 'gif' => 'image/gif'];
+    $ext = strtolower((string)pathinfo($file, PATHINFO_EXTENSION));
     $path = in_array($category, ['campaigns', 'products', 'categories', 'brands'], true) && preg_match('/^[A-Za-z0-9._-]+$/', $file)
+        && isset($uploadTypes[$ext])
         ? getSmartispUploadsDir($category) . '/' . $file
         : '';
     if ($path === '' || !is_file($path)) {
@@ -45,8 +48,8 @@ if ($earlyAction === 'serve-upload' && in_array($requestMethod, ['GET', 'HEAD'],
         http_response_code(304);
         exit;
     }
-    $ext = strtolower((string)pathinfo($path, PATHINFO_EXTENSION));
-    header('Content-Type: ' . (['jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp', 'gif' => 'image/gif'][$ext] ?? 'application/octet-stream'));
+    header('Content-Type: ' . $uploadTypes[$ext]);
+    header('X-Content-Type-Options: nosniff');
     header('Content-Length: ' . $size);
     if ($requestMethod !== 'HEAD') readfile($path);
     exit;
@@ -100,6 +103,75 @@ function slugify(string $text): string {
     return smartispSlug($text, 80, 'articulo');
 }
 
+// Acciones que escriben o destruyen: solo por POST, para que un enlace o una imagen de otro
+// sitio (GET con la cookie de sesión) no las dispare.
+function smartispRequirePost(): void {
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+        http_response_code(405);
+        header('Allow: POST');
+        echo json_encode(['ok' => false, 'error' => 'Método no permitido.']);
+        exit;
+    }
+}
+
+// Sin la migración 038 la columna no existe y la revocación de sesiones queda inactiva.
+function smartispUsersHaveTokenVersion(PDO $pdo): bool {
+    try {
+        return in_array('token_version', smartispTableColumns($pdo, 'users_rows'), true);
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
+function smartispAuthTokenVersion(?int $set = null): int {
+    static $version = 0;
+    if ($set !== null) $version = $set;
+    return $version;
+}
+
+// IP para los límites de intentos. Solo REMOTE_ADDR: X-Forwarded-For y CF-Connecting-IP los
+// escribe el cliente, y con cambiarlos en cada petición el límite no se aplicaba nunca.
+function smartispClientIp(): string {
+    return (string)($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
+}
+
+// Ventana deslizante guardada en el tmp del servidor; $key es la IP salvo que se indique otra
+// (p. ej. un correo). Devuelve true si ya se alcanzó el límite; si no y $record, registra el
+// intento. El flock evita que dos peticiones simultáneas lean el mismo conteo y ambas pasen.
+function smartispRateLimited(string $bucket, int $maxAttempts, int $windowSeconds, ?string $key = null, bool $record = true): bool {
+    $file = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $bucket . '_' . md5($key ?? smartispClientIp()) . '.json';
+    $handle = @fopen($file, 'c+');
+    if (!$handle) return false; // Sin tmp escribible no se bloquea; queda en el log.
+    flock($handle, LOCK_EX);
+    $now = time();
+    $attempts = json_decode((string)stream_get_contents($handle), true);
+    $attempts = array_values(array_filter(is_array($attempts) ? $attempts : [], fn($t) => ($now - (int)$t) < $windowSeconds));
+    $limited = count($attempts) >= $maxAttempts;
+    if (!$limited && $record) {
+        $attempts[] = $now;
+        ftruncate($handle, 0);
+        rewind($handle);
+        fwrite($handle, json_encode($attempts));
+    }
+    flock($handle, LOCK_UN);
+    fclose($handle);
+    return $limited;
+}
+
+function smartispRespondRateLimited(int $windowSeconds, string $message): void {
+    http_response_code(429);
+    header('Retry-After: ' . $windowSeconds);
+    echo json_encode(['ok' => false, 'error' => $message, 'retry_after' => $windowSeconds]);
+    exit;
+}
+
+// Corta la petición con 429 si ya se alcanzó el límite; si no, registra este intento.
+function smartispEnforceRateLimit(string $bucket, int $maxAttempts, int $windowSeconds, string $message, ?string $key = null): void {
+    if (smartispRateLimited($bucket, $maxAttempts, $windowSeconds, $key)) {
+        smartispRespondRateLimited($windowSeconds, $message);
+    }
+}
+
 function generateAdminAuthToken(array $user): string {
     if (smartispNormalizeRole($user['role'] ?? '') !== 'admin') {
         throw new RuntimeException('Solo se emiten tokens administrativos a usuarios autorizados.');
@@ -113,6 +185,7 @@ function generateAdminAuthToken(array $user): string {
         'email' => strtolower(trim((string)($user['email'] ?? ''))),
         'name'  => $user['name'] ?? '',
         'role'  => strtolower(trim((string)($user['role'] ?? 'customer'))),
+        'tv'    => (int)($user['token_version'] ?? smartispAuthTokenVersion()),
         'exp'   => time() + (86400 * 30) // 30 días de vigencia
     ];
     $b64 = base64_encode(json_encode($payload));
@@ -136,6 +209,8 @@ function resolveAuthUser(): ?array {
     }
     $user = $_SESSION['user'] ?? null;
     $userId = is_array($user) ? trim((string)($user['id'] ?? '')) : '';
+    $claimedVersion = (int)($_SESSION['tv'] ?? 0);
+    $fromSession = $userId !== '';
 
     // Aceptar tokens heredados solo por cabeceras; nunca en URL/body donde acabarían en logs.
     if ($userId === '') {
@@ -172,6 +247,7 @@ function resolveAuthUser(): ?array {
                         if (empty($decoded['exp']) || $decoded['exp'] > time()) {
                             // La existencia del usuario se comprueba abajo con la misma consulta.
                             $userId = trim((string)$decoded['id']);
+                            $claimedVersion = (int)($decoded['tv'] ?? 0);
                         }
                     }
                 }
@@ -183,13 +259,27 @@ function resolveAuthUser(): ?array {
 
     // La sesión conserva identidad, no permisos: recargar rol y perfil desde la fuente
     // autorizada en cada petición invalida permisos revocados y corrige sesiones antiguas.
-    $stmt = getDbConnection()->prepare('SELECT id, email, name, surname, phone, role FROM users_rows WHERE id = :id LIMIT 1');
-    $stmt->execute([':id' => $userId]);
+    $pdo = getDbConnection();
+    $hasVersion = true;
+    try {
+        $stmt = $pdo->prepare('SELECT id, email, name, surname, phone, role, token_version FROM users_rows WHERE id = :id LIMIT 1');
+        $stmt->execute([':id' => $userId]);
+    } catch (PDOException $e) {
+        // 1054: columna inexistente (migración 038 sin aplicar); se sigue sin revocación.
+        if (($e->errorInfo[1] ?? null) !== 1054) throw $e;
+        $hasVersion = false;
+        $stmt = $pdo->prepare('SELECT id, email, name, surname, phone, role FROM users_rows WHERE id = :id LIMIT 1');
+        $stmt->execute([':id' => $userId]);
+    }
     $freshUser = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$freshUser) {
-        unset($_SESSION['user']);
+    // token_version sube al cambiar o restablecer la contraseña: invalida sesiones y tokens previos.
+    $currentVersion = (int)($freshUser['token_version'] ?? 0);
+    if (!$freshUser || ($hasVersion && $currentVersion !== $claimedVersion)) {
+        if ($fromSession) unset($_SESSION['user'], $_SESSION['tv']);
         return null;
     }
+    unset($freshUser['token_version']);
+    smartispAuthTokenVersion($currentVersion);
     $freshUser['role'] = smartispNormalizeRole($freshUser['role'] ?? 'customer');
     $_SESSION['user'] = $freshUser;
     return $freshUser;

@@ -141,7 +141,7 @@ if ($action === 'admin-dashboard-insights') {
     requireAdminAuth();
 
     $tableExists = static fn(string $table): bool => smartispTableExists($pdo, $table);
-    $topProducts = smartispTopProducts($pdo, date('Y-m-d H:i:s', strtotime('-30 days')), date('Y-m-d H:i:s'), 5);
+    $topProducts = smartispTopProducts($pdo, gmdate('Y-m-d H:i:s', time() - 30 * 86400), gmdate('Y-m-d H:i:s'), 5);
 
     $inventory = ['tracked_products' => 0, 'available_units' => 0, 'reserved_units' => 0, 'out_of_stock' => 0];
     if ($tableExists('product_inventory')) {
@@ -302,7 +302,14 @@ if ($action === 'admin-products') {
 
         $name = trim($body['name'] ?? '');
         $description = trim($body['description'] ?? '');
-        $price = (float)($body['price'] ?? 0);
+        $rawPrice = $body['price'] ?? 0;
+        if ($rawPrice === '' || $rawPrice === null) $rawPrice = 0;
+        if (!is_numeric($rawPrice) || (float)$rawPrice < 0) {
+            http_response_code(400);
+            echo json_encode(['error' => 'El precio debe ser un número mayor o igual a 0.']);
+            exit;
+        }
+        $price = (float)$rawPrice;
         $category = trim($body['category'] ?? 'General');
         if (empty($category)) $category = 'General';
         $subcategory = trim($body['subcategory'] ?? '');
@@ -341,8 +348,8 @@ if ($action === 'admin-products') {
             }
             if ($cleanSpecs) $specsJson = json_encode($cleanSpecs, JSON_UNESCAPED_UNICODE);
         }
-        $contentText = trim((string)($body['content_text'] ?? '')) ?: null;
-        $warrantyText = trim((string)($body['warranty_text'] ?? '')) ?: null;
+        $contentText = trim((string)($body['content_text'] ?? ($body['contentText'] ?? ''))) ?: null;
+        $warrantyText = trim((string)($body['warranty_text'] ?? ($body['warrantyText'] ?? ''))) ?: null;
 
         if (!$name) {
             http_response_code(400);
@@ -402,23 +409,18 @@ if ($action === 'admin-products') {
         $prodSlug = slugify($name);
 
         if ($existingId) {
-            $sql = "UPDATE `$pTable` SET
-                        name = :name,
-                        description = :description,
-                        price = :price,
-                        category = :category,
-                        subcategory = :subcategory,
-                        image_url = :image_url,
-                        external_url = :external_url,
-                        sku = :sku,
-                        visible = :visible,
-                        specs_json = :specs_json,
-                        content_text = :content_text,
-                        warranty_text = :warranty_text,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE id = :id";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([
+            // Los campos opcionales solo se tocan si vienen en el cuerpo: guardados parciales
+            // (p. ej. el interruptor de visibilidad) no deben borrar specs, garantía ni enlace.
+            $sent = static fn(string ...$keys): bool => (bool)array_filter($keys, static fn($k) => array_key_exists($k, $body));
+            $optional = [
+                'external_url'  => [$sent('externalUrl', 'external_url'), $externalUrl],
+                'specs_json'    => [$sent('specs'), $specsJson],
+                'content_text'  => [$sent('content_text', 'contentText'), $contentText],
+                'warranty_text' => [$sent('warranty_text', 'warrantyText'), $warrantyText],
+            ];
+            $sets = ['name = :name', 'description = :description', 'price = :price', 'category = :category',
+                'subcategory = :subcategory', 'image_url = :image_url', 'sku = :sku', 'visible = :visible'];
+            $params = [
                 ':id'           => $existingId,
                 ':name'         => $name,
                 ':description'  => $description,
@@ -426,13 +428,16 @@ if ($action === 'admin-products') {
                 ':category'     => $category,
                 ':subcategory'  => $subcategory,
                 ':image_url'    => $imageUrl,
-                ':external_url' => $externalUrl,
                 ':sku'          => $sku,
                 ':visible'      => $visible,
-                ':specs_json'   => $specsJson,
-                ':content_text' => $contentText,
-                ':warranty_text' => $warrantyText
-            ]);
+            ];
+            foreach ($optional as $column => [$present, $value]) {
+                if (!$present) continue;
+                $sets[] = "$column = :$column";
+                $params[":$column"] = $value;
+            }
+            $stmt = $pdo->prepare("UPDATE `$pTable` SET " . implode(', ', $sets) . ", updated_at = CURRENT_TIMESTAMP WHERE id = :id");
+            $stmt->execute($params);
             $publicUrl = '/producto/' . $existingId . '-' . $prodSlug;
             echo json_encode([
                 'ok'      => true,
@@ -647,6 +652,7 @@ if ($action === 'upload-image' && $method === 'POST') {
 // 3. IMPORTACIÓN MASIVA Y LOTES (/api/auth/admin-products-bulk, /api/auth/import-products)
 // -------------------------------------------------------------
 if ($action === 'import-products' || $action === 'import-excel' || $action === 'admin-products-bulk' || $action === 'import-catalog' || $action === 'save-products-batch') {
+    smartispRequirePost();
     requireAdminAuth();
     $pTable = getProductsTableName($pdo);
     ensureProductTableColumns($pdo, $pTable);
@@ -688,42 +694,68 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
     try {
         $checkStmtId = $pdo->prepare("SELECT id FROM `$pTable` WHERE id = :id LIMIT 1");
         $checkStmtSku = $pdo->prepare("SELECT id FROM `$pTable` WHERE sku = :sku AND sku != '' LIMIT 1");
-        $checkStmtName = $pdo->prepare("SELECT id FROM `$pTable` WHERE name = :name AND name != '' LIMIT 1");
+        // Por nombre solo si es único: con dos productos homónimos se actualizaba uno cualquiera.
+        $checkStmtName = $pdo->prepare("SELECT id FROM `$pTable` WHERE name = :name AND name != '' LIMIT 2");
 
         $insertStmt = $pdo->prepare("INSERT INTO `$pTable` (id, name, description, price, category, subcategory, image_url, external_url, sku, visible)
                 VALUES (:id, :name, :description, :price, :category, :subcategory, :image_url, :external_url, :sku, :visible)");
 
-        $updateStmt = $pdo->prepare("UPDATE `$pTable` SET 
-                name = :name,
-                description = :description,
-                price = :price,
-                category = :category,
-                subcategory = :subcategory,
-                image_url = :image_url,
-                external_url = :external_url,
-                sku = :sku,
-                visible = :visible,
-                updated_at = CURRENT_TIMESTAMP
-                WHERE id = :id");
+        // Columna -> claves aceptadas en la fila. Al actualizar solo se tocan las presentes, y un
+        // texto vacío (celda vacía en el archivo) no borra lo que ya había.
+        $importColumns = [
+            'description'  => ['description'],
+            'price'        => ['price'],
+            'category'     => ['category'],
+            'subcategory'  => ['subcategory'],
+            'image_url'    => ['imageUrl', 'image_url'],
+            'external_url' => ['externalUrl', 'external_url'],
+            'sku'          => ['sku'],
+            'visible'      => ['visible'],
+        ];
 
         $inserted = 0;
+        $errors = [];
         $changedPaths = [];
-        foreach ($products as $p) {
-            $name = trim($p['name'] ?? '');
-            if (!$name) continue;
+        foreach (array_values($products) as $index => $p) {
+            $rowNumber = $index + 1;
+            $name = is_array($p) ? trim((string)($p['name'] ?? '')) : '';
+            if ($name === '') {
+                $errors[] = ['row' => $rowNumber, 'name' => '', 'error' => 'Falta el nombre del producto.'];
+                continue;
+            }
+
+            $values = [];
+            foreach ($importColumns as $column => $keys) {
+                foreach ($keys as $key) {
+                    if (array_key_exists($key, $p)) {
+                        $values[$column] = $p[$key];
+                        break;
+                    }
+                }
+            }
+            if (array_key_exists('price', $values)) {
+                $rawPrice = is_string($values['price']) ? trim($values['price']) : $values['price'];
+                if ($rawPrice === '' || $rawPrice === null) {
+                    unset($values['price']);
+                } elseif (!is_numeric($rawPrice) || (float)$rawPrice < 0) {
+                    $errors[] = ['row' => $rowNumber, 'name' => $name, 'error' => 'Precio inválido: debe ser un número mayor o igual a 0.'];
+                    continue;
+                } else {
+                    $values['price'] = (float)$rawPrice;
+                }
+            }
+            foreach (['description', 'category', 'subcategory', 'image_url', 'external_url', 'sku'] as $column) {
+                if (!array_key_exists($column, $values)) continue;
+                $values[$column] = trim((string)$values[$column]);
+                if ($values[$column] === '') unset($values[$column]);
+            }
+            if (array_key_exists('visible', $values)) $values['visible'] = $values['visible'] ? 1 : 0;
 
             $rawId = trim((string)($p['id'] ?? ''));
             $id = (!empty($rawId) && $rawId !== 'modal-draft') ? $rawId : ('prod_' . bin2hex(random_bytes(7)));
-
-            $desc = trim($p['description'] ?? '');
-            $price = (float)($p['price'] ?? 0);
-            $cat = trim($p['category'] ?? 'General');
-            if (empty($cat)) $cat = 'General';
-            $subcat = trim($p['subcategory'] ?? '');
-            $img = trim($p['imageUrl'] ?? ($p['image_url'] ?? ''));
-            $ext = trim($p['externalUrl'] ?? ($p['external_url'] ?? ''));
-            $sku = trim($p['sku'] ?? '');
-            $vis = isset($p['visible']) ? ($p['visible'] ? 1 : 0) : 1;
+            $cat = $values['category'] ?? 'General';
+            $subcat = $values['subcategory'] ?? '';
+            $sku = $values['sku'] ?? '';
 
             // Auto-crear categoría en categories_rows si no existe
             if (!empty($cat)) {
@@ -739,64 +771,68 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
                 } catch (Throwable $e) {}
             }
 
-            // Identificar si el producto ya existe (por id, sku o nombre idéntico)
+            // Identificar si el producto ya existe (por id, sku o nombre único)
             $existingId = null;
             if (!empty($rawId)) {
                 $checkStmtId->execute([':id' => $rawId]);
                 $existingId = $checkStmtId->fetchColumn();
             }
-            if (!$existingId && !empty($sku)) {
+            if (!$existingId && $sku !== '') {
                 $checkStmtSku->execute([':sku' => $sku]);
                 $existingId = $checkStmtSku->fetchColumn();
             }
-            if (!$existingId && !empty($name)) {
+            if (!$existingId) {
                 $checkStmtName->execute([':name' => $name]);
-                $existingId = $checkStmtName->fetchColumn();
+                $sameName = $checkStmtName->fetchAll(PDO::FETCH_COLUMN);
+                $existingId = count($sameName) === 1 ? $sameName[0] : null;
             }
 
-            if ($existingId) {
-                $updateStmt->execute([
-                    ':id'           => $existingId,
-                    ':name'         => $name,
-                    ':description'  => $desc,
-                    ':price'        => $price,
-                    ':category'     => $cat,
-                    ':subcategory'  => $subcat,
-                    ':image_url'    => $img,
-                    ':external_url' => $ext,
-                    ':sku'          => $sku,
-                    ':visible'      => $vis
-                ]);
-            } else {
-                $insertStmt->execute([
-                    ':id'           => $id,
-                    ':name'         => $name,
-                    ':description'  => $desc,
-                    ':price'        => $price,
-                    ':category'     => $cat,
-                    ':subcategory'  => $subcat,
-                    ':image_url'    => $img,
-                    ':external_url' => $ext,
-                    ':sku'          => $sku,
-                    ':visible'      => $vis
-                ]);
+            try {
+                if ($existingId) {
+                    $sets = ['name = :name'];
+                    $params = [':id' => $existingId, ':name' => $name];
+                    foreach ($values as $column => $value) {
+                        $sets[] = "$column = :$column";
+                        $params[":$column"] = $value;
+                    }
+                    $pdo->prepare("UPDATE `$pTable` SET " . implode(', ', $sets) . ", updated_at = CURRENT_TIMESTAMP WHERE id = :id")->execute($params);
+                } else {
+                    $insertStmt->execute([
+                        ':id'           => $id,
+                        ':name'         => $name,
+                        ':description'  => $values['description'] ?? '',
+                        ':price'        => $values['price'] ?? 0,
+                        ':category'     => $cat,
+                        ':subcategory'  => $subcat,
+                        ':image_url'    => $values['image_url'] ?? '',
+                        ':external_url' => $values['external_url'] ?? '',
+                        ':sku'          => $sku,
+                        ':visible'      => $values['visible'] ?? 1
+                    ]);
+                }
+            } catch (PDOException $e) {
+                error_log('SmartISP import row error: ' . $e->getMessage());
+                $errors[] = ['row' => $rowNumber, 'name' => $name, 'error' => 'No se pudo guardar la fila.'];
+                continue;
             }
             $inserted++;
             $changedPaths[] = '/producto/' . ($existingId ?: $id) . '-' . slugify($name);
         }
 
         $pdo->commit();
-        echo json_encode(['ok' => true, 'count' => $inserted]);
+        echo json_encode(['ok' => true, 'count' => $inserted, 'errors' => $errors]);
         smartispNotifySearchEngines(array_slice($changedPaths, 0, 10000));
     } catch (Exception $e) {
         $pdo->rollBack();
+        error_log('SmartISP import error: ' . $e->getMessage());
         http_response_code(500);
-        echo json_encode(['error' => 'Error en la importación: ' . $e->getMessage()]);
+        echo json_encode(['error' => 'Error en la importación. Revisa el archivo e inténtalo nuevamente.']);
     }
     exit;
 }
 
 if ($action === 'admin-products-clear') {
+    smartispRequirePost();
     requireAdminAuth();
     $pTable = getProductsTableName($pdo);
     $pdo->exec("DELETE FROM `$pTable`");
@@ -1027,6 +1063,7 @@ if ($action === 'brands') {
 }
 
 if ($action === 'categories-reset' || $action === 'categories/reset') {
+    smartispRequirePost();
     requireAdminAuth();
     $pdo->exec("DELETE FROM categories_rows");
     echo json_encode(['ok' => true]);
@@ -1035,6 +1072,7 @@ if ($action === 'categories-reset' || $action === 'categories/reset') {
 
 
 if ($action === 'categories-reassign' || $action === 'categories/reassign') {
+    smartispRequirePost();
     requireAdminAuth();
     $fromCategory = trim($body['fromCategory'] ?? '');
     $toCategory = trim($body['toCategory'] ?? '');
@@ -1145,15 +1183,19 @@ if ($action === 'product-image' || $action === 'proxy-image') {
         $targetUrl = $rawUrl;
     }
 
-    // Función auxiliar para servir placeholder SVG neutro de SmartISP
+    // Placeholder propio (SVG estático, sin scripts). Las imágenes de terceros nunca se sirven como SVG.
     $servePlaceholder = function() {
         header('Content-Type: image/svg+xml; charset=utf-8');
+        header('X-Content-Type-Options: nosniff');
+        header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'");
         header('Cache-Control: public, max-age=86400');
         echo '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" fill="none"><rect width="400" height="400" fill="#f8fafc"/><rect x="70" y="70" width="260" height="260" rx="16" fill="#e2e8f0"/><path d="M130 270l50-60 40 45 45-55 45 70H130z" fill="#94a3b8"/><circle cx="170" cy="160" r="22" fill="#94a3b8"/><text x="200" y="318" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#64748b">SmartISP</text></svg>';
         exit;
     };
 
-    if (empty($targetUrl) || !filter_var($targetUrl, FILTER_VALIDATE_URL)) {
+    require_once __DIR__ . '/../lib/image-proxy.php';
+    $scheme = strtolower((string)parse_url($targetUrl, PHP_URL_SCHEME));
+    if (empty($targetUrl) || !filter_var($targetUrl, FILTER_VALIDATE_URL) || !in_array($scheme, ['http', 'https'], true)) {
         $servePlaceholder();
     }
 
@@ -1172,85 +1214,38 @@ if ($action === 'product-image' || $action === 'proxy-image') {
     $acceptsWebp = strpos(strtolower((string)($_SERVER['HTTP_ACCEPT'] ?? '')), 'image/webp') !== false
         && function_exists('imagecreatefromstring') && function_exists('imagewebp');
     $cacheHash = md5($targetUrl . '|w=' . $maxImageWidth . '|webp=' . ($acceptsWebp ? '1' : '0'));
-    $pathExt = pathinfo(parse_url($targetUrl, PHP_URL_PATH), PATHINFO_EXTENSION);
-    $ext = in_array(strtolower($pathExt), ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg']) ? strtolower($pathExt) : 'jpg';
-    $cacheFile = $cacheDir . '/' . $cacheHash . '.' . ($acceptsWebp ? 'webp' : $ext);
-
-    // Verificar si ya existe en caché (máximo 30 días)
-    if (file_exists($cacheFile) && filesize($cacheFile) > 0 && (time() - filemtime($cacheFile) < 86400 * 30)) {
-        $mime = function_exists('mime_content_type') ? @mime_content_type($cacheFile) : null;
-        if (!$mime) $mime = 'image/' . ($ext === 'jpg' ? 'jpeg' : $ext);
+    $sendImage = static function (string $mime, int $length, string $cacheHash): void {
         header('Content-Type: ' . $mime);
+        header('X-Content-Type-Options: nosniff');
         header('Cache-Control: public, max-age=2592000, immutable');
         header('ETag: "' . $cacheHash . '"');
-        header('Content-Length: ' . filesize($cacheFile));
+        header('Content-Length: ' . $length);
         header('Access-Control-Allow-Origin: *');
+    };
+
+    // En caché solo hay archivos con extensión de un tipo verificado al descargarlos (máximo 30 días).
+    foreach (SMARTISP_PROXY_IMAGE_TYPES as $mime => $ext) {
+        $cacheFile = $cacheDir . '/' . $cacheHash . '.' . $ext;
+        if (!is_file($cacheFile) || filesize($cacheFile) <= 0 || (time() - filemtime($cacheFile) >= 86400 * 30)) continue;
         if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && trim($_SERVER['HTTP_IF_NONE_MATCH'], '"') === $cacheHash) {
             http_response_code(304);
             exit;
         }
+        $sendImage($mime, (int)filesize($cacheFile), $cacheHash);
         readfile($cacheFile);
         exit;
     }
 
-    // 5. Descarga segura del servidor proveedor mediante cURL
-    $imgData = null;
-    $contentType = null;
-    $parsedHost = parse_url($targetUrl, PHP_URL_HOST);
-    $parsedScheme = parse_url($targetUrl, PHP_URL_SCHEME) ?: 'https';
-    $referer = $parsedScheme . '://' . $parsedHost . '/';
+    // 5. Descarga validando cada salto (sin IPs internas) y el tipo real de la imagen.
+    $imgData = smartispFetchRemoteImage($targetUrl);
+    $contentType = $imgData !== null ? smartispDetectImageType($imgData) : null;
 
-    if (function_exists('curl_init')) {
-        $ch = curl_init($targetUrl);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS      => 4,
-            CURLOPT_TIMEOUT        => 8,
-            CURLOPT_CONNECTTIMEOUT => 4,
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_SSL_VERIFYHOST => 2,
-            CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            CURLOPT_REFERER        => $referer,
-            CURLOPT_HTTPHEADER     => [
-                'Accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-                'Accept-Language: es-EC,es;q=0.9,en;q=0.8'
-            ]
-        ]);
-        $imgData = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
-        curl_close($ch);
-        if ($httpCode < 200 || $httpCode >= 300) {
-            $imgData = null;
-        }
-    } else {
-        $opts = [
-            'http' => [
-                'method' => 'GET',
-                'header' => "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)\r\nReferer: $referer\r\n",
-                'timeout' => 8
-            ],
-            'ssl' => [
-                'verify_peer' => false,
-                'verify_peer_name' => false
-            ]
-        ];
-        $imgData = @file_get_contents($targetUrl, false, stream_context_create($opts));
-    }
-
-    if (!empty($imgData)) {
-        if (!$contentType || strpos($contentType, 'image/') === false) {
-            $contentType = 'image/' . ($ext === 'jpg' ? 'jpeg' : $ext);
-        }
-
-        if ($acceptsWebp && strlen($imgData) < 20 * 1024 * 1024) {
+    if ($imgData !== null && $contentType !== null) {
+        if ($acceptsWebp && in_array($contentType, ['image/jpeg', 'image/png', 'image/webp'], true)) {
             $imageInfo = @getimagesizefromstring($imgData);
-            $mime = strtolower((string)($imageInfo['mime'] ?? ''));
             $width = (int)($imageInfo[0] ?? 0);
             $height = (int)($imageInfo[1] ?? 0);
-            if ($width > 0 && $height > 0 && $width * $height <= 20000000
-                && in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)) {
+            if ($width > 0 && $height > 0 && $width * $height <= 20000000) {
                 $source = @imagecreatefromstring($imgData);
                 if ($source !== false) {
                     $outWidth = min($width, $maxImageWidth);
@@ -1274,16 +1269,13 @@ if ($action === 'product-image' || $action === 'proxy-image') {
             }
         }
 
-        @file_put_contents($cacheFile, $imgData);
-        header('Content-Type: ' . $contentType);
-        header('Cache-Control: public, max-age=2592000, immutable');
-        header('ETag: "' . $cacheHash . '"');
-        header('Content-Length: ' . strlen($imgData));
-        header('Access-Control-Allow-Origin: *');
+        @file_put_contents($cacheDir . '/' . $cacheHash . '.' . SMARTISP_PROXY_IMAGE_TYPES[$contentType], $imgData);
+        smartispPruneImageCache($cacheDir);
+        $sendImage($contentType, strlen($imgData), $cacheHash);
         echo $imgData;
         exit;
     }
 
-    // Si falló la descarga, servir el placeholder de SmartISP
+    // Si falló la descarga o no era una imagen admitida, servir el placeholder de SmartISP
     $servePlaceholder();
 }
