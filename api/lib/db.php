@@ -458,6 +458,22 @@ const SMARTISP_DEFAULT_FAMILY_KEYWORDS = [
     'software' => ['Software y Licencias', 'software', 'licencia', 'licencias', 'antivirus', 'sistema operativo', 'office', 'windows'],
 ];
 
+// Familias por defecto (migración 017) si la tabla está vacía o aún no existe.
+const SMARTISP_DEFAULT_FAMILIES = [
+    ['id' => 'computacion', 'name' => 'Computación y Equipos', 'icon' => 'laptop', 'sortOrder' => 1],
+    ['id' => 'componentes', 'name' => 'Componentes y Almacenamiento', 'icon' => 'hard-drive', 'sortOrder' => 2],
+    ['id' => 'redes', 'name' => 'Redes y Conectividad', 'icon' => 'network', 'sortOrder' => 3],
+    ['id' => 'monitores', 'name' => 'Monitores y Pantallas', 'icon' => 'monitor', 'sortOrder' => 4],
+    ['id' => 'perifericos', 'name' => 'Periféricos y Accesorios', 'icon' => 'mouse', 'sortOrder' => 5],
+    ['id' => 'impresion', 'name' => 'Impresión y Puntos de Venta', 'icon' => 'printer', 'sortOrder' => 6],
+    ['id' => 'seguridad', 'name' => 'Seguridad y Vigilancia', 'icon' => 'shield-check', 'sortOrder' => 7],
+    ['id' => 'energia', 'name' => 'Energía y Climatización', 'icon' => 'zap', 'sortOrder' => 8],
+    ['id' => 'telefonia', 'name' => 'Telefonía y Móviles', 'icon' => 'smartphone', 'sortOrder' => 9],
+    ['id' => 'gaming', 'name' => 'Gaming y Hogar', 'icon' => 'gamepad-2', 'sortOrder' => 10],
+    ['id' => 'software', 'name' => 'Software y Licencias', 'icon' => 'file-code', 'sortOrder' => 11],
+    ['id' => 'otros', 'name' => 'Otras Soluciones IT', 'icon' => 'package', 'sortOrder' => 99],
+];
+
 // Familias visuales del sidebar de tienda (antes un array hardcodeado en tienda.html,
 // ver migracion 017). Se usa tanto desde getDynamicCategoriesList() (para anotar cada
 // categoria con su familia) como desde el admin (para gestionarlas directamente).
@@ -479,6 +495,11 @@ function getCategoryMacroGroups(PDO $pdo): array {
             'visible' => $g['visible'] === null ? true : (string)$g['visible'] === '1',
             'keywords' => is_array($keywords) && $keywords ? array_values(array_filter(array_map('strval', $keywords), 'strlen')) : (SMARTISP_DEFAULT_FAMILY_KEYWORDS[(string)$g['id']] ?? []),
         ];
+    }
+    if (!$groups) {
+        foreach (SMARTISP_DEFAULT_FAMILIES as $g) {
+            $groups[] = $g + ['imageUrl' => '', 'visible' => true, 'keywords' => SMARTISP_DEFAULT_FAMILY_KEYWORDS[$g['id']] ?? []];
+        }
     }
     return $groups;
 }
