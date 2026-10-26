@@ -1,16 +1,6 @@
 <?php
 require_once __DIR__ . '/api/lib/db.php';
 
-function seoSlugFeatured(string $text): string {
-    $clean = @iconv('UTF-8', 'ASCII//TRANSLIT', $text);
-    if (!$clean) $clean = $text;
-    $clean = preg_replace('~[^\\pL\\d]+~u', '-', $clean);
-    $clean = trim($clean, '-');
-    $clean = preg_replace('~-+~', '-', $clean);
-    $clean = strtolower($clean);
-    return !empty($clean) ? substr($clean, 0, 90) : 'articulo';
-}
-
 function escFeatured(string $value): string {
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
 }
@@ -106,7 +96,7 @@ $activeFilterCount = (int)($filterQuery !== '') + (int)($filterCategory !== '') 
 $clearFiltersUrl = '/productos-destacados';
 $productItemList = [];
 foreach ($products as $idx => $product) {
-    $url = $siteUrl . '/producto/' . rawurlencode($product['id']) . '-' . seoSlugFeatured($product['name']);
+    $url = $siteUrl . '/producto/' . rawurlencode($product['id']) . '-' . smartispSlug($product['name'], 80, 'articulo');
     $productItemList[] = [
         '@type' => 'ListItem',
         'position' => $idx + 1,
@@ -151,7 +141,7 @@ foreach ($products as $idx => $product) {
           'name' => 'Productos destacados',
           'itemListElement' => $productItemList
       ]
-  ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?>
+  ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_HEX_TAG | JSON_HEX_AMP) ?>
   </script>
   <style>
     :root{--navy:#102c3d;--blue:#087ea4;--pale:#f3f7f8;--line:#d8e5e7;--muted:#556d82;--white:#fff;--gold:#f5a524}
@@ -215,7 +205,7 @@ foreach ($products as $idx => $product) {
           <?php if ($products): ?>
             <div class="store-product-grid" aria-label="Productos destacados">
               <?php foreach ($products as $index => $product): ?>
-                <?php $storeProduct = $product; $storeProductUrl = '/producto/' . rawurlencode($product['id']) . '-' . seoSlugFeatured($product['name']); $storeProductIndex = $index; require __DIR__ . '/includes/storefront-product-card.php'; ?>
+                <?php $storeProduct = $product; $storeProductUrl = '/producto/' . rawurlencode($product['id']) . '-' . smartispSlug($product['name'], 80, 'articulo'); $storeProductIndex = $index; require __DIR__ . '/includes/storefront-product-card.php'; ?>
               <?php endforeach; ?>
             </div>
           <?php else: ?>
@@ -303,7 +293,6 @@ foreach ($products as $idx => $product) {
   <script src="/assets/js/store/site-footer.js?v=1" defer></script>
   <script src="/assets/js/store/storefront-discovery.js?v=mobile-category-drawer-20261008" defer></script>
   <script src="/assets/js/store/public-account.js" defer></script>
-  <script src="/assets/js/store/storefront-product-card.js" defer></script>
   <script>
     const featuredFilterPanel = document.getElementById('featuredFilterPanel');
     if (featuredFilterPanel && window.matchMedia('(max-width: 760px)').matches) featuredFilterPanel.open = false;
