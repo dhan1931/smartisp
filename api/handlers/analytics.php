@@ -11,16 +11,20 @@ if ($action !== 'admin-analytics' && $action !== 'admin-export') return;
 
 requireAdminAuth();
 
-// Rango [desde, hasta] a partir de ?from=Y-m-d&to=Y-m-d o ?days=N (por defecto 30 días).
+// Rango a partir de ?from=Y-m-d&to=Y-m-d o ?days=N (por defecto 30 días), en días de Ecuador.
+// Devuelve [desde UTC, hasta UTC, primer día local, último día local]: created_at está en UTC.
 function smartispReportRange(): array {
     $isDate = static fn($v) => is_string($v) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) && strtotime($v) !== false;
     $from = $_GET['from'] ?? '';
     $to = $_GET['to'] ?? '';
-    if ($isDate($from) && $isDate($to) && $from <= $to) {
-        return [$from . ' 00:00:00', $to . ' 23:59:59'];
+    if (!($isDate($from) && $isDate($to) && $from <= $to)) {
+        $days = min(730, max(1, (int)($_GET['days'] ?? 30)));
+        $to = smartispLocalToday();
+        $from = smartispLocalDayShift($to, -($days - 1));
+    } elseif ($from < smartispLocalDayShift($to, -729)) {
+        $from = smartispLocalDayShift($to, -729);
     }
-    $days = min(730, max(1, (int)($_GET['days'] ?? 30)));
-    return [date('Y-m-d 00:00:00', strtotime('-' . ($days - 1) . ' days')), date('Y-m-d 23:59:59')];
+    return [smartispLocalDayStartUtc($from), smartispLocalDayEndUtc($to), $from, $to];
 }
 
 $voidList = "'" . implode("','", SMARTISP_VOID_STATUSES) . "'";
@@ -34,11 +38,11 @@ $isPaid = $hasPaymentStatus ? "(NOT $isVoid AND LOWER(COALESCE(payment_status, '
 // ESTADÍSTICAS (/api/auth/admin-analytics)
 // -------------------------------------------------------------
 if ($action === 'admin-analytics') {
-    [$from, $to] = smartispReportRange();
+    [$from, $to, $fromDay, $toDay] = smartispReportRange();
     // Periodo anterior de igual largo, para mostrar la variación.
-    $span = strtotime($to) - strtotime($from) + 1;
-    $prevFrom = date('Y-m-d H:i:s', strtotime($from) - $span);
-    $prevTo = date('Y-m-d H:i:s', strtotime($from) - 1);
+    $spanDays = (int)(new DateTimeImmutable($fromDay))->diff(new DateTimeImmutable($toDay))->days + 1;
+    $prevFrom = smartispLocalDayStartUtc(smartispLocalDayShift($fromDay, -$spanDays));
+    $prevTo = smartispLocalDayEndUtc(smartispLocalDayShift($fromDay, -1));
 
     $totalsSql = "SELECT
             COUNT(*) AS orders,
@@ -74,16 +78,16 @@ if ($action === 'admin-analytics') {
     $previous['new_customers'] = $prevCustomers;
 
     // Serie diaria; los días sin pedidos se rellenan con cero para que el gráfico no salte fechas.
-    $dailyStmt = $pdo->prepare("SELECT DATE(created_at) AS day, SUM(NOT $isVoid) AS orders,
+    $localDay = smartispSqlLocalDay('created_at');
+    $dailyStmt = $pdo->prepare("SELECT DATE_FORMAT($localDay, '%Y-%m-%d') AS day, SUM(NOT $isVoid) AS orders,
             COALESCE(SUM(CASE WHEN $isPaid THEN total END), 0) AS revenue,
             COALESCE(SUM(CASE WHEN NOT $isVoid THEN total END), 0) AS pipeline
-        FROM orders_rows WHERE created_at BETWEEN :from AND :to GROUP BY DATE(created_at)");
+        FROM orders_rows WHERE created_at BETWEEN :from AND :to GROUP BY $localDay");
     $dailyStmt->execute([':from' => $from, ':to' => $to]);
     $byDay = [];
     foreach ($dailyStmt->fetchAll(PDO::FETCH_ASSOC) as $row) $byDay[$row['day']] = $row;
     $daily = [];
-    for ($t = strtotime(substr($from, 0, 10)); $t <= strtotime(substr($to, 0, 10)); $t += 86400) {
-        $day = date('Y-m-d', $t);
+    for ($day = $fromDay; $day <= $toDay; $day = smartispLocalDayShift($day, 1)) {
         $daily[] = [
             'day' => $day,
             'orders' => (int)($byDay[$day]['orders'] ?? 0),
@@ -117,8 +121,8 @@ if ($action === 'admin-analytics') {
     }
 
     echo json_encode([
-        'from' => substr($from, 0, 10),
-        'to' => substr($to, 0, 10),
+        'from' => $fromDay,
+        'to' => $toDay,
         'totals' => $current,
         'previous' => $previous,
         'daily' => $daily,
@@ -141,7 +145,7 @@ if (!in_array($type, $exports, true)) {
 }
 
 $pTable = getProductsTableName($pdo);
-[$from, $to] = smartispReportRange();
+[$from, $to, $fromDay, $toDay] = smartispReportRange();
 $headers = [];
 $rows = [];
 
@@ -196,7 +200,7 @@ if ($type === 'orders') {
 
 // Excel abre bien el CSV si trae BOM UTF-8 y usa ; como separador (configuración regional es-EC).
 $names = ['orders' => 'pedidos', 'products' => 'productos', 'customers' => 'clientes', 'inventory' => 'inventario'];
-$filename = 'smartisp-' . $names[$type] . ($type === 'orders' ? '-' . substr($from, 0, 10) . '_a_' . substr($to, 0, 10) : '-' . date('Y-m-d')) . '.csv';
+$filename = 'smartisp-' . $names[$type] . ($type === 'orders' ? '-' . $fromDay . '_a_' . $toDay : '-' . date('Y-m-d')) . '.csv';
 header('Content-Type: text/csv; charset=utf-8');
 header('Content-Disposition: attachment; filename="' . $filename . '"');
 $out = fopen('php://output', 'w');

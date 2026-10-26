@@ -1,6 +1,7 @@
 // Flujos de punta a punta contra MariaDB CI: pedidos, stock, pagos, sesión, exportaciones, SEO e imágenes.
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import mysql from 'mysql2/promise';
@@ -16,7 +17,7 @@ const db = await mysql.createConnection({
   host: '127.0.0.1', port: 3306, user: process.env.MYSQL_USER, password: process.env.MYSQL_PASSWORD, database: process.env.MYSQL_DATABASE,
 });
 // Las pruebas anteriores del CI ya iniciaron sesión desde 127.0.0.1: se limpia el límite de intentos.
-for (const f of fs.readdirSync(os.tmpdir())) if (/^(login|pwd_reset)_[0-9a-f]{32}\.json$/.test(f)) fs.rmSync(path.join(os.tmpdir(), f), { force: true });
+for (const f of fs.readdirSync(os.tmpdir())) if (/^(login|login_email|pwd_reset|register|change_pwd|orders|orders_email|quotes)_[0-9a-f]{32}\.json$/.test(f)) fs.rmSync(path.join(os.tmpdir(), f), { force: true });
 const port = 8931;
 const baseUrl = `http://127.0.0.1:${port}`;
 
@@ -45,10 +46,12 @@ await db.execute("DELETE FROM users_rows WHERE id IN ('smk-admin','smk-cust') OR
 // En producción orders_rows tiene customer_email (ensureAuxiliaryTables); el fixture de CI no.
 await db.execute('ALTER TABLE orders_rows ADD COLUMN IF NOT EXISTS customer_email VARCHAR(255) NULL');
 await db.execute("DELETE FROM orders_rows WHERE customer_email = ? OR user_id = ?", [customer.email, customer.id]);
-await db.execute("DELETE FROM products_rows WHERE id IN ('smk-prod','smk-prod2')");
+await db.execute("DELETE FROM orders_rows WHERE customer_email LIKE 'smk-%'");
+await db.execute("DELETE FROM products_rows WHERE id IN ('smk-prod','smk-prod2','smk-free')");
 await db.execute("INSERT INTO users_rows (id,email,password_hash,name,role) VALUES (?,?,?,?, 'admin')", [admin.id, admin.email, adminHash, 'Admin']);
 await db.execute("INSERT INTO users_rows (id,email,password_hash,name,role) VALUES (?,?,?,?, 'customer')", [customer.id, customer.email, await bcrypt.hash(customer.password, 10), 'Cliente']);
 await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku) VALUES ('smk-prod','Nombre Real',10,1,'General','SKU-REAL')");
+await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku) VALUES ('smk-free','Producto a cotizar',0,1,'General','SKU-FREE')");
 
 const php = spawn('php', ['-S', `127.0.0.1:${port}`, '-t', root], { cwd: root, env: process.env, stdio: ['ignore', 'ignore', 'pipe'] });
 for (let i = 0; i < 40; i++) { try { await fetch(`${baseUrl}/api/router.php?action=me`); break; } catch { await new Promise(r => setTimeout(r, 150)); } }
@@ -74,13 +77,27 @@ try {
   assert.ok(p2.specs_json.includes('Puertos') && p2.warranty_text === '1 año', 'admin-products POST debe ser la versión con specs');
   const list = await req('admin-products?limit=5', { cookie: ac });
   assert.equal(list.status, 200); assert.equal(typeof list.data.total, 'number');
+  const toggle = await req('admin-products', { method: 'POST', cookie: ac, body: { id: 'smk-prod2', name: 'Prod 2', price: 5, visible: 0 } });
+  assert.equal(toggle.status, 200, JSON.stringify(toggle.data));
+  const [[p2b]] = await db.query("SELECT specs_json, warranty_text, visible FROM products_rows WHERE id = 'smk-prod2'");
+  assert.ok(p2b.specs_json.includes('Puertos') && p2b.warranty_text === '1 año' && Number(p2b.visible) === 0, 'un guardado parcial no debe borrar specs ni garantía');
+  const negative = await req('admin-products', { method: 'POST', cookie: ac, body: { id: 'smk-prod2', name: 'Prod 2', price: -1 } });
+  assert.equal(negative.status, 400, 'precio negativo debe rechazarse');
+
+  // --- Acciones destructivas solo por POST
+  for (const action of ['admin-products-clear', 'categories-reset', 'landing-content-reset', 'test-email', 'logout']) {
+    const viaGet = await req(action, { cookie: ac });
+    assert.equal(viaGet.status, 405, `${action} por GET debe dar 405`);
+  }
+  const [[stillThere]] = await db.query("SELECT COUNT(*) n FROM products_rows WHERE id = 'smk-prod'");
+  assert.equal(Number(stillThere.n), 1, 'el GET rechazado no debe borrar productos');
 
   // --- Login con el hash bcrypt como contraseña no debe entrar
   const hashLogin = await req('login', { method: 'POST', body: { email: admin.email, password: adminHash } });
   assert.equal(hashLogin.status, 401, 'el hash bcrypt no debe servir como contraseña');
 
   // --- Pedidos
-  const cc = await login(customer.email, customer.password);
+  let cc = await login(customer.email, customer.password);
   const bad = await req('orders', { method: 'POST', cookie: cc, body: { customerName: 'C', customerEmail: 'no-es-correo', items: [{ id: 'smk-prod', quantity: 1 }] } });
   assert.equal(bad.status, 400, 'correo inválido debe dar 400');
   const ok = await req('orders', { method: 'POST', cookie: cc, body: { customerName: 'Cliente', customerEmail: customer.email, items: [{ id: 'smk-prod', name: 'FALSO', price: 0.01, quantity: 2 }] } });
@@ -89,6 +106,21 @@ try {
   const items = JSON.parse(order.items);
   assert.equal(items[0].name, 'Nombre Real'); assert.equal(items[0].sku, 'SKU-REAL');
   assert.equal(Number(order.total), 20); assert.equal(order.user_id, customer.id);
+  assert.deepEqual(ok.data.order, { id: ok.data.orderId, status: 'pending', total: 20, items: [{ id: 'smk-prod', name: 'Nombre Real', sku: 'SKU-REAL', price: 10, quantity: 2 }] }, 'la respuesta trae el pedido armado en el servidor');
+
+  const missing = await req('orders', { method: 'POST', body: { customerName: 'Otro', customerEmail: 'smk-otro@example.test', items: [{ id: 'smk-no-existe', quantity: 1 }, { id: 'smk-prod', quantity: 1 }] } });
+  assert.equal(missing.status, 400);
+  assert.deepEqual(missing.data.invalidItems, ['smk-no-existe'], 'el 400 indica qué artículos quitar');
+  const mixed = await req('orders', { method: 'POST', body: { customerName: 'Otro', customerEmail: 'smk-otro@example.test', items: [{ id: 'smk-prod', quantity: 1 }, { id: 'smk-free', quantity: 1 }] } });
+  assert.equal(mixed.status, 200, JSON.stringify(mixed.data));
+  assert.equal(mixed.data.isQuote, true, 'un carrito con un artículo sin precio es cotización');
+  assert.equal(mixed.data.order.status, 'quote_requested');
+
+  const search = await req(`admin-orders?q=${encodeURIComponent(ok.data.orderId)}`, { cookie: ac });
+  assert.equal(search.status, 200, `búsqueda de pedidos: ${JSON.stringify(search.data)}`);
+  assert.ok(search.data.orders.some(o => o.id === ok.data.orderId), 'la búsqueda encuentra el pedido');
+  const quoteSearch = await req('admin-service-quotes?q=algo', { cookie: ac });
+  assert.equal(quoteSearch.status, 200, `búsqueda de cotizaciones: ${JSON.stringify(quoteSearch.data)}`);
 
   await db.execute("INSERT INTO orders_rows (id,total,status,customer_email,created_at) VALUES ('smk-guest',1,'pending',?, NOW())", [customer.email]);
   const mine = await req('orders', { cookie: cc });
@@ -107,8 +139,12 @@ try {
   assert.equal(anon.status, 401, 'sin sesión debe dar 401 aunque mande email');
   const wrong = await req('change-password', { method: 'POST', cookie: cc, body: { currentPassword: 'mala', newPassword: 'nueva-123' } });
   assert.equal(wrong.status, 401);
+  const otherSession = await login(customer.email, customer.password);
   const good = await req('change-password', { method: 'POST', cookie: cc, body: { currentPassword: customer.password, newPassword: 'nueva-123' } });
   assert.equal(good.status, 200, JSON.stringify(good.data));
+  cc = good.cookie;
+  assert.equal((await req('me', { cookie: cc })).status, 200, 'la sesión que cambió la contraseña sigue abierta');
+  assert.equal((await req('me', { cookie: otherSession })).status, 401, 'cambiar la contraseña cierra las demás sesiones');
   await login(customer.email, 'nueva-123');
 
   // --- Inventario: stock controlado, reserva, consumo y liberación por estado del pedido
@@ -124,12 +160,20 @@ try {
   const badStock = await req('admin-inventory', { method: 'POST', cookie: ac, body: { product_id: 'smk-stock', available: -1 } });
   assert.equal(badStock.status, 400);
 
+  const stockOf = async () => (await db.query("SELECT quantity_available a, quantity_reserved r FROM product_inventory WHERE product_id = 'smk-stock'"))[0][0];
+  const forged = await req('orders', { method: 'POST', body: { customerName: 'Otro', customerEmail: 'smk-otro@example.test', items: [{ id: 'smk-prod', productId: 'smk-stock', stockTracked: true, quantity: 1 }] } });
+  assert.equal(forged.status, 200, JSON.stringify(forged.data));
+  assert.deepEqual(await stockOf(), { a: 3, r: 0 }, 'un productId inventado no debe reservar stock de otro producto');
+  const [[forgedRow]] = await db.query('SELECT items FROM orders_rows WHERE id = ?', [forged.data.orderId]);
+  const forgedItem = JSON.parse(forgedRow.items)[0];
+  assert.equal(forgedItem.productId, 'smk-prod'); assert.equal(forgedItem.stockTracked, undefined);
+
   const stockOrder = await req('orders', { method: 'POST', cookie: cc, body: { customerName: 'Cliente', customerEmail: customer.email, items: [{ id: 'smk-stock', quantity: 1 }, { id: 'smk-stock', quantity: 1 }] } });
   assert.equal(stockOrder.status, 200, JSON.stringify(stockOrder.data));
-  const stockOf = async () => (await db.query("SELECT quantity_available a, quantity_reserved r FROM product_inventory WHERE product_id = 'smk-stock'"))[0][0];
   assert.deepEqual(await stockOf(), { a: 3, r: 2 }, 'el pedido debe reservar 2');
   const tooMany = await req('orders', { method: 'POST', cookie: cc, body: { customerName: 'Cliente', customerEmail: customer.email, items: [{ id: 'smk-stock', quantity: 2 }] } });
   assert.equal(tooMany.status, 400, 'solo queda 1 libre');
+  assert.deepEqual(tooMany.data.invalidItems, ['smk-stock']);
   assert.deepEqual(await stockOf(), { a: 3, r: 2 }, 'un pedido rechazado no toca el stock');
 
   const toPaid = await req('admin-order-status', { method: 'POST', cookie: ac, body: { id: stockOrder.data.orderId, status: 'paid' } });
@@ -145,6 +189,13 @@ try {
   assert.deepEqual(await stockOf(), { a: 3, r: 2 }, 'reactivar vuelve a reservar');
   const low = await req('admin-inventory?filter=low&low=5&q=smk-stock', { cookie: ac });
   assert.ok(low.data.items.some(i => i.id === 'smk-stock' && i.free === 1), 'libre 1 debe salir como stock bajo');
+  const untrackBusy = await req('admin-inventory', { method: 'POST', cookie: ac, body: { product_id: 'smk-stock', track: false } });
+  assert.equal(untrackBusy.status, 409, 'no se deja de controlar un producto con unidades reservadas');
+  await db.execute("UPDATE product_inventory SET quantity_available = 1 WHERE product_id = 'smk-stock'");
+  await req('admin-order-status', { method: 'POST', cookie: ac, body: { id: stockOrder.data.orderId, status: 'cancelled' } });
+  const reopen = await req('admin-order-status', { method: 'POST', cookie: ac, body: { id: stockOrder.data.orderId, status: 'pending' } });
+  assert.equal(reopen.status, 409, 'reabrir sin stock libre suficiente se rechaza');
+  assert.deepEqual(await stockOf(), { a: 1, r: 0 }, 'el rechazo no toca el inventario');
   const untrack = await req('admin-inventory', { method: 'POST', cookie: ac, body: { product_id: 'smk-stock', track: false } });
   assert.equal(untrack.data.item.tracked, false);
 
@@ -199,18 +250,37 @@ try {
   const img2 = await fetch(imgUrl, { headers: { 'If-None-Match': etag } });
   assert.equal(img2.status, 304, 'con ETag igual debe responder 304');
   assert.equal((await fetch(imgUrl.replace(/file=[^&]+/, 'file=no-existe.png'))).status, 404);
+  assert.equal((await fetch(imgUrl.replace(/file=[^&]+/, 'file=router.php'))).status, 404, 'serve-upload solo sirve extensiones de imagen');
+
+  // --- Proxy de imágenes: una IP interna no se descarga (aunque sea una imagen real) y un SVG no pasa
+  for (const target of [imgUrl, 'http://169.254.169.254/latest/meta-data/', 'file:///etc/passwd']) {
+    const proxied = await fetch(`${baseUrl}/api/router.php?action=proxy-image&url=${encodeURIComponent(target)}`);
+    const body = await proxied.text();
+    assert.equal(proxied.status, 200);
+    assert.match(proxied.headers.get('content-type'), /^image\/svg\+xml/, `${target} debe dar el placeholder`);
+    assert.ok(body.includes('>SmartISP</text>'), `${target} no debe descargarse`);
+    assert.equal(proxied.headers.get('x-content-type-options'), 'nosniff');
+  }
+  const detected = execFileSync('php', ['-r', "require 'api/lib/image-proxy.php'; echo json_encode([smartispDetectImageType('<svg xmlns=\"http://www.w3.org/2000/svg\"><script>alert(1)</script></svg>'), smartispDetectImageType(base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='))]);"], { cwd: root }).toString();
+  assert.deepEqual(JSON.parse(detected), [null, 'image/png'], 'el proxy solo acepta imágenes rasterizadas verificadas');
 
   // --- Contraseña heredada MD5: entra y se migra a bcrypt
-  const { createHash } = await import('node:crypto');
+  const legacyMd5 = createHash('md5').update('legacy-pass').digest('hex');
   await db.execute("DELETE FROM users_rows WHERE id = 'smk-legacy'");
-  await db.execute("INSERT INTO users_rows (id,email,password_hash,name,role) VALUES ('smk-legacy','smk-legacy@example.test',?,'Legacy','customer')", [createHash('md5').update('legacy-pass').digest('hex')]);
+  await db.execute("INSERT INTO users_rows (id,email,password_hash,name,role) VALUES ('smk-legacy','smk-legacy@example.test',?,'Legacy','customer')", [legacyMd5]);
+  const passTheHash = await req('login', { method: 'POST', body: { email: 'smk-legacy@example.test', password: legacyMd5 } });
+  assert.equal(passTheHash.status, 401, 'el hash MD5 guardado no debe servir como contraseña');
   await login('smk-legacy@example.test', 'legacy-pass');
   const [[legacy]] = await db.query("SELECT password_hash FROM users_rows WHERE id = 'smk-legacy'");
   assert.ok(legacy.password_hash.startsWith('$2y$'), 'el hash MD5 debe migrarse a bcrypt');
 
   // --- reset-password con token válido; luego entra con la nueva
   await db.execute("DELETE FROM password_resets WHERE email = 'smk-legacy@example.test'");
-  await db.execute("INSERT INTO password_resets (email, token, expires_at) VALUES ('smk-legacy@example.test','smk-token', DATE_ADD(NOW(), INTERVAL 1 HOUR))");
+  // En la base solo se guarda el SHA-256 del token; el hash en sí no sirve como token.
+  const tokenHash = createHash('sha256').update('smk-token').digest('hex');
+  await db.execute("INSERT INTO password_resets (email, token, expires_at) VALUES ('smk-legacy@example.test', ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))", [tokenHash]);
+  const byHash = await req('reset-password', { method: 'POST', body: { token: tokenHash, password: 'otra-123', confirmation: 'otra-123' } });
+  assert.equal(byHash.status, 400, 'el hash guardado no debe servir como token');
   const reset = await req('reset-password', { method: 'POST', body: { token: 'smk-token', password: 'otra-123', confirmation: 'otra-123' } });
   assert.equal(reset.status, 200, JSON.stringify(reset.data));
   await login('smk-legacy@example.test', 'otra-123');
