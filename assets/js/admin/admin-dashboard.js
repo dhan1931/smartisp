@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async user =
   // Esqueletos con el mismo alto final: el contenido no empuja la página al llegar.
   const skeleton = () => {
     $('#kpis').innerHTML = Array.from({ length: 6 }, () => '<div class="kpi" aria-hidden="true"><span class="sk sk-line" style="width:55%"></span><span class="sk sk-title"></span><span class="sk sk-line" style="width:40%"></span><span class="sk" style="height:34px;margin-top:auto"></span></div>').join('');
-    ['#goal', '#cash', '#attention', '#status', '#buyers', '#ops', '#top', '#categories', '#cities', '#inventory', '#idle', '#customers'].forEach(sel => { $(sel).innerHTML = '<span class="sk sk-line"></span><span class="sk sk-line" style="width:80%"></span><span class="sk sk-line" style="width:60%"></span>'; });
+    ['#goal', '#cash', '#attention', '#status', '#buyers', '#ops', '#top', '#categories', '#cities', '#inventory', '#idle', '#customers', '#margin'].forEach(sel => { $(sel).innerHTML = '<span class="sk sk-line"></span><span class="sk sk-line" style="width:80%"></span><span class="sk sk-line" style="width:60%"></span>'; });
     $('#trendChart').innerHTML = '<span class="sk sk-block" style="height:300px"></span>';
     $('#heatmap').innerHTML = '<span class="sk sk-block" style="height:200px"></span>';
     $('#recent').innerHTML = SmartAdmin.skeletonRows(5, 6);
@@ -235,8 +235,28 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async user =
         <a class="metric" href="/inventario.html?filter=tracked"><strong>${number(i.free_units)}</strong><span>Unidades libres · ${number(i.reserved_units)} apartadas</span></a>
         <a class="metric ${i.out_of_stock ? 'bad' : ''}" href="/inventario.html?filter=out"><strong>${number(i.out_of_stock)}</strong><span>Agotados</span></a>
         <a class="metric ${i.low_stock ? 'warn' : ''}" href="/inventario.html?filter=low"><strong>${number(i.low_stock)}</strong><span>Stock bajo (≤ ${i.low_threshold})</span></a>
-      </div>` + (i.low_items.length ? `<ul class="mini-list">${i.low_items.map(p => `<li><span><strong>${esc(p.name)}</strong><small>${p.sku ? esc(p.sku) + ' · ' : ''}${p.free <= 0 ? 'Agotado' : `${plural(p.free, 'libre', 'libres')}`}${p.reserved ? ` · ${number(p.reserved)} apartadas` : ''}</small></span>
+      </div>` + `<p class="muted goal-note">${i.stock_cost_value == null ? 'Sin costos: aplica la migración 041 para ver el valor a costo.' : i.tracked_with_cost ? `A costo: <strong>${money(i.stock_cost_value)}</strong> (${number(i.tracked_with_cost)} de ${plural(i.tracked, 'producto', 'productos')} con costo; a precio de venta suman ${money(i.costed_stock_value)}).` : 'Carga costos en Productos para ver el valor del inventario a costo.'}</p>` + (i.low_items.length ? `<ul class="mini-list">${i.low_items.map(p => `<li><span><strong>${esc(p.name)}</strong><small>${p.sku ? esc(p.sku) + ' · ' : ''}${p.free <= 0 ? 'Agotado' : `${plural(p.free, 'libre', 'libres')}`}${p.reserved ? ` · ${number(p.reserved)} apartadas` : ''}</small></span>
         <a class="button small" href="/inventario.html?q=${encodeURIComponent(p.sku || p.name)}"><i data-lucide="package-plus" aria-hidden="true"></i> Reponer</a></li>`).join('')}</ul>` : '<p class="muted">Ningún producto con stock bajo.</p>');
+  };
+
+  // Margen bruto del periodo con el costo actual de cada producto.
+  const renderMargin = d => {
+    const m = d.margin;
+    if (!m) { $('#margin').innerHTML = stateHtml('error', 'No se pudo calcular'); return; }
+    if (!m.available || !m.costed_products) {
+      $('#margin').innerHTML = stateHtml('empty', 'Carga costos para ver tu margen', m.available ? 'Agrega el costo de compra en cada producto (o impórtalo con una columna «costo») y aquí verás cuánto ganas en cada venta.' : 'Falta aplicar la migración 041_products_cost.sql (php scripts/migrate.php).', 'calculator') + '<p style="text-align:center;margin:0"><a class="button small" href="/editor-catalogo.html?tab=tab-products">Ir a Productos</a></p>';
+      return;
+    }
+    if (!m.products_with_cost) { $('#margin').innerHTML = stateHtml('empty', 'Sin ventas de productos con costo', `${plural(m.costed_products, 'producto tiene', 'productos tienen')} costo cargado, pero ninguno se vendió en este periodo.`, 'calculator'); return; }
+    const tone = p => p < 0 ? 'bad' : p < 10 ? 'warn' : '';
+    $('#margin').innerHTML = `<div class="metric-grid">
+        <div class="metric ${m.gross_margin < 0 ? 'bad' : ''}"><strong>${money(m.gross_margin)}</strong><span>Margen bruto</span></div>
+        <div class="metric ${tone(m.margin_pct)}"><strong>${pctText(m.margin_pct)}</strong><span>Margen sobre ventas</span></div>
+        <div class="metric"><strong>${money(m.revenue)}</strong><span>Ventas con costo · ${pctText(m.coverage_pct)} del total</span></div>
+        <div class="metric"><strong>${money(m.cost)}</strong><span>Costo de lo vendido</span></div>
+      </div>
+      <p class="muted goal-note">${plural(m.products_with_cost, 'producto vendido', 'productos vendidos')} con costo de ${number(m.products_sold)}. Menor margen:</p>
+      <ul class="mini-list">${m.lowest.slice(0, 5).map(p => `<li><span><strong>${esc(p.name)}</strong><small>${number(p.units)} u. · vendido ${money(p.revenue)} · costo ${money(p.cost)}</small></span><b class="margin-pct ${tone(p.margin_pct)}">${pctText(p.margin_pct)}</b></li>`).join('')}</ul>`;
   };
 
   const renderIdle = d => {
@@ -266,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async user =
     const d = state.data;
     renderPeriod(d); renderKpis(d); renderGoal(d); renderCash(d); renderAttention(d); renderRecent(d);
     renderStatus(d); renderBuyers(d); renderOps(d); renderTop(d); renderCategories(d); renderHeatmap(d);
-    renderCities(d); renderInventory(d); renderIdle(d); renderCustomers(d);
+    renderCities(d); renderInventory(d); renderIdle(d); renderCustomers(d); renderMargin(d);
     icons();
     renderTrend();
     icons();

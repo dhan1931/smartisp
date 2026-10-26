@@ -358,6 +358,83 @@ try {
   }
   assert.equal(last.status, 429, 'el límite debe aplicarse aunque cambie X-Forwarded-For');
 
+  // --- Costo, acciones masivas, historial de inventario y aviso de stock (migraciones 041 y 042)
+  {
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    await db.execute("DELETE FROM products_rows WHERE id IN ('smk-cost','smk-bulk1','smk-bulk2')");
+    await db.execute("DELETE FROM product_inventory WHERE product_id = 'smk-cost'");
+    await db.execute("DELETE FROM inventory_movements WHERE product_id = 'smk-cost'");
+    await db.execute("DELETE FROM settings_rows WHERE setting_key = 'stock_alert:smk-cost'");
+
+    const costSave = await req('admin-products', { method: 'POST', cookie: ac, body: { id: 'smk-cost', name: 'Producto Costo', price: 20, cost: 12.34, category: 'General', sku: 'SKU-COST' } });
+    assert.equal(costSave.status, 200, JSON.stringify(costSave.data));
+    const [[costRow]] = await db.query("SELECT cost FROM products_rows WHERE id = 'smk-cost'");
+    assert.equal(Number(costRow.cost), 12.34, 'el costo se guarda');
+    const adminCost = await req('admin-products?q=SKU-COST', { cookie: ac });
+    assert.equal(adminCost.data.products.find(p => p.id === 'smk-cost')?.cost, 12.34, 'el panel ve el costo');
+    for (const action of ['catalog?q=SKU-COST', 'catalog?q=smk-cost&details=1']) {
+      const pub = await req(action);
+      assert.equal(pub.status, 200);
+      assert.ok(pub.data.products.some(p => p.id === 'smk-cost'), `${action} encuentra el producto`);
+      assert.ok(pub.data.products.every(p => !('cost' in p)) && !JSON.stringify(pub.data).includes('12.34'), `${action} no debe exponer el costo`);
+    }
+    const publicPage = await (await fetch(`${baseUrl}/producto.php?slug=smk-cost`)).text();
+    assert.ok(!publicPage.includes('12.34') && !publicPage.includes('12,34'), 'la ficha pública no debe mostrar el costo');
+
+    await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku) VALUES ('smk-bulk1','Bulk 1',100,1,'General','SKU-B1'),('smk-bulk2','Bulk 2',0,1,'General','SKU-B2')");
+    const bulkIds = ['smk-bulk1', 'smk-bulk2'];
+    const anonBulk = await req('admin-products-bulk-update', { method: 'POST', body: { op: 'visibility', visible: false, ids: bulkIds } });
+    assert.equal(anonBulk.status, 401, 'las acciones masivas exigen sesión de admin');
+    assert.equal((await req('admin-products-bulk-update', { cookie: ac })).status, 405, 'acciones masivas solo por POST');
+    assert.equal((await req('admin-products-bulk-update', { method: 'POST', cookie: ac, body: { op: 'delete', ids: bulkIds } })).status, 400, 'operación fuera de la lista blanca');
+    assert.equal((await req('admin-products-bulk-update', { method: 'POST', cookie: ac, body: { op: 'visibility', visible: false, ids: Array.from({ length: 501 }, (_, i) => `x${i}`) } })).status, 400, 'límite de ids por llamada');
+    const hide = await req('admin-products-bulk-update', { method: 'POST', cookie: ac, body: { op: 'visibility', visible: false, ids: [...bulkIds, 'smk-no-existe'] } });
+    assert.equal(hide.status, 200, JSON.stringify(hide.data));
+    assert.equal(hide.data.updated, 2);
+    assert.equal(hide.data.skipped.length, 1, 'el id inexistente se informa como omitido');
+    const [hidden] = await db.query("SELECT visible FROM products_rows WHERE id IN ('smk-bulk1','smk-bulk2')");
+    assert.ok(hidden.every(r => Number(r.visible) === 0), 'ocultar en bloque');
+    const preview = await req('admin-products-bulk-update', { method: 'POST', cookie: ac, body: { op: 'price', mode: 'percent', value: 10, dry_run: true, ids: bulkIds } });
+    assert.equal(preview.status, 200, JSON.stringify(preview.data));
+    assert.deepEqual(preview.data.changes, [{ id: 'smk-bulk1', name: 'Bulk 1', before: 100, after: 110 }], 'vista previa del antes/después');
+    const [[notYet]] = await db.query("SELECT price FROM products_rows WHERE id = 'smk-bulk1'");
+    assert.equal(Number(notYet.price), 100, 'la vista previa no guarda');
+    const raise = await req('admin-products-bulk-update', { method: 'POST', cookie: ac, body: { op: 'price', mode: 'percent', value: 10, ids: bulkIds } });
+    assert.equal(raise.status, 200, JSON.stringify(raise.data));
+    const [prices] = await db.query("SELECT id, price, visible FROM products_rows WHERE id IN ('smk-bulk1','smk-bulk2') ORDER BY id");
+    assert.deepEqual(prices.map(r => [r.id, Number(r.price), Number(r.visible)]), [['smk-bulk1', 110, 0], ['smk-bulk2', 0, 0]], 'subir 10% solo toca el precio y no a los productos a cotizar');
+
+    const [[mailBefore]] = await db.query('SELECT admin_email FROM mail_settings WHERE id = 1');
+    await db.execute("UPDATE mail_settings SET admin_email = 'smk-ops@example.test' WHERE id = 1");
+    const set6 = await req('admin-inventory', { method: 'POST', cookie: ac, body: { product_id: 'smk-cost', available: 6, note: 'Compra inicial' } });
+    assert.equal(set6.status, 200, JSON.stringify(set6.data));
+    for (const f of fs.readdirSync(os.tmpdir())) if (/^(orders|orders_email)_[0-9a-f]{32}\.json$/.test(f)) fs.rmSync(path.join(os.tmpdir(), f), { force: true });
+    const movOrder = await req('orders', { method: 'POST', body: { customerName: 'Mov', customerEmail: 'smk-mov@example.test', items: [{ id: 'smk-cost', quantity: 2 }] } });
+    assert.equal(movOrder.status, 200, JSON.stringify(movOrder.data));
+    const [moves] = await db.query("SELECT reason, delta_available, delta_reserved, order_id, note FROM inventory_movements WHERE product_id = 'smk-cost' ORDER BY id");
+    assert.deepEqual(moves.map(m => [m.reason, Number(m.delta_available), Number(m.delta_reserved)]), [['manual', 6, 0], ['order_reserved', 0, 2]], 'ajuste manual y reserva del pedido quedan en el historial');
+    assert.equal(moves[1].order_id, movOrder.data.orderId);
+    assert.equal(moves[0].note, 'Compra inicial');
+    const history = await req('admin-inventory-movements?product_id=smk-cost', { cookie: ac });
+    assert.equal(history.status, 200, JSON.stringify(history.data));
+    assert.equal(history.data.total, 2);
+    assert.equal(history.data.items[0].reason, 'order_reserved', 'el historial va del más reciente al más antiguo');
+    assert.equal((await req('admin-inventory-movements?product_id=smk-cost')).status, 401, 'el historial exige sesión de admin');
+
+    // Libre 6 -> 4 cruza el umbral de stock bajo: deja la marca del aviso (se envía tras responder).
+    let mark;
+    for (let i = 0; i < 40 && !mark; i++) { [[mark]] = await db.query("SELECT setting_value FROM settings_rows WHERE setting_key = 'stock_alert:smk-cost'"); if (!mark) await sleep(150); }
+    assert.ok(mark, 'cruzar el umbral de stock bajo encola un aviso');
+    const toZero = await req('admin-inventory', { method: 'POST', cookie: ac, body: { product_id: 'smk-cost', delta: -4 } });
+    assert.equal(toZero.status, 200, JSON.stringify(toZero.data));
+    assert.equal(toZero.data.item.free, 0);
+    await sleep(600);
+    const [[mark2]] = await db.query("SELECT setting_value FROM settings_rows WHERE setting_key = 'stock_alert:smk-cost'");
+    assert.equal(mark2.setting_value, mark.setting_value, 'no más de un aviso por producto cada 24 h');
+    await db.execute('UPDATE mail_settings SET admin_email = ? WHERE id = 1', [mailBefore?.admin_email ?? null]);
+  }
+
+
   // --- Migración 043: notas internas de pedidos, conversión de cotizaciones y chips con fechas
   {
     const noteText = `smk nota interna ${Date.now()}`;

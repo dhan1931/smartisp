@@ -85,6 +85,9 @@ a.metric:hover { border-color: var(--accent); }
 .metric span { color: var(--text-3); font-size: 12px; }
 .metric.warn strong { color: var(--warning); }
 .metric.bad strong { color: var(--danger); }
+.margin-pct { font-variant-numeric: tabular-nums; font-weight: 700; }
+.margin-pct.warn { color: var(--warning); }
+.margin-pct.bad { color: var(--danger); }
 .idle-buckets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .idle-buckets > div { padding: 12px; border: 1px solid var(--border-soft); border-radius: var(--radius-sm); background: var(--surface-2); text-align: center; }
 .idle-buckets strong { display: block; font-family: var(--font-display); font-size: 22px; font-variant-numeric: tabular-nums; }

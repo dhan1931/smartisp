@@ -302,15 +302,49 @@ $heatmap = $section('heatmap', static function () use ($pdo, $from, $to, $local,
 }, null);
 
 // Productos y categorías del periodo.
-[$topByUnits, $topByRevenue, $categories] = $section('products', static function () use ($pdo, $from, $to, $pTable) {
+$hasCost = in_array('cost', smartispTableColumns($pdo, $pTable), true);
+$margin = null;
+[$topByUnits, $topByRevenue, $categories] = $section('products', static function () use ($pdo, $from, $to, $pTable, $hasCost, &$margin) {
     $all = smartispTopProducts($pdo, $from, $to, 100000);
     $ids = array_values(array_filter(array_map(static fn($p) => (string)$p['key'], $all)));
     $info = [];
+    $costs = [];
     foreach (array_chunk($ids, 500) as $chunk) {
-        $stmt = $pdo->prepare("SELECT id, category FROM `$pTable` WHERE id IN (" . implode(',', array_fill(0, count($chunk), '?')) . ')');
+        $stmt = $pdo->prepare("SELECT id, category" . ($hasCost ? ', cost' : '') . " FROM `$pTable` WHERE id IN (" . implode(',', array_fill(0, count($chunk), '?')) . ')');
         $stmt->execute($chunk);
-        $info += $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $info[$r['id']] = $r['category'];
+            if ($hasCost && $r['cost'] !== null) $costs[$r['id']] = (float)$r['cost'];
+        }
     }
+    // Margen bruto con el costo actual de cada producto; solo cuentan los que tienen costo cargado.
+    $marginRevenue = 0.0;
+    $marginCost = 0.0;
+    $allRevenue = 0.0;
+    $marginItems = [];
+    foreach ($all as $p) {
+        $allRevenue += $p['revenue'];
+        if (!isset($costs[$p['key']]) || $p['revenue'] <= 0) continue;
+        $cost = round($costs[$p['key']] * $p['units'], 2);
+        $marginRevenue += $p['revenue'];
+        $marginCost += $cost;
+        $marginItems[] = ['product_id' => (string)$p['key'], 'name' => $p['name'], 'units' => $p['units'], 'revenue' => $p['revenue'], 'cost' => $cost,
+            'margin' => round($p['revenue'] - $cost, 2), 'margin_pct' => round(($p['revenue'] - $cost) / $p['revenue'] * 100, 1)];
+    }
+    usort($marginItems, static fn($a, $b) => ($a['margin_pct'] <=> $b['margin_pct']) ?: ($a['margin'] <=> $b['margin']));
+    $costedProducts = $hasCost ? (int)$pdo->query("SELECT COUNT(*) FROM `$pTable` WHERE cost IS NOT NULL")->fetchColumn() : 0;
+    $margin = [
+        'available' => $hasCost,
+        'costed_products' => $costedProducts,
+        'revenue' => round($marginRevenue, 2),
+        'cost' => round($marginCost, 2),
+        'gross_margin' => round($marginRevenue - $marginCost, 2),
+        'margin_pct' => $marginRevenue > 0 ? round(($marginRevenue - $marginCost) / $marginRevenue * 100, 1) : null,
+        'coverage_pct' => $allRevenue > 0 ? round($marginRevenue / $allRevenue * 100, 1) : null,
+        'products_sold' => count($all),
+        'products_with_cost' => count($marginItems),
+        'lowest' => array_slice($marginItems, 0, 8),
+    ];
     $cats = [];
     foreach ($all as &$p) {
         $p['product_id'] = isset($info[$p['key']]) ? (string)$p['key'] : null;
@@ -376,10 +410,11 @@ $cities = $hasCol('shipping') ? $section('cities', static function () use ($pdo,
     return array_slice($out, 0, 10);
 }, []) : [];
 
-$inventory = $hasInventory ? $section('inventory', static function () use ($pdo, $pTable) {
+$inventory = $hasInventory ? $section('inventory', static function () use ($pdo, $pTable, $hasCost) {
     $free = 'GREATEST(CAST(i.quantity_available AS SIGNED) - CAST(i.quantity_reserved AS SIGNED), 0)';
     $row = $pdo->query("SELECT COUNT(*) AS tracked, COALESCE(SUM(i.quantity_available), 0) AS units, COALESCE(SUM($free), 0) AS free_units,
             COALESCE(SUM(i.quantity_reserved), 0) AS reserved_units, COALESCE(SUM(i.quantity_available * COALESCE(p.price, 0)), 0) AS stock_value,
+            " . ($hasCost ? 'SUM(i.quantity_available * p.cost) AS stock_cost_value, SUM(p.cost IS NOT NULL) AS tracked_with_cost, COALESCE(SUM(CASE WHEN p.cost IS NOT NULL THEN i.quantity_available * COALESCE(p.price, 0) END), 0) AS costed_stock_value' : 'NULL AS stock_cost_value, 0 AS tracked_with_cost, 0 AS costed_stock_value') . ",
             SUM($free = 0) AS out_of_stock, SUM($free > 0 AND $free <= " . SMARTISP_INSIGHTS_LOW_STOCK . ") AS low_stock
         FROM product_inventory i LEFT JOIN `$pTable` p ON p.id = i.product_id")->fetch(PDO::FETCH_ASSOC) ?: [];
     $low = $pdo->query("SELECT p.id, p.name, p.sku, p.price, p.visible, CAST(i.quantity_available AS SIGNED) AS available,
@@ -392,6 +427,9 @@ $inventory = $hasInventory ? $section('inventory', static function () use ($pdo,
         'free_units' => (int)($row['free_units'] ?? 0),
         'reserved_units' => (int)($row['reserved_units'] ?? 0),
         'stock_value' => round((float)($row['stock_value'] ?? 0), 2),
+        'stock_cost_value' => $row['stock_cost_value'] !== null ? round((float)$row['stock_cost_value'], 2) : null,
+        'costed_stock_value' => round((float)($row['costed_stock_value'] ?? 0), 2),
+        'tracked_with_cost' => (int)($row['tracked_with_cost'] ?? 0),
         'out_of_stock' => (int)($row['out_of_stock'] ?? 0),
         'low_stock' => (int)($row['low_stock'] ?? 0),
         'low_threshold' => SMARTISP_INSIGHTS_LOW_STOCK,
@@ -527,6 +565,7 @@ $response = [
     'top_customers' => $topCustomers,
     'cities' => $cities,
     'inventory' => $inventory,
+    'margin' => $margin,
     'dead_stock' => $deadStock,
     'timings' => $timings,
     'goal' => $goal,

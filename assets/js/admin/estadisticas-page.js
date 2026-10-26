@@ -35,8 +35,8 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
   const skeleton = () => {
     $('#kpis').innerHTML = Array.from({ length: 8 }, () => '<div class="kpi" aria-hidden="true"><span class="sk sk-line" style="width:55%"></span><span class="sk sk-title"></span><span class="sk sk-line" style="width:40%"></span></div>').join('');
     ['#trendChart', '#monthlyChart', '#heatmap'].forEach(s => { $(s).innerHTML = '<span class="sk sk-block" style="height:260px"></span>'; });
-    ['#weekdays', '#cash', '#status', '#buyers', '#idle', '#inventory', '#ops'].forEach(s => { $(s).innerHTML = '<span class="sk sk-line"></span><span class="sk sk-line" style="width:70%"></span>'; });
-    ['#cities', '#customers', '#products', '#categories', '#cohorts'].forEach(s => { $(s).innerHTML = SmartAdmin.skeletonRows(4, 4); });
+    ['#weekdays', '#cash', '#status', '#buyers', '#idle', '#inventory', '#ops', '#margin'].forEach(s => { $(s).innerHTML = '<span class="sk sk-line"></span><span class="sk sk-line" style="width:70%"></span>'; });
+    ['#cities', '#customers', '#products', '#categories', '#cohorts', '#marginRows'].forEach(s => { $(s).innerHTML = SmartAdmin.skeletonRows(4, 4); });
   };
 
   const renderKpis = d => {
@@ -140,8 +140,27 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
         <div class="metric"><strong>${money(i.stock_value)}</strong><span>Valor a precio de venta</span></div>
         <div class="metric"><strong>${number(i.units)}</strong><span>Unidades · ${number(i.reserved_units)} apartadas</span></div>
         <a class="metric ${i.out_of_stock ? 'bad' : ''}" href="/inventario.html?filter=out"><strong>${number(i.out_of_stock)}</strong><span>Agotados</span></a>
-        <a class="metric ${i.low_stock ? 'warn' : ''}" href="/inventario.html?filter=low"><strong>${number(i.low_stock)}</strong><span>Stock bajo (≤ ${i.low_threshold})</span></a></div>`
+        <a class="metric ${i.low_stock ? 'warn' : ''}" href="/inventario.html?filter=low"><strong>${number(i.low_stock)}</strong><span>Stock bajo (≤ ${i.low_threshold})</span></a></div>` + `<p class="muted goal-note">${i.stock_cost_value == null ? 'Sin costos: aplica la migración 041 para ver el valor a costo.' : i.tracked_with_cost ? `A costo: <strong>${money(i.stock_cost_value)}</strong> (${number(i.tracked_with_cost)} de ${plural(i.tracked, 'producto', 'productos')} con costo; a precio de venta suman ${money(i.costed_stock_value)}).` : 'Carga costos en Productos para ver el valor del inventario a costo.'}</p>`
       : stateHtml('empty', 'Sin stock controlado', 'Carga el stock en Inventario para medirlo aquí.', 'boxes');
+  };
+
+  const renderMargen = d => {
+    const m = d.margin;
+    const tone = p => p < 0 ? 'bad' : p < 10 ? 'warn' : '';
+    if (!m) { $('#margin').innerHTML = stateHtml('error', 'No se pudo calcular'); $('#marginRows').innerHTML = ''; return; }
+    if (!m.available || !m.costed_products) {
+      $('#margin').innerHTML = stateHtml('empty', 'Carga costos para ver tu margen', m.available ? 'Agrega el costo de compra en cada producto (o impórtalo con una columna «costo»).' : 'Falta aplicar la migración 041_products_cost.sql (php scripts/migrate.php).', 'calculator') + '<p style="text-align:center;margin:0"><a class="button small" href="/editor-catalogo.html?tab=tab-products">Ir a Productos</a></p>';
+      $('#marginRows').innerHTML = `<tr><td colspan="6">${stateHtml('empty', 'Sin productos con costo', '', 'calculator')}</td></tr>`;
+      return;
+    }
+    $('#margin').innerHTML = `<div class="metric-grid">
+        <div class="metric ${m.gross_margin < 0 ? 'bad' : ''}"><strong>${money(m.gross_margin)}</strong><span>Margen bruto</span></div>
+        <div class="metric ${tone(m.margin_pct)}"><strong>${pctText(m.margin_pct)}</strong><span>Margen sobre ventas</span></div>
+        <div class="metric"><strong>${money(m.revenue)}</strong><span>Ventas con costo · ${pctText(m.coverage_pct)} del total</span></div>
+        <div class="metric"><strong>${money(m.cost)}</strong><span>Costo de lo vendido</span></div></div>
+      <p class="muted goal-note">${plural(m.products_with_cost, 'producto vendido', 'productos vendidos')} con costo de ${number(m.products_sold)} · ${plural(m.costed_products, 'producto', 'productos')} del catálogo con costo cargado.</p>`;
+    $('#marginRows').innerHTML = m.lowest.length ? m.lowest.map(p => `<tr><td class="cell-strong">${esc(p.name)}</td><td class="num">${number(p.units)}</td><td class="num">${money(p.revenue)}</td><td class="num">${money(p.cost)}</td><td class="num">${money(p.margin)}</td><td class="num"><span class="margin-pct ${tone(p.margin_pct)}">${pctText(p.margin_pct)}</span></td></tr>`).join('')
+      : `<tr><td colspan="6">${stateHtml('empty', 'Sin ventas de productos con costo en este periodo', '', 'calculator')}</td></tr>`;
   };
 
   const renderOperacion = d => {
@@ -161,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
     const range = d.from === d.to ? dayLabel(d.from, { day: 'numeric', month: 'long', year: 'numeric' }) : `${shortDay(d.from)} – ${dayLabel(d.to, { day: 'numeric', month: 'short', year: 'numeric' })}`;
     $('#periodText').textContent = `${range} · ${plural(d.days, 'día', 'días')}. Días y horas de Ecuador.`;
     $('#compareText').innerHTML = `<i data-lucide="git-compare" aria-hidden="true"></i> Comparado con ${esc(shortDay(d.previous_from))} – ${esc(shortDay(d.previous_to))}`;
-    renderKpis(d); renderVentas(d); renderClientes(d); renderProductos(d); renderOperacion(d);
+    renderKpis(d); renderVentas(d); renderClientes(d); renderProductos(d); renderMargen(d); renderOperacion(d);
     icons(); renderTrend(); icons();
   };
 
