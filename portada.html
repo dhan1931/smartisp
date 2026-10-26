@@ -7,345 +7,41 @@
   <link rel="icon" href="/assets/favicons/favicon.ico">
   <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=admin-brand-20261011">
   <script src="/assets/vendor/lucide-icons.min.js?v=8707c619" defer></script>
-  <script src="/assets/js/admin/admin-nav.js?v=admin-inventario-20261023" defer></script>
-  <style>
-    :root{--ink:#123247;--muted:#607887;--line:#d8e5eb;--blue:#087fa5;--pale:#f2f7f9;--red:#b42318;--green:#16794b}*{box-sizing:border-box}body{margin:0;background:var(--pale);color:var(--ink);font:14px Arial,sans-serif}button,input,textarea,select{font:inherit}button{cursor:pointer}.top{padding:20px clamp(16px,4vw,44px);background:#102c3d;color:white}.top h1{margin:0;font-size:22px}.top p{margin:5px 0 0;color:#c5d8df}.shell{width:min(1100px,94vw);margin:24px auto 60px}.toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}.toolbar h2{margin:0 0 5px;font-size:20px}.muted{margin:0;color:var(--muted);line-height:1.5}.panel{padding:20px;background:white;border:1px solid var(--line);border-radius:8px;margin-bottom:16px}.section-heading{display:flex;justify-content:space-between;align-items:start;gap:14px}.section-heading h3{margin:0 0 5px;font-size:16px}.grid2{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:14px;align-items:end}label{display:block;margin:12px 0;color:var(--muted);font-size:12px;font-weight:700}input,textarea,select{display:block;width:100%;margin-top:6px;padding:10px 11px;color:var(--ink);background:#fff;border:1px solid #cddce4;border-radius:6px}input:focus,textarea:focus,select:focus{outline:2px solid #b6e3f2;border-color:var(--blue)}textarea{resize:vertical}.button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:38px;padding:9px 13px;border:1px solid transparent;border-radius:6px;background:var(--blue);color:white;font-weight:700;text-decoration:none}.button.secondary{border-color:var(--line);background:white;color:var(--ink)}.button:disabled{opacity:.5;cursor:not-allowed}.button svg{width:16px;height:16px}.product-list{display:grid;gap:8px;margin:14px 0}.product-row{display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;gap:12px;padding:9px;border:1px solid var(--line);border-radius:6px}.product-row img{width:48px;height:48px;object-fit:contain;background:#f5f8fa;border-radius:4px}.product-row strong,.product-row small{display:block;overflow-wrap:anywhere}.product-row small{margin-top:3px;color:var(--muted)}.search-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end}.search-row label{margin-bottom:0}.icon-actions{display:flex;gap:5px}.icon-button{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line);border-radius:5px;background:#fff;color:var(--ink)}.message{display:none;margin-top:12px;padding:11px;border-radius:6px;background:#e9f7f0;color:var(--green)}.message.show{display:block}.message.error{background:#fff0ee;color:var(--red)}.hidden{display:none!important}.auth{width:min(430px,92vw);margin:70px auto;padding:24px;background:#fff;border:1px solid var(--line);border-radius:8px}.auth h2{margin-top:0}.auth button{width:100%;margin-top:10px}.denied{text-align:center}.help{color:var(--muted);font-size:12px;line-height:1.5}
-    .sticky-actions{position:sticky;top:0;z-index:30;padding:10px 0;background:rgba(242,247,249,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}
-    .category-picker-label{display:block;margin:16px 0 8px;color:var(--ink);font-size:13px}
-    .category-choices{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
-    .category-choice{display:flex;align-items:center;gap:9px;min-width:0;width:100%;margin:0;padding:8px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);font-size:12px;text-align:left}
-    .category-choice:hover{border-color:var(--blue);background:#f3fafd}
-    .category-choice:disabled{opacity:.4;cursor:not-allowed}
-    .category-choice img{width:48px;height:38px;object-fit:cover;border-radius:4px;background:#edf3f6;flex-shrink:0}
-    .category-choice span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .category-selected-list{display:grid;gap:8px;min-height:40px}
-    .category-selected-row{display:grid;grid-template-columns:28px 48px minmax(0,1fr) auto;align-items:center;gap:12px;padding:9px;border:1px solid var(--line);border-radius:6px;background:#f8fbfd}
-    .category-selected-row .drag-index{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#e6f3f8;color:var(--blue);font-weight:800;font-size:12px}
-    .category-selected-row img{width:48px;height:38px;object-fit:cover;border-radius:4px;background:#edf3f6}
-    .category-selected-row strong,.category-selected-row small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .category-selected-row small{color:var(--muted);font-weight:400}
-    .category-selected-empty{padding:16px;border:1px dashed var(--line);border-radius:6px;color:var(--muted);font-size:12px;text-align:center}
-    .macro-group-list,.brand-list{display:grid;gap:8px;margin-top:12px}
-    .macro-group-row,.brand-row{display:grid;grid-template-columns:56px minmax(0,1fr) auto;align-items:center;gap:12px;padding:9px;border:1px solid var(--line);border-radius:6px}
-    .macro-group-row img,.brand-row img,.macro-group-row .thumb-empty,.brand-row .thumb-empty{width:48px;height:48px;object-fit:contain;background:#f5f8fa;border-radius:4px;display:grid;place-items:center;color:var(--muted)}
-    .macro-group-row strong,.brand-row strong{display:block}
-    .macro-group-row small,.brand-row small{display:block;margin-top:2px;color:var(--muted)}
-    .brand-row input[type="text"]{margin:0;padding:7px 9px;font-size:13px}
-    .macro-group-actions,.brand-actions{display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
-    .brand-add-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
-    .brand-add-row input[type="text"]{width:auto;flex:1;min-width:200px;margin:0}
-    @media(max-width:600px){.macro-group-row,.brand-row{grid-template-columns:48px 1fr}.macro-group-actions,.brand-actions{grid-column:1/-1;justify-content:flex-start}}
-    @media(max-width:760px){.shell{width:calc(100% - 20px);margin-top:16px}.panel{padding:14px}.grid2,.search-row{grid-template-columns:1fr}.sticky-actions{flex-direction:column;align-items:flex-start}}
-  </style>
+  <script src="/assets/js/admin/admin-nav.js?v=20261025-a11y" defer></script>
+  <link rel="stylesheet" href="/assets/css/admin/portada-page.css?v=20261025">
+  <script src="/assets/js/admin/admin-page.js?v=20261025-waf" defer></script>
+  <script src="/assets/js/admin/portada-page.js?v=20261025" defer></script>
 </head>
 <body>
   <div id="smartisp-admin-nav" class="is-loading" data-active="portada"></div>
   <header class="top"><h1>Portada de la tienda</h1><p>Textos de selección comercial, productos y categorías destacadas en tienda.html.</p></header>
   <main class="shell">
-    <section id="denied" class="auth hidden denied"><h2>Acceso restringido</h2><p>Esta cuenta no tiene permisos para gestionar la portada.</p><a class="button secondary" href="/tienda.html">Ir a la tienda</a></section>
-    <section id="login" class="auth hidden"><h2>Acceso de administrador</h2><p class="muted">Ingresa con una cuenta autorizada.</p><form id="loginForm"><label>Correo<input name="email" type="email" autocomplete="username" required></label><label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label><button class="button" type="submit">Entrar al panel</button><div id="loginMessage" class="message"></div></form></section>
-    <section id="app" class="hidden">
-      <div class="toolbar sticky-actions"><div><h2>Portada de la tienda</h2><p id="identity" class="muted"></p></div><button id="save" class="button" type="button"><i data-lucide="save"></i> Publicar cambios</button></div>
+    <section id="app" hidden>
+      <div class="toolbar sticky-actions"><div><h2>Portada de la tienda</h2><p id="identity" class="muted"></p></div><div class="publish-group"><span id="dirtyNote" class="dirty-note" role="status" hidden><i data-lucide="circle-dot"></i> Cambios sin publicar</span><button id="save" class="button" type="button"><i data-lucide="save"></i> Publicar cambios</button></div></div>
       <div class="toolbar-actions" style="display:flex;gap:8px;margin-bottom:14px"><a class="button secondary" href="/tienda.html" target="_blank" rel="noopener"><i data-lucide="external-link"></i> Ver tienda</a><a class="button secondary" href="/campanas.html"><i data-lucide="megaphone"></i> Ir a Banners</a></div>
       <section class="panel">
-        <div class="section-heading"><div><h3>Textos de Selección comercial</h3><p class="muted">Encabezado y descripción de la vitrina de productos destacados.</p></div></div>
+        <div class="section-heading"><div><h3>Textos de Selección comercial<span class="save-badge publish">Requiere «Publicar cambios»</span></h3><p class="muted">Encabezado y descripción de la vitrina de productos destacados.</p></div></div>
         <div class="grid2"><label>Etiqueta<input id="featuredEyebrow" maxlength="80"></label><label>Título<input id="featuredTitle" maxlength="180"></label></div>
         <label>Descripción<textarea id="featuredDescription" maxlength="500" rows="2"></textarea></label>
         <label>Texto auxiliar<textarea id="featuredNote" maxlength="300" rows="2"></textarea></label>
         <div class="grid2"><label>Título de productos<input id="featuredProductsTitle" maxlength="120"></label><label>Descripción de productos<input id="featuredProductsDescription" maxlength="300"></label></div>
         <div id="featuredCopyPreview" class="help" aria-live="polite" style="padding:16px;border:1px solid var(--line);border-radius:7px;background:#f8fbfd;"></div>
       </section>
-      <section class="panel"><div class="section-heading"><div><h3>Categorías destacadas</h3><p class="muted">Escoge hasta siete categorías existentes para las mini-categorías de la portada y de /categorias-destacadas. Se usa su nombre, descripción, imagen y enlace actuales; sin ninguna elegida, se muestran automáticamente las de más productos.</p></div></div>
+      <section class="panel"><div class="section-heading"><div><h3>Categorías destacadas<span class="save-badge publish">Requiere «Publicar cambios»</span></h3><p class="muted">Escoge hasta siete categorías existentes para las mini-categorías de la portada y de /categorias-destacadas. Se usa su nombre, descripción, imagen y enlace actuales; sin ninguna elegida, se muestran automáticamente las de más productos.</p></div></div>
         <strong class="category-picker-label">Elegidas · se muestran en este orden (<span id="categorySelectedCount">0</span>/7)</strong>
         <div id="categorySelectedList" class="category-selected-list" aria-live="polite"></div>
         <strong class="category-picker-label">Disponibles · toca para añadir</strong>
         <input id="categoryAvailableSearch" type="search" placeholder="Buscar categoría..." style="margin-bottom:10px">
         <div id="categoryAvailableList" class="category-choices" aria-live="polite"></div>
       </section>
-      <section class="panel"><div class="section-heading"><div><h3>Imágenes de familias (mini-categorías)</h3><p class="muted">Cuando no eliges categorías destacadas arriba, la portada muestra automáticamente las familias (Cómputo, Redes, Seguridad...). Aquí les subes una foto propia, las ocultas o cambias su orden.</p></div></div><div id="macroGroupList" class="macro-group-list" aria-live="polite"></div></section>
-      <section class="panel"><div class="section-heading"><div><h3>Nuestras Marcas</h3><p class="muted">Logos reales que se muestran en la portada, debajo de las garantías. Solo se ven las marcas activas, en el orden elegido.</p></div></div>
+      <section class="panel"><div class="section-heading"><div><h3>Imágenes de familias (mini-categorías)<span class="save-badge instant">Se guarda al instante</span></h3><p class="muted">Cuando no eliges categorías destacadas arriba, la portada muestra automáticamente las familias (Cómputo, Redes, Seguridad...). Aquí les subes una foto propia, las ocultas o cambias su orden.</p></div></div><div id="macroGroupList" class="macro-group-list" aria-live="polite"></div></section>
+      <section class="panel"><div class="section-heading"><div><h3>Nuestras Marcas<span class="save-badge instant">Se guarda al instante</span></h3><p class="muted">Logos reales que se muestran en la portada, debajo de las garantías. Solo se ven las marcas activas, en el orden elegido.</p></div></div>
         <div class="brand-add-row"><input id="newBrandName" type="text" placeholder="Nombre de la marca (ej. HP)" maxlength="150"><label class="button secondary" style="margin:0">Subir logo<input id="newBrandLogo" type="file" accept="image/jpeg,image/png,image/webp" hidden></label><button id="addBrand" class="button" type="button" disabled><i data-lucide="plus"></i> Agregar</button></div>
         <div id="brandList" class="brand-list" aria-live="polite"></div>
       </section>
-      <section class="panel"><div class="section-heading"><div><h3>Productos destacados</h3><p class="muted">Busca productos visibles y define el orden de la vitrina (máximo 12).</p></div></div><div class="search-row"><label>Buscar por nombre, SKU o categoría<input id="productSearch" type="search" placeholder="Ej. router, cámara, impresora"></label><button id="searchButton" class="button secondary" type="button"><i data-lucide="search"></i> Buscar</button></div><div id="results" class="product-list" aria-live="polite"></div><div id="selected" class="product-list"></div></section>
+      <section class="panel"><div class="section-heading"><div><h3>Productos destacados<span class="save-badge publish">Requiere «Publicar cambios»</span></h3><p class="muted">Busca productos visibles y define el orden de la vitrina (máximo 12).</p></div></div><div class="search-row"><label>Buscar por nombre, SKU o categoría<input id="productSearch" type="search" placeholder="Ej. router, cámara, impresora"></label><button id="searchButton" class="button secondary" type="button"><i data-lucide="search"></i> Buscar</button></div><div id="results" class="product-list" aria-live="polite"></div><div id="selected" class="product-list"></div></section>
       <div id="saveMessage" class="message" role="status"></div>
     </section>
   </main>
-  <script>
-  (() => {
-    const $ = selector => document.querySelector(selector);
-    const state = { featuredPage:{eyebrow:'Selección comercial',title:'Productos destacados para redes, empresas y tecnología',description:'Una vitrina rápida de artículos del catálogo SmartISP: conectividad, cómputo, energía, seguridad, periféricos y equipamiento TI.',note:'Selección pensada para partir rápido: revisa precio, categoría y ficha antes de cotizar o comprar.',products_title:'Selección destacada',products_description:'Productos elegidos para mostrar novedades y alta rotación.'}, products:[], categoryIds:[] };
-    let productResults = [];
-    let availableCategories = [];
-    let macroGroups = [];
-    let brands = [];
-    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    const isAdmin = user => ['admin','administrator','administrador'].includes(String(user?.role || '').trim().toLowerCase());
-    const encode = value => { const bytes = new TextEncoder().encode(value); let binary=''; bytes.forEach(byte => binary += String.fromCharCode(byte)); return btoa(binary); };
-    async function api(action, options={}) {
-      const token = localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken');
-      const headers = { ...(options.headers || {}) };
-      if (token) { headers.Authorization = `Bearer ${token}`; headers['X-Admin-Token'] = token; }
-      let body = options.body;
-      if (typeof body === 'string' && options.method === 'POST') { headers['Content-Type']='application/json'; body=JSON.stringify({payload:encode(body)}); }
-      const [name,query='']=action.split('?');
-      const response = await fetch(`/api/router.php?action=${encodeURIComponent(name)}${query?'&'+query:''}`, {credentials:'include',...options,headers,body});
-      const text = await response.text(); let result={};
-      try { result=text?JSON.parse(text):{}; } catch { result={error:'Respuesta no válida del servidor.'}; }
-      if (!response.ok) { const error=new Error(result.error || 'No se pudo completar la operación.'); error.status=response.status; throw error; }
-      if (result.token) localStorage.setItem('smartisp.adminToken',result.token);
-      return result;
-    }
-    function message(text,error=false) { const target=$('#saveMessage'); target.textContent=text; target.classList.toggle('error',error); target.classList.add('show'); }
-    function showLogin() { $('#denied').classList.add('hidden'); $('#login').classList.remove('hidden'); }
-    function showDenied() { $('#login').classList.add('hidden'); $('#denied').classList.remove('hidden'); }
-    function showApp(user) { $('#login').classList.add('hidden'); $('#denied').classList.add('hidden'); $('#identity').textContent=`${user.name || ''} ${user.surname || ''} · ${user.email || ''}`; $('#app').classList.remove('hidden'); load(); }
-    const imageOf = product => product?.imageUrl || product?.image_url || '/assets/favicons/favicon-96x96.png';
-    function renderFeaturedCopyPreview() {
-      const values={eyebrow:$('#featuredEyebrow').value,title:$('#featuredTitle').value,description:$('#featuredDescription').value,note:$('#featuredNote').value,products_title:$('#featuredProductsTitle').value,products_description:$('#featuredProductsDescription').value};
-      $('#featuredCopyPreview').innerHTML=`<strong>${escapeHtml(values.eyebrow||'Etiqueta')}</strong><h3 style="margin:8px 0;color:var(--ink)">${escapeHtml(values.title||'Título de Selección comercial')}</h3><p style="margin:0 0 8px">${escapeHtml(values.description||'Descripción de la página')}</p><p style="margin:0 0 16px">${escapeHtml(values.note||'Texto auxiliar')}</p><strong>${escapeHtml(values.products_title||'Título de productos')}</strong><br>${escapeHtml(values.products_description||'Descripción de los productos')}`;
-    }
-    function renderCategoryChoices() {
-      const selectedHost=$('#categorySelectedList'), availableHost=$('#categoryAvailableList');
-      const byId=id=>availableCategories.find(category=>String(category.id)===String(id));
-      $('#categorySelectedCount').textContent=state.categoryIds.length;
-      selectedHost.innerHTML=state.categoryIds.map((id,index)=>{
-        const category=byId(id);
-        if(!category)return '';
-        return `<div class="category-selected-row" data-category-id="${escapeHtml(id)}"><span class="drag-index">${index+1}</span><img src="${escapeHtml(category.iconImageUrl||'/assets/favicons/favicon-96x96.png')}" alt="" loading="lazy"><div><strong>${escapeHtml(category.name)}</strong><small>${Number(category.productCount||0)} productos</small></div><div class="icon-actions"><button class="icon-button" type="button" data-move-category="-1" aria-label="Mover arriba" ${index===0?'disabled':''}><i data-lucide="arrow-up"></i></button><button class="icon-button" type="button" data-move-category="1" aria-label="Mover abajo" ${index===state.categoryIds.length-1?'disabled':''}><i data-lucide="arrow-down"></i></button><button class="icon-button" type="button" data-remove-category aria-label="Quitar categoría"><i data-lucide="x"></i></button></div></div>`;
-      }).join('')||'<p class="category-selected-empty">Ninguna elegida todavía: la portada muestra automáticamente las familias con más productos. Toca una de abajo para destacarla aquí.</p>';
-      if(!availableCategories.length){availableHost.innerHTML='<p class="muted">No se pudieron cargar categorías disponibles.</p>';window.lucide?.createIcons();return;}
-      const query=($('#categoryAvailableSearch').value||'').trim().toLocaleLowerCase();
-      const atLimit=state.categoryIds.length>=7;
-      availableHost.innerHTML=availableCategories.filter(category=>Number(category.productCount||0)>0 && !state.categoryIds.includes(String(category.id)) && (!query||category.name.toLocaleLowerCase().includes(query))).map(category=>`<button class="category-choice" type="button" data-add-category="${escapeHtml(category.id)}" ${atLimit?'disabled':''}><img src="${escapeHtml(category.iconImageUrl||'/assets/favicons/favicon-96x96.png')}" alt="" loading="lazy"><span>${escapeHtml(category.name)} · ${Number(category.productCount||0)}</span></button>`).join('')||'<p class="muted">No hay más categorías disponibles.</p>';
-      window.lucide?.createIcons();
-    }
-    function renderMacroGroups() {
-      const host=$('#macroGroupList');
-      if(!macroGroups.length){host.innerHTML='<p class="muted">No hay familias configuradas.</p>';return;}
-      host.innerHTML=macroGroups.map((group,index)=>`<div class="macro-group-row" data-macro="${escapeHtml(group.id)}">
-        ${group.imageUrl?`<img src="${escapeHtml(group.imageUrl)}" alt="" loading="lazy">`:`<span class="thumb-empty"><i data-lucide="${escapeHtml(group.icon||'package')}" width="20"></i></span>`}
-        <div><strong>${escapeHtml(group.name)}</strong><small>${group.visible?'Visible en portada':'Oculta'}</small></div>
-        <div class="macro-group-actions">
-          <label class="button secondary" style="margin:0"><i data-lucide="image-up"></i><input type="file" accept="image/jpeg,image/png,image/webp" hidden data-macro-upload></label>
-          <button class="icon-button" type="button" data-macro-toggle aria-label="${group.visible?'Ocultar':'Mostrar'}"><i data-lucide="${group.visible?'eye':'eye-off'}"></i></button>
-          <button class="icon-button" type="button" data-macro-move="-1" ${index===0?'disabled':''} aria-label="Subir"><i data-lucide="arrow-up"></i></button>
-          <button class="icon-button" type="button" data-macro-move="1" ${index===macroGroups.length-1?'disabled':''} aria-label="Bajar"><i data-lucide="arrow-down"></i></button>
-        </div>
-      </div>`).join('');
-      window.lucide?.createIcons();
-    }
-    async function saveMacroGroup(group) {
-      await api('macro-groups',{method:'POST',body:JSON.stringify({id:group.id,name:group.name,icon:group.icon,sortOrder:group.sortOrder,imageUrl:group.imageUrl,visible:group.visible})});
-    }
-    async function persistMacroGroupOrder() {
-      macroGroups.forEach((group,index)=>{group.sortOrder=index;});
-      try { await Promise.all(macroGroups.map(saveMacroGroup)); } catch(error) { message(error.message,true); }
-    }
-    function renderBrands() {
-      const host=$('#brandList');
-      if(!brands.length){host.innerHTML='<p class="muted">Aún no hay marcas agregadas.</p>';return;}
-      host.innerHTML=brands.map((brand,index)=>`<div class="brand-row" data-brand="${brand.id}">
-        <img src="${escapeHtml(brand.logoUrl)}" alt="${escapeHtml(brand.name)}" loading="lazy">
-        <div><input type="text" value="${escapeHtml(brand.name)}" maxlength="150" data-brand-name></div>
-        <div class="brand-actions">
-          <label class="check" style="display:flex;align-items:center;gap:5px;margin:0;font-size:12px;font-weight:400"><input type="checkbox" ${brand.isActive?'checked':''} data-brand-active style="width:auto;margin:0"> Activa</label>
-          <label class="icon-button" aria-label="Reemplazar logo"><i data-lucide="image-up"></i><input type="file" accept="image/jpeg,image/png,image/webp" hidden data-brand-logo-upload></label>
-          <button class="icon-button" type="button" data-brand-move="-1" ${index===0?'disabled':''} aria-label="Subir"><i data-lucide="arrow-up"></i></button>
-          <button class="icon-button" type="button" data-brand-move="1" ${index===brands.length-1?'disabled':''} aria-label="Bajar"><i data-lucide="arrow-down"></i></button>
-          <button class="icon-button" type="button" data-brand-remove aria-label="Quitar marca"><i data-lucide="x"></i></button>
-        </div>
-      </div>`).join('');
-      window.lucide?.createIcons();
-    }
-    async function saveBrand(brand) {
-      const result=await api('brands',{method:'POST',body:JSON.stringify({id:brand.id>0?brand.id:undefined,name:brand.name,logoUrl:brand.logoUrl,sortOrder:brand.sortOrder,isActive:brand.isActive})});
-      if(result.id) brand.id=result.id;
-    }
-    async function persistBrandOrder() {
-      brands.forEach((brand,index)=>{brand.sortOrder=index;});
-      try { await Promise.all(brands.map(saveBrand)); } catch(error) { message(error.message,true); }
-    }
-    function renderProducts() {
-      $('#selected').innerHTML=state.products.map((product,index)=>`<div class="product-row" data-product="${index}"><img src="${escapeHtml(imageOf(product))}" alt="" width="48" height="48" loading="lazy"><div><strong>${escapeHtml(product.name)}</strong><small>${escapeHtml(product.category||'')}${product.sku?` · SKU ${escapeHtml(product.sku)}`:''}</small></div><div class="icon-actions"><button class="icon-button" data-move-product="-1" type="button" aria-label="Mover arriba" ${index===0?'disabled':''}><i data-lucide="arrow-up"></i></button><button class="icon-button" data-move-product="1" type="button" aria-label="Mover abajo" ${index===state.products.length-1?'disabled':''}><i data-lucide="arrow-down"></i></button><button class="icon-button" data-remove-product type="button" aria-label="Quitar producto"><i data-lucide="x"></i></button></div></div>`).join('') || '<p class="muted">Aún no hay productos destacados.</p>';
-      $('#results').innerHTML=productResults.map((product,index)=>{const exists=state.products.some(item=>String(item.id)===String(product.id));return `<div class="product-row"><img src="${escapeHtml(imageOf(product))}" alt="" width="48" height="48" loading="lazy"><div><strong>${escapeHtml(product.name)}</strong><small>${escapeHtml(product.category||'')}${product.sku?` · SKU ${escapeHtml(product.sku)}`:''}</small></div><button class="button secondary" type="button" data-add-product="${index}" ${exists||state.products.length>=12?'disabled':''}>${exists?'Agregado':'Destacar'}</button></div>`}).join(''); window.lucide?.createIcons();
-    }
-    function fillForm() {
-      $('#featuredEyebrow').value=state.featuredPage.eyebrow; $('#featuredTitle').value=state.featuredPage.title; $('#featuredDescription').value=state.featuredPage.description; $('#featuredNote').value=state.featuredPage.note;
-      $('#featuredProductsTitle').value=state.featuredPage.products_title; $('#featuredProductsDescription').value=state.featuredPage.products_description;
-      renderProducts(); renderFeaturedCopyPreview();
-    }
-    function collectForm() {
-      state.featuredPage={eyebrow:$('#featuredEyebrow').value.trim(),title:$('#featuredTitle').value.trim(),description:$('#featuredDescription').value.trim(),note:$('#featuredNote').value.trim(),products_title:$('#featuredProductsTitle').value.trim(),products_description:$('#featuredProductsDescription').value.trim()};
-    }
-    async function publish() {
-      const button=$('#save'); button.disabled=true;
-      try {
-        collectForm();
-        // Solo manda lo que esta pantalla administra -- sin 'campaign', 'slides' ni 'chips', para
-        // no tocar nada de lo que gestiona Banners (ver guarda por clave en campaigns.php).
-        const payload={zone:'store-home',featured_page:state.featuredPage,product_ids:state.products.map(product=>product.id),category_ids:state.categoryIds};
-        await api('admin-store-campaigns?zone=store-home',{method:'POST',body:JSON.stringify(payload)});
-        message('Publicado. La portada ya está actualizada.');
-      } catch(error) { message(error.message,true); }
-      finally { button.disabled=false; }
-    }
-    async function load() {
-      try {
-        const result=await api('admin-store-campaigns?zone=store-home');
-        Object.assign(state.featuredPage,result.featured_page||{});
-        state.products=result.products||[];
-        state.categoryIds=(result.featured_category_ids||[]).map(String);
-        const categoriesResult=await api('categories');
-        availableCategories=categoriesResult.categories||[];
-        macroGroups=categoriesResult.macroGroups||[];
-        brands=(await api('brands?admin=1')).brands||[];
-        fillForm();
-        renderCategoryChoices();
-        renderMacroGroups();
-        renderBrands();
-      } catch(error) { message(`No se pudo cargar la portada: ${error.message}`,true); }
-    }
-    $('#loginForm').addEventListener('submit',async event=>{event.preventDefault();const form=event.currentTarget;const data=Object.fromEntries(new FormData(form));try{const result=await api('login',{method:'POST',body:JSON.stringify(data)});if(!isAdmin(result.user)){showDenied();return;}if(result.token)localStorage.setItem('smartisp.adminToken',result.token);showApp(result.user);}catch(error){message(error.message,true);}});
-    async function authenticate(){try{const result=await api('me');if(isAdmin(result.user))showApp(result.user);else showDenied();}catch(error){showLogin();if(error.status&&error.status!==401)message(error.message,true);}}
-    document.querySelectorAll('#featuredEyebrow,#featuredTitle,#featuredDescription,#featuredNote,#featuredProductsTitle,#featuredProductsDescription').forEach(el=>el.addEventListener('input',renderFeaturedCopyPreview));
-    $('#categoryAvailableList').addEventListener('click',event=>{
-      const btn=event.target.closest('[data-add-category]');if(!btn)return;
-      if(state.categoryIds.length>=7){message('Puedes elegir hasta 7 categorías.',true);return;}
-      state.categoryIds=[...state.categoryIds,btn.dataset.addCategory];
-      renderCategoryChoices();
-    });
-    $('#categoryAvailableSearch').addEventListener('input',renderCategoryChoices);
-    $('#categorySelectedList').addEventListener('click',event=>{
-      const row=event.target.closest('[data-category-id]');if(!row)return;
-      const id=row.dataset.categoryId, index=state.categoryIds.indexOf(id);if(index===-1)return;
-      if(event.target.closest('[data-remove-category]')){state.categoryIds=state.categoryIds.filter(item=>item!==id);renderCategoryChoices();return;}
-      const moveBtn=event.target.closest('[data-move-category]');
-      if(moveBtn){
-        const to=index+Number(moveBtn.dataset.moveCategory);
-        if(to<0||to>=state.categoryIds.length)return;
-        const next=[...state.categoryIds];[next[index],next[to]]=[next[to],next[index]];
-        state.categoryIds=next;renderCategoryChoices();
-      }
-    });
-    $('#searchButton').addEventListener('click',async()=>{
-      const q=$('#productSearch').value.trim();
-      if(!q){productResults=[];renderProducts();return;}
-      try{const result=await api(`admin-products?q=${encodeURIComponent(q)}&limit=20&visible=visible`);productResults=result.products||[];renderProducts();}
-      catch(error){message(error.message,true);}
-    });
-    $('#productSearch').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();$('#searchButton').click();}});
-    $('#results').addEventListener('click',event=>{
-      const btn=event.target.closest('[data-add-product]');if(!btn)return;
-      const product=productResults[Number(btn.dataset.addProduct)];
-      if(product&&!state.products.some(item=>String(item.id)===String(product.id))&&state.products.length<12){state.products.push(product);renderProducts();}
-    });
-    $('#selected').addEventListener('click',event=>{
-      const removeBtn=event.target.closest('[data-remove-product]');
-      const moveBtn=event.target.closest('[data-move-product]');
-      const row=event.target.closest('[data-product]');if(!row)return;
-      const index=Number(row.dataset.product);
-      if(removeBtn){state.products.splice(index,1);renderProducts();return;}
-      if(moveBtn){const to=index+Number(moveBtn.dataset.moveProduct);if(to<0||to>=state.products.length)return;[state.products[index],state.products[to]]=[state.products[to],state.products[index]];renderProducts();}
-    });
-    $('#macroGroupList').addEventListener('click',async event=>{
-      const row=event.target.closest('[data-macro]');if(!row)return;
-      const group=macroGroups.find(g=>g.id===row.dataset.macro);if(!group)return;
-      if(event.target.closest('[data-macro-toggle]')){
-        group.visible=!group.visible;renderMacroGroups();
-        try{await saveMacroGroup(group);}catch(error){message(error.message,true);}
-        return;
-      }
-      const moveBtn=event.target.closest('[data-macro-move]');
-      if(moveBtn){
-        const index=macroGroups.indexOf(group),to=index+Number(moveBtn.dataset.macroMove);
-        if(to<0||to>=macroGroups.length)return;
-        [macroGroups[index],macroGroups[to]]=[macroGroups[to],macroGroups[index]];
-        renderMacroGroups();await persistMacroGroupOrder();
-      }
-    });
-    $('#macroGroupList').addEventListener('change',async event=>{
-      const upload=event.target.closest('[data-macro-upload]');if(!upload||!upload.files?.length)return;
-      const row=event.target.closest('[data-macro]'),group=macroGroups.find(g=>g.id===row.dataset.macro);if(!group)return;
-      const file=upload.files[0];
-      if(file.size>8*1024*1024){message('La imagen supera el límite de 8 MB.',true);return;}
-      try{
-        const form=new FormData();form.append('image',file);
-        const result=await api('upload-merch-image?category=categories',{method:'POST',body:form});
-        group.imageUrl=result.url;renderMacroGroups();
-        await saveMacroGroup(group);
-        message('Imagen de familia actualizada.');
-      }catch(error){message(error.message,true);}
-    });
-    $('#brandList').addEventListener('click',async event=>{
-      const row=event.target.closest('[data-brand]');if(!row)return;
-      const brand=brands.find(b=>String(b.id)===row.dataset.brand);if(!brand)return;
-      if(event.target.closest('[data-brand-remove]')){
-        if(!confirm(`¿Quitar la marca "${brand.name}"?`))return;
-        try{await api(`brands?id=${brand.id}`,{method:'DELETE'});brands=brands.filter(b=>b!==brand);renderBrands();}catch(error){message(error.message,true);}
-        return;
-      }
-      const moveBtn=event.target.closest('[data-brand-move]');
-      if(moveBtn){
-        const index=brands.indexOf(brand),to=index+Number(moveBtn.dataset.brandMove);
-        if(to<0||to>=brands.length)return;
-        [brands[index],brands[to]]=[brands[to],brands[index]];
-        renderBrands();await persistBrandOrder();
-      }
-    });
-    $('#brandList').addEventListener('change',async event=>{
-      const row=event.target.closest('[data-brand]');if(!row)return;
-      const brand=brands.find(b=>String(b.id)===row.dataset.brand);if(!brand)return;
-      if(event.target.closest('[data-brand-active]')){
-        brand.isActive=event.target.checked;
-        try{await saveBrand(brand);}catch(error){message(error.message,true);}
-        return;
-      }
-      const logoUpload=event.target.closest('[data-brand-logo-upload]');
-      if(logoUpload&&logoUpload.files?.length){
-        const file=logoUpload.files[0];
-        if(file.size>8*1024*1024){message('El logo supera el límite de 8 MB.',true);logoUpload.value='';return;}
-        try{
-          const form=new FormData();form.append('image',file);
-          const result=await api('upload-merch-image?category=brands',{method:'POST',body:form});
-          brand.logoUrl=result.url;
-          await saveBrand(brand);
-          renderBrands();
-          message('Logo actualizado.');
-        }catch(error){message(error.message,true);}
-        finally{logoUpload.value='';}
-      }
-    });
-    $('#brandList').addEventListener('blur',async event=>{
-      const nameInput=event.target.closest('[data-brand-name]');if(!nameInput)return;
-      const row=event.target.closest('[data-brand]'),brand=brands.find(b=>String(b.id)===row.dataset.brand);if(!brand)return;
-      const name=nameInput.value.trim();
-      if(!name){nameInput.value=brand.name;return;}
-      if(name===brand.name)return;
-      brand.name=name;
-      try{await saveBrand(brand);}catch(error){message(error.message,true);}
-    },true);
-    $('#newBrandLogo').addEventListener('change',()=>{ $('#addBrand').disabled=!$('#newBrandLogo').files?.length || !$('#newBrandName').value.trim(); });
-    $('#newBrandName').addEventListener('input',()=>{ $('#addBrand').disabled=!$('#newBrandLogo').files?.length || !$('#newBrandName').value.trim(); });
-    $('#addBrand').addEventListener('click',async()=>{
-      const name=$('#newBrandName').value.trim(),file=$('#newBrandLogo').files?.[0];
-      if(!name||!file)return;
-      if(file.size>8*1024*1024){message('El logo supera el límite de 8 MB.',true);return;}
-      $('#addBrand').disabled=true;
-      try{
-        const form=new FormData();form.append('image',file);
-        const uploadResult=await api('upload-merch-image?category=brands',{method:'POST',body:form});
-        const brand={id:0,name,logoUrl:uploadResult.url,sortOrder:brands.length,isActive:true};
-        await saveBrand(brand);
-        brands.push(brand);renderBrands();
-        $('#newBrandName').value='';$('#newBrandLogo').value='';
-        message('Marca agregada.');
-      }catch(error){message(error.message,true);}
-      finally{$('#addBrand').disabled=true;}
-    });
-    $('#save').addEventListener('click',publish);
-    authenticate();
-  })();
-  </script>
 </body>
 </html>

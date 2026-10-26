@@ -57,19 +57,28 @@
       }
     };
 
+    // Si se abre otro producto antes de que llegue la galería, la respuesta vieja se descarta.
+    let gallerySeq = 0;
     const loadGalleryForProduct = async productId => {
+      const seq = ++gallerySeq;
       currentProductGallery = [];
-      if (!productId) { renderGalleryEditor(); return; }
+      renderGalleryEditor();
+      if (!productId) return;
       try {
         const res = await api(`product-images?product_id=${encodeURIComponent(productId)}`);
+        if (seq !== gallerySeq) return;
         currentProductGallery = res.images || [];
-      } catch (e) { console.warn('No se pudo cargar la galería:', e); }
+      } catch (e) {
+        if (seq !== gallerySeq) return;
+        console.warn('No se pudo cargar la galería:', e);
+      }
       renderGalleryEditor();
     };
 
     document.getElementById('prodGalleryList')?.addEventListener('click', async e => {
       const btn = e.target.closest('[data-remove-gallery-image]');
       if (!btn) return;
+      if (!confirm('¿Quitar esta imagen de la galería del producto?')) return;
       try {
         await api(`product-images?id=${btn.dataset.removeGalleryImage}`, { method: 'DELETE' });
         currentProductGallery = currentProductGallery.filter(img => String(img.id) !== btn.dataset.removeGalleryImage);
@@ -93,7 +102,7 @@
             await api('product-images', { method: 'POST', body: JSON.stringify({ product_id: productId, image_url: upRes.url }) });
           }
         }
-        await loadGalleryForProduct(productId);
+        if ((document.getElementById('prodId')?.value || '') === productId) await loadGalleryForProduct(productId);
         showToast('Imágenes añadidas a la galería.');
       } catch (err) {
         showToast(err.message, 'error');
@@ -309,21 +318,47 @@
     });
 
     // --- MODALES ---
+    const modalReturnFocus = {};
     const openModal = id => {
       const modal = document.getElementById(id);
       if (modal) {
+        if (!modal.classList.contains('open')) modalReturnFocus[id] = document.activeElement;
         modal.classList.add('open');
         lucide.createIcons();
+        modal.querySelector('.modal-close-btn, input:not([type="hidden"]), button')?.focus();
       }
     };
     const closeModal = id => {
       const modal = document.getElementById(id);
-      if (modal) modal.classList.remove('open');
+      if (!modal || !modal.classList.contains('open')) return;
+      modal.classList.remove('open');
+      const back = modalReturnFocus[id];
+      delete modalReturnFocus[id];
+      if (back && document.contains(back)) back.focus();
+    };
+
+    // Foto del formulario de producto al abrirlo: cerrar con cambios pide confirmación.
+    let productFormSaved = null;
+    const productFormSnapshot = () => JSON.stringify({
+      fields: [...document.querySelectorAll('#productForm input, #productForm select, #productForm textarea')]
+        .filter(el => el.id && el.type !== 'file')
+        .map(el => el.type === 'checkbox' ? el.checked : el.value),
+      specs: currentProductSpecs
+    });
+    const productFormDirty = () => !!document.getElementById('productModal')?.classList.contains('open') && productFormSaved !== null && productFormSnapshot() !== productFormSaved;
+    const requestCloseModal = id => {
+      if (id === 'productModal' && productFormDirty() && !confirm('Hay cambios sin guardar en este producto. ¿Cerrar y descartarlos?')) return;
+      closeModal(id);
     };
     document.querySelectorAll('.modal-overlay').forEach(modal => {
       modal.addEventListener('click', e => {
-        if (e.target === modal) closeModal(modal.id);
+        if (e.target === modal) requestCloseModal(modal.id);
       });
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape') return;
+      const top = [...document.querySelectorAll('.modal-overlay.open')].pop();
+      if (top) { e.preventDefault(); requestCloseModal(top.id); }
     });
 
     // --- FORMATEO DE MONEDA ---
@@ -332,7 +367,7 @@
       if (n <= 0) {
         return '<span class="badge-quote" style="background:#e0f2fe; color:#0369a1; font-weight:700; font-size:11.5px; padding:3px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;"><i data-lucide="file-text" width="12"></i> Solicitar cotización</span>';
       }
-      return `$${n.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      return `$${n.toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     // --- MOTOR DE AFINIDAD DE CATEGORÍAS (REQUERIMIENTO CLAVE) ---
@@ -473,11 +508,14 @@
       price: document.getElementById('filterPrice')?.value || 'all',
     });
 
+    let productsPageSeq = 0;
     const loadProductsPage = async (page = productsPage) => {
+      const seq = ++productsPageSeq;
       const filters = currentProductFilters();
       const params = new URLSearchParams({ page: String(page), limit: String(productsPageSize) });
       Object.entries(filters).forEach(([key, value]) => { if (value && value !== 'all') params.set(key, value); });
       const res = await api(`admin-products?${params.toString()}`);
+      if (seq !== productsPageSeq) return;
       productsList = res.products || [];
       productsPage = res.page || page;
       productsTotal = res.total || 0;
@@ -756,6 +794,8 @@
         showToast(`Producto ${isVisible ? 'visible en tienda' : 'oculto de la tienda'}.`);
         refreshProducts();
       } catch (err) {
+        prod.visible = !isVisible;
+        renderProductsTab();
         showToast(err.message, 'error');
       }
     };
@@ -985,9 +1025,8 @@
       document.getElementById('prodContentInput').value = '';
       document.getElementById('prodWarrantyInput').value = '';
       currentProductSpecs = [];
-      currentProductGallery = [];
       renderSpecsEditor();
-      renderGalleryEditor();
+      loadGalleryForProduct('');
       document.getElementById('prodImagePreview').style.display = 'none';
       if (document.getElementById('btnRemoveProdImage')) document.getElementById('btnRemoveProdImage').style.display = 'none';
       if (document.getElementById('btnModalDeleteProduct')) document.getElementById('btnModalDeleteProduct').style.display = 'none';
@@ -997,6 +1036,7 @@
       if (submitBtn) submitBtn.innerHTML = '<i data-lucide="plus"></i> Guardar y Publicar Producto';
 
       openModal('productModal');
+      productFormSaved = productFormSnapshot();
       lucide.createIcons();
     });
 
@@ -1053,6 +1093,7 @@
       if (submitBtn) submitBtn.innerHTML = '<i data-lucide="save"></i> Actualizar Producto';
 
       openModal('productModal');
+      productFormSaved = productFormSnapshot();
       lucide.createIcons();
     };
 
@@ -1183,30 +1224,15 @@
         fd.append('content_text', document.getElementById('prodContentInput').value.trim());
         fd.append('warranty_text', document.getElementById('prodWarrantyInput').value.trim());
 
-        const res = await api('admin-products', {
+        await api('admin-products', {
           method: 'POST',
           body: fd
         });
 
+        productFormSaved = null;
         closeModal('productModal');
-        await loadAllData();
-
-        // Mostrar modal de confirmación con enlace único SEO directo
-        const savedUrl = res.url || getProductPublicUrl(product);
-        const fullSavedUrl = window.location.origin + savedUrl;
-
-        const titleEl = document.getElementById('savedModalTitle');
-        const descEl = document.getElementById('savedModalDesc');
-        const inputEl = document.getElementById('savedProductUrlInput');
-        const linkBtn = document.getElementById('savedProductLinkBtn');
-
-        if (titleEl) titleEl.textContent = res.message || '¡Producto Guardado con Éxito!';
-        if (descEl) descEl.innerHTML = `<strong>${product.name}</strong> se ha registrado en la base de datos y su enlace permanente ya está disponible para clientes y buscadores.`;
-        if (inputEl) inputEl.value = fullSavedUrl;
-        if (linkBtn) linkBtn.href = savedUrl;
-
-        openModal('productSavedModal');
-        showToast('Producto guardado correctamente.');
+        showToast(`"${product.name}" guardado correctamente.`);
+        await refreshProducts();
 
       } catch (err) {
         console.error('Error guardando producto:', err);
@@ -1217,20 +1243,6 @@
           submitBtn.innerHTML = origHtml;
           if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
         }
-      }
-    });
-
-    // Copiar enlace SEO del modal de producto guardado
-    document.getElementById('btnCopySavedUrl')?.addEventListener('click', () => {
-      const input = document.getElementById('savedProductUrlInput');
-      if (input && input.value) {
-        navigator.clipboard.writeText(input.value).then(() => {
-          showToast('Enlace copiado al portapapeles.');
-        }).catch(() => {
-          input.select();
-          document.execCommand('copy');
-          showToast('Enlace copiado.');
-        });
       }
     });
 
@@ -1273,37 +1285,51 @@
       });
     });
 
+    let imageSearchSeq = 0;
+    let foundImages = [];
     const executeImageSearch = async (query, category = '', store = 'all') => {
+      const seq = ++imageSearchSeq;
       const grid = document.getElementById('imageResultsGrid');
+      foundImages = [];
       grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px;"><div class="spinner"></div> Buscando imágenes nítidas...</div>';
 
       try {
         const res = await api(`search-product-image?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}&store=${encodeURIComponent(store)}&limit=15`);
+        if (seq !== imageSearchSeq) return;
         const images = res.images || [];
+        foundImages = images;
 
         if (!images.length) {
           grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:30px; color:var(--muted);">No se encontraron imágenes para esta búsqueda. Intenta con palabras clave más sencillas o marca y modelo.</div>';
           return;
         }
 
-        grid.innerHTML = images.map(img => `
-          <div style="border:1px solid var(--line); border-radius:8px; overflow:hidden; cursor:pointer; background:#fff; text-align:center; transition:transform .2s;"
-               onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'"
-               onclick="selectFoundImage('${encodeURIComponent(img.url)}')">
-            <img src="${img.thumb || img.url}" alt="" style="width:100%; height:110px; object-fit:contain; background:#f8fafb; padding:4px;">
+        grid.innerHTML = images.map((img, index) => `
+          <div class="found-image-card" role="button" tabindex="0" data-found-image="${index}" aria-label="Usar imagen de ${escapeHtmlEditor(img.storeName || 'Web')}">
+            <img src="${escapeHtmlEditor(img.thumb || img.url)}" alt="" style="width:100%; height:110px; object-fit:contain; background:#f8fafb; padding:4px;">
             <div style="font-size:10.5px; color:var(--muted); padding:4px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border-top:1px solid var(--line);">
-              ${img.storeName || 'Web'}
+              ${escapeHtmlEditor(img.storeName || 'Web')}
             </div>
           </div>
         `).join('');
       } catch (err) {
-        grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:30px; color:var(--danger);">${err.message}</div>`;
+        if (seq !== imageSearchSeq) return;
+        grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:30px; color:var(--danger);">${escapeHtmlEditor(err.message)}</div>`;
       }
     };
 
-    window.selectFoundImage = async encodedUrl => {
-      const url = decodeURIComponent(encodedUrl);
-      if (!targetImageProduct) return;
+    const pickFoundImage = e => {
+      const card = e.target.closest('[data-found-image]');
+      const img = card && foundImages[Number(card.dataset.foundImage)];
+      if (img) selectFoundImage(img.url);
+    };
+    document.getElementById('imageResultsGrid')?.addEventListener('click', pickFoundImage);
+    document.getElementById('imageResultsGrid')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickFoundImage(e); }
+    });
+
+    const selectFoundImage = async url => {
+      if (!targetImageProduct || !url) return;
 
       if (targetImageProduct.id === 'modal-draft') {
         document.getElementById('prodImageUrlInput').value = url;
@@ -1316,7 +1342,9 @@
         return;
       }
 
-      targetImageProduct.imageUrl = url;
+      const imageTarget = targetImageProduct;
+      const previousImage = imageTarget.imageUrl;
+      imageTarget.imageUrl = url;
       try {
         const fd = new FormData();
         fd.append('id', targetImageProduct.id);
@@ -1333,6 +1361,8 @@
         closeModal('imageSearchModal');
         refreshProducts();
       } catch (err) {
+        imageTarget.imageUrl = previousImage;
+        renderProductsTab();
         showToast(err.message, 'error');
       }
     };
@@ -1356,7 +1386,25 @@
       fileInput.value = '';
     });
 
+    let importRunning = false;
+    window.addEventListener('beforeunload', e => {
+      if (importRunning || productFormDirty()) { e.preventDefault(); e.returnValue = ''; }
+    });
+
+    const renderImportSummary = (imported, total, failures) => {
+      const box = document.getElementById('importSummary');
+      if (!box) return;
+      if (!failures.length) { box.hidden = true; box.innerHTML = ''; return; }
+      const shown = failures.slice(0, 50);
+      box.innerHTML = `<strong>${imported} de ${total} productos importados. ${failures.length} no se pudieron guardar:</strong>`
+        + `<ul>${shown.map(f => `<li>${f.row ? `#${escapeHtmlEditor(f.row)} · ` : ''}${escapeHtmlEditor(f.name || 'Sin nombre')}: ${escapeHtmlEditor(f.error || 'Error desconocido')}</li>`).join('')}</ul>`
+        + (failures.length > shown.length ? `<small>... y ${failures.length - shown.length} más.</small>` : '');
+      box.hidden = false;
+    };
+
     window.resetImportFile = () => {
+      if (importRunning) return;
+      renderImportSummary(0, 0, []);
       importFilesList = [];
       activeImportFileIndex = 0;
       currentImportState = null;
@@ -1755,8 +1803,13 @@
       const total = allProducts.length;
       const totalFiles = importFilesList.length;
 
+      if (importRunning) return;
       if (!confirm(`¿Confirmas la importación de ${total} productos provenientes de ${totalFiles} archivo(s) a la tienda SmartISP?`)) return;
 
+      const executeBtn = document.getElementById('btnExecuteImport');
+      importRunning = true;
+      executeBtn.disabled = true;
+      renderImportSummary(0, 0, []);
       const progressWrap = document.getElementById('importProgressWrap');
       const progressBar = document.getElementById('importProgressBar');
       const progressPct = document.getElementById('importProgressPct');
@@ -1783,6 +1836,7 @@
       // 2. Subida por lotes con doble contingencia (Lote rápido + Fallback unitario infalible)
       const BATCH_SIZE = 10;
       let importedCount = 0;
+      const failures = [];
 
       for (let i = 0; i < total; i += BATCH_SIZE) {
         const batch = allProducts.slice(i, i + BATCH_SIZE);
@@ -1826,7 +1880,13 @@
           });
 
           if (res && (res.ok || res.count !== undefined)) {
-            importedCount += (res.count || batch.length);
+            const batchErrors = Array.isArray(res.errors) ? res.errors : [];
+            importedCount += res.count !== undefined ? Number(res.count) || 0 : batch.length - batchErrors.length;
+            batchErrors.forEach(err => {
+              const index = Number(err.row);
+              const source = Number.isInteger(index) && cleanBatch[index] ? cleanBatch[index] : null;
+              failures.push({ name: err.name || source?.name || '', error: err.error || 'Error desconocido' });
+            });
             batchSuccess = true;
           }
         } catch (batchErr) {
@@ -1857,6 +1917,7 @@
               importedCount++;
             } catch (singleErr) {
               console.warn('Error al guardar producto individual:', prod.name, singleErr.message);
+              failures.push({ row: i + cleanBatch.indexOf(prod) + 1, name: prod.name, error: singleErr.message });
             }
             await new Promise(r => setTimeout(r, 60));
           }
@@ -1868,8 +1929,17 @@
         }
       }
 
-      showToast(`¡Éxito! Se importaron ${importedCount} productos correctamente de ${totalFiles} archivo(s).`);
-      progressText.textContent = '¡Importación finalizada con éxito!';
+      importRunning = false;
+      executeBtn.disabled = false;
+      if (failures.length) {
+        progressText.textContent = `Importación terminada con errores: ${importedCount} de ${total} productos importados.`;
+        renderImportSummary(importedCount, total, failures);
+        showToast(`${importedCount} de ${total} productos importados; ${failures.length} con error. Revisa la lista.`, 'error');
+        await loadAllData();
+        return;
+      }
+      showToast(`Se importaron ${importedCount} de ${total} productos de ${totalFiles} archivo(s).`);
+      progressText.textContent = `Importación finalizada: ${importedCount} de ${total} productos importados.`;
       await loadAllData();
 
       setTimeout(() => {

@@ -502,6 +502,9 @@ const updateProviderPanels = provider => {
   if (r) r.classList.toggle('hidden', p !== 'resend');
 };
 
+// Valores pesados que no se pudieron leer: al guardar no se envían para no pisar el valor real.
+const unloadedHeavy = {};
+
 const loadContent = async () => {
   const result = await api('admin-content');
   const values = { ...DEFAULT_CONTENT, ...Object.fromEntries(result.content.map(item => [item.key, item.value])) };
@@ -512,9 +515,15 @@ const loadContent = async () => {
   const heavyKeys = result.content.filter(item => item.truncated).map(item => item.key);
   if (heavyKeys.length) {
     const heavyValues = await Promise.all(heavyKeys.map(key =>
-      api(`admin-content?key=${encodeURIComponent(key)}`).then(r => [key, r.value || '']).catch(() => [key, ''])
+      api(`admin-content?key=${encodeURIComponent(key)}`).then(r => [key, r.value || '', true]).catch(() => [key, null, false])
     ));
-    heavyValues.forEach(([key, value]) => { values[key] = value; });
+    const failed = [];
+    heavyValues.forEach(([key, value, ok]) => {
+      if (ok) { values[key] = value; delete unloadedHeavy[key]; return; }
+      unloadedHeavy[key] = values[key] ?? '';
+      failed.push(key);
+    });
+    if (failed.length) showMessage($('#contentMessage'), `No se pudo cargar ${failed.join(', ')}. Al guardar se conservará el valor actual; recarga la página para cambiarlo.`, true);
   }
   document.querySelectorAll('#contentForm [name]').forEach(input => { if (input.type !== 'file' && values[input.name] !== undefined) input.value = values[input.name]; });
   document.querySelectorAll('#visibilityForm [name]').forEach(input => { if (values[input.name] !== undefined) input.value = values[input.name]; });
@@ -571,7 +580,9 @@ const saveForm = async (form, messageEl, successText) => {
   try {
     const allValues = form.id === 'contentForm' && form.dataset.settingsSection !== 'contact' ? await valuesWithImage(form) : formValues(form);
     const values = window.smartispSettingsPayload ? window.smartispSettingsPayload(form,allValues) : allValues;
+    for (const [key, placeholder] of Object.entries(unloadedHeavy)) if (key in values && String(values[key] ?? '') === String(placeholder)) delete values[key];
     await api('admin-content', { method: 'POST', body: JSON.stringify(values) });
+    for (const key of Object.keys(unloadedHeavy)) if (key in values) delete unloadedHeavy[key];
     showMessage(messageEl, successText);
     form.dispatchEvent(new CustomEvent('settings-saved'));
   } finally { if(button)button.disabled=false; }
@@ -677,14 +688,20 @@ const getNotificationPayload = () => {
 
 $('#notificationsForm').addEventListener('submit', async event => {
   event.preventDefault();
+  const form = event.currentTarget;
+  const button = form.querySelector('[type="submit"]');
+  if (button?.disabled) return;
+  if (button) button.disabled = true;
   const payload = getNotificationPayload();
 
   try {
     await api('admin-content', { method: 'POST', body: JSON.stringify(payload) });
     showMessage($('#notificationsMessage'), 'Configuración de correo guardada correctamente.');
-    $('#notificationsForm').dispatchEvent(new CustomEvent('settings-saved'));
+    form.dispatchEvent(new CustomEvent('settings-saved'));
   } catch (error) {
     showMessage($('#notificationsMessage'), error.message, true);
+  } finally {
+    if (button) button.disabled = false;
   }
 });
 
@@ -762,7 +779,7 @@ $('#testEmailButton')?.addEventListener('click', async () => {
   }
 });
 $('#resetContentButton').addEventListener('click', () => { const form = $('#contentForm'); const defaults=window.smartispSettingsPayload?window.smartispSettingsPayload(form,DEFAULT_CONTENT):DEFAULT_CONTENT;fillForm(form,defaults);if(defaults.logo_image!==undefined){$('#logoFileInput').value='';$('#logoDarkFileInput').value='';syncLogoSettings(DEFAULT_CONTENT);}updateDesignPreview();form.dispatchEvent(new Event('input',{bubbles:true}));showMessage($('#contentMessage'),'Valores predeterminados preparados. Guarda para aplicarlos.'); });
-$('#resetVisibilityButton').addEventListener('click', async () => { const form = $('#visibilityForm'); fillForm(form, DEFAULT_VISIBILITY); try { await saveForm(form, $('#visibilityMessage'), 'Visibilidad restaurada al predeterminado.'); } catch (error) { showMessage($('#visibilityMessage'), error.message, true); } });
+$('#resetVisibilityButton').addEventListener('click', () => { const form = $('#visibilityForm'); fillForm(form, DEFAULT_VISIBILITY); form.dispatchEvent(new Event('input', { bubbles: true })); showMessage($('#visibilityMessage'), 'Valores predeterminados preparados. Guarda para aplicarlos.'); });
 $('#clearContentButton').addEventListener('click', () => $('#resetContentButton').click());
 $('#adminPanel').addEventListener('change', event => { const input = event.target; if (input.type !== 'file' || !input.files[0]) return; if (input.name === 'logo_image_file' || input.name === 'logo_dark_image_file') return; const form = input.closest('form'); const outputInput = form.querySelector('[name="hero_image"]'); if (!outputInput) return; try { openCropEditor(input.files[0], input, outputInput); } catch (error) { input.value = ''; showMessage($('#contentMessage'), error.message, true); } });
 $('#cropAspect').addEventListener('change', updateCropBox);
