@@ -2979,6 +2979,7 @@
 				});
 				const result = await readApiResponse(response);
 				if (!response.ok) throw new Error(result.error);
+				if (result.token && storeGet('smartisp.adminToken')) storeSet('smartisp.adminToken', result.token);
 				form.reset();
 				showAccountMessage(form, '¡Contraseña actualizada correctamente!');
 			} catch (error) {

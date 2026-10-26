@@ -1557,6 +1557,7 @@
         if (!name) continue;
 
         const skuVal = fileState.mapping.sku !== null ? String(row[fileState.mapping.sku] || '').trim() : '';
+        const priceProvided = fileState.mapping.price !== null && String(row[fileState.mapping.price] ?? '').trim() !== '';
         const rawPriceStr = fileState.mapping.price !== null ? String(row[fileState.mapping.price] || '0').replace(/[^0-9.,]/g, '').replace(',', '.') : '0';
         const basePrice = parseFloat(rawPriceStr) || 0;
         
@@ -1581,6 +1582,7 @@
           affinityInfo: affinity,
           imageUrl,
           description,
+          priceProvided,
           visible: true,
           fileName: fileState.fileName
         });
@@ -1710,13 +1712,13 @@
 
     window.updateImportProductCategory = (fileIdx, prodIdx, val) => {
       if (importFilesList[fileIdx]?.parsedProducts[prodIdx]) {
-        importFilesList[fileIdx].parsedProducts[prodIdx].category = val;
+        importFilesList[fileIdx].parsedProducts[prodIdx].category = val; importFilesList[fileIdx].parsedProducts[prodIdx].categoryManual = true;
       }
     };
 
     window.updateImportProductSubcategory = (fileIdx, prodIdx, val) => {
       if (importFilesList[fileIdx]?.parsedProducts[prodIdx]) {
-        importFilesList[fileIdx].parsedProducts[prodIdx].subcategory = val;
+        importFilesList[fileIdx].parsedProducts[prodIdx].subcategory = val; importFilesList[fileIdx].parsedProducts[prodIdx].categoryManual = true;
       }
     };
 
@@ -1763,7 +1765,7 @@
             </td>
             <td>
               <span class="file-count-badge" style="font-size:10px; margin-bottom:2px; display:inline-flex; align-items:center; gap:3px; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${p.fileName}"><i data-lucide="file" width="10"></i> ${p.fileName}</span>
-              <div style="font-size:11px; color:var(--muted);">${p.rawCategory || '<em>(Vacío)</em>'}</div>
+              <div style="font-size:11px; color:var(--muted);">${p.rawCategory ? escapeHtmlEditor(p.rawCategory) : '<em>(Vacío)</em>'}</div>
             </td>
             <td>
               <div style="display:flex; flex-direction:column; gap:4px;">
@@ -1846,18 +1848,17 @@
         progressBar.style.width = `${pct}%`;
         progressPct.textContent = `${pct}%`;
 
-        // Limpiar campos para enviar datos bien estructurados
+        // Solo se envía lo que trae el archivo: en productos existentes, lo ausente o vacío no se toca.
         const cleanBatch = batch.map(p => ({
           id: p.id || undefined,
           name: String(p.name || '').trim(),
           description: String(p.description || '').trim(),
-          price: Number(p.price) || 0,
-          category: String(p.category || 'General').trim(),
-          subcategory: String(p.subcategory || '').trim(),
+          price: p.priceProvided === false ? '' : (Number(p.price) || 0),
+          category: p.rawCategory === '' && !p.categoryManual ? '' : String(p.category || '').trim(),
+          subcategory: p.rawCategory === '' && !p.categoryManual ? '' : String(p.subcategory || '').trim(),
           imageUrl: String(p.imageUrl || p.image_url || '').trim(),
           externalUrl: String(p.externalUrl || p.external_url || '').trim(),
-          sku: String(p.sku || '').trim(),
-          visible: p.visible !== false ? 1 : 0
+          sku: String(p.sku || '').trim()
         }));
 
         let batchSuccess = false;
@@ -1897,23 +1898,15 @@
         if (!batchSuccess) {
           for (const prod of cleanBatch) {
             try {
+              const singleJson = JSON.stringify({ action: 'import-products', products: [prod] });
               const singleFd = new FormData();
-              singleFd.append('action', 'admin-products');
-              if (prod.id) singleFd.append('id', prod.id);
-              singleFd.append('name', prod.name);
-              singleFd.append('sku', prod.sku);
-              singleFd.append('price', String(prod.price));
-              singleFd.append('category', prod.category);
-              singleFd.append('subcategory', prod.subcategory);
-              singleFd.append('imageUrl', prod.imageUrl);
-              singleFd.append('externalUrl', prod.externalUrl);
-              singleFd.append('description', prod.description);
-              singleFd.append('visible', prod.visible ? '1' : '0');
-
-              await api('admin-products', {
-                method: 'POST',
-                body: singleFd
-              });
+              singleFd.append('action', 'import-products');
+              const singleB64 = toUtf8Base64(singleJson);
+              if (singleB64) singleFd.append('payload', singleB64);
+              singleFd.append('products', singleJson);
+              const singleRes = await api('import-products', { method: 'POST', body: singleFd });
+              const singleError = Array.isArray(singleRes?.errors) ? singleRes.errors[0] : null;
+              if (singleError) throw new Error(singleError.error || 'Error desconocido');
               importedCount++;
             } catch (singleErr) {
               console.warn('Error al guardar producto individual:', prod.name, singleErr.message);
