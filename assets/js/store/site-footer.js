@@ -45,14 +45,18 @@
 		window.lucide?.createIcons();
 	};
 	const init = () => {
-		fetch('/api/auth/landing-content', { cache: 'no-store' })
+		window.SmartLandingContent = fetch('/api/auth/landing-content', { cache: 'no-store' })
 			.then(r => r.ok ? r.json() : null)
 			.then(data => {
-				if (!data) return;
+				if (!data) return {};
 				const content = Object.fromEntries((data.content || []).map(item => [item.key, item.value]));
 				renderFooterContent(content);
+				return content;
 			})
-			.catch(error => console.warn('No se pudo cargar el contenido del pie de pagina:', error));
+			.catch(error => {
+				console.warn('No se pudo cargar el contenido del pie de pagina:', error);
+				return {};
+			});
 	};
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
 	else init();
