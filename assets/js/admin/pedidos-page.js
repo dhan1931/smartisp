@@ -1,16 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async user => {
-  const { $, esc, money, api, post, toast, icons } = SmartAdmin;
+  const { $, esc, money, api, post, toast, icons, state: stateHtml, skeletonRows, relTime, utc, remembered, remember } = SmartAdmin;
   const showMessage = (element, text, error = false) => { element.textContent = text; element.classList.remove('show'); element.classList.toggle('error', error); requestAnimationFrame(() => element.classList.add('show')); };
 
   const STATUS_META = {
-    quote_requested: { label: 'Cotización solicitada', color: '#7c3aed', bg: '#f3e8ff' },
-    pending:         { label: 'Pendiente de pago',      color: '#b45309', bg: '#fef3c7' },
-    paid:            { label: 'Pago confirmado',        color: '#047857', bg: '#d1fae5' },
-    preparing:       { label: 'Preparando',             color: '#0369a1', bg: '#e0f2fe' },
-    shipped:         { label: 'Enviado / Retiro',       color: '#1d4ed8', bg: '#dbeafe' },
-    delivered:       { label: 'Entregado',              color: '#15803d', bg: '#dcfce7' },
-    cancelled:       { label: 'Cancelado',              color: '#b91c1c', bg: '#fee2e2' },
-    received:        { label: 'Recibido (legado)',      color: '#6b7280', bg: '#f1f5f9' },
+    quote_requested: { label: 'Cotización solicitada' },
+    pending:         { label: 'Pendiente de pago' },
+    paid:            { label: 'Pago confirmado' },
+    preparing:       { label: 'Preparando' },
+    shipped:         { label: 'Enviado / Retiro' },
+    delivered:       { label: 'Entregado' },
+    cancelled:       { label: 'Cancelado' },
+    received:        { label: 'Recibido (legado)' },
   };
   const STATUS_FLOW = ['quote_requested', 'pending', 'paid', 'preparing', 'shipped', 'delivered', 'cancelled'];
   // Qué hace cada estado además de avisar al cliente (pago e inventario, ver api/lib/shop.php).
@@ -23,18 +23,21 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async user =
   const PAYMENT_LABELS = { paid: 'Cobrado', confirmed: 'Cobrado', pending: 'Pendiente de cobro', quote_pending: 'Cotización (sin cobro)', failed: 'Fallido', refunded: 'Reembolsado' };
 
   const statusBadge = status => {
-    const meta = STATUS_META[status] || { label: status || 'Sin estado', color: '#475569', bg: '#f1f5f9' };
-    return `<span class="status-badge" style="color:${meta.color};background:${meta.bg};">${esc(meta.label)}</span>`;
+    const meta = STATUS_META[status] || { label: status || 'Sin estado' };
+    const key = String(status || 'none').toLowerCase().replace(/[^a-z_]/g, '');
+    return `<span class="badge status-badge st-${key}">${esc(meta.label)}</span>`;
   };
   const orderItems = o => Array.isArray(o.items?.items) ? o.items.items : (Array.isArray(o.items) ? o.items : []);
 
+  // La URL (?status=, ?q=) manda; si no trae nada, se recupera la última vista usada.
   const initialParams = new URLSearchParams(location.search);
-  // ?q= abre la lista ya filtrada (los pedidos recientes del dashboard enlazan así).
-  const state = { page: 1, limit: 20, status: initialParams.get('status') || 'all', q: (initialParams.get('q') || '').trim(), totalPages: 1 };
+  const fromUrl = initialParams.has('status') || initialParams.has('q');
+  const saved = fromUrl ? {} : remembered('pedidos', {});
+  const state = { page: 1, limit: 20, status: initialParams.get('status') || saved.status || 'all', q: (initialParams.get('q') || saved.q || '').trim(), totalPages: 1 };
   if (state.q) $('#searchInput').value = state.q;
-  $('#adminIdentity').textContent = `${user.name || ''} ${user.surname || ''} - ${user.email}`;
+  const saveView = () => remember('pedidos', { status: state.status, q: state.q });
+  $('#adminIdentity').textContent = `Sesión: ${[user.name, user.surname].filter(Boolean).join(' ') || user.email}`;
 
-  const emptyText = $('#emptyState').textContent;
   let ordersSeq = 0;
 
   const syncTabs = () => document.querySelectorAll('.status-tab').forEach(btn => {
@@ -46,20 +49,23 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async user =
   const renderStats = stats => {
     const byStatus = Object.fromEntries((stats.by_status || []).map(s => [s.status, s.total]));
     const cards = [
-      { label: 'Total pedidos', num: stats.total || 0 },
-      { label: 'Hoy', num: stats.today_count || 0 },
-      { label: 'Pendientes de pago', num: byStatus.pending || 0 },
-      { label: 'Por preparar', num: byStatus.paid || 0 },
-      { label: 'Completados', num: stats.completed_count || 0 },
-      { label: 'Ingresos confirmados', num: money(stats.revenue || 0) },
+      { label: 'Total pedidos', num: stats.total || 0, icon: 'receipt' },
+      { label: 'Hoy', num: stats.today_count || 0, icon: 'calendar-days' },
+      { label: 'Pendientes de pago', num: byStatus.pending || 0, icon: 'credit-card', status: 'pending', warn: (byStatus.pending || 0) > 0 },
+      { label: 'Por preparar', num: byStatus.paid || 0, icon: 'package', status: 'paid' },
+      { label: 'Completados', num: stats.completed_count || 0, icon: 'circle-check' },
+      { label: 'Ingresos confirmados', num: money(stats.revenue || 0), icon: 'banknote' },
     ];
-    $('#statsRow').innerHTML = cards.map(c => `<div class="stat-card"><div class="num">${c.num}</div><div class="label">${esc(c.label)}</div></div>`).join('');
+    $('#statsRow').innerHTML = cards.map(c => c.status
+      ? `<button type="button" class="stat ${c.warn ? 'is-warn' : ''}" data-status="${c.status}" title="Filtrar: ${esc(c.label)}"><span><i data-lucide="${c.icon}" aria-hidden="true"></i>${esc(c.label)}</span><strong>${c.num}</strong></button>`
+      : `<div class="stat"><span><i data-lucide="${c.icon}" aria-hidden="true"></i>${esc(c.label)}</span><strong>${c.num}</strong></div>`).join('');
     const tabs = [{ key: 'all', label: 'Todos', count: stats.total || 0 }]
       .concat(STATUS_FLOW.map(k => ({ key: k, label: STATUS_META[k].label, count: byStatus[k] || 0 })));
     $('#statusTabs').innerHTML = tabs.map(t => `
-      <button type="button" class="status-tab" data-status="${t.key}" aria-pressed="false">
-        ${esc(t.label)} <span class="cnt">${t.count}</span>
+      <button type="button" class="chip status-tab" data-status="${t.key}" aria-pressed="false">
+        ${esc(t.label)} <span class="count">${t.count}</span>
       </button>`).join('');
+    icons();
     syncTabs();
   };
 
@@ -70,7 +76,10 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async user =
 
   const renderOrdersTable = orders => {
     const body = $('#ordersBody');
-    $('#emptyState').textContent = emptyText;
+    const filtered = state.q || state.status !== 'all';
+    $('#emptyState').innerHTML = filtered
+      ? stateHtml('search', 'No hay pedidos que coincidan con el filtro', 'Prueba con otro estado o borra la búsqueda.')
+      : stateHtml('empty', 'Todavía no hay pedidos', 'Los pedidos de la tienda aparecerán aquí en cuanto entren.');
     $('#emptyState').classList.remove('is-error');
     $('#emptyState').classList.toggle('hidden', orders.length > 0);
     $('#ordersTableWrap').classList.toggle('hidden', orders.length === 0);
@@ -78,17 +87,18 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async user =
       const itemCount = orderItems(o).reduce((sum, it) => sum + Number(it.quantity || 1), 0);
       const customerName = o.customer_name || o.shipping?.name || '—';
       const customerEmail = o.customer_email || o.shipping?.email || '';
-      const date = o.created_at ? new Date(o.created_at.replace(' ', 'T')).toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+      const created = utc(o.created_at);
+      const absolute = created ? created.toLocaleString('es-EC', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
       return `
-        <tr>
-          <td class="order-id">${esc(o.id)}</td>
-          <td>${date}</td>
-          <td>${esc(customerName)}<br><span style="color:var(--muted);font-size:11.5px;">${esc(customerEmail)}</span></td>
-          <td>${itemCount} ud.</td>
-          <td>${money(o.total)}</td>
-          <td>${statusBadge(o.status)}</td>
-          <td><div class="row-actions"><button class="row-link" type="button" data-id="${esc(o.id)}">Ver detalle <i data-lucide="arrow-right" style="width:12px;height:12px;"></i></button>
-            ${['cancelled', 'canceled'].includes(String(o.status || '').toLowerCase()) ? `<button class="row-delete" type="button" data-delete-id="${esc(o.id)}" aria-label="Eliminar pedido cancelado ${esc(o.id)}" title="Eliminar pedido cancelado"><i data-lucide="trash-2" style="width:15px;height:15px;"></i></button>` : ''}
+        <tr data-order="${esc(o.id)}">
+          <td class="order-id" data-label="Pedido">${esc(o.id)}</td>
+          <td class="order-when" data-label="Fecha" data-export="${esc(absolute)}"><span title="${esc(absolute)}">${created ? esc(relTime(o.created_at)) : '—'}</span></td>
+          <td data-label="Cliente" data-export="${esc(customerName + (customerEmail ? ' <' + customerEmail + '>' : ''))}"><span class="order-customer">${esc(customerName)}</span><span class="order-email">${esc(customerEmail)}</span></td>
+          <td class="num" data-label="Ítems">${itemCount} ud.</td>
+          <td class="num" data-label="Total">${money(o.total)}</td>
+          <td data-label="Estado">${statusBadge(o.status)}</td>
+          <td data-label="Acciones"><div class="row-actions"><button class="button small row-link" type="button" data-id="${esc(o.id)}">Ver detalle <i data-lucide="arrow-right" aria-hidden="true"></i></button>
+            ${['cancelled', 'canceled'].includes(String(o.status || '').toLowerCase()) ? `<button class="icon-button row-delete" type="button" data-delete-id="${esc(o.id)}" aria-label="Eliminar pedido cancelado ${esc(o.id)}" title="Eliminar pedido cancelado"><i data-lucide="trash-2" aria-hidden="true"></i></button>` : ''}
           </div></td>
         </tr>`;
     }).join('');
@@ -97,6 +107,7 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async user =
 
   const loadOrders = async () => {
     const seq = ++ordersSeq;
+    if (!$('#ordersBody').children.length) { $('#ordersTableWrap').classList.remove('hidden'); $('#ordersBody').innerHTML = skeletonRows(7, 6); }
     try {
       const qs = new URLSearchParams({ page: state.page, limit: state.limit, status: state.status, q: state.q });
       const res = await api(`admin-orders?${qs.toString()}`);
@@ -109,14 +120,16 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async user =
     } catch (e) {
       if (seq !== ordersSeq) return;
       $('#ordersTableWrap').classList.add('hidden');
-      $('#emptyState').textContent = 'Error al cargar pedidos: ' + e.message;
+      $('#ordersBody').innerHTML = '';
+      $('#emptyState').innerHTML = stateHtml('error', 'No se pudieron cargar los pedidos', e.message);
       $('#emptyState').classList.add('is-error');
       $('#emptyState').classList.remove('hidden');
+      icons();
     }
   };
 
   const deleteCancelledOrder = async (id, button) => {
-    if (!window.confirm(`Eliminar definitivamente el pedido cancelado ${id}? Esta accion no se puede deshacer.`)) return;
+    if (!(await SmartAdmin.confirm('Eliminar pedido cancelado', `¿Eliminar definitivamente el pedido cancelado ${id}? Esta acción no se puede deshacer.`, 'Eliminar'))) return;
     button.disabled = true;
     try {
       await post('admin-order-delete', { id });
@@ -133,6 +146,16 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async user =
     if (!btn) return;
     state.status = btn.dataset.status;
     state.page = 1;
+    saveView();
+    syncTabs();
+    loadOrders();
+  });
+  $('#statsRow').addEventListener('click', e => {
+    const card = e.target.closest('button[data-status]');
+    if (!card) return;
+    state.status = state.status === card.dataset.status ? 'all' : card.dataset.status;
+    state.page = 1;
+    saveView();
     syncTabs();
     loadOrders();
   });
@@ -140,13 +163,21 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async user =
     const view = e.target.closest('.row-link');
     if (view) { openOrderModal(view.dataset.id); return; }
     const del = e.target.closest('.row-delete');
-    if (del) deleteCancelledOrder(del.dataset.deleteId, del);
+    if (del) { deleteCancelledOrder(del.dataset.deleteId, del); return; }
+    const row = e.target.closest('tr[data-order]');
+    if (row && !e.target.closest('a, button')) openOrderModal(row.dataset.order);
+  });
+  $('#refreshOrders').addEventListener('click', async e => {
+    const btn = e.currentTarget;
+    btn.disabled = true; btn.classList.add('is-busy');
+    await Promise.all([loadOrders(), loadStats()]);
+    btn.disabled = false; btn.classList.remove('is-busy');
   });
 
   let searchDebounce = null;
   $('#searchInput').addEventListener('input', e => {
     clearTimeout(searchDebounce);
-    searchDebounce = setTimeout(() => { state.q = e.target.value.trim(); state.page = 1; loadOrders(); }, 350);
+    searchDebounce = setTimeout(() => { state.q = e.target.value.trim(); state.page = 1; saveView(); loadOrders(); }, 350);
   });
   $('#prevPageBtn').addEventListener('click', () => { if (state.page > 1) { state.page--; loadOrders(); } });
   $('#nextPageBtn').addEventListener('click', () => { if (state.page < state.totalPages) { state.page++; loadOrders(); } });
@@ -168,22 +199,22 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async user =
     const items = orderItems(o);
     const shipping = o.shipping || {};
     $('#modalOrderTitle').textContent = `Pedido ${o.id}`;
-    $('#modalOrderDate').textContent = o.created_at ? new Date(o.created_at.replace(' ', 'T')).toLocaleString('es-EC') : '';
+    $('#modalOrderDate').textContent = o.created_at ? (utc(o.created_at)?.toLocaleString('es-EC') || '') + ' · ' + relTime(o.created_at) : '';
     $('#modalCustomer').innerHTML = `
       ${esc(o.customer_name || shipping.name || '—')}<br>
-      <span style="color:var(--muted);">${esc(o.customer_email || shipping.email || '')}</span><br>
-      <span style="color:var(--muted);">${esc(o.customer_phone || shipping.phone || '')}</span>`;
+      <span class="muted">${esc(o.customer_email || shipping.email || '')}</span><br>
+      <span class="muted">${esc(o.customer_phone || shipping.phone || '')}</span>`;
     $('#modalShipping').innerHTML = `
       ${esc(shipping.city || '—')}<br>
-      <span style="color:var(--muted);">${esc(shipping.address || '')}</span>
-      ${shipping.notes ? `<br><span style="color:var(--muted);">Nota: ${esc(shipping.notes)}</span>` : ''}`;
+      <span class="muted">${esc(shipping.address || '')}</span>
+      ${shipping.notes ? `<br><span class="muted">Nota: ${esc(shipping.notes)}</span>` : ''}`;
     $('#modalItems').innerHTML = items.length
       ? items.map(it => `
         <div class="item-row">
-          <span>${esc(it.name || 'Producto')} <span style="color:var(--muted);">× ${Number(it.quantity || 1)}</span></span>
+          <span>${esc(it.name || 'Producto')} <span class="muted">× ${Number(it.quantity || 1)}</span></span>
           <strong>${it.price > 0 ? money(it.price * (it.quantity || 1)) : 'Cotizar'}</strong>
         </div>`).join('')
-      : '<div style="color:var(--muted);font-size:13px;">Sin items registrados.</div>';
+      : '<div class="muted">Sin ítems registrados.</div>';
     $('#modalTotal').textContent = money(o.total);
     $('#modalPayment').textContent = o.payment_status ? `Pago: ${PAYMENT_LABELS[o.payment_status] || o.payment_status}${o.payment_provider ? ' · ' + o.payment_provider : ''}` : '';
     $('#statusSelect').innerHTML = STATUS_FLOW.concat(STATUS_META[o.status] && !STATUS_FLOW.includes(o.status) ? [o.status] : [])
@@ -194,10 +225,10 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async user =
       ? res.events.map(ev => `
         <div class="timeline-item">
           <strong>${esc(STATUS_META[ev.to_status]?.label || ev.to_status)}</strong>
-          <span style="color:var(--muted);"> · ${new Date(String(ev.created_at || '').replace(' ', 'T')).toLocaleString('es-EC')} · ${esc(ev.actor || '')}</span>
-          ${ev.note ? `<div style="color:var(--muted);margin-top:2px;">${esc(ev.note)}</div>` : ''}
+          <span class="muted"> · ${esc(utc(ev.created_at)?.toLocaleString('es-EC') || '')} · ${esc(ev.actor || '')}</span>
+          ${ev.note ? `<div class="note">${esc(ev.note)}</div>` : ''}
         </div>`).join('')
-      : '<div style="color:var(--muted);font-size:12.5px;">Sin cambios de estado registrados aún.</div>';
+      : '<div class="muted">Sin cambios de estado registrados aún.</div>';
   };
 
   const openOrderModal = async id => {

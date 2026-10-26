@@ -47,7 +47,7 @@
       list.innerHTML = currentProductGallery.map(img => `
         <div style="position:relative;">
           <img src="${escapeHtmlEditor(img.image_url)}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--line);">
-          <button type="button" data-remove-gallery-image="${img.id}" style="position:absolute;top:-6px;right:-6px;background:#dc2626;color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;">✕</button>
+          <button type="button" data-remove-gallery-image="${img.id}" style="position:absolute;top:-6px;right:-6px;background:var(--danger);color:var(--on-danger);border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;">✕</button>
         </div>
       `).join('') || '<small style="color:var(--muted);">Sin imágenes adicionales todavía.</small>';
       if (addBtn) {
@@ -365,7 +365,7 @@
     const formatMoney = amount => {
       const n = Number(amount) || 0;
       if (n <= 0) {
-        return '<span class="badge-quote" style="background:#e0f2fe; color:#0369a1; font-weight:700; font-size:11.5px; padding:3px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;"><i data-lucide="file-text" width="12"></i> Solicitar cotización</span>';
+        return '<span class="badge-quote"><i data-lucide="file-text" width="12"></i> Solicitar cotización</span>';
       }
       return `$${n.toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
@@ -550,6 +550,11 @@
       } catch (err) {
         console.error('Error cargando catálogo:', err);
         showToast(err.message, 'error');
+        const tbody = document.getElementById('productsTableBody');
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="7"><div class="state is-error catalog-state" role="alert"><i data-lucide="circle-alert"></i><strong>No se pudo cargar el catálogo</strong><span>${escapeHtmlEditor(err.message || 'Error de conexión')}</span><div class="catalog-state-actions"><button type="button" class="btn btn-secondary" onclick="location.reload()"><i data-lucide="refresh-cw" width="15"></i> Reintentar</button></div></div></td></tr>`;
+          window.lucide?.createIcons();
+        }
       }
     };
 
@@ -705,14 +710,12 @@
       if (!productsTotal && productsStatsLoaded && Number(productsStats.total) === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="7" style="text-align:center; padding:50px 20px;">
-              <div style="max-width:440px; margin:0 auto;">
-                <div style="margin-bottom:12px; color:var(--muted);"><i data-lucide="package" width="44"></i></div>
-                <h3 style="font-size:17px; font-weight:700; color:var(--navy); margin-bottom:6px;">No hay productos en el catálogo</h3>
-                <p style="font-size:13px; color:var(--muted); margin-bottom:20px; line-height:1.5;">
-                  Tu catálogo está vacío en este momento. Puedes subir un archivo Excel con productos o registrar uno manualmente ahora mismo.
-                </p>
-                <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+            <td colspan="7">
+              <div class="state catalog-state">
+                <i data-lucide="package-open"></i>
+                <strong>Tu catálogo está vacío</strong>
+                <span>Importa un Excel con tus productos o registra el primero a mano. Después podrás completar fotos, precios y categorías desde aquí.</span>
+                <div class="catalog-state-actions">
                   <button type="button" class="btn btn-primary" onclick="document.getElementById('btnNewProduct').click()">
                     <i data-lucide="plus" width="15"></i> Crear primer producto
                   </button>
@@ -735,11 +738,16 @@
       if (!items.length) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="7" style="text-align:center; padding:36px; color:var(--muted);">
-              No se encontraron productos con los filtros seleccionados.
+            <td colspan="7">
+              <div class="state catalog-state">
+                <i data-lucide="search-x"></i>
+                <strong>Sin resultados</strong>
+                <span>Ningún producto coincide con la búsqueda o los filtros. Prueba con menos filtros o usa «Limpiar filtros».</span>
+              </div>
             </td>
           </tr>
         `;
+        lucide.createIcons();
         return;
       }
 
@@ -1306,7 +1314,7 @@
 
         grid.innerHTML = images.map((img, index) => `
           <div class="found-image-card" role="button" tabindex="0" data-found-image="${index}" aria-label="Usar imagen de ${escapeHtmlEditor(img.storeName || 'Web')}">
-            <img src="${escapeHtmlEditor(img.thumb || img.url)}" alt="" style="width:100%; height:110px; object-fit:contain; background:#f8fafb; padding:4px;">
+            <img src="${escapeHtmlEditor(img.thumb || img.url)}" alt="" style="width:100%; height:110px; object-fit:contain; background:#fff; padding:4px;">
             <div style="font-size:10.5px; color:var(--muted); padding:4px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border-top:1px solid var(--line);">
               ${escapeHtmlEditor(img.storeName || 'Web')}
             </div>
@@ -1759,7 +1767,7 @@
             <td><code>${p.sku || '—'}</code></td>
             <td>
               ${isQuotation 
-                ? '<span style="color:#d97706; font-size:11px; font-weight:700; background:#fef3c7; padding:2px 6px; border-radius:4px; white-space:nowrap;">Solicitar cotización</span>' 
+                ? '<span class="badge-quote is-warn">Solicitar cotización</span>' 
                 : `<strong>${formatMoney(p.price)}</strong>`
               }
             </td>
@@ -1785,7 +1793,7 @@
       if (allProducts.length > 40) {
         tbody.innerHTML += `
           <tr>
-            <td colspan="7" style="text-align:center; padding:12px; background:#f8fafb; color:var(--muted); font-size:12px;">
+            <td colspan="7" style="text-align:center; padding:12px; background:var(--surface-2); color:var(--muted); font-size:12px;">
               ... y ${allProducts.length - 40} productos más que se importarán con este mismo mapeo.
             </td>
           </tr>
@@ -1982,9 +1990,18 @@
         badge.append(icon, document.createTextNode(user.email || user.name || 'Admin'));
         window.lucide?.createIcons();
       }
+      // ?q= llega del buscador global (Ctrl+K): la primera carga ya sale filtrada.
+      const initialQuery = (new URLSearchParams(window.location.search).get('q') || '').trim();
+      const searchInput = document.getElementById('productSearchInput');
+      if (initialQuery && searchInput) searchInput.value = initialQuery;
+
       await loadAllData();
 
       const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('new') === '1') {
+        if (!urlParams.get('tab')) switchTab('tab-products');
+        document.getElementById('btnNewProduct')?.click();
+      }
       const requestedTab = urlParams.get('tab');
       if (requestedTab && document.getElementById(requestedTab)) {
         switchTab(requestedTab);

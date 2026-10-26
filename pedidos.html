@@ -10,86 +10,111 @@
   <link rel="icon" type="image/png" sizes="192x192" href="/assets/favicons/favicon-192x192.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
   <link rel="manifest" href="/assets/site.webmanifest">
-  <meta name="theme-color" content="#102c3d">
-  <link rel="stylesheet" href="/assets/css/admin/pedidos-page.css?v=20261025">
-  <script src="/assets/vendor/lucide-icons.min.js?v=8707c619"></script>
-  <script src="/assets/js/admin/admin-page.js?v=20261025-waf" defer></script>
-  <script src="/assets/js/admin/pedidos-page.js?v=20261025" defer></script>
+  <meta name="theme-color" content="#102A43">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <script src="/assets/js/admin/admin-theme.js?v=ds-20261026"></script>
+  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261026">
+  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261026">
+  <link rel="stylesheet" href="/assets/css/admin/pedidos-page.css?v=ds-20261026">
+  <script src="/assets/vendor/lucide-icons.min.js?v=8707c619" defer></script>
+  <script src="/assets/js/admin/admin-nav.js?v=ds-20261026" defer></script>
+  <script src="/assets/js/admin/admin-page.js?v=ds-20261026" defer></script>
+  <script src="/assets/js/admin/pedidos-page.js?v=ds-20261026" defer></script>
 </head>
 <body>
-  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=admin-brand-20261011">
   <div id="smartisp-admin-nav" class="is-loading" data-active="pedidos"></div>
-  <script src="/assets/js/admin/admin-nav.js?v=20261025-a11y" defer></script>
-  <header class="top"><div><h1>SmartISP Administracion</h1><span>Centro de pedidos</span></div></header>
   <main class="shell" id="app" hidden>
+    <header class="page-head">
+      <div>
+        <p class="eyebrow"><i data-lucide="receipt" aria-hidden="true"></i> Operación</p>
+        <h1>Pedidos</h1>
+        <p>Confirma pagos, prepara envíos y avisa al cliente en cada cambio de estado. <span id="adminIdentity" class="identity"></span></p>
+      </div>
+      <div class="head-actions">
+        <button class="button" id="refreshOrders" type="button"><i data-lucide="refresh-cw" aria-hidden="true"></i> Actualizar</button>
+        <a class="button" href="/reportes.html"><i data-lucide="file-down" aria-hidden="true"></i> Reportes</a>
+      </div>
+    </header>
+
     <section id="ordersPanel">
-      <div class="toolbar">
-        <div><h2 style="margin:0;">Pedidos</h2><span id="adminIdentity" style="color:var(--muted);font-size:12.5px;"></span></div>
-      </div>
+      <div class="stats" id="statsRow" aria-label="Resumen de pedidos"></div>
 
-      <div class="stats-row" id="statsRow"></div>
+      <section class="card orders-card">
+        <div class="toolbar">
+          <div class="search">
+            <i data-lucide="search" aria-hidden="true"></i>
+            <label class="sr-only" for="searchInput">Buscar pedidos</label>
+            <input type="search" id="searchInput" placeholder="Buscar por id, cliente o correo…  ( / )" autocomplete="off">
+          </div>
+          <div class="toolbar-actions" id="ordersExportHost"></div>
+        </div>
+        <div class="filters status-tabs" id="statusTabs" role="group" aria-label="Filtrar por estado"></div>
 
-      <div class="filter-bar">
-        <div class="status-tabs" id="statusTabs"></div>
-        <input type="text" id="searchInput" placeholder="Buscar por id, cliente o correo...">
-      </div>
+        <div id="ordersTableWrap" class="table-wrap">
+          <table class="orders-table" data-export="pedidos" data-export-host="ordersExportHost">
+            <thead><tr><th>Pedido</th><th>Fecha</th><th>Cliente</th><th class="num">Ítems</th><th class="num">Total</th><th>Estado</th><th data-no-export><span class="sr-only">Acciones</span></th></tr></thead>
+            <tbody id="ordersBody"></tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="empty-state hidden"></div>
 
-      <div id="ordersTableWrap">
-        <table class="orders-table">
-          <thead><tr><th>Pedido</th><th>Fecha</th><th>Cliente</th><th>Items</th><th>Total</th><th>Estado</th><th></th></tr></thead>
-          <tbody id="ordersBody"></tbody>
-        </table>
-      </div>
-      <div id="emptyState" class="empty-state hidden">No hay pedidos que coincidan con el filtro actual.</div>
-
-      <div class="pager">
-        <button id="prevPageBtn" class="button secondary" type="button"><i data-lucide="arrow-left" style="width:14px;height:14px;"></i> Anterior</button>
-        <span id="pageInfo"></span>
-        <button id="nextPageBtn" class="button secondary" type="button">Siguiente <i data-lucide="arrow-right" style="width:14px;height:14px;"></i></button>
-      </div>
+        <div class="pager">
+          <button id="prevPageBtn" class="button small" type="button"><i data-lucide="arrow-left" aria-hidden="true"></i> Anterior</button>
+          <span id="pageInfo"></span>
+          <button id="nextPageBtn" class="button small" type="button">Siguiente <i data-lucide="arrow-right" aria-hidden="true"></i></button>
+        </div>
+      </section>
     </section>
   </main>
 
   <div id="orderModal" class="modal-overlay" hidden>
-    <div class="modal-box" style="position:relative;" role="dialog" aria-modal="true" aria-labelledby="modalOrderTitle">
-      <button class="modal-close" id="closeOrderModalBtn" type="button" aria-label="Cerrar"><i data-lucide="x" style="width:18px;height:18px;"></i></button>
-      <h3 id="modalOrderTitle" style="margin:0 0 4px;">Pedido</h3>
-      <p id="modalOrderDate" style="margin:0 0 18px;color:var(--muted);font-size:12.5px;"></p>
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalOrderTitle">
+      <header class="modal-head">
+        <div>
+          <h2 id="modalOrderTitle">Pedido</h2>
+          <p id="modalOrderDate"></p>
+        </div>
+        <button class="icon-button modal-close" id="closeOrderModalBtn" type="button" aria-label="Cerrar"><i data-lucide="x" aria-hidden="true"></i></button>
+      </header>
 
+      <div class="modal-body">
         <div class="order-parties">
-        <div>
-          <strong style="font-size:12px;color:var(--muted);text-transform:uppercase;">Cliente</strong>
-          <div id="modalCustomer" style="font-size:13.5px;margin-top:4px;"></div>
+          <div class="party">
+            <span class="section-label">Cliente</span>
+            <div id="modalCustomer"></div>
+          </div>
+          <div class="party">
+            <span class="section-label">Envío</span>
+            <div id="modalShipping"></div>
+          </div>
         </div>
-        <div>
-          <strong style="font-size:12px;color:var(--muted);text-transform:uppercase;">Envío</strong>
-          <div id="modalShipping" style="font-size:13.5px;margin-top:4px;"></div>
+
+        <span class="section-label">Productos</span>
+        <div id="modalItems" class="order-items"></div>
+
+        <div class="order-total">
+          <strong>Total</strong>
+          <strong id="modalTotal"></strong>
         </div>
+        <div id="modalPayment" class="order-payment"></div>
+
+        <form id="statusForm" class="status-form">
+          <label>Cambiar estado
+            <select id="statusSelect" name="status"></select>
+          </label>
+          <div id="statusHint" class="status-hint"></div>
+          <label>Nota interna / mensaje al cliente (opcional)
+            <textarea id="statusNote" name="note" rows="2" placeholder="Se incluye en el correo que recibe el cliente si lo completas."></textarea>
+          </label>
+          <button class="button primary" type="submit" id="statusSubmitBtn"><i data-lucide="check" aria-hidden="true"></i> Actualizar estado</button>
+          <div id="statusMessage" class="message" role="status"></div>
+        </form>
+
+        <span class="section-label timeline-label">Historial</span>
+        <div id="modalTimeline" class="timeline"></div>
       </div>
-
-      <strong style="font-size:12px;color:var(--muted);text-transform:uppercase;">Productos</strong>
-      <div id="modalItems" style="margin:8px 0 18px;"></div>
-
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#f8fafc;border-radius:8px;margin-bottom:18px;">
-        <strong>Total</strong>
-        <strong id="modalTotal" style="color:var(--blue);font-size:16px;"></strong>
-      </div>
-      <div id="modalPayment" style="margin:-10px 0 18px;color:var(--muted);font-size:12.5px;"></div>
-
-      <form id="statusForm">
-        <label>Cambiar estado
-          <select id="statusSelect" name="status"></select>
-        </label>
-        <div id="statusHint" style="margin:-4px 0 12px;color:var(--muted);font-size:12.5px;line-height:1.45;"></div>
-        <label>Nota interna / mensaje al cliente (opcional)
-          <textarea id="statusNote" name="note" rows="2" placeholder="Se incluye en el correo que recibe el cliente si lo completas."></textarea>
-        </label>
-        <button class="button" type="submit" id="statusSubmitBtn">Actualizar estado</button>
-        <div id="statusMessage" class="message"></div>
-      </form>
-
-      <strong style="font-size:12px;color:var(--muted);text-transform:uppercase;display:block;margin-top:20px;">Historial</strong>
-      <div id="modalTimeline" class="timeline"></div>
     </div>
   </div>
 
