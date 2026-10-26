@@ -47,7 +47,7 @@
     try { return localStorage.getItem('smartisp.adminToken') || sessionStorage.getItem('smartisp.adminToken'); } catch (e) { return null; }
   }
 
-  function remember(result) {
+  function rememberToken(result) {
     if (result && result.token) {
       try { localStorage.setItem('smartisp.adminToken', result.token); } catch (e) { /* almacenamiento bloqueado */ }
     }
@@ -96,7 +96,7 @@
       error.status = response.status;
       throw error;
     }
-    remember(result);
+    rememberToken(result);
     return result;
   }
 

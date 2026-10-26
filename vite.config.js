@@ -32,7 +32,9 @@ export default defineConfig({
         login: 'login.html',
         inventario: 'inventario.html',
         estadisticas: 'estadisticas.html',
-        reportes: 'reportes.html'
+        reportes: 'reportes.html',
+        equipo: 'equipo.html',
+        actividad: 'actividad.html'
       }
     }
   },
