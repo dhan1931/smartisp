@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async user =
     $('#recent').innerHTML = rows.length ? rows.map(o => {
       const shipping = o.shipping || {};
       const client = o.customer_name || shipping.name || o.customer_email || shipping.email || 'Cliente';
-      return `<tr data-href="/pedidos.html?q=${encodeURIComponent(o.id)}">
+      return `<tr data-href="/pedidos.html?q=${encodeURIComponent(o.id)}" tabindex="0" aria-label="Ver pedido ${esc(o.id)} de ${esc(client)}">
         <td class="order-id">${esc(o.id)}</td>
         <td><div class="order-client">${esc(client)}</div></td>
         <td><span class="badge st-${esc(o.status)}">${esc(STATUS[o.status] || o.status || 'Sin estado')}</span></td>
@@ -176,6 +176,10 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async user =
   $('#recent').addEventListener('click', event => {
     const row = event.target.closest('tr[data-href]');
     if (row) window.location.assign(row.dataset.href);
+  });
+  $('#recent').addEventListener('keydown', event => {
+    const row = event.target.closest('tr[data-href]');
+    if (row && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); window.location.assign(row.dataset.href); }
   });
   SmartCharts.onResize(renderTrend);
 

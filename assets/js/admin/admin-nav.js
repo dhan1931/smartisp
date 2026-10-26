@@ -58,7 +58,8 @@
     if (link.key === activeKey) classes.push('is-active');
     if (link.disabled) classes.push('is-disabled');
     var titleAttr = ' title="' + escapeHtml(link.title || link.label) + '"';
-    return '<a href="' + link.href + '" class="' + classes.join(' ') + '"' + titleAttr + '>' +
+    var currentAttr = link.key === activeKey ? ' aria-current="page"' : '';
+    return '<a href="' + link.href + '" class="' + classes.join(' ') + '"' + titleAttr + currentAttr + '>' +
       '<i data-lucide="' + link.icon + '" aria-hidden="true"></i><span class="label">' + escapeHtml(link.label) + '</span></a>';
   }
 
@@ -110,6 +111,26 @@
         logo.appendChild(dot);
       })
       .catch(function () { /* Se conserva el nombre de marca de respaldo. */ });
+  }
+
+  // render() puede volver a correr (Reintentar): el fondo y los listeners de document se crean una sola vez
+  // y apuntan al menú vigente.
+  var currentMenu = null;
+  var documentListenersBound = false;
+  var initInFlight = false;
+
+  function bindDocumentListeners() {
+    if (documentListenersBound) return;
+    documentListenersBound = true;
+    document.addEventListener('click', function (event) {
+      if (currentMenu && currentMenu.root.classList.contains('is-mobile-open') && !currentMenu.root.contains(event.target)) currentMenu.setOpen(false);
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && currentMenu && currentMenu.root.classList.contains('is-mobile-open')) {
+        currentMenu.setOpen(false);
+        currentMenu.toggle.focus();
+      }
+    });
   }
 
   function render(root, user) {
@@ -164,12 +185,16 @@
 
     var mobileToggle = root.querySelector('.admin-nav-mobile-toggle');
     var brand = root.querySelector('.admin-nav-brand');
-    var backdrop = document.createElement('button');
-    backdrop.type = 'button';
-    backdrop.className = 'admin-nav-backdrop';
-    backdrop.setAttribute('aria-label', 'Cerrar menú');
-    backdrop.tabIndex = -1;
-    root.insertAdjacentElement('afterend', backdrop);
+    var backdrop = document.querySelector('.admin-nav-backdrop');
+    if (!backdrop) {
+      backdrop = document.createElement('button');
+      backdrop.type = 'button';
+      backdrop.className = 'admin-nav-backdrop';
+      backdrop.setAttribute('aria-label', 'Cerrar menú');
+      backdrop.tabIndex = -1;
+      root.insertAdjacentElement('afterend', backdrop);
+      backdrop.addEventListener('click', function () { if (currentMenu) currentMenu.setOpen(false); });
+    }
     var setMobileOpen = function (open) {
       root.classList.toggle('is-mobile-open', open);
       mobileToggle.setAttribute('aria-expanded', String(open));
@@ -190,19 +215,11 @@
         root.querySelector('.admin-nav-toggle').click();
       }
     });
-    backdrop.addEventListener('click', function () { setMobileOpen(false); });
     root.querySelectorAll('.admin-nav-links a').forEach(function (link) {
       link.addEventListener('click', function () { setMobileOpen(false); });
     });
-    document.addEventListener('click', function (event) {
-      if (root.classList.contains('is-mobile-open') && !root.contains(event.target)) setMobileOpen(false);
-    });
-    document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape' && root.classList.contains('is-mobile-open')) {
-        setMobileOpen(false);
-        mobileToggle.focus();
-      }
-    });
+    currentMenu = { root: root, setOpen: setMobileOpen, toggle: mobileToggle };
+    bindDocumentListeners();
 
     root.querySelector('.admin-nav-logout').addEventListener('click', function () {
       fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).finally(function () {
@@ -235,6 +252,8 @@
     if (window.lucide) window.lucide.createIcons();
     var retryButton = root.querySelector('.admin-nav-retry');
     if (retryButton) retryButton.addEventListener('click', function () {
+      if (initInFlight) return;
+      retryButton.disabled = true;
       root.classList.remove('is-access-notice');
       root.classList.add('is-loading');
       init();
@@ -243,7 +262,8 @@
 
   function init() {
     var root = document.getElementById('smartisp-admin-nav');
-    if (!root) return;
+    if (!root || initInFlight) return;
+    initInFlight = true;
 
     var authHeaders = {};
     try {
@@ -252,6 +272,7 @@
     } catch (e) { /* cookies siguen siendo suficientes si el almacenamiento está bloqueado */ }
 
     fetch('/api/auth/me', { credentials: 'include', cache: 'no-store', headers: authHeaders })
+      .finally(function () { initInFlight = false; })
       .then(function (res) {
         if (res.status === 401) { redirectToLogin(); return null; }
         if (!res.ok) throw new Error('No se pudo validar la sesión (' + res.status + ').');

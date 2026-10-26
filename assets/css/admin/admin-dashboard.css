@@ -46,6 +46,7 @@ a.attention-item:hover { border-color: var(--blue); background: var(--blue-wash)
 .recent td { padding: 11px 10px; }
 .recent th { padding: 9px 10px; }
 .recent tr[data-href] { cursor: pointer; }
+.recent tr[data-href]:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
 .order-id { font-weight: 700; white-space: nowrap; }
 .order-client { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .order-when { color: var(--muted); font-size: 12px; white-space: nowrap; }
