@@ -22,7 +22,7 @@ if ($action === 'service-quote-requests' && $method === 'POST') {
         exit;
     }
 
-    $id = uniqid('quote_');
+    $id = 'quote_' . bin2hex(random_bytes(12));
     $stmt = $pdo->prepare('INSERT INTO service_quote_requests
         (id, client_type, service_interest, description, company_name, email, phone)
         VALUES (:id, :client_type, :service_interest, :description, :company_name, :email, :phone)');
