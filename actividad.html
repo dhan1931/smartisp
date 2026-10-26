@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SmartISP | Actividad</title>
+  <link rel="icon" href="/assets/favicons/favicon.ico">
+  <meta name="theme-color" content="#102A43">
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <script src="/assets/js/admin/admin-theme.js?v=ds-20261027"></script>
+  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/actividad-page.css?v=ds-20261027">
+  <script src="/assets/vendor/lucide-icons.min.js?v=68df8f2b" defer></script>
+  <script src="/assets/js/admin/admin-nav.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/admin-page.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/actividad-page.js?v=ds-20261027" defer></script>
+</head>
+<body>
+  <div id="smartisp-admin-nav" class="is-loading" data-active="actividad"></div>
+  <main class="shell" id="app" hidden>
+    <header class="page-head">
+      <div>
+        <p class="eyebrow"><i data-lucide="history" aria-hidden="true"></i> Administración</p>
+        <h1>Actividad</h1>
+        <p>Cambios hechos desde el panel e inicios de sesión del equipo. Horas de Ecuador (UTC−5).</p>
+      </div>
+      <div class="head-actions">
+        <a class="button" href="/equipo.html"><i data-lucide="users-round" aria-hidden="true"></i> Equipo</a>
+        <button class="button" id="refresh" type="button"><i data-lucide="refresh-cw" aria-hidden="true"></i> Actualizar</button>
+        <button class="button primary" id="exportCsv" type="button" title="Descarga en CSV todo lo que coincide con los filtros (hasta 5000 filas)"><i data-lucide="download" aria-hidden="true"></i> Exportar CSV</button>
+      </div>
+    </header>
+    <div class="callout warn" id="migrationNote" hidden><i data-lucide="triangle-alert" aria-hidden="true"></i><div>El registro de actividad todavía no está activo: falta aplicar la migración <strong>044_equipo_y_auditoria.sql</strong> (<code>php scripts/migrate.php</code>).</div></div>
+    <section class="card log-card" aria-label="Registro de actividad">
+      <form class="toolbar log-filters" id="filters" role="search">
+        <div class="search">
+          <i data-lucide="search" aria-hidden="true"></i>
+          <label class="sr-only" for="q">Buscar en la actividad</label>
+          <input id="q" type="search" placeholder="Buscar detalle, objetivo, correo o IP…  ( / )" autocomplete="off">
+        </div>
+        <label class="sr-only" for="user">Persona</label>
+        <select class="select" id="user"><option value="">Todas las personas</option></select>
+        <label class="sr-only" for="act">Acción</label>
+        <select class="select" id="act"><option value="">Todas las acciones</option><option value="login-*">Solo accesos al panel</option></select>
+        <div class="range">
+          <label>Desde <input class="input" type="date" id="from"></label>
+          <label>hasta <input class="input" type="date" id="to"></label>
+        </div>
+        <button class="button ghost small" type="button" id="clear"><i data-lucide="x" aria-hidden="true"></i> Limpiar</button>
+        <span class="result-count" id="count" aria-live="polite"></span>
+      </form>
+      <div class="table-wrap" id="tableWrap"><table><thead><tr><th>Fecha</th><th>Persona</th><th>Acción</th><th>Detalle</th><th>Resultado</th><th>Origen</th></tr></thead><tbody id="rows"></tbody></table></div>
+      <div id="empty" hidden></div>
+      <footer class="pager"><button class="button small" id="prev" type="button"><i data-lucide="arrow-left" aria-hidden="true"></i> Anterior</button><span id="pageInfo"></span><button class="button small" id="next" type="button">Siguiente <i data-lucide="arrow-right" aria-hidden="true"></i></button></footer>
+    </section>
+    <p class="log-help">Se registra cada cambio hecho por un administrador (con el código de respuesta), los inicios de sesión correctos y fallidos de cuentas del panel y los cambios de contraseña. Nunca se guardan contraseñas, tokens ni claves: esos campos aparecen como «(oculto)».</p>
+  </main>
+</body>
+</html>

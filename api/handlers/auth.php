@@ -51,6 +51,29 @@ function smartispPublicBaseUrl(): string {
     return 'https://smart-isp.com.ec';
 }
 
+// Crea el enlace de restablecimiento y lo envía. También lo usa Equipo para invitar a una cuenta nueva.
+function smartispIssuePasswordReset(PDO $pdo, string $email, int $ttlSeconds = 3600, string $subject = '🔐 Restablece tu contraseña - SmartISP'): array {
+    // En la base solo queda el SHA-256 del token: quien lea la tabla no puede usar los enlaces.
+    $token = bin2hex(random_bytes(32));
+    $pdo->prepare('DELETE FROM password_resets WHERE email = :email')->execute([':email' => $email]);
+    $pdo->prepare('INSERT INTO password_resets (email, token, expires_at) VALUES (:email, :token, :expires_at)')->execute([
+        ':email'      => $email,
+        ':token'      => hash('sha256', $token),
+        ':expires_at' => date('Y-m-d H:i:s', time() + $ttlSeconds)
+    ]);
+    $resetUrl = smartispPublicBaseUrl() . '/reset-password.html?token=' . urlencode($token);
+    return sendSmartEmail($pdo, $email, $subject, buildPasswordResetHtml($email, $resetUrl));
+}
+
+// Reemite la sesión actual con la versión nueva tras subir token_version (las demás quedan inválidas).
+function smartispReissueSession(array $user, int $version): ?string {
+    if (session_status() === PHP_SESSION_ACTIVE) session_regenerate_id(true);
+    $_SESSION['user'] = $user;
+    $_SESSION['tv'] = $version;
+    if (!isAdminUser($user)) return null;
+    try { return generateAdminAuthToken($user + ['token_version' => $version]); } catch (Throwable $e) { return null; }
+}
+
 if ($action === 'update-profile' && $method === 'POST') {
     $user = getAuthUser();
     if (!$user) {
@@ -164,7 +187,8 @@ if ($action === 'login' && $method === 'POST') {
         }
 
         $hasVersion = smartispUsersHaveTokenVersion($pdo);
-        $stmt = $pdo->prepare('SELECT id, email, password_hash, name, surname, phone, role' . ($hasVersion ? ', token_version' : '') . ' FROM users_rows WHERE email = :email LIMIT 1');
+        $hasActive = smartispUsersHaveColumn($pdo, 'active');
+        $stmt = $pdo->prepare('SELECT id, email, password_hash, name, surname, phone, role' . ($hasVersion ? ', token_version' : '') . ($hasActive ? ', active' : '') . ' FROM users_rows WHERE email = :email LIMIT 1');
         $stmt->execute([':email' => $email]);
         $user = $stmt->fetch();
 
@@ -172,11 +196,21 @@ if ($action === 'login' && $method === 'POST') {
         if (!$user) {
             password_verify($password, SMARTISP_DUMMY_PASSWORD_HASH);
         }
+        $isAdminAccount = $user && smartispIsFullAdmin($user['role'] ?? '');
         $modernHashValid = $user && password_verify($password, $storedPass);
         if (!$user || (!$modernHashValid && !smartispPasswordMatches($password, $storedPass))) {
             smartispRateLimited('login_email', 10, 900, $email);
+            if ($isAdminAccount) smartispAuditLogin($pdo, $user, 'login-failed', 401, $adminOnly ? 'Contraseña incorrecta (panel)' : 'Contraseña incorrecta');
             http_response_code(401);
             echo json_encode(['error' => 'Correo o contraseña incorrectos.']);
+            exit;
+        }
+
+        // Solo después de comprobar la contraseña: sin ella no se revela que la cuenta existe.
+        if ($hasActive && (int)($user['active'] ?? 1) === 0) {
+            if ($isAdminAccount) smartispAuditLogin($pdo, $user, 'login-blocked', 403, 'Cuenta desactivada');
+            http_response_code(403);
+            echo json_encode(['error' => 'Esta cuenta está desactivada. Pide a un administrador que la reactive.']);
             exit;
         }
 
@@ -205,6 +239,14 @@ if ($action === 'login' && $method === 'POST') {
         $token = null;
         if (isAdminUser($normUser)) {
             try { $token = generateAdminAuthToken($normUser + ['token_version' => $_SESSION['tv']]); } catch (Throwable $e) { $token = null; }
+            smartispAuditLogin($pdo, $normUser, 'login', 200, $adminOnly ? 'Inicio de sesión en el panel' : 'Inicio de sesión');
+        }
+        if (smartispUsersHaveColumn($pdo, 'last_login_at')) {
+            try {
+                $pdo->prepare('UPDATE users_rows SET last_login_at = :now WHERE id = :id')->execute([':now' => gmdate('Y-m-d H:i:s'), ':id' => $normUser['id']]);
+            } catch (Throwable $e) {
+                error_log('SmartISP last_login_at: ' . $e->getMessage());
+            }
         }
         echo json_encode(['user' => $normUser, 'token' => $token]);
     } catch (Throwable $e) {
@@ -332,17 +374,7 @@ if ($action === 'request-password-reset' && $method === 'POST') {
             exit;
         }
 
-        // En la base solo queda el SHA-256 del token: quien lea la tabla no puede usar los enlaces.
-        $token = bin2hex(random_bytes(32));
-        $pdo->prepare('DELETE FROM password_resets WHERE email = :email')->execute([':email' => $email]);
-        $pdo->prepare('INSERT INTO password_resets (email, token, expires_at) VALUES (:email, :token, :expires_at)')->execute([
-            ':email'      => $email,
-            ':token'      => hash('sha256', $token),
-            ':expires_at' => date('Y-m-d H:i:s', time() + 3600) // 1 hora de validez
-        ]);
-
-        $resetUrl = smartispPublicBaseUrl() . '/reset-password.html?token=' . urlencode($token);
-        $mailRes = sendSmartEmail($pdo, $email, '🔐 Restablece tu contraseña - SmartISP', buildPasswordResetHtml($email, $resetUrl));
+        $mailRes = smartispIssuePasswordReset($pdo, $email);
         // Misma respuesta que con un correo no registrado: un error distinto revelaba que la cuenta existe.
         if (!$mailRes['ok']) {
             error_log("Fallo al enviar correo de recuperación a $email: " . ($mailRes['error'] ?? ''));
@@ -405,6 +437,10 @@ if ($action === 'reset-password' && $method === 'POST') {
             ':email' => $email
         ]);
         smartispBumpTokenVersion($pdo, 'email', $email);
+        $resetUser = $pdo->prepare('SELECT id, email, role FROM users_rows WHERE email = :email LIMIT 1');
+        $resetUser->execute([':email' => $email]);
+        $resetUser = $resetUser->fetch(PDO::FETCH_ASSOC);
+        if ($resetUser && smartispIsFullAdmin($resetUser['role'] ?? '')) smartispAuditLogin($pdo, $resetUser, 'reset-password', 200, 'Restableció su contraseña con el enlace del correo');
 
         // Consumir el token (y cualquier otro de ese correo) para que no se pueda reutilizar.
         $pdo->prepare('DELETE FROM password_resets WHERE token = :token OR email = :email')->execute([':token' => $tokenHash, ':email' => $email]);
@@ -474,6 +510,7 @@ if (($action === 'change-password' || $action === 'change_password') && $method 
         }
 
         if (!smartispPasswordMatches($currentPassword, (string)$storedPass)) {
+            if (isAdminUser($user)) smartispAuditLogin($pdo, $user, 'change-password-failed', 401, 'Contraseña actual incorrecta');
             http_response_code(401);
             echo json_encode(['error' => 'La contraseña actual no es correcta.']);
             exit;
@@ -487,15 +524,8 @@ if (($action === 'change-password' || $action === 'change_password') && $method 
 
         // Cierra las demás sesiones y tokens; esta sigue abierta con la versión nueva.
         $newVersion = smartispBumpTokenVersion($pdo, 'id', (string)$user['id']);
-        $token = null;
-        if ($newVersion !== null) {
-            if (session_status() === PHP_SESSION_ACTIVE) session_regenerate_id(true);
-            $_SESSION['user'] = $user;
-            $_SESSION['tv'] = $newVersion;
-            if (isAdminUser($user)) {
-                try { $token = generateAdminAuthToken($user + ['token_version' => $newVersion]); } catch (Throwable $e) { $token = null; }
-            }
-        }
+        $token = $newVersion !== null ? smartispReissueSession($user, $newVersion) : null;
+        if (isAdminUser($user)) smartispAuditLogin($pdo, $user, 'change-password', 200, 'Cambió su contraseña y cerró las demás sesiones');
 
         echo json_encode([
             'ok'      => true,
@@ -509,4 +539,29 @@ if (($action === 'change-password' || $action === 'change_password') && $method 
         echo json_encode(['error' => 'No se pudo cambiar la contraseña. Inténtalo nuevamente.']);
         exit;
     }
+}
+
+
+// -------------------------------------------------------------
+// CERRAR LAS DEMÁS SESIONES (/api/auth/revoke-other-sessions)
+// -------------------------------------------------------------
+
+if ($action === 'revoke-other-sessions') {
+    smartispRequirePost();
+    $user = getAuthUser();
+    if (!$user || empty($user['id'])) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Debes iniciar sesión para continuar.']);
+        exit;
+    }
+    $newVersion = smartispBumpTokenVersion($pdo, 'id', (string)$user['id']);
+    if ($newVersion === null) {
+        http_response_code(503);
+        echo json_encode(['error' => 'Falta aplicar la migración 038 para poder cerrar sesiones.']);
+        exit;
+    }
+    $token = smartispReissueSession($user, $newVersion);
+    if (isAdminUser($user)) smartispAuditLogin($pdo, $user, 'revoke-other-sessions', 200, 'Cerró sus demás sesiones abiertas');
+    echo json_encode(['ok' => true, 'token' => $token, 'message' => 'Se cerraron las demás sesiones.']);
+    exit;
 }

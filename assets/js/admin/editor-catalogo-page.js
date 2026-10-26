@@ -47,7 +47,7 @@
       list.innerHTML = currentProductGallery.map(img => `
         <div style="position:relative;">
           <img src="${escapeHtmlEditor(img.image_url)}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--line);">
-          <button type="button" data-remove-gallery-image="${img.id}" style="position:absolute;top:-6px;right:-6px;background:#dc2626;color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;">✕</button>
+          <button type="button" data-remove-gallery-image="${img.id}" style="position:absolute;top:-6px;right:-6px;background:var(--danger);color:var(--on-danger);border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;">✕</button>
         </div>
       `).join('') || '<small style="color:var(--muted);">Sin imágenes adicionales todavía.</small>';
       if (addBtn) {
@@ -365,7 +365,7 @@
     const formatMoney = amount => {
       const n = Number(amount) || 0;
       if (n <= 0) {
-        return '<span class="badge-quote" style="background:#e0f2fe; color:#0369a1; font-weight:700; font-size:11.5px; padding:3px 8px; border-radius:6px; display:inline-flex; align-items:center; gap:4px;"><i data-lucide="file-text" width="12"></i> Solicitar cotización</span>';
+        return '<span class="badge-quote"><i data-lucide="file-text" width="12"></i> Solicitar cotización</span>';
       }
       return `$${n.toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
@@ -550,6 +550,11 @@
       } catch (err) {
         console.error('Error cargando catálogo:', err);
         showToast(err.message, 'error');
+        const tbody = document.getElementById('productsTableBody');
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="9"><div class="state is-error catalog-state" role="alert"><i data-lucide="circle-alert"></i><strong>No se pudo cargar el catálogo</strong><span>${escapeHtmlEditor(err.message || 'Error de conexión')}</span><div class="catalog-state-actions"><button type="button" class="btn btn-secondary" onclick="location.reload()"><i data-lucide="refresh-cw" width="15"></i> Reintentar</button></div></div></td></tr>`;
+          window.lucide?.createIcons();
+        }
       }
     };
 
@@ -705,14 +710,12 @@
       if (!productsTotal && productsStatsLoaded && Number(productsStats.total) === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="7" style="text-align:center; padding:50px 20px;">
-              <div style="max-width:440px; margin:0 auto;">
-                <div style="margin-bottom:12px; color:var(--muted);"><i data-lucide="package" width="44"></i></div>
-                <h3 style="font-size:17px; font-weight:700; color:var(--navy); margin-bottom:6px;">No hay productos en el catálogo</h3>
-                <p style="font-size:13px; color:var(--muted); margin-bottom:20px; line-height:1.5;">
-                  Tu catálogo está vacío en este momento. Puedes subir un archivo Excel con productos o registrar uno manualmente ahora mismo.
-                </p>
-                <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+            <td colspan="9">
+              <div class="state catalog-state">
+                <i data-lucide="package-open"></i>
+                <strong>Tu catálogo está vacío</strong>
+                <span>Importa un Excel con tus productos o registra el primero a mano. Después podrás completar fotos, precios y categorías desde aquí.</span>
+                <div class="catalog-state-actions">
                   <button type="button" class="btn btn-primary" onclick="document.getElementById('btnNewProduct').click()">
                     <i data-lucide="plus" width="15"></i> Crear primer producto
                   </button>
@@ -735,11 +738,16 @@
       if (!items.length) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="7" style="text-align:center; padding:36px; color:var(--muted);">
-              No se encontraron productos con los filtros seleccionados.
+            <td colspan="9">
+              <div class="state catalog-state">
+                <i data-lucide="search-x"></i>
+                <strong>Sin resultados</strong>
+                <span>Ningún producto coincide con la búsqueda o los filtros. Prueba con menos filtros o usa «Limpiar filtros».</span>
+              </div>
             </td>
           </tr>
         `;
+        lucide.createIcons();
         return;
       }
 
@@ -748,17 +756,20 @@
         const argument=html(JSON.stringify(String(p.id)));
         const isVisible=p.visible!==false;
         const img=p.imageUrl?`<img src="${html(p.imageUrl)}" alt="" loading="lazy" class="prod-thumb-img">`:`<span class="product-no-photo"><i data-lucide="image" width="22"></i><small>Sin foto</small></span>`;
-        return `<tr class="product-row" data-prod-id="${html(p.id)}">
+        return `<tr class="product-row${selectedProducts.has(String(p.id))?' is-selected':''}" data-prod-id="${html(p.id)}">
+          <td class="product-select"><input type="checkbox" class="product-check" data-select-id="${html(p.id)}" aria-label="Seleccionar ${html(p.name)}" ${selectedProducts.has(String(p.id))?'checked':''}></td>
           <td class="product-photo">${img}</td>
           <td class="product-identity"><strong class="prod-title">${html(p.name||'Sin nombre')}</strong>${p.sku?`<code class="prod-sku">SKU: ${html(p.sku)}</code>`:''}</td>
           <td class="product-category" data-label="Categoría"><span class="badge-cat">${html(p.category||'General')}</span></td>
           <td class="product-subcategory" data-label="Subcategoría">${p.subcategory?`<span class="badge-sub">${html(p.subcategory)}</span>`:'<span class="muted">Sin subcategoría</span>'}</td>
-          <td class="product-price" data-label="Precio"><span class="prod-price">${Number(p.price)>0?formatMoney(p.price):'Cotización'}</span></td>
+          <td class="product-price" data-label="Precio"><div class="inline-cell"><span class="inline-value" data-inline-cell="price" title="Doble clic para editar el precio"><span class="prod-price">${Number(p.price)>0?formatMoney(p.price):'Cotización'}</span>${marginText(p)}</span><button type="button" class="inline-edit-btn" data-inline-edit aria-label="Editar precio de ${html(p.name)}"><i data-lucide="pencil" width="13"></i></button></div></td>
+          <td class="product-stock" data-label="Stock"><div class="inline-cell"><span class="inline-value" data-inline-cell="stock" title="Doble clic para editar el stock disponible">${stockHtml(p)}</span><button type="button" class="inline-edit-btn" data-inline-edit aria-label="Editar stock de ${html(p.name)}"><i data-lucide="pencil" width="13"></i></button></div></td>
           <td class="product-visibility"><label class="product-visibility-control"><span class="switch-toggle"><input aria-label="Visible en tienda: ${html(p.name)}" type="checkbox" ${isVisible?'checked':''} onchange="toggleProductVisibility(${argument},this.checked)"><span class="slider"></span></span><span>${isVisible?'Visible':'Oculto'}</span></label></td>
           <td class="product-actions"><div class="product-action-buttons"><button type="button" class="btn btn-secondary" onclick="openEditProductModal(${argument})">Editar</button><details class="product-more"><summary class="btn btn-secondary" aria-label="Más acciones para ${html(p.name)}">Más</summary><div class="product-more-menu"><a href="${html(getProductPublicUrl(p))}" target="_blank" rel="noopener">Ver en tienda ↗</a><button type="button" onclick="openQuickImageSearch(${argument})">Buscar imagen</button>${p.externalUrl?`<a href="${html(p.externalUrl)}" target="_blank" rel="noopener">Ficha del fabricante ↗</a>`:''}<button type="button" class="danger" onclick="deleteProduct(${argument})">Eliminar producto</button></div></details></div></td>
         </tr>`;
       }).join('');
 
+      syncSelectionUi();
       lucide.createIcons();
     };
 
@@ -799,6 +810,242 @@
         showToast(err.message, 'error');
       }
     };
+
+    // --- SELECCIÓN, ACCIONES MASIVAS Y EDICIÓN RÁPIDA ---
+    // La selección sobrevive al cambio de página y de filtros; cada id guarda la fila para el CSV.
+    const selectedProducts = new Map();
+    const BULK_CHUNK = 500;
+    const compactRow = p => ({ id: String(p.id), name: p.name || '', sku: p.sku || '', category: p.category || '', subcategory: p.subcategory || '', price: Number(p.price) || 0, cost: p.cost ?? null, visible: p.visible !== false });
+    const moneyPlain = n => `$${(Number(n) || 0).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const marginText = p => {
+      if (p.cost == null || !(Number(p.price) > 0)) return '';
+      const pct = Math.round((Number(p.price) - Number(p.cost)) / Number(p.price) * 1000) / 10;
+      return `<small class="prod-cost ${pct < 0 ? 'is-bad' : pct < 10 ? 'is-warn' : ''}">Costo ${moneyPlain(p.cost)} · ${String(pct).replace('.', ',')}%</small>`;
+    };
+    const stockHtml = p => {
+      if (!p.stock) return '<span class="muted">Sin control</span>';
+      const tone = p.stock.free <= 0 ? 'is-out' : p.stock.free <= 5 ? 'is-low' : '';
+      return `<span class="prod-stock ${tone}">${p.stock.available}</span>${p.stock.reserved ? `<small class="muted"> · ${p.stock.reserved} reserv.</small>` : ''}`;
+    };
+
+    const syncSelectionUi = () => {
+      document.querySelectorAll('#productsTableBody .product-check').forEach(box => { box.checked = selectedProducts.has(box.dataset.selectId); box.closest('tr')?.classList.toggle('is-selected', box.checked); });
+      const head = document.getElementById('selectPageProducts');
+      const onPage = productsList.filter(p => selectedProducts.has(String(p.id))).length;
+      if (head) { head.checked = productsList.length > 0 && onPage === productsList.length; head.indeterminate = onPage > 0 && onPage < productsList.length; }
+      const bar = document.getElementById('bulkBar');
+      if (!bar) return;
+      bar.hidden = selectedProducts.size === 0;
+      document.getElementById('bulkCount').textContent = `${selectedProducts.size.toLocaleString('es-EC')} seleccionado${selectedProducts.size === 1 ? '' : 's'}`;
+      const filtered = document.getElementById('bulkSelectFiltered');
+      filtered.hidden = productsTotal <= productsList.length && onPage === productsList.length;
+      filtered.textContent = `Seleccionar los ${productsTotal.toLocaleString('es-EC')} filtrados`;
+    };
+
+    document.getElementById('productsTableBody').addEventListener('change', e => {
+      const box = e.target.closest('.product-check');
+      if (!box) return;
+      const p = productsList.find(item => String(item.id) === box.dataset.selectId);
+      if (box.checked && p) selectedProducts.set(String(p.id), compactRow(p)); else selectedProducts.delete(box.dataset.selectId);
+      syncSelectionUi();
+    });
+    document.getElementById('selectPageProducts')?.addEventListener('change', e => {
+      productsList.forEach(p => { if (e.target.checked) selectedProducts.set(String(p.id), compactRow(p)); else selectedProducts.delete(String(p.id)); });
+      syncSelectionUi();
+    });
+    document.getElementById('bulkClear')?.addEventListener('click', () => { selectedProducts.clear(); syncSelectionUi(); });
+    document.getElementById('bulkSelectFiltered')?.addEventListener('click', async e => {
+      const button = e.currentTarget;
+      button.disabled = true;
+      try {
+        const params = new URLSearchParams({ compact: '1' });
+        Object.entries(currentProductFilters()).forEach(([key, value]) => { if (value && value !== 'all') params.set(key, value); });
+        const res = await api(`admin-products?${params.toString()}`);
+        (res.products || []).forEach(p => selectedProducts.set(String(p.id), compactRow(p)));
+        syncSelectionUi();
+        showToast(res.truncated ? `Se seleccionaron los primeros ${res.max.toLocaleString('es-EC')} productos del filtro.` : `${(res.products || []).length.toLocaleString('es-EC')} productos seleccionados.`, res.truncated ? 'error' : 'success');
+      } catch (err) { showToast(err.message, 'error'); }
+      finally { button.disabled = false; }
+    });
+
+    // Lotes de 500 (límite del servidor); cada lote es una transacción.
+    const bulkUpdate = async payload => {
+      const ids = [...selectedProducts.keys()];
+      const total = { updated: 0, skipped: [], changes: [] };
+      for (let i = 0; i < ids.length; i += BULK_CHUNK) {
+        const res = await api('admin-products-bulk-update', { method: 'POST', body: JSON.stringify({ ...payload, ids: ids.slice(i, i + BULK_CHUNK) }) });
+        total.updated += Number(res.updated) || 0;
+        total.skipped.push(...(res.skipped || []));
+        total.changes.push(...(res.changes || []));
+      }
+      return total;
+    };
+    const bulkDone = async (res, verb) => {
+      showToast(`${res.updated.toLocaleString('es-EC')} producto${res.updated === 1 ? '' : 's'} ${verb}${res.skipped.length ? ` · ${res.skipped.length} omitido${res.skipped.length === 1 ? '' : 's'} (${res.skipped[0].reason})` : ''}.`);
+      selectedProducts.clear();
+      await refreshProducts();
+    };
+    const runBulk = async (button, fn) => {
+      document.querySelectorAll('#bulkBar button').forEach(b => { b.disabled = true; });
+      try { await fn(); } catch (err) { showToast(err.message, 'error'); }
+      finally { document.querySelectorAll('#bulkBar button').forEach(b => { b.disabled = false; }); syncSelectionUi(); }
+    };
+
+    const openBulkPrice = () => {
+      const count = selectedProducts.size;
+      const body = document.createElement('form');
+      body.className = 'bulk-form';
+      body.innerHTML = `<p class="bulk-form-note">${count.toLocaleString('es-EC')} producto${count === 1 ? '' : 's'} seleccionado${count === 1 ? '' : 's'}. Los que están a cotizar (sin precio) no se tocan.</p>
+        <div class="bulk-form-row">
+          <label>Ajuste<select name="dir"><option value="1">Subir</option><option value="-1">Bajar</option></select></label>
+          <label>Valor<input name="value" type="number" min="0.01" step="0.01" required autofocus inputmode="decimal"></label>
+          <label>En<select name="mode"><option value="percent">% del precio</option><option value="amount">USD por producto</option></select></label>
+        </div>
+        <button type="submit" class="button small">Ver vista previa</button>
+        <div class="bulk-preview" aria-live="polite"></div>`;
+      let previewKey = null;
+      const read = () => { const f = new FormData(body); const v = Math.abs(Number(f.get('value'))) * Number(f.get('dir')); return { mode: String(f.get('mode')), value: Math.round(v * 100) / 100 }; };
+      const view = SmartAdmin.modal({ title: 'Ajustar precio', body, actions: [{ label: 'Cancelar', value: false }, { label: 'Aplicar cambios', kind: 'primary', onClick: () => { apply(); return false; } }] });
+      const applyBtn = view.el.querySelector('.panel-foot .primary');
+      applyBtn.disabled = true;
+      body.addEventListener('input', () => { if (previewKey !== JSON.stringify(read())) applyBtn.disabled = true; });
+      body.addEventListener('submit', async e => {
+        e.preventDefault();
+        const op = read();
+        if (!(Math.abs(op.value) > 0)) { showToast('Escribe un valor mayor que cero.', 'error'); return; }
+        const box = body.querySelector('.bulk-preview');
+        box.innerHTML = '<span class="sk sk-line"></span><span class="sk sk-line" style="width:70%"></span>';
+        try {
+          const res = await bulkUpdate({ op: 'price', ...op, dry_run: true });
+          previewKey = JSON.stringify(op);
+          applyBtn.disabled = res.updated === 0;
+          box.innerHTML = `<p class="bulk-form-note"><strong>${res.updated.toLocaleString('es-EC')}</strong> cambian${res.skipped.length ? ` · ${res.skipped.length} se omiten (sin precio o quedarían en 0)` : ''}.</p>` +
+            (res.changes.length ? `<div class="bulk-preview-table"><table><thead><tr><th>Producto</th><th class="num">Antes</th><th class="num">Después</th></tr></thead><tbody>${res.changes.slice(0, 30).map(c => `<tr><td>${escapeHtmlEditor(c.name)}</td><td class="num">${moneyPlain(c.before)}</td><td class="num"><strong>${moneyPlain(c.after)}</strong></td></tr>`).join('')}</tbody></table></div>${res.changes.length > 30 ? `<p class="bulk-form-note">Y ${res.changes.length - 30} más.</p>` : ''}` : '');
+        } catch (err) { box.innerHTML = ''; showToast(err.message, 'error'); }
+      });
+      const apply = async () => {
+        if (applyBtn.disabled || previewKey !== JSON.stringify(read())) return;
+        applyBtn.disabled = true;
+        try { const res = await bulkUpdate({ op: 'price', ...read() }); view.close(true); await bulkDone(res, 'con precio actualizado'); }
+        catch (err) { applyBtn.disabled = false; showToast(err.message, 'error'); }
+      };
+    };
+
+    const openBulkCategory = () => {
+      const body = document.createElement('form');
+      body.className = 'bulk-form';
+      const groups = [...productFamilies.map(group => ({ name: group.name, categories: categoriesList.filter(cat => cat.macroGroupId === group.id) })), { name: 'Sin familia', categories: categoriesList.filter(cat => !productFamilies.some(group => group.id === cat.macroGroupId)) }].filter(group => group.categories.length);
+      body.innerHTML = `<p class="bulk-form-note">Mover ${selectedProducts.size.toLocaleString('es-EC')} producto${selectedProducts.size === 1 ? '' : 's'} a:</p>
+        <div class="bulk-form-row">
+          <label>Categoría<select name="category" required autofocus>${groups.map(group => `<optgroup label="${escapeHtmlEditor(group.name)}">${group.categories.map(cat => `<option value="${escapeHtmlEditor(cat.name)}">${escapeHtmlEditor(cat.name)}</option>`).join('')}</optgroup>`).join('')}</select></label>
+          <label>Subcategoría (opcional)<input name="subcategory" list="bulkSubcatList" maxlength="100"></label>
+        </div><datalist id="bulkSubcatList"></datalist>`;
+      const fillSubs = () => { const cat = categoriesList.find(c => c.name === body.elements.category.value); body.querySelector('#bulkSubcatList').innerHTML = (cat?.subcategories || []).map(sub => `<option value="${escapeHtmlEditor(sub)}"></option>`).join(''); };
+      body.elements.category.addEventListener('change', fillSubs);
+      fillSubs();
+      const view = SmartAdmin.modal({ title: 'Cambiar categoría', body, actions: [{ label: 'Cancelar', value: false }, { label: 'Mover productos', kind: 'primary', onClick: () => { apply(); return false; } }] });
+      const applyBtn = view.el.querySelector('.panel-foot .primary');
+      const apply = async () => {
+        const category = body.elements.category.value;
+        if (!category) { showToast('Elige una categoría.', 'error'); return; }
+        applyBtn.disabled = true;
+        try { const res = await bulkUpdate({ op: 'category', category, subcategory: body.elements.subcategory.value.trim() }); view.close(true); await bulkDone(res, 'movidos'); }
+        catch (err) { applyBtn.disabled = false; showToast(err.message, 'error'); }
+      };
+      body.addEventListener('submit', e => { e.preventDefault(); apply(); });
+    };
+
+    const exportSelectionCsv = () => {
+      const rows = [...selectedProducts.values()].map(p => [p.id, p.name, p.sku, p.category, p.subcategory, p.price ? p.price.toFixed(2).replace('.', ',') : '', p.cost != null ? Number(p.cost).toFixed(2).replace('.', ',') : '', p.visible ? 'Sí' : 'No']);
+      SmartAdmin.csv(`smartisp-productos-seleccion-${new Date().toISOString().slice(0, 10)}.csv`, ['ID', 'Nombre', 'SKU', 'Categoría', 'Subcategoría', 'Precio', 'Costo', 'Visible'], rows);
+      showToast(`${rows.length.toLocaleString('es-EC')} producto${rows.length === 1 ? '' : 's'} exportado${rows.length === 1 ? '' : 's'}.`);
+    };
+
+    document.getElementById('bulkBar')?.addEventListener('click', e => {
+      const button = e.target.closest('[data-bulk]');
+      if (!button || !selectedProducts.size) return;
+      const n = selectedProducts.size.toLocaleString('es-EC');
+      const action = button.dataset.bulk;
+      if (action === 'price') return openBulkPrice();
+      if (action === 'category') return openBulkCategory();
+      if (action === 'csv') return exportSelectionCsv();
+      const confirmations = {
+        hide: ['Ocultar productos', `${n} producto(s) dejarán de verse en la tienda.`, 'Ocultar', { op: 'visibility', visible: false }, 'ocultos'],
+        show: ['Mostrar productos', `${n} producto(s) se publicarán en la tienda.`, 'Mostrar', { op: 'visibility', visible: true }, 'visibles'],
+        'track-on': ['Controlar stock', `${n} producto(s) pasarán a stock controlado. Los que aún no lo tenían empiezan con 0 unidades y no se podrán vender hasta cargar su stock en Inventario.`, 'Controlar stock', { op: 'track_stock', track: true }, 'con stock controlado'],
+        'track-off': ['Quitar control de stock', `${n} producto(s) volverán a venderse sin límite. Los que tienen unidades reservadas por pedidos en curso se omiten.`, 'Quitar control', { op: 'track_stock', track: false }, 'sin control de stock'],
+      };
+      const [title, text, ok, payload, verb] = confirmations[action] || [];
+      if (!title) return;
+      SmartAdmin.confirm(title, text, ok).then(yes => { if (yes) runBulk(button, async () => bulkDone(await bulkUpdate(payload), verb)); });
+    });
+
+    // Edición rápida de precio y stock: doble clic o lápiz; Enter guarda, Esc cancela.
+    const startInlineEdit = cell => {
+      const kind = cell.dataset.inlineCell;
+      const row = cell.closest('tr');
+      const p = productsList.find(item => String(item.id) === row?.dataset.prodId);
+      if (!p || cell.querySelector('.inline-input')) return;
+      const current = kind === 'price' ? (Number(p.price) || 0) : (p.stock ? p.stock.available : '');
+      const original = cell.innerHTML;
+      cell.innerHTML = `<input type="number" class="inline-input form-control" min="0" ${kind === 'price' ? 'step="0.01" max="99999999"' : 'step="1" max="1000000"'} value="${current}" aria-label="${kind === 'price' ? 'Precio' : 'Stock disponible'} de ${escapeHtmlEditor(p.name)}" title="Enter para guardar · Esc para cancelar">`;
+      const input = cell.querySelector('input');
+      input.focus();
+      input.select();
+      let finished = false;
+      const restore = () => { cell.innerHTML = original; lucide.createIcons(); };
+      const finish = async save => {
+        if (finished) return;
+        finished = true;
+        const raw = input.value.trim();
+        if (!save || raw === '' || Number(raw) === Number(current)) { restore(); return; }
+        const value = Number(raw);
+        if (kind === 'price' ? !(value >= 0) : !(Number.isInteger(value) && value >= 0 && value <= 1000000)) { restore(); showToast(kind === 'price' ? 'El precio debe ser un número mayor o igual a 0.' : 'El stock debe ser un número entero entre 0 y 1.000.000.', 'error'); return; }
+        const before = { price: p.price, stock: p.stock };
+        if (kind === 'price') p.price = Math.round(value * 100) / 100;
+        else p.stock = { available: value, reserved: p.stock?.reserved || 0, free: Math.max(0, value - (p.stock?.reserved || 0)) };
+        renderProductsTab();
+        try {
+          if (kind === 'price') {
+            await api('admin-products-bulk-update', { method: 'POST', body: JSON.stringify({ op: 'price', mode: 'set', value: p.price, ids: [String(p.id)] }) });
+          } else {
+            const res = await api('admin-inventory', { method: 'POST', body: JSON.stringify({ product_id: String(p.id), available: value }) });
+            if (res.item?.tracked) p.stock = { available: res.item.available, reserved: res.item.reserved, free: res.item.free };
+            renderProductsTab();
+          }
+          showToast(kind === 'price' ? `Precio de "${p.name}" actualizado.` : `Stock de "${p.name}" actualizado.`);
+        } catch (err) {
+          p.price = before.price;
+          p.stock = before.stock;
+          renderProductsTab();
+          showToast(err.message, 'error');
+        }
+      };
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+        if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finish(false); }
+      });
+      input.addEventListener('blur', () => finish(false));
+    };
+    document.getElementById('productsTableBody').addEventListener('dblclick', e => {
+      const cell = e.target.closest('[data-inline-cell]');
+      if (cell && !e.target.closest('input')) startInlineEdit(cell);
+    });
+    document.getElementById('productsTableBody').addEventListener('click', e => {
+      const button = e.target.closest('[data-inline-edit]');
+      if (button) startInlineEdit(button.closest('td').querySelector('[data-inline-cell]'));
+    });
+
+    const updateMarginHint = () => {
+      const hint = document.getElementById('prodMarginHint');
+      const cost = document.getElementById('prodCostInput').value.trim();
+      const price = Number(document.getElementById('prodPriceInput').value) || 0;
+      if (cost === '' || price <= 0) { hint.textContent = 'Solo se ve en el panel: sirve para calcular tu margen. Nunca se muestra en la tienda.'; hint.style.color = ''; return; }
+      const margin = price - Number(cost);
+      hint.textContent = `Margen: ${moneyPlain(margin)} por unidad (${String(Math.round(margin / price * 1000) / 10).replace('.', ',')}%). Solo se ve en el panel.`;
+      hint.style.color = margin < 0 ? 'var(--danger)' : '';
+    };
+    ['prodCostInput', 'prodPriceInput', 'chkQuotePrice'].forEach(id => document.getElementById(id)?.addEventListener('input', updateMarginHint));
 
     window.deleteProduct = async productId => {
       const prod = productsList.find(p => String(p.id) === String(productId));
@@ -1013,6 +1260,8 @@
       document.getElementById('prodSkuInput').value = '';
       document.getElementById('prodPriceInput').value = '';
       document.getElementById('prodPriceInput').required = true;
+      document.getElementById('prodCostInput').value = '';
+      updateMarginHint();
       if (chkQuotePriceEl) chkQuotePriceEl.checked = false;
       if (quotePriceBadgeEl) quotePriceBadgeEl.style.display = 'none';
       document.getElementById('prodCategorySelect').value = categoriesList[0]?.name || 'General';
@@ -1061,6 +1310,8 @@
         if (quotePriceBadgeEl) quotePriceBadgeEl.style.display = 'none';
       }
 
+      document.getElementById('prodCostInput').value = p.cost ?? '';
+      updateMarginHint();
       document.getElementById('prodCategorySelect').value = p.category || (categoriesList[0]?.name || 'General');
       updateProductCategoryContext();
       document.getElementById('prodSubcategoryInput').value = p.subcategory || '';
@@ -1223,6 +1474,7 @@
         fd.append('specs', JSON.stringify(currentProductSpecs.filter(s => s.label.trim() && s.value.trim())));
         fd.append('content_text', document.getElementById('prodContentInput').value.trim());
         fd.append('warranty_text', document.getElementById('prodWarrantyInput').value.trim());
+        fd.append('cost', document.getElementById('prodCostInput').value.trim());
 
         await api('admin-products', {
           method: 'POST',
@@ -1306,7 +1558,7 @@
 
         grid.innerHTML = images.map((img, index) => `
           <div class="found-image-card" role="button" tabindex="0" data-found-image="${index}" aria-label="Usar imagen de ${escapeHtmlEditor(img.storeName || 'Web')}">
-            <img src="${escapeHtmlEditor(img.thumb || img.url)}" alt="" style="width:100%; height:110px; object-fit:contain; background:#f8fafb; padding:4px;">
+            <img src="${escapeHtmlEditor(img.thumb || img.url)}" alt="" style="width:100%; height:110px; object-fit:contain; background:#fff; padding:4px;">
             <div style="font-size:10.5px; color:var(--muted); padding:4px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border-top:1px solid var(--line);">
               ${escapeHtmlEditor(img.storeName || 'Web')}
             </div>
@@ -1512,7 +1764,7 @@
     };
 
     const detectColumnsMapping = (headers, sampleRows) => {
-      const mapping = { name: null, price: null, category: null, sku: null, imageUrl: null, description: null };
+      const mapping = { name: null, price: null, cost: null, category: null, sku: null, imageUrl: null, description: null };
       const normHeaders = headers.map(h => normalizeText(h));
 
       const findMatch = regexList => {
@@ -1529,6 +1781,7 @@
       mapping.category = findMatch([/^categoria/, /^category/, /^linea/, /^familia/, /^grupo/, /^clasificacion/, /^rubro/]);
       mapping.imageUrl = findMatch([/^foto/, /^imagen/, /^image/, /^picture/, /^urlfoto/, /^urlimagen/]);
       mapping.description = findMatch([/^descripcion/, /^description/, /^detalle/, /^especificaciones/]);
+      mapping.cost = findMatch([/^costo/, /^cost$/, /^cost /, /^precio( de)? compra/, /^preciocompra/]);
 
       if (mapping.name === null) {
         if (mapping.description !== null) {
@@ -1567,6 +1820,8 @@
         const rawCategory = fileState.mapping.category !== null ? String(row[fileState.mapping.category] || '').trim() : '';
         const imageUrl = fileState.mapping.imageUrl !== null ? String(row[fileState.mapping.imageUrl] || '').trim() : '';
         const description = fileState.mapping.description !== null ? String(row[fileState.mapping.description] || '').trim() : '';
+        const rawCost = fileState.mapping.cost != null ? String(row[fileState.mapping.cost] ?? '').trim() : '';
+        const cost = rawCost !== '' ? parseFloat(rawCost.replace(/[^0-9.,]/g, '').replace(',', '.')) : NaN;
 
         // Análisis de Afinidad en tiempo real
         const affinity = matchCategoryAffinity(rawCategory, name, categoriesList);
@@ -1583,6 +1838,7 @@
           imageUrl,
           description,
           priceProvided,
+          cost: Number.isFinite(cost) && cost >= 0 ? Math.round(cost * 100) / 100 : null,
           visible: true,
           fileName: fileState.fileName
         });
@@ -1684,6 +1940,7 @@
       const mapElements = {
         mapColName: 'name',
         mapColPrice: 'price',
+        mapColCost: 'cost',
         mapColCategory: 'category',
         mapColSku: 'sku',
         mapColImage: 'imageUrl',
@@ -1694,7 +1951,7 @@
         const el = document.getElementById(elemId);
         if (!el) return;
         el.innerHTML = opts;
-        el.value = s.mapping[key] !== null ? s.mapping[key] : -1;
+        el.value = s.mapping[key] != null ? s.mapping[key] : -1;
         el.onchange = () => {
           s.mapping[key] = parseInt(el.value) >= 0 ? parseInt(el.value) : null;
           parseProductsForFile(s);
@@ -1759,7 +2016,7 @@
             <td><code>${p.sku || '—'}</code></td>
             <td>
               ${isQuotation 
-                ? '<span style="color:#d97706; font-size:11px; font-weight:700; background:#fef3c7; padding:2px 6px; border-radius:4px; white-space:nowrap;">Solicitar cotización</span>' 
+                ? '<span class="badge-quote is-warn">Solicitar cotización</span>' 
                 : `<strong>${formatMoney(p.price)}</strong>`
               }
             </td>
@@ -1785,7 +2042,7 @@
       if (allProducts.length > 40) {
         tbody.innerHTML += `
           <tr>
-            <td colspan="7" style="text-align:center; padding:12px; background:#f8fafb; color:var(--muted); font-size:12px;">
+            <td colspan="7" style="text-align:center; padding:12px; background:var(--surface-2); color:var(--muted); font-size:12px;">
               ... y ${allProducts.length - 40} productos más que se importarán con este mismo mapeo.
             </td>
           </tr>
@@ -1858,7 +2115,8 @@
           subcategory: p.rawCategory === '' && !p.categoryManual ? '' : String(p.subcategory || '').trim(),
           imageUrl: String(p.imageUrl || p.image_url || '').trim(),
           externalUrl: String(p.externalUrl || p.external_url || '').trim(),
-          sku: String(p.sku || '').trim()
+          sku: String(p.sku || '').trim(),
+          cost: p.cost ?? undefined
         }));
 
         let batchSuccess = false;
@@ -1982,9 +2240,18 @@
         badge.append(icon, document.createTextNode(user.email || user.name || 'Admin'));
         window.lucide?.createIcons();
       }
+      // ?q= llega del buscador global (Ctrl+K): la primera carga ya sale filtrada.
+      const initialQuery = (new URLSearchParams(window.location.search).get('q') || '').trim();
+      const searchInput = document.getElementById('productSearchInput');
+      if (initialQuery && searchInput) searchInput.value = initialQuery;
+
       await loadAllData();
 
       const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('new') === '1') {
+        if (!urlParams.get('tab')) switchTab('tab-products');
+        document.getElementById('btnNewProduct')?.click();
+      }
       const requestedTab = urlParams.get('tab');
       if (requestedTab && document.getElementById(requestedTab)) {
         switchTab(requestedTab);

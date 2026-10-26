@@ -11,6 +11,7 @@ echo "== migrate";       php scripts/migrate.php | tail -3
 echo "== assert-mig";    php tests/assert-migrations.php
 echo "== assert-cat";    php tests/assert-category-admin.php
 echo "== integration";   node tests/admin-auth.integration.mjs
+echo "== e2e";           node tests/e2e/panel.e2e.mjs
 echo "== migrate again"; php scripts/migrate.php | tail -2
 echo "== smoke";         node tests/smoke.integration.mjs
 echo ALL-OK

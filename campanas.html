@@ -5,51 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SmartISP | Campañas</title>
   <link rel="icon" href="/assets/favicons/favicon.ico">
-  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=admin-brand-20261011">
-  <script src="/assets/vendor/lucide-icons.min.js?v=8707c619" defer></script>
-  <script src="/assets/js/admin/admin-nav.js?v=20261025-a11y" defer></script>
-  <link rel="stylesheet" href="/assets/css/admin/campanas-page.css?v=20261025">
-  <style>
-    .gallery-item>img{clip-path:inset(0 round 4px);cursor:crosshair}
-    .image-crop{margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
-    .image-crop summary{cursor:pointer;color:var(--blue);font-size:12.5px;font-weight:800}
-    .image-crop label{margin:7px 0;font-size:11px}
-    .image-crop[open] summary{margin-bottom:8px}
-    .crop-canvas{position:relative;width:100%;aspect-ratio:var(--hero-ar,2.4);border:1px solid var(--line);border-radius:6px;background:#eef3f6;cursor:crosshair;touch-action:none}
-    .crop-canvas-media{position:absolute;inset:0;overflow:hidden;border-radius:5px}
-    .crop-canvas img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;user-select:none}
-    .crop-crosshair{position:absolute;width:26px;height:26px;margin-left:-13px;margin-top:-13px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 1.5px #087ea4,0 2px 6px rgba(0,0,0,.4);pointer-events:none;z-index:2}
-    .crop-crosshair::before,.crop-crosshair::after{content:"";position:absolute;background:#fff}
-    .crop-crosshair::before{top:50%;left:3px;right:3px;height:1.5px;margin-top:-.75px}
-    .crop-crosshair::after{left:50%;top:3px;bottom:3px;width:1.5px;margin-left:-.75px}
-    .crop-frame{position:absolute;border:1.5px dashed #fff;box-shadow:0 0 0 1px #087ea4,0 2px 10px rgba(0,0,0,.35);pointer-events:none}
-    .crop-handle{position:absolute;width:16px;height:16px;margin:-8px;border:2px solid #087ea4;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4);pointer-events:auto;touch-action:none;cursor:nwse-resize}
-    .crop-handle[data-corner="tr"],.crop-handle[data-corner="bl"]{cursor:nesw-resize}
-    .crop-help{margin:6px 0 2px;color:var(--muted);font-size:11px}
-    @media(max-width:760px){.campaign-preview.preview-triple{display:flex;overflow-x:auto;scroll-snap-type:x mandatory}.campaign-preview.preview-triple .preview-card{flex:0 0 min(82vw,420px);scroll-snap-align:start}}
-  </style>
-  <style>
-    @media(max-width:800px){
-      .campaign-preview.preview-secondary{grid-template-columns:minmax(0,1fr)}
-      .campaign-preview.preview-secondary.preview-cards{display:flex;overflow-x:auto;scroll-snap-type:x mandatory}
-      .campaign-preview.preview-secondary.preview-cards .preview-card{flex:0 0 88%;scroll-snap-align:start}
-      .campaign-preview.preview-secondary .preview-card{min-height:210px;aspect-ratio:auto}
-      .campaign-preview.preview-secondary .preview-copy{width:100%;max-width:100%}
-      .campaign-preview.preview-secondary .preview-card.is-layout-side{flex-direction:column;align-items:stretch}
-      .campaign-preview.preview-secondary .is-layout-side .preview-media{position:relative;inset:auto!important;width:100%!important;height:auto;aspect-ratio:16/9}
-      .campaign-preview.preview-secondary .is-layout-side .preview-copy{width:100%!important;max-width:100%!important;padding:20px}
-      .campaign-preview.preview-secondary .is-layout-side .preview-overlay{display:none}
-    }
-  </style>
+  <meta name="theme-color" content="#102A43">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <script src="/assets/js/admin/admin-theme.js?v=ds-20261027"></script>
+  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/campanas-page.css?v=ds-20261027">
+  <script src="/assets/vendor/lucide-icons.min.js?v=68df8f2b" defer></script>
+  <script src="/assets/js/admin/admin-nav.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/campanas-page.js?v=ds-20261027" defer></script>
 </head>
 <body>
   <div id="smartisp-admin-nav" class="is-loading" data-active="campanas"></div>
-  <header class="top"><h1>Campañas y merchandising</h1><p>Portadas, accesos promocionales y productos destacados de la tienda.</p></header>
   <main class="main-shell campaign-editor">
+    <header class="page-head">
+      <div>
+        <p class="eyebrow"><i data-lucide="megaphone" aria-hidden="true"></i> Tienda</p>
+        <h1>Campañas y banners</h1>
+        <p>Portadas, banners de cada página y accesos promocionales de la tienda.</p>
+      </div>
+      <div class="head-actions">
+        <a class="button secondary small" href="/productos-destacados" target="_blank" rel="noopener"><i data-lucide="sparkles"></i> Selección comercial</a>
+        <a class="button secondary small" href="/categorias-destacadas" target="_blank" rel="noopener"><i data-lucide="panels-top-left"></i> Categorías y banners</a>
+        <a class="button secondary small" href="/tienda.html" target="_blank" rel="noopener"><i data-lucide="external-link"></i> Ver tienda</a>
+      </div>
+    </header>
     <section id="denied" class="auth hidden denied"><h2>Acceso restringido</h2><p>Esta cuenta no tiene permisos para gestionar campañas.</p><a class="button secondary" href="/tienda.html">Ir a la tienda</a></section>
     <section id="login" class="auth hidden"><h2>Acceso de administrador</h2><p class="muted">Ingresa con una cuenta autorizada.</p><form id="loginForm"><label>Correo<input name="email" type="email" autocomplete="username" required></label><label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label><button class="button" type="submit">Entrar al panel</button><div id="loginMessage" class="message"></div></form></section>
     <section id="app" class="hidden">
-      <div class="toolbar" style="margin-bottom:14px"><div class="format-options" id="zoneToggle">
+      <div class="toolbar zone-bar"><div class="format-options" id="zoneToggle" role="radiogroup" aria-label="Zona de la tienda">
         <label class="format-option"><input type="radio" name="campaignZone" value="store-home" checked><span><strong>Banner principal</strong><small>Hero de la portada (carrusel/formato arriba de todo)</small></span></label>
         <label class="format-option"><input type="radio" name="campaignZone" value="store-secondary"><span><strong>Banners secundarios</strong><small>Debajo de productos destacados (ej. Starlink, Soluciones)</small></span></label>
         <label class="format-option"><input type="radio" name="campaignZone" value="categorias"><span><strong>Página Categorías</strong><small>Banner arriba del catálogo en /categorias-destacadas (solo en "Todo el catálogo", no al filtrar una categoría)</small></span></label>
@@ -60,8 +46,7 @@
       </div></div>
       <div class="toolbar sticky-actions"><div><h2 id="zoneTitle">Portada de la tienda</h2><p id="identity" class="muted"></p></div><div class="right-actions"><button id="cancelEditor" class="button secondary" type="button">Cancelar</button><button id="saveDraft" class="button secondary" type="button"><i data-lucide="file-clock"></i> Guardar borrador</button><button id="saveTop" class="button" type="button"><i data-lucide="save"></i> Publicar cambios</button></div></div>
       <div id="saveMessageTop" class="message" role="status"></div>
-      <div class="toolbar-actions" style="margin-bottom:14px"><a class="button secondary" href="/productos-destacados" target="_blank" rel="noopener"><i data-lucide="sparkles"></i> Ver selección comercial</a><a class="button secondary" href="/categorias-destacadas" target="_blank" rel="noopener"><i data-lucide="panels-top-left"></i> Ver categorías y banners</a><a class="button secondary" href="/tienda.html" target="_blank" rel="noopener"><i data-lucide="external-link"></i> Ver tienda</a></div>
-      <div class="editor-layout">
+            <div class="editor-layout">
       <div class="editor-main">
       <section class="panel"><div class="section-heading"><div><h3>Presentación de portada</h3><p class="muted">Elige el formato, programa su vigencia y revisa la composición. Los textos de "Selección comercial", productos y categorías destacadas se administran en <a href="/portada.html">Portada</a>.</p></div></div>
         <div class="campaign-settings"><label>Nombre de campaña<input id="campaignName" maxlength="150"></label><label>Rotación entre banners (s)<input id="rotation" type="number" min="4" max="20"></label><label class="check compact"><input id="active" type="checkbox"> Visible en tienda</label><label>Activar desde<input id="campaignStarts" type="datetime-local"></label><label>Desactivar desde<input id="campaignEnds" type="datetime-local"></label><label class="full">Alto del banner principal<div class="opacity-row"><input id="heroHeightPct" type="range" min="60" max="100" step="5"><output>100%</output></div><small class="help">Achica el banner sin recortar la imagen (el ancho siempre ocupa toda la pantalla). Solo afecta el formato "Carrusel panorámico" / "Portada única".</small></label><label id="mobileSwipeRow" class="full check compact hidden"><input id="mobileSwipe" type="checkbox"> Deslizar en el teléfono (el escritorio no cambia, se queda en paralelo)</label></div>
@@ -94,6 +79,5 @@
       </div>
     </section>
   </main>
-  <script src="/assets/js/admin/campanas-page.js?v=pestanas-20261025" defer></script>
 </body>
 </html>

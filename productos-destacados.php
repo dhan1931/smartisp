@@ -128,7 +128,7 @@ foreach ($products as $idx => $product) {
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
   <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=seo2-20261025">
   <script src="/assets/js/store/public-brand.js?v=seo2-20261025" defer></script>
-  <script src="/assets/vendor/lucide-icons.min.js?v=8707c619"></script>
+  <script src="/assets/vendor/lucide-icons.min.js?v=68df8f2b"></script>
   <script type="application/ld+json">
   <?= json_encode([
       '@context' => 'https://schema.org',

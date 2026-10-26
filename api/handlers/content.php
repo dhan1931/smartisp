@@ -13,7 +13,7 @@ const MAIL_SETTINGS_KEYS = [
     'admin_email', 'smtp_provider', 'smtp_host', 'smtp_port', 'smtp_user',
     'smtp_pass', 'smtp_secure', 'smtp_from', 'resend_api_key', 'email_from',
 ];
-const PUBLIC_BRAND_IMAGE_KEYS = ['logo_image', 'logo_dark_image', 'landing_logo_image', 'landing_logo_dark_image'];
+const PUBLIC_BRAND_IMAGE_KEYS = ['logo_image', 'logo_dark_image', 'landing_logo_image', 'landing_logo_dark_image', 'hero_image'];
 
 if ($action === 'admin-content') {
     requireAdminAuth();
@@ -165,7 +165,7 @@ if ($action === 'brand-image' && $method === 'GET') {
         if ($source !== false) {
             $width = (int)$imageInfo[0];
             $height = (int)$imageInfo[1];
-            $outWidth = min(700, $width);
+            $outWidth = min($key === 'hero_image' ? 1920 : 700, $width);
             $outHeight = max(1, (int)round($height * $outWidth / $width));
             $output = imagecreatetruecolor($outWidth, $outHeight);
             if ($output !== false) {
@@ -244,14 +244,14 @@ if ($action === 'landing-content' || $action === 'site-content') {
             }));
         }
 
-        // landing-content completo (logos en base64 incluidos) solo para el editor del panel; el
-        // público recibe los logos como URL cacheable, igual que site-content.
+        // landing-content completo (logos e imagen del banner en base64) solo para el editor del
+        // panel; el público los recibe como URL cacheable, igual que site-content.
         $publicView = $action === 'site-content' || !isAdminUser();
         if ($publicView) {
             foreach ($safeRows as &$row) {
                 $key = (string)($row['key'] ?? '');
                 $value = (string)($row['value'] ?? '');
-                if (in_array($key, PUBLIC_BRAND_IMAGE_KEYS, true) && str_starts_with($value, 'data:image/')) {
+                if (in_array($key, PUBLIC_BRAND_IMAGE_KEYS, true) && preg_match('#^data:image/(png|jpeg|webp);base64,#', $value)) {
                     $version = substr(hash('sha256', $value), 0, 16);
                     $row['value'] = '/api/auth/brand-image?key=' . rawurlencode($key) . '&v=' . $version;
                 }

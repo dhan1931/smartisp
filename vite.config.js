@@ -21,6 +21,7 @@ export default defineConfig({
         configuracion: 'configuracion.html',
         campanas: 'campanas.html',
         pedidos: 'pedidos.html',
+        comprobante: 'comprobante.html',
         cotizaciones: 'cotizaciones.html',
         clientes: 'clientes.html',
         categorias: 'categorias.html',
@@ -31,7 +32,9 @@ export default defineConfig({
         login: 'login.html',
         inventario: 'inventario.html',
         estadisticas: 'estadisticas.html',
-        reportes: 'reportes.html'
+        reportes: 'reportes.html',
+        equipo: 'equipo.html',
+        actividad: 'actividad.html'
       }
     }
   },

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SmartISP | Equipo</title>
+  <link rel="icon" href="/assets/favicons/favicon.ico">
+  <meta name="theme-color" content="#102A43">
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <script src="/assets/js/admin/admin-theme.js?v=ds-20261027"></script>
+  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/equipo-page.css?v=ds-20261027">
+  <script src="/assets/vendor/lucide-icons.min.js?v=68df8f2b" defer></script>
+  <script src="/assets/js/admin/admin-nav.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/admin-page.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/equipo-page.js?v=ds-20261027" defer></script>
+</head>
+<body>
+  <div id="smartisp-admin-nav" class="is-loading" data-active="equipo"></div>
+  <main class="shell" id="app" hidden>
+    <header class="page-head">
+      <div>
+        <p class="eyebrow"><i data-lucide="users-round" aria-hidden="true"></i> Administración</p>
+        <h1>Equipo</h1>
+        <p>Cuentas con acceso al panel: roles, estado y sesiones abiertas. Cada cambio queda en el registro de actividad.</p>
+      </div>
+      <div class="head-actions">
+        <a class="button" href="/actividad.html"><i data-lucide="history" aria-hidden="true"></i> Actividad</a>
+        <button class="button" id="refresh" type="button"><i data-lucide="refresh-cw" aria-hidden="true"></i> Actualizar</button>
+        <button class="button primary" id="create" type="button"><i data-lucide="user-plus" aria-hidden="true"></i> Nueva cuenta</button>
+      </div>
+    </header>
+    <div class="callout warn" id="migrationNote" hidden><i data-lucide="triangle-alert" aria-hidden="true"></i><div>Falta aplicar la migración <strong>044_equipo_y_auditoria.sql</strong> (<code>php scripts/migrate.php</code>): sin ella no se pueden desactivar cuentas ni ver el último acceso.</div></div>
+    <section class="stats" id="stats" aria-label="Resumen del equipo"></section>
+    <section class="card team-card" aria-label="Cuentas del equipo">
+      <div class="toolbar">
+        <div class="search">
+          <i data-lucide="search" aria-hidden="true"></i>
+          <label class="sr-only" for="search">Buscar en el equipo</label>
+          <input id="search" type="search" placeholder="Buscar nombre o correo…  ( / )" autocomplete="off">
+        </div>
+        <div class="segmented" id="statusFilter" role="group" aria-label="Estado de la cuenta">
+          <button type="button" data-status="all" aria-pressed="true">Todas</button>
+          <button type="button" data-status="active" aria-pressed="false">Activas</button>
+          <button type="button" data-status="inactive" aria-pressed="false">Desactivadas</button>
+        </div>
+        <span class="result-count" id="count" aria-live="polite"></span>
+        <div id="teamExportHost"></div>
+      </div>
+      <div class="table-wrap" id="tableWrap"><table data-export="equipo" data-export-host="teamExportHost"><thead><tr><th>Persona</th><th>Rol</th><th>Estado</th><th>Último acceso</th><th>Última actividad</th><th data-no-export><span class="sr-only">Acciones</span></th></tr></thead><tbody id="rows"></tbody></table></div>
+      <div id="empty" hidden></div>
+    </section>
+    <p class="team-help">Solo un administrador puede gestionar el equipo. Nadie puede quitarse el rol ni desactivar al último administrador activo. «Cerrar sesiones» obliga a la persona a volver a iniciar sesión en todos sus dispositivos.</p>
+  </main>
+</body>
+</html>
