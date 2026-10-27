@@ -504,6 +504,23 @@ function getCategoryMacroGroups(PDO $pdo): array {
     return $groups;
 }
 
+// footer_whatsapp admite varios números (uno por línea o separados por coma), con etiqueta opcional
+// delante («Ventas: +593 99 123 4567»). Un número local 09… se convierte a 5939… para wa.me.
+function smartispWhatsappNumbers(string $text): array {
+    $list = [];
+    foreach (preg_split('/\R|[,;|]|\s\/\s/u', $text) as $entry) {
+        $entry = trim($entry);
+        if ($entry === '') continue;
+        $label = '';
+        $number = $entry;
+        if (preg_match('/^(.*?)[\s:\-–]*(\+?\d[\d\s().-]{5,})$/u', $entry, $m)) { $label = trim($m[1]); $number = trim($m[2]); }
+        $digits = preg_replace('/\D+/', '', $number);
+        if (preg_match('/^0\d{8,9}$/', $digits)) $digits = '593' . substr($digits, 1);
+        if (strlen($digits) >= 7) $list[] = ['label' => $label, 'number' => $number, 'digits' => $digits];
+    }
+    return $list;
+}
+
 // Igual que normalizeCategoryText de la tienda: minúsculas, sin tildes, "_" como espacio.
 function smartispCategoryKey(string $text): string {
     $text = strtr($text, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','ñ'=>'n','ü'=>'u','Á'=>'a','É'=>'e','Í'=>'i','Ó'=>'o','Ú'=>'u','Ñ'=>'n','Ü'=>'u', '_' => ' ']);

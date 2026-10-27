@@ -25,7 +25,7 @@
   <script src="/assets/js/admin/admin-theme.js?v=ds-20261027"></script>
   <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261027">
   <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261027">
-  <link rel="stylesheet" href="/assets/css/admin/editor-catalogo-page.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/editor-catalogo-page.css?v=iva-20261027">
   <link rel="stylesheet" href="/assets/css/admin/products-admin.css?v=ds-20261027">
   <script src="/assets/vendor/lucide-icons.min.js?v=68df8f2b"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAI062MaV8sfjQKYVGjOBaZBOA87z+IhZE9DA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -207,6 +207,10 @@
               <span style="font-size:12px; font-weight:700; color:var(--blue);">%</span>
               <span style="font-size:11px; color:var(--muted);">(Y + 30%)</span>
             </div>
+            <label class="iva-toggle import-iva-toggle" title="Si el archivo trae precios sin IVA, se les suma el 15 % después del margen">
+              <input type="checkbox" id="importPricesIncludeIva" checked>
+              <span>Los precios del archivo ya incluyen IVA</span>
+            </label>
             <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('excelFileInput').click()">
               <i data-lucide="plus" width="14"></i> Agregar más archivos
             </button>
@@ -363,6 +367,11 @@
                 <i data-lucide="file-text" width="15"></i> Sin precio · Solicitar cotización ($0)
               </div>
             </div>
+            <label class="iva-toggle" id="ivaToggleRow">
+              <input type="checkbox" id="chkPriceIncludesIva" checked>
+              <span>El precio ya incluye IVA (15&nbsp;%)</span>
+            </label>
+            <span id="prodIvaHint" class="iva-hint" aria-live="polite">Este es el precio final que verá el cliente.</span>
             <span style="font-size:11px; color:var(--muted); margin-top:3px; display:block;">
               Marca "Solicitar cotización" para productos sin precio fijo en tienda.
             </span>
@@ -515,7 +524,7 @@
   </div>
 
   <script src="/assets/js/admin/admin-page.js?v=ds-20261027" defer></script>
-  <script src="/assets/js/admin/editor-catalogo-page.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/editor-catalogo-page.js?v=iva-20261027" defer></script>
   <script src="/assets/js/admin/products-layout.js?v=ds-20261027"></script>
 </body>
 </html>

@@ -72,7 +72,7 @@
         // null (no "+0" fantasma) si fallo el fetch del catalogo -- antes un error de red
         // silencioso se mostraba como si el catalogo de verdad tuviera 0 productos.
         productsCount: catalog && Number(catalog.total) > 0 ? Number(catalog.total) : null,
-        whatsapp: String(map.footer_whatsapp || '').replace(/\D/g, ''),
+        whatsapp: ((window.smartispParseWhatsapp ? window.smartispParseWhatsapp(map.footer_whatsapp)[0] : null) || {}).digits || String(map.footer_whatsapp || '').split(/\n|[,;|]/)[0].replace(/\D/g, ''),
         email: String(map.footer_email || '').trim(),
       };
     });

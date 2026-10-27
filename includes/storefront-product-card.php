@@ -17,7 +17,7 @@ if (preg_match('~^/api/auth/(?:product-image|proxy-image)(?:\?|$)~', $storeProdu
     <span class="store-product-category"><?= htmlspecialchars($storeProductCategory, ENT_QUOTES, 'UTF-8') ?></span>
     <h2><a href="<?= htmlspecialchars($storeProductUrl, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($storeProductName, ENT_QUOTES, 'UTF-8') ?></a></h2>
     <div class="store-product-foot">
-      <strong><?= $storeProductPrice > 0 ? '$' . number_format($storeProductPrice, 2, '.', ',') : 'Cotizar' ?></strong>
+      <span class="store-product-price"><strong><?= $storeProductPrice > 0 ? '$' . number_format($storeProductPrice, 2, '.', ',') : 'Cotizar' ?></strong><?php if ($storeProductPrice > 0): ?><small>IVA incluido</small><?php endif; ?></span>
       <a class="store-product-view" href="<?= htmlspecialchars($storeProductUrl, ENT_QUOTES, 'UTF-8') ?>" aria-label="Ver ficha de <?= htmlspecialchars($storeProductName, ENT_QUOTES, 'UTF-8') ?>"><i data-lucide="external-link" width="16"></i></a>
     </div>
     <?php if (array_key_exists('available_qty', $storeProduct)): ?><span class="store-product-stock<?= (int)$storeProduct['available_qty'] > 0 ? ' is-available' : '' ?>"><?= $storeProduct['available_qty'] === null ? 'Consultar disponibilidad' : ((int)$storeProduct['available_qty'] > 0 ? 'En stock' : 'Agotado') ?></span><?php endif; ?>

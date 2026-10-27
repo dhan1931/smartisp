@@ -406,6 +406,15 @@
 			return { totalProducts: catalogTotalCount || products.length, groups: result };
 		};
 
+		const parseWhatsappList = text => String(text || '').split(/\n|[,;|]|\s\/\s/).map(entry => entry.trim()).filter(Boolean).map(entry => {
+			const match = entry.match(/^(.*?)[\s:\-–]*(\+?\d[\d\s().-]{5,})$/);
+			const label = match ? match[1].trim() : '';
+			const number = match ? match[2].trim() : entry;
+			let digits = number.replace(/\D/g, '');
+			if (/^0\d{8,9}$/.test(digits)) digits = `593${digits.slice(1)}`;
+			return { label, number, digits };
+		}).filter(item => item.digits.length >= 7);
+		window.smartispParseWhatsapp = window.smartispParseWhatsapp || parseWhatsappList;
 		const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
 			'&': '&amp;',
 			'<': '&lt;',
@@ -1328,12 +1337,22 @@
 				const brandP = document.querySelector('.site-footer-brand p');
 				if (brandP) brandP.textContent = content.footer_text;
 			}
-			const whatsapp = (content.footer_whatsapp || '').trim();
-			if (whatsapp) {
-				const digits = whatsapp.replace(/[^\d]/g, '');
-				const waHref = `https://wa.me/${digits}`;
+			const whatsappList = parseWhatsappList(content.footer_whatsapp);
+			if (whatsappList.length) {
+				const waHref = `https://wa.me/${whatsappList[0].digits}`;
 				const waLink = document.querySelector('#footerWhatsappLink');
-				if (waLink) { waLink.href = waHref; waLink.target = '_blank'; waLink.rel = 'noopener'; waLink.hidden = false; document.querySelector('#footerWhatsappText').textContent = whatsapp; }
+				if (waLink) {
+					waLink.parentElement.querySelectorAll('[data-extra-whatsapp]').forEach(el => el.remove());
+					whatsappList.forEach((item, index) => {
+						const link = index === 0 ? waLink : waLink.cloneNode(true);
+						if (index > 0) { link.removeAttribute('id'); link.dataset.extraWhatsapp = ''; link.querySelector('strong')?.removeAttribute('id'); }
+						link.href = `https://wa.me/${item.digits}`; link.target = '_blank'; link.rel = 'noopener'; link.hidden = false;
+						link.querySelector('strong').textContent = item.number;
+						const small = link.querySelector('small');
+						if (small) small.textContent = item.label || (whatsappList.length > 1 ? 'WhatsApp' : 'Escríbenos por WhatsApp');
+						if (index > 0) waLink.parentElement.insertBefore(link, document.querySelector('#footerEmailLink'));
+					});
+				}
 				const waCta = document.querySelector('#footerWhatsappCta');
 				const waCard = document.querySelector('#footerWhatsappCard');
 				if (waCta) { waCta.href = waHref; waCta.target = '_blank'; waCta.rel = 'noopener'; }
@@ -1684,7 +1703,7 @@
 					<div class="campaign-product-category">${escapeHtml(product.category || 'SmartISP')}</div>
 					<a class="campaign-product-title" href="${escapeHtml(productUrl)}">${escapeHtml(product.name || 'Producto')}</a>
 					<p class="campaign-product-description">${escapeHtml(product.description || '')}</p>
-					<div class="campaign-product-bottom"><strong class="campaign-product-price">${money(product.price)}</strong><button type="button" class="campaign-product-add" data-campaign-add="${index}" aria-label="Agregar ${escapeHtml(product.name)} al carrito"><i data-lucide="shopping-cart" width="15"></i> Agregar</button></div>
+					<div class="campaign-product-bottom"><span class="campaign-product-price-block"><strong class="campaign-product-price">${money(product.price)}</strong>${Number(product.price || 0) > 0 ? '<span class="campaign-product-tax">IVA incluido</span>' : ''}</span><button type="button" class="campaign-product-add" data-campaign-add="${index}" aria-label="Agregar ${escapeHtml(product.name)} al carrito"><i data-lucide="shopping-cart" width="15"></i> Agregar</button></div>
 				</article>`;
 			}).join('');
 			section.classList.add('is-visible');
@@ -1884,7 +1903,7 @@
 					productsLabel: map.trust_stats_products_label_default || 'Productos disponibles',
 					// null (no "+0" fantasma) si fallo el fetch del catalogo.
 					productsCount: catalog && Number(catalog.total) > 0 ? Number(catalog.total) : null,
-					whatsapp: String(map.footer_whatsapp || '').replace(/\D/g, ''),
+					whatsapp: (parseWhatsappList(map.footer_whatsapp)[0] || {}).digits || '',
 					email: String(map.footer_email || '').trim(),
 				};
 			});

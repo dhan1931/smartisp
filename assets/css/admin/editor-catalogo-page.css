@@ -863,3 +863,8 @@
 .prod-stock.is-low { color: var(--warning); }
 .prod-stock.is-out { color: var(--danger); }
 @media (hover: none) { .inline-edit-btn { opacity: 1; } }
+.iva-toggle { display: inline-flex; align-items: center; gap: 7px; margin-top: 8px; font-size: 12.5px; font-weight: 600; color: var(--text); cursor: pointer; }
+.iva-toggle input { width: 15px; height: 15px; accent-color: var(--blue); cursor: pointer; }
+.iva-toggle[hidden] { display: none; }
+.iva-hint { display: block; margin-top: 3px; font-size: 11.5px; font-weight: 600; color: var(--accent-text, var(--blue)); }
+.import-iva-toggle { margin-top: 0; padding: 5px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }

@@ -48,7 +48,9 @@ $lines[] = '';
 $whatsapp = $clean($settings['footer_whatsapp'] ?? '');
 $email = $clean($settings['footer_email'] ?? '');
 $address = $clean($settings['footer_address'] ?? '');
-if ($whatsapp !== '') $lines[] = '- WhatsApp: ' . $whatsapp . ' (https://wa.me/' . preg_replace('/\D+/', '', $whatsapp) . ')';
+foreach (smartispWhatsappNumbers((string)($settings['footer_whatsapp'] ?? '')) as $wa) {
+    $lines[] = '- WhatsApp' . ($wa['label'] !== '' ? ' (' . $clean($wa['label']) . ')' : '') . ': ' . $clean($wa['number']) . ' (https://wa.me/' . $wa['digits'] . ')';
+}
 if ($email !== '') $lines[] = '- Correo: ' . $email;
 $lines[] = '- Dirección: ' . ($address !== '' ? $address : 'C.C. Atrio Plaza, Daule, Guayas, Ecuador');
 $lines[] = '- Horario: lunes a viernes, 9:00 a 18:00 (hora de Ecuador)';
