@@ -23,7 +23,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=optional" rel="stylesheet" media="print" onload="this.media='all'">
   <script src="/assets/js/store/public-brand.js?v=seo2-20261025" defer></script>
-  <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=seo2-20261025">
+  <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=iva-20261027">
   <script src="/assets/vendor/lucide-icons.min.js?v=68df8f2b" defer onload="window.lucide && window.lucide.createIcons()"></script>
   <script type="application/ld+json">
   {
@@ -212,17 +212,17 @@
       <div><a href="#">Términos y Condiciones</a><a href="#">Política de Privacidad</a><a href="#">Políticas de Garantía</a></div>
     </div>
   </footer>
-  <link rel="stylesheet" href="/assets/css/store/site-footer.css?v=1">
-  <script src="/assets/js/store/site-footer.js?v=2" defer></script>
+  <link rel="stylesheet" href="/assets/css/store/site-footer.css?v=iva-20261027">
+  <script src="/assets/js/store/site-footer.js?v=iva-20261027" defer></script>
   <script src="/assets/js/store/brands-section.js?v=1"></script>
   <link rel="stylesheet" href="/assets/css/store/storefront-campaign.css?v=seo2-20261025">
-  <script src="/assets/js/store/storefront-campaign.js?v=seo2-20261025"></script>
+  <script src="/assets/js/store/storefront-campaign.js?v=iva-20261027"></script>
   <script>
   window.initStorefrontCampaignHero('servicios');
   let whatsappNumber = '593983576667';
   document.addEventListener('DOMContentLoaded', () => {
     window.SmartLandingContent?.then(content => {
-      const digits = String(content?.footer_whatsapp || '').replace(/\D/g, '');
+      const digits = ((window.smartispParseWhatsapp ? window.smartispParseWhatsapp(content?.footer_whatsapp)[0] : null) || {}).digits || '';
       if (!digits) return;
       whatsappNumber = digits;
       document.querySelectorAll('[data-whatsapp-link]').forEach(link => { link.href = `https://wa.me/${digits}`; });

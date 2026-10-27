@@ -273,7 +273,7 @@ foreach ($products as $idx => $product) {
   <link rel="icon" type="image/svg+xml" href="/assets/favicons/favicon.svg">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
   <script src="/assets/js/store/public-brand.js?v=seo2-20261025" defer></script>
-  <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=seo2-20261025">
+  <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=iva-20261027">
   <script src="/assets/vendor/lucide-icons.min.js?v=68df8f2b" defer></script>
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="SmartISP Ecuador">
@@ -555,8 +555,8 @@ foreach ($products as $idx => $product) {
       <div><a href="#">Términos y Condiciones</a><a href="#">Política de Privacidad</a><a href="#">Políticas de Garantía</a></div>
     </div>
   </footer>
-  <link rel="stylesheet" href="/assets/css/store/site-footer.css?v=1">
-  <script src="/assets/js/store/site-footer.js?v=1" defer></script>
+  <link rel="stylesheet" href="/assets/css/store/site-footer.css?v=iva-20261027">
+  <script src="/assets/js/store/site-footer.js?v=iva-20261027" defer></script>
   <script src="/assets/js/store/storefront-discovery.js?v=subcat-20261028" defer></script>
   <?php if ($categoryName !== '' && $totalProducts > 0): ?>
   <script>

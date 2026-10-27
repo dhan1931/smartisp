@@ -1036,6 +1036,29 @@
       if (button) startInlineEdit(button.closest('td').querySelector('[data-inline-cell]'));
     });
 
+    const IVA_RATE = 0.15;
+    const withIva = value => Math.round(value * (1 + IVA_RATE) * 100) / 100;
+    const ivaPrefKey = 'smartisp.priceIncludesIva';
+    const updateIvaHint = () => {
+      const hint = document.getElementById('prodIvaHint');
+      const check = document.getElementById('chkPriceIncludesIva');
+      if (!hint || !check) return;
+      const quote = document.getElementById('chkQuotePrice')?.checked;
+      const raw = Number(document.getElementById('prodPriceInput').value) || 0;
+      document.getElementById('ivaToggleRow').hidden = Boolean(quote);
+      if (quote || raw <= 0) { hint.textContent = check.checked ? 'Este es el precio final que verá el cliente.' : 'Escribe el precio sin IVA: se le sumará el 15 %.'; return; }
+      const final = check.checked ? raw : withIva(raw);
+      const base = Math.round(final / (1 + IVA_RATE) * 100) / 100;
+      hint.textContent = check.checked
+        ? `Precio final en tienda: ${moneyPlain(final)} · sin IVA ${moneyPlain(base)} + IVA ${moneyPlain(Math.round((final - base) * 100) / 100)}`
+        : `Se sumará el 15 %: precio final en tienda ${moneyPlain(final)} (IVA ${moneyPlain(Math.round((final - raw) * 100) / 100)})`;
+    };
+    ['prodPriceInput', 'chkQuotePrice', 'chkPriceIncludesIva'].forEach(id => document.getElementById(id)?.addEventListener('input', updateIvaHint));
+    document.getElementById('chkPriceIncludesIva')?.addEventListener('change', event => {
+      try { localStorage.setItem(ivaPrefKey, event.target.checked ? '1' : '0'); } catch (e) { /* almacenamiento bloqueado */ }
+      updateIvaHint();
+    });
+
     const updateMarginHint = () => {
       const hint = document.getElementById('prodMarginHint');
       const cost = document.getElementById('prodCostInput').value.trim();
@@ -1263,6 +1286,10 @@
       document.getElementById('prodCostInput').value = '';
       updateMarginHint();
       if (chkQuotePriceEl) chkQuotePriceEl.checked = false;
+      let ivaPref = '1';
+      try { ivaPref = localStorage.getItem(ivaPrefKey) ?? '1'; } catch (e) { /* almacenamiento bloqueado */ }
+      document.getElementById('chkPriceIncludesIva').checked = ivaPref !== '0';
+      updateIvaHint();
       if (quotePriceBadgeEl) quotePriceBadgeEl.style.display = 'none';
       document.getElementById('prodCategorySelect').value = categoriesList[0]?.name || 'General';
       updateProductCategoryContext();
@@ -1312,6 +1339,9 @@
 
       document.getElementById('prodCostInput').value = p.cost ?? '';
       updateMarginHint();
+      // Lo guardado ya es el precio final: editarlo con la casilla desmarcada sumaría el IVA dos veces.
+      document.getElementById('chkPriceIncludesIva').checked = true;
+      updateIvaHint();
       document.getElementById('prodCategorySelect').value = p.category || (categoriesList[0]?.name || 'General');
       updateProductCategoryContext();
       document.getElementById('prodSubcategoryInput').value = p.subcategory || '';
@@ -1394,7 +1424,8 @@
         const id = (idInput && idInput.value.trim()) ? idInput.value.trim() : ('prod_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 8));
         const isQuote = document.getElementById('chkQuotePrice')?.checked;
         const rawPrice = parseFloat(document.getElementById('prodPriceInput').value);
-        const finalPrice = isQuote || isNaN(rawPrice) || rawPrice <= 0 ? 0 : rawPrice;
+        const includesIva = document.getElementById('chkPriceIncludesIva')?.checked !== false;
+        const finalPrice = isQuote || isNaN(rawPrice) || rawPrice <= 0 ? 0 : (includesIva ? rawPrice : withIva(rawPrice));
 
         const name = document.getElementById('prodNameInput').value.trim();
         if (!name) {
@@ -1798,6 +1829,7 @@
     const parseProductsForFile = fileState => {
       if (!fileState) return;
       const margin = parseFloat(document.getElementById('importPriceMargin').value) || 30;
+      const fileIncludesIva = document.getElementById('importPricesIncludeIva')?.checked !== false;
       const startRow = fileState.headerRowIdx + 1;
       const products = [];
 
@@ -1815,7 +1847,8 @@
         const basePrice = parseFloat(rawPriceStr) || 0;
         
         // Fórmula obligatoria: Y + (Y)30% = precio total (o 0 si no tiene precio -> Solicitar cotización)
-        const finalPrice = basePrice > 0 ? Math.round((basePrice + (basePrice * (margin / 100))) * 100) / 100 : 0;
+        const withMargin = basePrice > 0 ? Math.round((basePrice + (basePrice * (margin / 100))) * 100) / 100 : 0;
+        const finalPrice = withMargin > 0 && !fileIncludesIva ? withIva(withMargin) : withMargin;
 
         const rawCategory = fileState.mapping.category !== null ? String(row[fileState.mapping.category] || '').trim() : '';
         const imageUrl = fileState.mapping.imageUrl !== null ? String(row[fileState.mapping.imageUrl] || '').trim() : '';
@@ -1961,6 +1994,11 @@
       });
     };
 
+    document.getElementById('importPricesIncludeIva')?.addEventListener('change', () => {
+      importFilesList.forEach(fileState => parseProductsForFile(fileState));
+      renderFilesChips();
+      refreshCombinedPreview();
+    });
     document.getElementById('importPriceMargin').addEventListener('input', () => {
       importFilesList.forEach(fileState => parseProductsForFile(fileState));
       renderFilesChips();

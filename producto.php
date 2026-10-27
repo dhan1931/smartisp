@@ -198,7 +198,7 @@ if ($pdo) {
 }
 $waUrl = '';
 if ($product && $waNumber !== '') {
-    $waDigits = preg_replace('/\D+/', '', $waNumber);
+    $waDigits = smartispWhatsappNumbers($waNumber)[0]['digits'] ?? '';
     $waPriceLine = $productPrice > 0 ? "Precio: \${$formattedPrice}" : 'Precio: a cotizar';
     $waMessage = rawurlencode("Hola SmartISP, estoy interesado en comprar el producto:\n*{$product['name']}*\n{$waPriceLine}\nEnlace: {$canonicalUrl}");
     $waUrl = "https://wa.me/{$waDigits}?text={$waMessage}";
@@ -448,7 +448,7 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
         .toast { position: fixed; bottom: 24px; right: 24px; background: #0f172a; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); display: none; align-items: center; gap: 8px; z-index: 100; animation: slideUp .3s ease; }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
-    <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=seo2-20261025">
+    <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=iva-20261027">
     <style>header { position: relative !important; top: auto !important; }.storefront-logo img { height: auto; max-height: 140px; border-radius: 0; }</style>
 </head>
 <body>
@@ -692,8 +692,8 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
       <div><a href="#">Términos y Condiciones</a><a href="#">Política de Privacidad</a><a href="#">Políticas de Garantía</a></div>
     </div>
   </footer>
-  <link rel="stylesheet" href="/assets/css/store/site-footer.css?v=1">
-  <script src="/assets/js/store/site-footer.js?v=1" defer></script>
+  <link rel="stylesheet" href="/assets/css/store/site-footer.css?v=iva-20261027">
+  <script src="/assets/js/store/site-footer.js?v=iva-20261027" defer></script>
 
     <!-- Notificación Toast -->
     <div id="toastMessage" class="toast">

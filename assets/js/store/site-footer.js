@@ -2,18 +2,37 @@
 // renderFooterContent() en tienda-page.js, pero autonoma: pide su propio /api/auth/landing-content
 // en vez de reusar el "content" que ya tienen las paginas con hero propio.
 (function () {
+	const parseWhatsappList = text => String(text || '').split(/\n|[,;|]|\s\/\s/).map(entry => entry.trim()).filter(Boolean).map(entry => {
+		const match = entry.match(/^(.*?)[\s:\-–]*(\+?\d[\d\s().-]{5,})$/);
+		const label = match ? match[1].trim() : '';
+		const number = match ? match[2].trim() : entry;
+		let digits = number.replace(/\D/g, '');
+		if (/^0\d{8,9}$/.test(digits)) digits = `593${digits.slice(1)}`;
+		return { label, number, digits };
+	}).filter(item => item.digits.length >= 7);
+	window.smartispParseWhatsapp = parseWhatsappList;
 	const renderFooterContent = content => {
 		if (!content) return;
 		if (content.footer_text) {
 			const brandP = document.querySelector('.site-footer-brand p');
 			if (brandP) brandP.textContent = content.footer_text;
 		}
-		const whatsapp = (content.footer_whatsapp || '').trim();
-		if (whatsapp) {
-			const digits = whatsapp.replace(/[^\d]/g, '');
-			const waHref = `https://wa.me/${digits}`;
+		const whatsappList = parseWhatsappList(content.footer_whatsapp);
+		if (whatsappList.length) {
+			const waHref = `https://wa.me/${whatsappList[0].digits}`;
 			const waLink = document.querySelector('#footerWhatsappLink');
-			if (waLink) { waLink.href = waHref; waLink.target = '_blank'; waLink.rel = 'noopener'; waLink.hidden = false; document.querySelector('#footerWhatsappText').textContent = whatsapp; }
+			if (waLink) {
+				waLink.parentElement.querySelectorAll('[data-extra-whatsapp]').forEach(el => el.remove());
+				whatsappList.forEach((item, index) => {
+					const link = index === 0 ? waLink : waLink.cloneNode(true);
+					if (index > 0) { link.removeAttribute('id'); link.dataset.extraWhatsapp = ''; link.querySelector('strong')?.removeAttribute('id'); }
+					link.href = `https://wa.me/${item.digits}`; link.target = '_blank'; link.rel = 'noopener'; link.hidden = false;
+					link.querySelector('strong').textContent = item.number;
+					const small = link.querySelector('small');
+					if (small) small.textContent = item.label || (whatsappList.length > 1 ? 'WhatsApp' : 'Escríbenos por WhatsApp');
+					if (index > 0) waLink.parentElement.insertBefore(link, document.querySelector('#footerEmailLink'));
+				});
+			}
 			const waCta = document.querySelector('#footerWhatsappCta');
 			const waCard = document.querySelector('#footerWhatsappCard');
 			if (waCta) { waCta.href = waHref; waCta.target = '_blank'; waCta.rel = 'noopener'; }

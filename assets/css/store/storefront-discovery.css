@@ -54,7 +54,7 @@ main.storefront-page,footer.storefront-footer{width:min(1680px,calc(100% - 48px)
 .store-product-content h2{margin:4px 0 12px;color:var(--sd-navy);font-size:14px;line-height:1.35;overflow-wrap:anywhere}
 .store-product-content h2 a:hover{color:var(--sd-blue)}
 .store-product-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;padding-top:8px}
-.store-product-foot strong{color:var(--sd-navy);font-size:17px;font-weight:900}
+.store-product-foot strong{color:var(--sd-navy);font-size:17px;font-weight:900}.store-product-price{display:flex;flex-direction:column;gap:1px;min-width:0}.store-product-price small{color:#64748b;font-size:10px;font-weight:600;line-height:1.2}
 .store-product-foot .store-product-view{display:grid;place-items:center;width:34px;height:34px;flex:0 0 34px;border:1px solid #c5d7e0;border-radius:6px;color:var(--sd-navy)}
 .store-product-add{display:flex;align-items:center;justify-content:center;gap:8px;min-height:38px;margin-top:9px;border:1px solid #72c9e3;border-radius:6px;background:#e9f8fc;color:#087ea4;font-size:13px;font-weight:850;cursor:pointer}
 .store-product-add:hover{background:#d7f2fa;border-color:#1798be}.store-product-add.is-added{border-color:#8dc9a8;background:#eff9f2;color:#217448}
