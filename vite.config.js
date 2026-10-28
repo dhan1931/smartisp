@@ -34,7 +34,12 @@ export default defineConfig({
         estadisticas: 'estadisticas.html',
         reportes: 'reportes.html',
         equipo: 'equipo.html',
-        actividad: 'actividad.html'
+        actividad: 'actividad.html',
+        terminos: 'terminos.html',
+        devoluciones: 'devoluciones.html',
+        privacidad: 'privacidad.html',
+        garantias: 'garantias.html',
+        envios: 'envios.html'
       }
     }
   },

@@ -505,37 +505,31 @@ foreach ($products as $idx => $product) {
           <a href="#" id="footerSocialYoutube" aria-label="YouTube" hidden><svg viewBox="0 0 24 24" width="16" fill="currentColor"><path d="M23.5 6.2a3.02 3.02 0 00-2.12-2.13C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.38.57A3.02 3.02 0 00.5 6.2 31.6 31.6 0 000 12a31.6 31.6 0 00.5 5.8 3.02 3.02 0 002.12 2.13C4.5 20.5 12 20.5 12 20.5s7.5 0 9.38-.57a3.02 3.02 0 002.12-2.13A31.6 31.6 0 0024 12a31.6 31.6 0 00-.5-5.8zM9.75 15.5v-7l6.5 3.5z"/></svg></a>
           <a href="#" id="footerSocialLinkedin" aria-label="LinkedIn" hidden><svg viewBox="0 0 24 24" width="16" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45zM5.34 7.43a2.07 2.07 0 110-4.13 2.07 2.07 0 010 4.13zM7.12 20.45H3.56V9h3.56zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg></a>
         </div>
+        <div class="site-footer-contact" id="contacto">
+          <a href="#" id="footerWhatsappLink" hidden><svg viewBox="0 0 24 24" width="17" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm0 18.15c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.26 8.26 0 01-1.27-4.38c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 012.41 5.83c.01 4.54-3.7 8.23-8.21 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.13-.17.25-.64.81-.78.97-.14.17-.29.19-.54.06-.25-.12-1.04-.38-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.41-.42-.56-.42-.14-.01-.31-.01-.48-.01-.17 0-.43.06-.66.31-.23.25-.86.84-.86 2.05s.88 2.38 1 2.55c.12.17 1.74 2.65 4.21 3.72.59.25 1.05.4 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.14-1.18-.06-.1-.23-.16-.48-.28z"/></svg><span><strong id="footerWhatsappText"></strong><small>Escríbenos por WhatsApp</small></span></a>
+          <a href="#" id="footerEmailLink" hidden><i data-lucide="mail" width="17"></i><span><strong id="footerEmailText"></strong><small>Respuesta rápida</small></span></a>
+          <div class="site-footer-contact-item" id="footerAddressItem" hidden><i data-lucide="map-pin" width="17"></i><span><strong id="footerAddressText"></strong></span></div>
+        </div>
       </div>
-      <div class="site-footer-col">
-        <h4>Tienda</h4>
-        <a href="/tienda.html#catalogo">Catálogo de Productos</a>
-        <a href="#">Nuevos Ingresos</a>
-        <a href="#">Ofertas y Promociones</a>
-        <a href="#">Marcas</a>
-        <a href="/tienda.html#catalogo">Todos los Productos</a>
-      </div>
-      <div class="site-footer-col">
-        <h4>Nosotros</h4>
-        <a href="/nosotros">Quiénes Somos</a>
-        <a href="#">Proyectos y Servicios</a>
-        <a href="#">Blog / Novedades</a>
-        <a href="#">Trabaja con Nosotros</a>
-        <a href="#">Ubicación</a>
-      </div>
-      <div class="site-footer-col">
-        <h4>Servicios</h4>
-        <a href="#">Soluciones Empresariales</a>
-        <a href="#">Implementación TI</a>
-        <a href="#">Infraestructura de Redes</a>
-        <a href="#">Seguridad y Videovigilancia</a>
-        <a href="/servicios">Soporte y Mantenimiento</a>
-      </div>
-      <div class="site-footer-col site-footer-contact">
-        <h4>Contáctanos</h4>
-        <a href="#" id="footerWhatsappLink" hidden><svg viewBox="0 0 24 24" width="17" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm0 18.15c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.26 8.26 0 01-1.27-4.38c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 012.41 5.83c.01 4.54-3.7 8.23-8.21 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.13-.17.25-.64.81-.78.97-.14.17-.29.19-.54.06-.25-.12-1.04-.38-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.41-.42-.56-.42-.14-.01-.31-.01-.48-.01-.17 0-.43.06-.66.31-.23.25-.86.84-.86 2.05s.88 2.38 1 2.55c.12.17 1.74 2.65 4.21 3.72.59.25 1.05.4 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.14-1.18-.06-.1-.23-.16-.48-.28z"/></svg><span><strong id="footerWhatsappText"></strong><small>Escríbenos por WhatsApp</small></span></a>
-        <a href="#" id="footerEmailLink" hidden><i data-lucide="mail" width="17"></i><span><strong id="footerEmailText"></strong><small>Respuesta rápida</small></span></a>
-        <div class="site-footer-contact-item" id="footerAddressItem" hidden><i data-lucide="map-pin" width="17"></i><span><strong id="footerAddressText"></strong></span></div>
-      </div>
+      <nav class="site-footer-col" aria-label="Comprar">
+        <h4>Comprar</h4>
+        <a href="/tienda.html">Catálogo</a>
+        <a href="/categorias-destacadas">Categorías</a>
+        <a href="/productos-destacados">Productos destacados</a>
+        <a href="/servicios">Servicios</a>
+      </nav>
+      <nav class="site-footer-col" aria-label="Atención al cliente">
+        <h4>Atención al cliente</h4>
+        <a href="#contacto">Contacto y WhatsApp</a>
+        <a href="/envios">Envíos y pagos</a>
+        <a href="/devoluciones">Devoluciones</a>
+        <a href="/garantias">Garantías</a>
+      </nav>
+      <nav class="site-footer-col" aria-label="Información legal">
+        <h4>Información legal</h4>
+        <a href="/terminos">Términos y condiciones</a>
+        <a href="/privacidad">Política de privacidad y protección de datos</a>
+      </nav>
       <div class="site-footer-whatsapp-card" id="footerWhatsappCard" hidden>
         <svg viewBox="0 0 24 24" width="26" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm0 18.15c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.26 8.26 0 01-1.27-4.38c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 012.41 5.83c.01 4.54-3.7 8.23-8.21 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.7-.81-.23-.08-.39-.12-.56.13-.17.25-.64.81-.78.97-.14.17-.29.19-.54.06-.25-.12-1.04-.38-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.34-.76-1.84-.2-.48-.41-.42-.56-.42-.14-.01-.31-.01-.48-.01-.17 0-.43.06-.66.31-.23.25-.86.84-.86 2.05s.88 2.38 1 2.55c.12.17 1.74 2.65 4.21 3.72.59.25 1.05.4 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.14-1.18-.06-.1-.23-.16-.48-.28z"/></svg>
         <strong>¿Tienes dudas?</strong>
@@ -561,10 +555,10 @@ foreach ($products as $idx => $product) {
     </div>
     <div class="site-footer-bottom">
       <span id="footerCopyright">© SMART-ISP. Todos los derechos reservados.</span>
-      <div><a href="#">Términos y Condiciones</a><a href="#">Política de Privacidad</a><a href="#">Políticas de Garantía</a></div>
+      <div><a href="/nosotros">Nosotros</a><a href="/terminos">Términos y condiciones</a><a href="/privacidad">Política de privacidad</a><a href="/garantias">Garantías</a></div>
     </div>
   </footer>
-  <link rel="stylesheet" href="/assets/css/store/site-footer.css?v=iva-20261027">
+  <link rel="stylesheet" href="/assets/css/store/site-footer.css?v=politicas-20261027">
   <script src="/assets/js/store/site-footer.js?v=iva-20261027" defer></script>
   <script src="/assets/js/store/storefront-discovery.js?v=subcat-20261028" defer></script>
   <?php if ($categoryName !== '' && $totalProducts > 0): ?>
