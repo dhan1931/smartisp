@@ -1,6 +1,4 @@
 .legal-page{width:min(1080px,calc(100% - 32px));margin:28px auto 48px;color:var(--sd-ink)}
-.legal-draft{margin:0 0 20px;padding:12px 16px;border:1px dashed #d9a400;border-radius:10px;background:#fff8db;color:#5c4500;font-size:14px;line-height:1.5}
-.legal-pendiente{padding:1px 4px;border-radius:4px;background:#fff1a8;color:#5c4500;font-weight:600;box-decoration-break:clone;-webkit-box-decoration-break:clone}
 .legal-hero{padding:28px;margin-bottom:22px;border:1px solid var(--sd-line);border-radius:14px;background:#fff}
 .legal-eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--sd-blue);font-weight:900}
 .legal-hero h1{margin:8px 0 10px;color:var(--sd-navy);font-size:clamp(28px,4.4vw,42px);line-height:1.1}
