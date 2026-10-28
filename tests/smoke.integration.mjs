@@ -62,6 +62,15 @@ try {
   const gal = await req('product-images', { method: 'POST', cookie: ac, body: { product_id: 'smk-prod', image_url: 'https://example.test/a.webp' } });
   assert.equal(gal.status, 200, `galería: ${JSON.stringify(gal.data)}`);
 
+  const imgToken = Buffer.from('http://127.0.0.1:1/x.jpg').toString('base64url');
+  const tokenImg = await fetch(`${baseUrl}/api/router.php?action=product-image&id=smk-prod&t=${imgToken}`);
+  assert.equal(tokenImg.status, 200);
+  assert.match(tokenImg.headers.get('content-type') || '', /^image\/svg\+xml/, 'URL interna: placeholder');
+  assert.equal(tokenImg.headers.get('set-cookie'), null, 'la imagen con token se sirve sin abrir sesión');
+  const idImg = await fetch(`${baseUrl}/api/router.php?action=product-image&id=smk-prod`);
+  assert.equal(idImg.status, 200);
+  assert.match(idImg.headers.get('content-type') || '', /^image\//, 'sin token resuelve por id en la base');
+
   const save = await req('admin-content', { method: 'POST', cookie: ac, body: { content: [{ key: 'smtp_host', value: 'smtp.smoke.test' }, { key: 'smk_setting', value: 'x' }] } });
   assert.equal(save.status, 200);
   const [[mail]] = await db.query('SELECT smtp_host FROM mail_settings WHERE id = 1');
