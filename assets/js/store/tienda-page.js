@@ -3,7 +3,8 @@
 		// por render completo -- con 2700+ productos (y de nuevo en cada tecla al buscar, sin
 		// debounce) esto se sentia. Un Map por referencia de objeto da la misma posicion en O(1).
 		let productIndexMap = new Map();
-		const rebuildProductIndex = () => { productIndexMap = new Map(products.map((p, i) => [p, i])); };
+		// También por id: las páginas del servidor traen objetos nuevos de productos que ya estaban en products.
+		const rebuildProductIndex = () => { productIndexMap = new Map(); products.forEach((p, i) => { productIndexMap.set(p, i); if (p.id != null && !productIndexMap.has(String(p.id))) productIndexMap.set(String(p.id), i); }); };
 		let isCatalogLoading = true;
 		let catalogLoadError = false;
 		let fullCatalogState = 'idle'; // 'idle' | 'loading' | 'loaded'
@@ -700,7 +701,7 @@
 				const reviewsHtml = hasReviews
 					? `<div><span class="stars">★★★★★</span><span class="reviews">(${Number(product.reviews)})</span></div>`
 					: `<div><span class="reviews" style="margin-left:0;font-style:italic;">Sin reseñas aún</span></div>`;
-				const productIndex = productIndexMap.get(product);
+				const productIndex = productIndexMap.get(product) ?? productIndexMap.get(String(product.id));
 				const priority = productIndex < 4;
 				const pName = escapeHtml(product.name);
 				const saved = wishlistIds.has(productKey(product));
