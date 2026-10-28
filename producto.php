@@ -231,7 +231,9 @@ if ($product && $pdo) {
     } catch (Throwable $e) {}
 }
 if (!$galleryImages && $product) {
-    $galleryImages = [['image_url' => $product['imageUrl'], 'image_alt' => $productName, 'is_primary' => 1]];
+    foreach (($product['images'] ?: [$product['imageUrl']]) as $index => $url) {
+        $galleryImages[] = ['image_url' => $url, 'image_alt' => $productName, 'is_primary' => $index === 0 ? 1 : 0];
+    }
 }
 
 // Pestanas de la ficha: Caracteristicas siempre (es la descripcion real); Especificaciones,

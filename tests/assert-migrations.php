@@ -104,4 +104,8 @@ $idempotencyIndex = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.ST
       AND INDEX_NAME = 'idx_orders_idempotency' AND COLUMN_NAME = 'idempotency_key' AND NON_UNIQUE = 0")->fetchColumn();
 $assert($idempotencyIndex === 1, 'Falta el índice único de orders_rows.idempotency_key (migración 039).');
 
+$categoryRedirects = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'category_redirects' AND COLUMN_NAME IN ('old_slug', 'old_name', 'target_name')")->fetchColumn();
+$assert($categoryRedirects === 3, 'Falta la tabla category_redirects (migración 048).');
+
 echo "Migraciones verificadas: claves, tipos, fecha, correo, historial y esquema de campañas correctos.\n";

@@ -369,6 +369,20 @@ function isExternalSupplierImageUrl(?string $url): bool {
     return false;
 }
 
+// Algunos proveedores guardan varias fotos en el mismo campo («url1 | url2»); cada una se usa por separado.
+function smartispSplitImageUrls(string $value): array {
+    $value = trim($value);
+    if ($value === '' || stripos($value, 'data:') === 0) return $value === '' ? [] : [$value];
+    $urls = [];
+    foreach (preg_split('/\s*\|\s*|\s+(?=https?:\/\/|\/)/u', $value) as $part) {
+        $part = trim($part);
+        if ($part === '') continue;
+        $part = preg_replace_callback('/[^!-~]/u', static fn($m) => rawurlencode($m[0]), $part);
+        if (!in_array($part, $urls, true)) $urls[] = $part;
+    }
+    return $urls;
+}
+
 function buildProductProxyImageUrl(string $id, string $rawUrl): string {
     $path = (string)parse_url($rawUrl, PHP_URL_PATH);
     $basename = basename($path);
@@ -378,6 +392,22 @@ function buildProductProxyImageUrl(string $id, string $rawUrl): string {
     $basename = explode('?', $basename)[0];
     $token = rtrim(strtr(base64_encode($rawUrl), '+/', '-_'), '=');
     return '/api/auth/product-image?id=' . rawurlencode($id) . '&t=' . $token . '&f=' . rawurlencode($basename) . '&w=640';
+}
+
+// Nombre actual de una categoría renombrada o fusionada (tabla de la migración 048).
+function smartispCategoryRedirect(PDO $pdo, string $name): string {
+    if ($name === '' || !smartispTableExists($pdo, 'category_redirects')) return $name;
+    $stmt = $pdo->prepare('SELECT target_name FROM category_redirects WHERE old_name = :name LIMIT 1');
+    $stmt->execute([':name' => $name]);
+    $target = trim((string)$stmt->fetchColumn());
+    return $target !== '' ? $target : $name;
+}
+
+function smartispCategoryRedirectBySlug(PDO $pdo, string $slug): string {
+    if ($slug === '' || !smartispTableExists($pdo, 'category_redirects')) return '';
+    $stmt = $pdo->prepare('SELECT target_name FROM category_redirects WHERE old_slug = :slug LIMIT 1');
+    $stmt->execute([':slug' => $slug]);
+    return trim((string)$stmt->fetchColumn());
 }
 
 // Normaliza los nombres de columnas de productos de forma flexible
@@ -396,10 +426,11 @@ function normalizeProductRow(array $row): array {
 
     // MÁSCARA Y PROXY DE IMÁGENES DE PROVEEDORES (Intcomex, Siglo 21, 1worldsync o cualquier distribuidor)
     // Oculta completamente el dominio y rutas del distribuidor para que el cliente final no lo vea
-    $maskedImg = $img;
-    if (!empty($img) && isExternalSupplierImageUrl($img)) {
-        $maskedImg = buildProductProxyImageUrl($id, $img);
+    $images = [];
+    foreach (smartispSplitImageUrls($img) as $url) {
+        $images[] = isExternalSupplierImageUrl($url) ? buildProductProxyImageUrl($id, $url) : $url;
     }
+    $maskedImg = $images[0] ?? '';
 
     return [
         'id'          => $id,
@@ -409,6 +440,7 @@ function normalizeProductRow(array $row): array {
         'category'    => $cat,
         'subcategory' => $subcat,
         'imageUrl'    => $maskedImg,
+        'images'      => $images,
         'rawImageUrl' => $img,
         'externalUrl' => $ext,
         'sku'         => $sku,
@@ -453,7 +485,7 @@ const SMARTISP_DEFAULT_FAMILY_KEYWORDS = [
     'impresion' => ['Impresoras y Multifuncionales', 'Consumibles de Impresión', 'Puntos de Venta', 'impresora', 'impresoras', 'multifuncional', 'multifuncionales', 'toner', 'cartucho', 'cartuchos', 'tinta', 'consumible', 'consumibles', 'pos', 'punto de venta', 'puntos de venta', 'codigo de barras', 'escaner', 'escaneres'],
     'seguridad' => ['Seguridad y Vigilancia', 'seguridad', 'vigilancia', 'camara', 'camaras', 'cctv', 'dvr', 'nvr', 'alarma', 'alarmas', 'biometrico', 'sensor', 'sensores', 'control de acceso'],
     'energia' => ['Protección de Energía', 'Climatización y Ventilación', 'energia', 'ups', 'bateria', 'baterias', 'regulador', 'reguladores', 'inversor', 'inversores', 'proteccion de poder', 'clima', 'climatizacion', 'ventilacion', 'ventilador', 'aire'],
-    'telefonia' => ['Celulares y Smartphones', 'Dispositivos Vestibles', 'celular', 'celulares', 'smartphone', 'smartphones', 'telefono', 'telefonos', 'reloj', 'smartwatch', 'vestible', 'vestibles', 'wearable'],
+    'telefonia' => ['Celulares', 'Accesorios para Celulares', 'Celulares y Smartphones', 'Dispositivos Vestibles', 'celular', 'celulares', 'smartphone', 'smartphones', 'telefono', 'telefonos', 'reloj', 'smartwatch', 'vestible', 'vestibles', 'wearable'],
     'gaming' => ['Gaming y Videojuegos', 'Consolas de Videojuegos', 'Sillas Gaming', 'Audio y Sonido para Hogar', 'Electrodomésticos y Línea Blanca', 'gaming', 'videojuegos', 'videojuego', 'consola', 'consolas', 'playstation', 'xbox', 'nintendo', 'silla gaming', 'sillas', 'linea blanca', 'electrodomesticos', 'electrodomestico', 'hogar'],
     'software' => ['Software y Licencias', 'software', 'licencia', 'licencias', 'antivirus', 'sistema operativo', 'office', 'windows'],
 ];

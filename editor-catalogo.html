@@ -25,7 +25,7 @@
   <script src="/assets/js/admin/admin-theme.js?v=ds-20261027"></script>
   <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261027">
   <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=ds-20261027">
-  <link rel="stylesheet" href="/assets/css/admin/editor-catalogo-page.css?v=iva-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/editor-catalogo-page.css?v=precios-20261028">
   <link rel="stylesheet" href="/assets/css/admin/products-admin.css?v=ds-20261027">
   <script src="/assets/vendor/lucide-icons.min.js?v=68df8f2b"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAI062MaV8sfjQKYVGjOBaZBOA87z+IhZE9DA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -202,15 +202,13 @@
           </div>
           <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
             <div class="import-margin-box">
-              <label for="importPriceMargin" style="font-size:12px; font-weight:700; color:var(--blue); margin:0; display:inline-flex; align-items:center; gap:5px;"><i data-lucide="trending-up" width="14"></i> Margen de Ganancia:</label>
-              <input type="number" id="importPriceMargin" value="30" min="0" max="500" step="1" class="import-margin-input">
+              <label for="importPriceMargin" style="font-size:12px; font-weight:700; color:var(--blue); margin:0; display:inline-flex; align-items:center; gap:5px;"><i data-lucide="trending-up" width="14"></i> Incrementos:</label>
+              <input type="number" id="importPriceMargin" value="15" min="0" max="500" step="0.01" class="import-margin-input" aria-label="Primer incremento (%)">
+              <span style="font-size:12px; font-weight:700; color:var(--blue);">% y luego</span>
+              <input type="number" id="importPriceMargin2" value="15" min="0" max="500" step="0.01" class="import-margin-input" aria-label="Segundo incremento (%)">
               <span style="font-size:12px; font-weight:700; color:var(--blue);">%</span>
-              <span style="font-size:11px; color:var(--muted);">(Y + 30%)</span>
+              <span id="importPriceFormula" style="font-size:11px; color:var(--muted);">(precio × 1,15 × 1,15 = × 1,3225 · $100 → $132,25)</span>
             </div>
-            <label class="iva-toggle import-iva-toggle" title="Si el archivo trae precios sin IVA, se les suma el 15 % después del margen">
-              <input type="checkbox" id="importPricesIncludeIva" checked>
-              <span>Los precios del archivo ya incluyen IVA</span>
-            </label>
             <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('excelFileInput').click()">
               <i data-lucide="plus" width="14"></i> Agregar más archivos
             </button>
@@ -382,6 +380,7 @@
             <label class="form-label" for="prodCostInput">Costo de compra (USD, opcional):</label>
             <input type="number" id="prodCostInput" class="form-control" step="0.01" min="0" placeholder="Sin costo">
             <span id="prodMarginHint" style="font-size:11px; color:var(--muted); margin-top:3px; display:block;">Solo se ve en el panel: sirve para calcular tu margen. Nunca se muestra en la tienda.</span>
+            <button type="button" id="btnPriceFromCost" class="btn btn-secondary btn-sm" style="margin-top:6px;" disabled>Calcular precio desde el costo (+15 % y +15 %)</button>
           </div>
         </div>
         <div class="form-row">
@@ -524,7 +523,8 @@
   </div>
 
   <script src="/assets/js/admin/admin-page.js?v=ds-20261027" defer></script>
-  <script src="/assets/js/admin/editor-catalogo-page.js?v=iva-20261027" defer></script>
+  <script src="/assets/js/admin/pricing.js?v=precios-20261028" defer></script>
+  <script src="/assets/js/admin/editor-catalogo-page.js?v=precios-20261028" defer></script>
   <script src="/assets/js/admin/products-layout.js?v=ds-20261027"></script>
 </body>
 </html>

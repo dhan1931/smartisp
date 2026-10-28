@@ -395,11 +395,10 @@
 
       // 1. Análisis de texto de Categoría del Excel
       if (normCat && normCat !== 'general' && normCat !== 'otros' && normCat !== 'n a' && normCat !== 'null') {
-        // 1a. Coincidencia exacta con nombre o slug de categoría
-        for (const cat of availableCats) {
-          if (normalizeText(cat.name) === normCat || normalizeText(cat.id) === normCat) {
-            return { category: cat.name, subcategory: '', matchedCategory: cat, confidence: 'exact', badgeText: 'Coincidencia directa' };
-          }
+        // 1a. Coincidencia exacta. El id va primero: conserva la etiqueta del proveedor aunque la categoría se haya renombrado.
+        const exactCat = availableCats.find(cat => normalizeText(cat.id) === normCat) || availableCats.find(cat => normalizeText(cat.name) === normCat);
+        if (exactCat) {
+          return { category: exactCat.name, subcategory: '', matchedCategory: exactCat, confidence: 'exact', badgeText: 'Coincidencia directa' };
         }
 
         // 1b. Coincidencia con alguna subcategoría declarada
@@ -899,12 +898,13 @@
         <div class="bulk-form-row">
           <label>Ajuste<select name="dir"><option value="1">Subir</option><option value="-1">Bajar</option></select></label>
           <label>Valor<input name="value" type="number" min="0.01" step="0.01" required autofocus inputmode="decimal"></label>
-          <label>En<select name="mode"><option value="percent">% del precio</option><option value="amount">USD por producto</option></select></label>
+          <label>En<select name="mode"><option value="percent">% del precio</option><option value="amount">USD por producto</option><option value="from_cost">Desde el costo: +15 % y +15 %</option></select></label>
         </div>
         <button type="submit" class="button small">Ver vista previa</button>
         <div class="bulk-preview" aria-live="polite"></div>`;
       let previewKey = null;
-      const read = () => { const f = new FormData(body); const v = Math.abs(Number(f.get('value'))) * Number(f.get('dir')); return { mode: String(f.get('mode')), value: Math.round(v * 100) / 100 }; };
+      const read = () => { const f = new FormData(body); const mode = String(f.get('mode')); if (mode === 'from_cost') return { mode, value: 0 }; const v = Math.abs(Number(f.get('value'))) * Number(f.get('dir')); return { mode, value: Math.round(v * 100) / 100 }; };
+      body.addEventListener('change', () => { const fromCost = body.elements.mode.value === 'from_cost'; body.elements.value.disabled = fromCost; body.elements.dir.disabled = fromCost; });
       const view = SmartAdmin.modal({ title: 'Ajustar precio', body, actions: [{ label: 'Cancelar', value: false }, { label: 'Aplicar cambios', kind: 'primary', onClick: () => { apply(); return false; } }] });
       const applyBtn = view.el.querySelector('.panel-foot .primary');
       applyBtn.disabled = true;
@@ -912,14 +912,14 @@
       body.addEventListener('submit', async e => {
         e.preventDefault();
         const op = read();
-        if (!(Math.abs(op.value) > 0)) { showToast('Escribe un valor mayor que cero.', 'error'); return; }
+        if (op.mode !== 'from_cost' && !(Math.abs(op.value) > 0)) { showToast('Escribe un valor mayor que cero.', 'error'); return; }
         const box = body.querySelector('.bulk-preview');
         box.innerHTML = '<span class="sk sk-line"></span><span class="sk sk-line" style="width:70%"></span>';
         try {
           const res = await bulkUpdate({ op: 'price', ...op, dry_run: true });
           previewKey = JSON.stringify(op);
           applyBtn.disabled = res.updated === 0;
-          box.innerHTML = `<p class="bulk-form-note"><strong>${res.updated.toLocaleString('es-EC')}</strong> cambian${res.skipped.length ? ` · ${res.skipped.length} se omiten (sin precio o quedarían en 0)` : ''}.</p>` +
+          box.innerHTML = `<p class="bulk-form-note"><strong>${res.updated.toLocaleString('es-EC')}</strong> cambian${res.skipped.length ? ` · ${res.skipped.length} se omiten (${op.mode === 'from_cost' ? 'sin costo registrado o ya tienen ese precio' : 'sin precio o quedarían en 0'})` : ''}.</p>` +
             (res.changes.length ? `<div class="bulk-preview-table"><table><thead><tr><th>Producto</th><th class="num">Antes</th><th class="num">Después</th></tr></thead><tbody>${res.changes.slice(0, 30).map(c => `<tr><td>${escapeHtmlEditor(c.name)}</td><td class="num">${moneyPlain(c.before)}</td><td class="num"><strong>${moneyPlain(c.after)}</strong></td></tr>`).join('')}</tbody></table></div>${res.changes.length > 30 ? `<p class="bulk-form-note">Y ${res.changes.length - 30} más.</p>` : ''}` : '');
         } catch (err) { box.innerHTML = ''; showToast(err.message, 'error'); }
       });
@@ -1036,8 +1036,7 @@
       if (button) startInlineEdit(button.closest('td').querySelector('[data-inline-cell]'));
     });
 
-    const IVA_RATE = 0.15;
-    const withIva = value => Math.round(value * (1 + IVA_RATE) * 100) / 100;
+    const { IVA_RATE, withIva, applyIncrements, round2 } = window.SmartPricing;
     const ivaPrefKey = 'smartisp.priceIncludesIva';
     const updateIvaHint = () => {
       const hint = document.getElementById('prodIvaHint');
@@ -1048,7 +1047,7 @@
       document.getElementById('ivaToggleRow').hidden = Boolean(quote);
       if (quote || raw <= 0) { hint.textContent = check.checked ? 'Este es el precio final que verá el cliente.' : 'Escribe el precio sin IVA: se le sumará el 15 %.'; return; }
       const final = check.checked ? raw : withIva(raw);
-      const base = Math.round(final / (1 + IVA_RATE) * 100) / 100;
+      const base = window.SmartPricing.withoutIva(final);
       hint.textContent = check.checked
         ? `Precio final en tienda: ${moneyPlain(final)} · sin IVA ${moneyPlain(base)} + IVA ${moneyPlain(Math.round((final - base) * 100) / 100)}`
         : `Se sumará el 15 %: precio final en tienda ${moneyPlain(final)} (IVA ${moneyPlain(Math.round((final - raw) * 100) / 100)})`;
@@ -1069,6 +1068,17 @@
       hint.style.color = margin < 0 ? 'var(--danger)' : '';
     };
     ['prodCostInput', 'prodPriceInput', 'chkQuotePrice'].forEach(id => document.getElementById(id)?.addEventListener('input', updateMarginHint));
+    const syncPriceFromCostButton = () => { document.getElementById('btnPriceFromCost').disabled = !(Number(document.getElementById('prodCostInput').value) > 0); };
+    document.getElementById('prodCostInput').addEventListener('input', syncPriceFromCostButton);
+    document.getElementById('btnPriceFromCost').addEventListener('click', () => {
+      const price = applyIncrements(document.getElementById('prodCostInput').value);
+      if (!(price > 0)) return;
+      document.getElementById('chkQuotePrice').checked = false;
+      document.getElementById('chkPriceIncludesIva').checked = true;
+      const input = document.getElementById('prodPriceInput');
+      input.value = price.toFixed(2);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
 
     window.deleteProduct = async productId => {
       const prod = productsList.find(p => String(p.id) === String(productId));
@@ -1338,6 +1348,7 @@
       }
 
       document.getElementById('prodCostInput').value = p.cost ?? '';
+      syncPriceFromCostButton();
       updateMarginHint();
       // Lo guardado ya es el precio final: editarlo con la casilla desmarcada sumaría el IVA dos veces.
       document.getElementById('chkPriceIncludesIva').checked = true;
@@ -1826,10 +1837,11 @@
       return mapping;
     };
 
+    const importIncrements = () => ['importPriceMargin', 'importPriceMargin2'].map(id => Math.max(0, parseFloat(document.getElementById(id).value) || 0));
+
     const parseProductsForFile = fileState => {
       if (!fileState) return;
-      const margin = parseFloat(document.getElementById('importPriceMargin').value) || 30;
-      const fileIncludesIva = document.getElementById('importPricesIncludeIva')?.checked !== false;
+      const increments = importIncrements();
       const startRow = fileState.headerRowIdx + 1;
       const products = [];
 
@@ -1846,9 +1858,8 @@
         const rawPriceStr = fileState.mapping.price !== null ? String(row[fileState.mapping.price] || '0').replace(/[^0-9.,]/g, '').replace(',', '.') : '0';
         const basePrice = parseFloat(rawPriceStr) || 0;
         
-        // Fórmula obligatoria: Y + (Y)30% = precio total (o 0 si no tiene precio -> Solicitar cotización)
-        const withMargin = basePrice > 0 ? Math.round((basePrice + (basePrice * (margin / 100))) * 100) / 100 : 0;
-        const finalPrice = withMargin > 0 && !fileIncludesIva ? withIva(withMargin) : withMargin;
+        // Sin precio en el archivo queda en 0 (a cotizar).
+        const finalPrice = applyIncrements(basePrice, increments);
 
         const rawCategory = fileState.mapping.category !== null ? String(row[fileState.mapping.category] || '').trim() : '';
         const imageUrl = fileState.mapping.imageUrl !== null ? String(row[fileState.mapping.imageUrl] || '').trim() : '';
@@ -1871,7 +1882,7 @@
           imageUrl,
           description,
           priceProvided,
-          cost: Number.isFinite(cost) && cost >= 0 ? Math.round(cost * 100) / 100 : null,
+          cost: Number.isFinite(cost) && cost >= 0 ? round2(cost) : (basePrice > 0 ? round2(basePrice) : null),
           visible: true,
           fileName: fileState.fileName
         });
@@ -1994,16 +2005,14 @@
       });
     };
 
-    document.getElementById('importPricesIncludeIva')?.addEventListener('change', () => {
+    ['importPriceMargin', 'importPriceMargin2'].forEach(id => document.getElementById(id).addEventListener('input', () => {
+      const increments = importIncrements();
+      const pct = n => String(Math.round(n * 10000) / 10000).replace('.', ',');
+      document.getElementById('importPriceFormula').textContent = `(precio × ${increments.map(v => pct(1 + v / 100)).join(' × ')} = × ${pct(window.SmartPricing.factor(increments))} · $100 → ${moneyPlain(applyIncrements(100, increments))})`;
       importFilesList.forEach(fileState => parseProductsForFile(fileState));
       renderFilesChips();
       refreshCombinedPreview();
-    });
-    document.getElementById('importPriceMargin').addEventListener('input', () => {
-      importFilesList.forEach(fileState => parseProductsForFile(fileState));
-      renderFilesChips();
-      refreshCombinedPreview();
-    });
+    }));
 
     window.updateImportProductCategory = (fileIdx, prodIdx, val) => {
       if (importFilesList[fileIdx]?.parsedProducts[prodIdx]) {

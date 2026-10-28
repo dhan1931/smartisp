@@ -99,6 +99,15 @@ if ($pdo && $slug !== '') {
             }
         }
 
+        // Categorías renombradas o fusionadas (migración 048): 301 a la que las reemplazó.
+        if (!$categoryMatches && !$subcategoryMatches && !headers_sent()) {
+            $redirectTarget = smartispCategoryRedirectBySlug($pdo, $slug);
+            if ($redirectTarget !== '' && slugifyCategoryPage($redirectTarget) !== $slug) {
+                header('Location: /categoria/' . rawurlencode(slugifyCategoryPage($redirectTarget)) . '/', true, 301);
+                exit;
+            }
+        }
+
         if ($categoryMatches) {
             arsort($categoryMatches);
             $categoryName = (string)array_key_first($categoryMatches);

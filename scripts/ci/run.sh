@@ -5,6 +5,7 @@ rm -rf /work && git config --global --add safe.directory '*' && cp -r /src /work
 npm ci --silent >/dev/null 2>&1
 echo "== lint";          npm run lint
 echo "== roles";         php tests/assert-auth-roles.php
+echo "== precios";       php tests/assert-pricing.php && node tests/pricing.test.mjs
 echo "== build";         npm test 2>&1 | tail -5
 echo "== bootstrap";     php tests/bootstrap-mariadb.php
 echo "== migrate";       php scripts/migrate.php | tail -3

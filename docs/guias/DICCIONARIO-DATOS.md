@@ -34,6 +34,12 @@ Keyname	Type	Unique	Packed	Column	Cardinality	Collation	Null	Comment
 PRIMARY	BTREE	Yes	No	user_id	0	A	No	
 role_id	0	A	No
 idx_auth_user_roles_role	BTREE	No	No	role_id	0	A	No	
+category_redirects
+Column	Type	Null	Default	Comments
+old_slug (Primary)	varchar(191)	No		Slug de /categoria/<slug> que ya no existe (migración 048)
+old_name	varchar(255)	No		Nombre anterior; ?category= con este nombre filtra por target_name
+target_name	varchar(255)	No		Categoría que la reemplazó (301 en categoria.php)
+created_at	timestamp	Yes	current_timestamp()	
 categories_rows
 Column	Type	Null	Default	Comments
 id (Primary)	varchar(191)	No		
