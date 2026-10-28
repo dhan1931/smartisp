@@ -55,6 +55,8 @@ jobs:
         run: npm run lint
       - name: Verify canonical authorization roles
         run: php tests/assert-auth-roles.php
+      - name: Verify price calculation
+        run: php tests/assert-pricing.php && node tests/pricing.test.mjs
       - name: Build and check deploy artifact
         run: npm test
       - name: Initialize isolated MariaDB fixture

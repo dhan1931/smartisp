@@ -13,6 +13,7 @@
     "devflow": "bash scripts/devflow.sh",
     "devflow:login": "node scripts/devflow-login.cjs",
     "build:icons": "node scripts/build-icons.mjs",
+    "test:pricing": "php tests/assert-pricing.php && node tests/pricing.test.mjs",
     "test:smoke": "node tests/smoke.integration.mjs",
     "test:e2e": "node tests/e2e/panel.e2e.mjs"
   },

@@ -93,6 +93,16 @@ try {
   assert.equal(product.external_url, 'https://example.test/router', 'ni el enlace');
   assert.equal(Number(product.visible), 1);
 
+  await page.evaluate(() => { for (const id of ['importPriceMargin', 'importPriceMargin2']) { const input = document.getElementById(id); input.value = '15'; input.dispatchEvent(new Event('input', { bubbles: true })); } });
+  assert.ok((await page.textContent('#importPriceFormula')).includes('132,25'), 'el importador aplica 15 % y luego 15 % (× 1,3225)');
+  await db.execute("UPDATE products_rows SET cost = 100, price = 34.5 WHERE id = 'e2e-switch'");
+  const preview = await page.evaluate(() => SmartAdmin.post('admin-products-bulk-update', { op: 'price', mode: 'from_cost', value: 0, ids: ['e2e-switch', 'e2e-router'], dry_run: true }));
+  assert.deepEqual(preview.changes.map(c => [c.id, c.after]), [['e2e-switch', 132.25]], 'recalcular desde el costo: $100 → $132,25 y omite lo que no tiene costo');
+  await page.evaluate(() => SmartAdmin.post('admin-products-bulk-update', { op: 'price', mode: 'from_cost', value: 0, ids: ['e2e-switch'] }));
+  await page.evaluate(() => SmartAdmin.post('admin-products-bulk-update', { op: 'price', mode: 'from_cost', value: 0, ids: ['e2e-switch'] }));
+  const [[repriced]] = await db.query("SELECT price FROM products_rows WHERE id = 'e2e-switch'");
+  assert.equal(Number(repriced.price), 132.25, 'aplicarlo dos veces no vuelve a subir el precio');
+
   await open(page, '/configuracion.html');
   const draftLabel = () => page.textContent('.settings-draft');
   assert.equal(await draftLabel(), 'Sin cambios pendientes');

@@ -21,8 +21,8 @@ if ($action === 'catalog' && $method === 'GET') {
         $limit = min(100, max(1, (int)($_GET['limit'] ?? 36)));
         $offset = ($page - 1) * $limit;
         $search = trim((string)($_GET['q'] ?? ''));
-        $category = trim((string)($_GET['category'] ?? ''));
-        $subcategory = trim((string)($_GET['subcategory'] ?? ''));
+        $category = smartispCategoryRedirect($pdo, trim((string)($_GET['category'] ?? '')));
+        $subcategory = smartispCategoryRedirect($pdo, trim((string)($_GET['subcategory'] ?? '')));
         $categoryListRaw = (string)($_GET['category_list'] ?? '');
         $minPrice = trim((string)($_GET['min_price'] ?? ''));
         $maxPrice = trim((string)($_GET['max_price'] ?? ''));
@@ -902,7 +902,8 @@ if ($action === 'admin-products-bulk-update') {
     $dryRun = !empty($body['dry_run']) && $body['dry_run'] !== '0';
 
     $in = implode(',', array_fill(0, count($ids), '?'));
-    $stmt = $pdo->prepare("SELECT id, name, price FROM `$pTable` WHERE id IN ($in)");
+    $hasCostColumn = in_array('cost', smartispTableColumns($pdo, $pTable), true);
+    $stmt = $pdo->prepare("SELECT id, name, price" . ($hasCostColumn ? ', cost' : '') . " FROM `$pTable` WHERE id IN ($in)");
     $stmt->execute($ids);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $foundIds = array_map('strval', array_column($rows, 'id'));
@@ -932,12 +933,23 @@ if ($action === 'admin-products-bulk-update') {
         } elseif ($op === 'price') {
             $mode = (string)($body['mode'] ?? '');
             $value = $body['value'] ?? null;
-            if (!in_array($mode, ['percent', 'amount', 'set'], true) || !is_numeric($value)) $fail(400, 'Indica el tipo de ajuste y un valor numérico.');
+            if ($mode === 'from_cost') $value = 0;
+            if (!in_array($mode, ['percent', 'amount', 'set', 'from_cost'], true) || !is_numeric($value)) $fail(400, 'Indica el tipo de ajuste y un valor numérico.');
+            if ($mode === 'from_cost' && !$hasCostColumn) $fail(409, 'Falta la columna de costo: aplica las migraciones (php scripts/migrate.php).');
             $value = (float)$value;
             if ($mode === 'percent' && ($value <= -100 || $value > 1000)) $fail(400, 'El porcentaje debe estar entre -99 y 1000.');
             if (abs($value) > 1000000 || ($mode === 'set' && $value < 0)) $fail(400, 'El valor del ajuste no es válido.');
             foreach ($rows as $r) {
                 $before = round((float)$r['price'], 2);
+                if ($mode === 'from_cost') {
+                    $after = isset($r['cost']) && (float)$r['cost'] > 0 ? smartispPriceFromCost((float)$r['cost']) : 0.0;
+                    if ($after <= 0 || $after === $before) {
+                        $skipped[] = ['id' => (string)$r['id'], 'name' => (string)$r['name'], 'reason' => $after <= 0 ? 'Sin costo registrado.' : 'Ya tiene ese precio.'];
+                        continue;
+                    }
+                    $changes[] = ['id' => (string)$r['id'], 'name' => (string)$r['name'], 'before' => $before, 'after' => $after];
+                    continue;
+                }
                 if ($mode !== 'set' && $before <= 0) {
                     $skipped[] = ['id' => (string)$r['id'], 'name' => (string)$r['name'], 'reason' => 'Sin precio (a cotizar).'];
                     continue;
@@ -1348,7 +1360,7 @@ if ($action === 'product-image' || $action === 'proxy-image') {
 
     // 1. Resolver por Token Base64Url (directo y de alto rendimiento)
     if (!empty($token)) {
-        $decoded = base64_decode(strtr($token, '-_', '+/'));
+        $decoded = smartispSplitImageUrls((string)base64_decode(strtr($token, '-_', '+/')))[0] ?? '';
         if ($decoded && filter_var($decoded, FILTER_VALIDATE_URL)) {
             $targetUrl = $decoded;
         }
@@ -1363,7 +1375,7 @@ if ($action === 'product-image' || $action === 'proxy-image') {
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if ($row) {
                 $norm = normalizeProductRow($row);
-                $foundUrl = trim($norm['rawImageUrl'] ?? ($norm['imageUrl'] ?? ''));
+                $foundUrl = smartispSplitImageUrls((string)($norm['rawImageUrl'] ?? ''))[0] ?? '';
                 if (!empty($foundUrl) && strpos($foundUrl, '/api/auth/') !== 0) {
                     $targetUrl = $foundUrl;
                 }
