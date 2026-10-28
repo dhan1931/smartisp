@@ -9,7 +9,7 @@ const SMARTISP_VOID_STATUSES = ['cancelled', 'canceled', 'refunded'];
 // Pagos que sí cuentan como cobrados (mismo criterio que admin-orders-stats).
 const SMARTISP_CONFIRMED_PAYMENTS = ['paid', 'confirmed', 'succeeded', 'completed', 'approved', 'captured'];
 
-// Precio de venta desde el costo del proveedor: +15 % y, sobre ese resultado, otro 15 % (× 1,3225).
+// Precio de venta desde el costo del proveedor: 15 % de ganancia y, sobre ese resultado, 15 % de IVA (× 1,3225).
 // Se redondea una sola vez al final. Igual que SmartPricing.applyIncrements (assets/js/admin/pricing.js).
 const SMARTISP_PRICE_INCREMENTS = [15, 15];
 

@@ -898,7 +898,7 @@
         <div class="bulk-form-row">
           <label>Ajuste<select name="dir"><option value="1">Subir</option><option value="-1">Bajar</option></select></label>
           <label>Valor<input name="value" type="number" min="0.01" step="0.01" required autofocus inputmode="decimal"></label>
-          <label>En<select name="mode"><option value="percent">% del precio</option><option value="amount">USD por producto</option><option value="from_cost">Desde el costo: +15 % y +15 %</option></select></label>
+          <label>En<select name="mode"><option value="percent">% del precio</option><option value="amount">USD por producto</option><option value="from_cost">Desde el costo: ganancia 15 % + IVA 15 %</option></select></label>
         </div>
         <button type="submit" class="button small">Ver vista previa</button>
         <div class="bulk-preview" aria-live="polite"></div>`;
@@ -2008,7 +2008,7 @@
     ['importPriceMargin', 'importPriceMargin2'].forEach(id => document.getElementById(id).addEventListener('input', () => {
       const increments = importIncrements();
       const pct = n => String(Math.round(n * 10000) / 10000).replace('.', ',');
-      document.getElementById('importPriceFormula').textContent = `(precio × ${increments.map(v => pct(1 + v / 100)).join(' × ')} = × ${pct(window.SmartPricing.factor(increments))} · $100 → ${moneyPlain(applyIncrements(100, increments))})`;
+      document.getElementById('importPriceFormula').textContent = `(costo × ${increments.map(v => pct(1 + v / 100)).join(' × ')} = × ${pct(window.SmartPricing.factor(increments))} · $100 → ${moneyPlain(applyIncrements(100, increments))} con IVA incluido)`;
       importFilesList.forEach(fileState => parseProductsForFile(fileState));
       renderFilesChips();
       refreshCombinedPreview();

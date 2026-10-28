@@ -202,12 +202,12 @@
           </div>
           <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
             <div class="import-margin-box">
-              <label for="importPriceMargin" style="font-size:12px; font-weight:700; color:var(--blue); margin:0; display:inline-flex; align-items:center; gap:5px;"><i data-lucide="trending-up" width="14"></i> Incrementos:</label>
-              <input type="number" id="importPriceMargin" value="15" min="0" max="500" step="0.01" class="import-margin-input" aria-label="Primer incremento (%)">
-              <span style="font-size:12px; font-weight:700; color:var(--blue);">% y luego</span>
-              <input type="number" id="importPriceMargin2" value="15" min="0" max="500" step="0.01" class="import-margin-input" aria-label="Segundo incremento (%)">
+              <label for="importPriceMargin" style="font-size:12px; font-weight:700; color:var(--blue); margin:0; display:inline-flex; align-items:center; gap:5px;"><i data-lucide="trending-up" width="14"></i> Ganancia:</label>
+              <input type="number" id="importPriceMargin" value="15" min="0" max="500" step="0.01" class="import-margin-input" aria-label="Ganancia (%)">
+              <span style="font-size:12px; font-weight:700; color:var(--blue);">% + IVA</span>
+              <input type="number" id="importPriceMargin2" value="15" min="0" max="500" step="0.01" class="import-margin-input" aria-label="IVA (%)">
               <span style="font-size:12px; font-weight:700; color:var(--blue);">%</span>
-              <span id="importPriceFormula" style="font-size:11px; color:var(--muted);">(precio × 1,15 × 1,15 = × 1,3225 · $100 → $132,25)</span>
+              <span id="importPriceFormula" style="font-size:11px; color:var(--muted);">(costo × 1,15 × 1,15 = × 1,3225 · $100 → $132,25 con IVA incluido)</span>
             </div>
             <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('excelFileInput').click()">
               <i data-lucide="plus" width="14"></i> Agregar más archivos
@@ -380,7 +380,7 @@
             <label class="form-label" for="prodCostInput">Costo de compra (USD, opcional):</label>
             <input type="number" id="prodCostInput" class="form-control" step="0.01" min="0" placeholder="Sin costo">
             <span id="prodMarginHint" style="font-size:11px; color:var(--muted); margin-top:3px; display:block;">Solo se ve en el panel: sirve para calcular tu margen. Nunca se muestra en la tienda.</span>
-            <button type="button" id="btnPriceFromCost" class="btn btn-secondary btn-sm" style="margin-top:6px;" disabled>Calcular precio desde el costo (+15 % y +15 %)</button>
+            <button type="button" id="btnPriceFromCost" class="btn btn-secondary btn-sm" style="margin-top:6px;" disabled>Calcular precio desde el costo (ganancia 15 % + IVA 15 %)</button>
           </div>
         </div>
         <div class="form-row">
