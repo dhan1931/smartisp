@@ -1677,10 +1677,9 @@
         @media (prefers-reduced-motion: reduce) { .campaign-product.is-skeleton * { animation: none; } }
         @media (max-width: 720px) {
           .mini-categories { padding: 16px 0 0; }
-          .mini-categories-grid { display: flex; gap: 10px; overflow-x: auto; padding: 4px 4vw 10px; scroll-snap-type: x mandatory; scroll-padding-inline: 4vw; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
-          .mini-categories-grid::-webkit-scrollbar { display: none; }
-          .mini-category-card { flex: 0 0 auto; width: 118px; padding: 8px; scroll-snap-align: start; }
-          .mini-category-name { min-height: 2.6em; font-size: 12px; }
+          .mini-categories-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 4px 4vw 10px; }
+          .mini-category-card { padding: 8px; }
+          .mini-category-name { min-height: 2.6em; font-size: 12px; hyphens: auto; -webkit-hyphens: auto; }
           .mini-category-description { display: none; }
           .campaign-featured-heading { align-items: center; }
           .campaign-featured-heading h2 { font-size: 19px; }
