@@ -142,6 +142,7 @@ try {
   const [[hija]] = await db.query("SELECT parent_category_id, macro_group_id FROM categories_rows WHERE id = 'e2e-cat-hija'");
   assert.deepEqual([hija.parent_category_id, hija.macro_group_id], ['e2e-cat-padre', 'redes'], 'la subcategoría se guarda con la familia de su principal');
   await page.fill('#search', 'E2E');
+  await page.locator('.tree-children [data-category-id="e2e-cat-hija"]').waitFor({ timeout: 5000 }).catch(() => {});
   assert.equal(await page.locator('.tree-children [data-category-id="e2e-cat-hija"]').count(), 1, 'el árbol muestra la hija bajo su principal');
   await db.execute("DELETE FROM categories_rows WHERE id IN ('e2e-cat-padre','e2e-cat-hija')");
   await context.close();
