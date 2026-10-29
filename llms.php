@@ -76,6 +76,11 @@ if ($categories) {
     }
     $lines[] = '';
 }
+require_once __DIR__ . '/api/lib/brands.php';
+$lines[] = '## Marcas';
+$lines[] = '';
+$lines[] = 'SmartISP comercializa productos de: ' . implode(', ', SMARTISP_BRANDS) . '.';
+$lines[] = '';
 $lines[] = '## Servicios';
 $lines[] = '';
 $lines[] = '- Asesoría de compra: selección de equipos según necesidad, presupuesto, compatibilidad y disponibilidad.';
