@@ -55,6 +55,13 @@ if ($earlyAction === 'serve-upload' && in_array($requestMethod, ['GET', 'HEAD'],
     exit;
 }
 
+if (in_array($earlyAction, ['product-image', 'proxy-image'], true) && in_array($requestMethod, ['GET', 'HEAD'], true)
+    && trim((string)($_GET['t'] ?? ($_GET['token'] ?? ($_GET['img'] ?? '')))) !== '') {
+    $action = $earlyAction;
+    $pdo = null;
+    require __DIR__ . '/handlers/product-image.php';
+}
+
 // Archivo de verificación de IndexNow.
 if ($earlyAction === 'indexnow-key') {
     require_once __DIR__ . '/lib/shop.php';
