@@ -34,10 +34,14 @@ if ($action === 'catalog' && $method === 'GET') {
             // backend ignoraba ?q= y devolvía el primer producto de la tabla en vez del buscado).
             // Placeholders distintos para el mismo valor: con PDO::ATTR_EMULATE_PREPARES=false (prepares
             // nativos) un parámetro nombrado repetido da "SQLSTATE[HY093]: Invalid parameter number".
-            $where .= ' AND (id = :search_id OR sku = :search_sku OR name LIKE :search_like)';
+            require_once __DIR__ . '/../lib/brands.php';
+            $brandKey = smartispBrandSearchKey($search);
+            $where .= ' AND (id = :search_id OR sku = :search_sku OR name LIKE :search_like'
+                . ($brandKey !== '' ? " OR REPLACE(REPLACE(REPLACE(LOWER(name), '-', ''), ' ', ''), '.', '') LIKE :search_brand" : '') . ')';
             $params[':search_id'] = $search;
             $params[':search_sku'] = $search;
             $params[':search_like'] = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $search) . '%';
+            if ($brandKey !== '') $params[':search_brand'] = '%' . $brandKey . '%';
         }
         // DEV-20261006-002: antes el filtro por categoria/subcategoria de la tienda publica era
         // 100% del lado del cliente -- forzaba a descargar el catalogo completo (2700+ productos)
