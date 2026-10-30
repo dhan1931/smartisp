@@ -101,7 +101,8 @@ if ($action === 'catalog' && $method === 'GET') {
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
-        $products = array_map('normalizeProductRow', $stmt->fetchAll());
+        // rawImageUrl es solo del servidor: en el público duplicaba cada URL (y las fotos base64 enteras).
+        $products = array_map(static function ($row) { $product = normalizeProductRow($row); unset($product['rawImageUrl']); return $product; }, $stmt->fetchAll());
 
         // Solo esta lista fija de ajustes públicos: ni logos pesados (van por site-content) ni
         // nada de correo. Antes había además un filtro por prefijos/claves sensibles que, con

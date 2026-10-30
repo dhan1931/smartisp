@@ -94,7 +94,7 @@ function smartispFetchRemoteImage(string $url): ?string {
                 CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 CURLOPT_REFERER        => $referer,
                 CURLOPT_HTTPHEADER     => [
-                    'Accept: image/avif,image/webp,image/png,image/jpeg,image/gif;q=0.9',
+                    'Accept: image/avif,image/webp,image/png,image/jpeg,image/gif;q=0.9,*/*;q=0.8',
                     'Accept-Language: es-EC,es;q=0.9,en;q=0.8'
                 ],
             ]);
