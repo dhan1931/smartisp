@@ -294,7 +294,7 @@ foreach ($products as $idx => $product) {
   <link rel="stylesheet" href="/assets/css/store/site-footer.css?v=politicas-20261027">
   <script src="/assets/js/store/site-footer.js?v=iva-20261027" defer></script>
   <script src="/assets/js/store/storefront-discovery.js?v=subcat-20261028" defer></script>
-  <script src="/assets/js/store/public-account.js" defer></script>
+  <script src="/assets/js/store/public-account.js?v=cuenta-20261030" defer></script>
   <script>
     const featuredFilterPanel = document.getElementById('featuredFilterPanel');
     if (featuredFilterPanel && window.matchMedia('(max-width: 760px)').matches) featuredFilterPanel.open = false;
