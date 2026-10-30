@@ -2812,6 +2812,7 @@
 
 		const openAccountSystem = () => {
 			accountSystem.classList.add('is-open');
+			if (document.body.classList.contains('account-embed')) window.parent.postMessage({ type: 'smartisp:account-ready' }, window.location.origin);
 			if (accountState.user) {
 				switchProfilePanel('wishlist');
 			} else {
@@ -2821,6 +2822,10 @@
 			}
 			window.lucide && window.lucide.createIcons();
 		};
+
+		window.addEventListener('message', event => {
+			if (event.origin === window.location.origin && event.data?.type === 'smartisp:open-account') openAccountSystem();
+		});
 
 		const closeAccountSystem = () => {
 			accountSystem.classList.remove('is-open');
