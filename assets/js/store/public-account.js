@@ -1,13 +1,11 @@
 (function () {
   'use strict';
 
-  const accountLinks = document.querySelectorAll('a[href*="openAccount=1"]');
+  const accountLinks = document.querySelectorAll('a[href="/mi-cuenta"], a[href*="openAccount=1"]');
   if (!accountLinks.length) return;
 
-  // tienda.html guarda el nombre del usuario autenticado en localStorage/sessionStorage
-  // ('smartisp.accountUser') al iniciar sesion; aqui solo lo leemos para que el boton
-  // "Mi cuenta" de las demas paginas publicas muestre el mismo nombre en vez de quedarse
-  // siempre en el texto generico.
+  // tienda.html y /mi-cuenta guardan el nombre del usuario en 'smartisp.accountUser': aquí solo se lee
+  // para que el botón «Mi cuenta» muestre el mismo nombre.
   try {
     const raw = localStorage.getItem('smartisp.accountUser') || sessionStorage.getItem('smartisp.accountUser');
     const user = raw ? JSON.parse(raw) : null;
@@ -33,10 +31,9 @@
   loading.className = 'public-account-loading';
   loading.textContent = 'Cargando tu cuenta…';
 
-  // El iframe carga la tienda completa: se pide al abrir por primera vez, no en cada página.
   const frame = document.createElement('iframe');
   frame.title = 'Acceso y perfil de Mi cuenta';
-  const loadFrame = () => { if (!frame.src) frame.src = '/tienda.html?openAccount=1&embedAccount=1'; };
+  const loadFrame = () => { if (!frame.src) frame.src = '/mi-cuenta?embed=1'; };
   dialog.append(closeButton, loading, frame);
   document.body.append(dialog);
 
@@ -67,6 +64,8 @@
   window.addEventListener('message', event => {
     if (event.origin !== window.location.origin) return;
     if (event.data?.type === 'smartisp:close-account') dialog.close();
-    if (event.data?.type === 'smartisp:account-ready') dialog.classList.add('is-loaded');
+    if (event.data?.type !== 'smartisp:account-ready') return;
+    dialog.classList.add('is-loaded');
+    if (typeof event.data.name === 'string') accountLinks.forEach(link => { const span = link.querySelector('span'); if (span) span.textContent = event.data.name || 'Mi cuenta'; });
   });
 })();

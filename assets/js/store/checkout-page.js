@@ -124,7 +124,7 @@
       badge.innerHTML = '<i data-lucide="check" width="12"></i> Usuario Registrado';
     } else {
       notice.classList.add('guest');
-      status.innerHTML = 'No has iniciado sesión. Puedes completar tus datos para la compra o <a href="/tienda.html?openAccount=1&amp;redirect=%2Fcheckout.html">iniciar sesión aquí</a>.';
+      status.innerHTML = 'No has iniciado sesión. Puedes completar tus datos para la compra o <a href="/mi-cuenta?redirect=%2Fcheckout.html">iniciar sesión aquí</a>.';
       badge.innerHTML = '<i data-lucide="user-x" width="12"></i> Invitado';
     }
     icons();

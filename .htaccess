@@ -27,6 +27,7 @@ DirectoryIndex tienda.html index.html index.htm index.php
     RewriteRule ^servicios/?$ servicios.html [QSA,L]
     RewriteRule ^nosotros/?$ nosotros.html [QSA,L]
     RewriteRule ^(terminos|devoluciones|privacidad|garantias|envios)/?$ $1.html [QSA,L]
+    RewriteRule ^mi-cuenta/?$ mi-cuenta.html [QSA,L]
     RewriteRule ^categoria/([^/]+)/?$ categoria.php?slug=$1 [QSA,L]
     RewriteRule ^productos/([^/]+)/?$ producto.php?slug=$1 [QSA,L]
     RewriteRule ^producto/([^/]+)/?$ producto.php?slug=$1 [QSA,L]
@@ -74,7 +75,7 @@ DirectoryIndex tienda.html index.html index.htm index.php
     Header always set Content-Security-Policy "frame-ancestors 'self'"
 
     # Panel y checkout fuera de los buscadores
-    <FilesMatch "^(admin|pedidos|cotizaciones|clientes|configuracion|categorias|editor-catalogo|editor-landing|portada|campanas|inventario|estadisticas|reportes|login|checkout|reset-password)\.html$">
+    <FilesMatch "^(admin|pedidos|cotizaciones|clientes|configuracion|categorias|editor-catalogo|editor-landing|portada|campanas|inventario|estadisticas|reportes|login|checkout|reset-password|mi-cuenta)\.html$">
         Header set X-Robots-Tag "noindex, nofollow"
     </FilesMatch>
 

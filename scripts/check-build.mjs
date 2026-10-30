@@ -3,7 +3,7 @@ import path from 'node:path';
 
 const required = [
   'index.html', 'tienda.html', 'nosotros.html', 'servicios.html', 'checkout.html',
-  'terminos.html', 'devoluciones.html', 'privacidad.html', 'garantias.html', 'envios.html', 'assets/css/store/legal-page.css',
+  'terminos.html', 'devoluciones.html', 'privacidad.html', 'garantias.html', 'envios.html', 'assets/css/store/legal-page.css', 'mi-cuenta.html', 'assets/js/store/mi-cuenta-page.js', 'assets/css/store/mi-cuenta-page.css',
   'admin.html', 'configuracion.html', 'campanas.html', 'pedidos.html', 'cotizaciones.html', 'clientes.html', 'categorias.html',
   'editor-catalogo.html', 'editor-landing.html', 'login.html', 'reset-password.html',
   'inventario.html', 'estadisticas.html', 'reportes.html', 'assets/js/admin/admin-page.js', 'assets/css/admin/admin-page.css', 'api/lib/shop.php',

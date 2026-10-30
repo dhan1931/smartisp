@@ -38,6 +38,7 @@ export default defineConfig({
         terminos: 'terminos.html',
         devoluciones: 'devoluciones.html',
         privacidad: 'privacidad.html',
+        miCuenta: 'mi-cuenta.html',
         garantias: 'garantias.html',
         envios: 'envios.html'
       }

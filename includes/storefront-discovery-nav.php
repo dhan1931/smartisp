@@ -16,7 +16,7 @@ $storefrontNavLinks = [
     <button type="submit" aria-label="Buscar"><i data-lucide="search" width="18"></i></button>
   </form>
   <div class="storefront-actions">
-    <a href="/tienda.html?openAccount=1" aria-label="Mi cuenta"><i data-lucide="user" width="18"></i><span>Mi cuenta</span></a>
+    <a href="/mi-cuenta" aria-label="Mi cuenta"><i data-lucide="user" width="18"></i><span>Mi cuenta</span></a>
     <a class="storefront-cart" href="/tienda.html?openCart=1"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="store-product-cart-count" hidden>0</b></a>
     <button class="storefront-menu-button" type="button" aria-label="Abrir categorías" aria-expanded="false" aria-controls="storefrontNavigation"><i data-lucide="menu" width="20"></i></button>
   </div>
@@ -57,5 +57,5 @@ $storefrontNavLinks = [
   <a href="/categorias-destacadas"><i data-lucide="layout-grid" width="19"></i><span>Categorías</span></a>
   <a href="/tienda.html#catalogo"><i data-lucide="search" width="19"></i><span>Buscar</span></a>
   <a href="/tienda.html?openCart=1" data-open-cart><i data-lucide="shopping-cart" width="19"></i><span>Carrito</span></a>
-  <a href="/tienda.html?openAccount=1"><i data-lucide="user" width="19"></i><span>Cuenta</span></a>
+  <a href="/mi-cuenta"><i data-lucide="user" width="19"></i><span>Cuenta</span></a>
 </nav>
