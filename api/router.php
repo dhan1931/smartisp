@@ -44,9 +44,45 @@ if ($earlyAction === 'serve-upload' && in_array($requestMethod, ['GET', 'HEAD'],
     header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $mtime) . ' GMT');
     $ifNoneMatch = trim((string)($_SERVER['HTTP_IF_NONE_MATCH'] ?? ''));
     $ifModifiedSince = strtotime((string)($_SERVER['HTTP_IF_MODIFIED_SINCE'] ?? '')) ?: 0;
-    if (($ifNoneMatch !== '' && $ifNoneMatch === $etag) || ($ifNoneMatch === '' && $ifModifiedSince >= $mtime)) {
+    if (($ifNoneMatch !== '' && in_array($ifNoneMatch, [$etag, substr($etag, 0, -1) . '-webp"'], true)) || ($ifNoneMatch === '' && $ifModifiedSince >= $mtime)) {
         http_response_code(304);
         exit;
+    }
+    // Banners y fotos de categoría se suben como PNG/JPG de 1-2 MB: se sirven en WebP reducido (una vez, en caché).
+    $acceptsWebp = stripos((string)($_SERVER['HTTP_ACCEPT'] ?? ''), 'image/webp') !== false;
+    if (in_array($ext, ['png', 'jpg', 'jpeg'], true) && $size > 150000 && function_exists('imagewebp')) {
+        header('Vary: Accept');
+        if ($acceptsWebp) {
+            $maxWidth = $category === 'campaigns' ? 1920 : 900;
+            $cacheDir = getSmartispUploadsDir('cache');
+            if (!is_dir($cacheDir)) @mkdir($cacheDir, 0755, true);
+            $webpPath = $cacheDir . '/upload_' . md5($path . '|' . $mtime . '|' . $size . '|' . $maxWidth) . '.webp';
+            if (!is_file($webpPath)) {
+                $info = @getimagesize($path);
+                $width = (int)($info[0] ?? 0);
+                $height = (int)($info[1] ?? 0);
+                $source = $width > 0 && $height > 0 && $width * $height <= 20000000 ? @imagecreatefromstring((string)file_get_contents($path)) : false;
+                if ($source !== false) {
+                    $outWidth = min($width, $maxWidth);
+                    $outHeight = max(1, (int)round($height * $outWidth / $width));
+                    $output = imagecreatetruecolor($outWidth, $outHeight);
+                    imagealphablending($output, false);
+                    imagesavealpha($output, true);
+                    imagecopyresampled($output, $source, 0, 0, 0, 0, $outWidth, $outHeight, $width, $height);
+                    if (is_dir($cacheDir) && is_writable($cacheDir)) @imagewebp($output, $webpPath, 80);
+                    imagedestroy($output);
+                    imagedestroy($source);
+                }
+            }
+            if (is_file($webpPath) && filesize($webpPath) > 0 && filesize($webpPath) < $size) {
+                header('ETag: "' . dechex($mtime) . '-' . dechex($size) . '-webp"');
+                header('Content-Type: image/webp');
+                header('X-Content-Type-Options: nosniff');
+                header('Content-Length: ' . filesize($webpPath));
+                if ($requestMethod !== 'HEAD') readfile($webpPath);
+                exit;
+            }
+        }
     }
     header('Content-Type: ' . $uploadTypes[$ext]);
     header('X-Content-Type-Options: nosniff');

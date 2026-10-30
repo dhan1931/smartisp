@@ -427,8 +427,13 @@ function normalizeProductRow(array $row): array {
     // MÁSCARA Y PROXY DE IMÁGENES DE PROVEEDORES (Intcomex, Siglo 21, 1worldsync o cualquier distribuidor)
     // Oculta completamente el dominio y rutas del distribuidor para que el cliente final no lo vea
     $images = [];
-    foreach (smartispSplitImageUrls($img) as $url) {
-        $images[] = isExternalSupplierImageUrl($url) ? buildProductProxyImageUrl($id, $url) : $url;
+    if (stripos($img, 'data:image/') === 0) {
+        // Foto pegada como base64: viajaba completa (decenas de KB) en cada listado del catálogo.
+        $images[] = '/api/auth/product-image?id=' . rawurlencode($id) . '&f=foto.jpg';
+    } else {
+        foreach (smartispSplitImageUrls($img) as $url) {
+            $images[] = isExternalSupplierImageUrl($url) ? buildProductProxyImageUrl($id, $url) : $url;
+        }
     }
     $maskedImg = $images[0] ?? '';
 

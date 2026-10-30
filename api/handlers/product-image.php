@@ -50,6 +50,20 @@ $servePlaceholder = function() {
 };
 
 require_once __DIR__ . '/../lib/image-proxy.php';
+
+// Fotos guardadas en la base como data:image/…;base64 (normalizeProductRow las publica con esta URL).
+if (stripos($targetUrl, 'data:image/') === 0) {
+    $inline = base64_decode(substr($targetUrl, strpos($targetUrl, ',') + 1));
+    $inlineType = is_string($inline) && $inline !== '' ? smartispDetectImageType($inline) : null;
+    if ($inlineType === null) $servePlaceholder();
+    header('Content-Type: ' . $inlineType);
+    header('X-Content-Type-Options: nosniff');
+    header('Cache-Control: public, max-age=86400');
+    header('Content-Length: ' . strlen($inline));
+    echo $inline;
+    exit;
+}
+
 $scheme = strtolower((string)parse_url($targetUrl, PHP_URL_SCHEME));
 if (empty($targetUrl) || !filter_var($targetUrl, FILTER_VALIDATE_URL) || !in_array($scheme, ['http', 'https'], true)) {
     $servePlaceholder();

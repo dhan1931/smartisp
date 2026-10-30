@@ -311,6 +311,35 @@ try {
   assert.equal((await fetch(imgUrl.replace(/file=[^&]+/, 'file=no-existe.png'))).status, 404);
   assert.equal((await fetch(imgUrl.replace(/file=[^&]+/, 'file=router.php'))).status, 404, 'serve-upload solo sirve extensiones de imagen');
 
+  // --- Subidas pesadas se sirven en WebP reducido; fotos base64 de productos van por el proxy y no en el listado
+  const { crc32, deflateSync } = await import('node:zlib');
+  const chunk = (type, data) => { const len = Buffer.alloc(4); len.writeUInt32BE(data.length); const body = Buffer.concat([Buffer.from(type), data]); const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(body) >>> 0); return Buffer.concat([len, body, crc]); };
+  const side = 400, rows = [];
+  for (let y = 0; y < side; y++) rows.push(Buffer.concat([Buffer.from([0]), Buffer.from(Array.from({ length: side * 3 }, () => Math.floor(Math.random() * 256)))]));
+  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(side, 0); ihdr.writeUInt32BE(side, 4); ihdr[8] = 8; ihdr[9] = 2;
+  const bigPng = Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(Buffer.concat(rows))), chunk('IEND', Buffer.alloc(0))]);
+  const bigFd = new FormData();
+  bigFd.append('image', new Blob([bigPng], { type: 'image/png' }), 'grande.png');
+  const bigUp = await (await fetch(`${baseUrl}/api/router.php?action=upload-campaign-image`, { method: 'POST', headers: { Cookie: ac }, body: bigFd })).json();
+  const bigUrl = baseUrl + String(bigUp.url).replace('/api/auth/serve-upload?', '/api/router.php?action=serve-upload&');
+  const hasWebp = execFileSync('php', ['-r', "echo function_exists('imagewebp') ? 1 : 0;"]).toString() === '1';
+  if (/\.png$/.test(bigUrl) && hasWebp) {
+    const asWebp = await fetch(bigUrl, { headers: { Accept: 'image/webp,*/*' } });
+    assert.equal(asWebp.headers.get('content-type'), 'image/webp', 'PNG pesado servido como WebP');
+    assert.ok(Number(asWebp.headers.get('content-length')) < bigPng.length);
+    assert.equal((await fetch(bigUrl, { headers: { Accept: 'image/png' } })).headers.get('content-type'), 'image/png', 'sin soporte WebP llega el original');
+  }
+  const tinyPng = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  await db.execute("DELETE FROM products_rows WHERE id = 'smk-b64'");
+  await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku,image_url) VALUES ('smk-b64','Producto Foto Base64',3,1,'General','SKU-B64',?)", ['data:image/png;base64,' + tinyPng]);
+  const b64Cat = await req('catalog?q=smk-b64');
+  const b64Prod = b64Cat.data.products.find(p => p.id === 'smk-b64');
+  assert.ok(b64Prod.imageUrl.startsWith('/api/auth/product-image?id=smk-b64'), b64Prod.imageUrl);
+  assert.equal(b64Prod.rawImageUrl, undefined, 'el catálogo público no envía rawImageUrl');
+  const b64Img = await fetch(`${baseUrl}/api/router.php?action=product-image&id=smk-b64`);
+  assert.equal(b64Img.headers.get('content-type'), 'image/png', 'la foto base64 se sirve como imagen');
+  await db.execute("DELETE FROM products_rows WHERE id = 'smk-b64'");
+
   // --- Proxy de imágenes: una IP interna no se descarga (aunque sea una imagen real) y un SVG no pasa
   for (const target of [imgUrl, 'http://169.254.169.254/latest/meta-data/', 'file:///etc/passwd']) {
     const proxied = await fetch(`${baseUrl}/api/router.php?action=proxy-image&url=${encodeURIComponent(target)}`);
