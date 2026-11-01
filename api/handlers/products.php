@@ -340,6 +340,16 @@ if ($action === 'admin-products') {
         $price = trim((string)($_GET['price'] ?? ''));
         if ($price === 'with_price') $where[] = '(price IS NOT NULL AND price > 0)';
         elseif ($price === 'quote') $where[] = '(price IS NULL OR price <= 0)';
+        elseif ($price === 'suspicious') {
+            require_once __DIR__ . '/../lib/price-guard.php';
+            $suspicious = array_slice(array_keys(smartispSuspiciousPrices($pdo, $pTable)), 0, 1000);
+            if (!$suspicious) $where[] = '1 = 0';
+            else {
+                $keys = [];
+                foreach ($suspicious as $i => $id) { $keys[] = ":sus$i"; $params[":sus$i"] = $id; }
+                $where[] = 'id IN (' . implode(', ', $keys) . ')';
+            }
+        }
 
         $search = trim((string)($_GET['q'] ?? ''));
         if ($search !== '') {
@@ -815,6 +825,9 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
         $checkStmtSku = $pdo->prepare("SELECT id FROM `$pTable` WHERE sku = :sku AND sku != '' LIMIT 1");
         // Por nombre solo si es único: con dos productos homónimos se actualizaba uno cualquiera.
         $checkStmtName = $pdo->prepare("SELECT id FROM `$pTable` WHERE name = :name AND name != '' LIMIT 2");
+        require_once __DIR__ . '/../lib/price-guard.php';
+        $priceStmt = $pdo->prepare("SELECT price + 0 FROM `$pTable` WHERE id = :id");
+        $allowPriceJumps = !empty($body['allowPriceJumps']) || !empty($unpacked['allowPriceJumps'] ?? null);
 
         $hasCost = in_array('cost', smartispTableColumns($pdo, $pTable), true);
         $insertStmt = $pdo->prepare("INSERT INTO `$pTable` (id, name, description, price, category, subcategory, image_url, external_url, sku, visible" . ($hasCost ? ', cost' : '') . ")
@@ -908,6 +921,14 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
             }
 
             try {
+                if ($existingId && array_key_exists('price', $values) && !$allowPriceJumps) {
+                    $priceStmt->execute([':id' => $existingId]);
+                    $oldPrice = (float)$priceStmt->fetchColumn();
+                    if (smartispPriceJumpIsSuspicious($oldPrice, (float)$values['price'])) {
+                        $errors[] = ['row' => $rowNumber, 'name' => $name, 'error' => sprintf('Precio sospechoso: pasaría de $%s a $%s. Se guardó el resto y el precio quedó igual; si es correcto, cámbialo a mano.', number_format($oldPrice, 2, '.', ''), number_format((float)$values['price'], 2, '.', ''))];
+                        unset($values['price'], $values['cost']);
+                    }
+                }
                 if ($existingId) {
                     $sets = ['name = :name'];
                     $params = [':id' => $existingId, ':name' => $name];
