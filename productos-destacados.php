@@ -134,7 +134,7 @@ foreach ($products as $idx => $product) {
   <meta name="twitter:description" content="<?= escFeatured($featuredPage['description']) ?>">
   <meta name="twitter:image" content="https://smart-isp.com.ec/assets/favicons/favicon-512x512.png">
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
-  <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=iva-20261027">
+  <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=barra-movil-20261101">
   <script src="/assets/js/store/public-brand.js?v=seo2-20261025" defer></script>
   <script src="/assets/vendor/lucide-icons.min.js?v=68df8f2b"></script>
   <script type="application/ld+json">
