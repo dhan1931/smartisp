@@ -196,7 +196,16 @@ try {
   cc = good.cookie;
   assert.equal((await req('me', { cookie: cc })).status, 200, 'la sesión que cambió la contraseña sigue abierta');
   assert.equal((await req('me', { cookie: otherSession })).status, 401, 'cambiar la contraseña cierra las demás sesiones');
-  await login(customer.email, 'nueva-123');
+  const favOther = await login(customer.email, 'nueva-123');
+
+  // --- Favoritos en la base: sobreviven a cerrar sesión y muestran los datos reales del producto
+  const favAdd = await req('customer-wishlist', { method: 'POST', cookie: cc, body: { productId: 'smk-prod', name: 'FALSO', price: 0.01 } });
+  assert.equal(favAdd.status, 200, JSON.stringify(favAdd.data));
+  await req('customer-wishlist', { method: 'POST', cookie: cc, body: { productId: 'no-existe' } });
+  const favList = await req('customer-wishlist', { cookie: favOther });
+  assert.deepEqual(favList.data.wishlist.map(i => [i.productId, i.name, Number(i.price)]), [['smk-prod', 'Nombre Real', 10]], 'los favoritos siguen en otra sesión, con datos del producto y sin ids inexistentes');
+  await req('customer-wishlist?productId=smk-prod', { method: 'DELETE', cookie: favOther });
+  assert.equal((await req('customer-wishlist', { cookie: cc })).data.wishlist.length, 0, 'quitar un favorito se refleja en todas las sesiones');
 
   // --- Inventario: stock controlado, reserva, consumo y liberación por estado del pedido
   await db.execute("DELETE FROM products_rows WHERE id = 'smk-stock'");
