@@ -293,7 +293,7 @@ foreach ($products as $idx => $product) {
   </footer>
   <link rel="stylesheet" href="/assets/css/store/site-footer.css?v=politicas-20261027">
   <script src="/assets/js/store/site-footer.js?v=iva-20261027" defer></script>
-  <script src="/assets/js/store/storefront-discovery.js?v=subcat-20261028" defer></script>
+  <script src="/assets/js/store/storefront-discovery.js?v=familias-20261101" defer></script>
   <script src="/assets/js/store/public-account.js?v=cuenta-pagina-20261030" defer></script>
   <script>
     const featuredFilterPanel = document.getElementById('featuredFilterPanel');

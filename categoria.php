@@ -236,6 +236,19 @@ if ($pdo && $slug !== '') {
     }
 }
 
+// Categoría vacía con el nombre de una familia: sus productos están en las subcategorías de esa familia.
+if ($categoryName !== '' && $totalProducts === 0 && $pdo) {
+    try {
+        foreach (getCategoryMacroGroups($pdo) as $family) {
+            if (slugifyCategoryPage((string)$family['name']) !== slugifyCategoryPage($categoryName)) continue;
+            header('Location: /categorias-destacadas?macro=' . rawurlencode((string)$family['id']), true, 302);
+            exit;
+        }
+    } catch (Throwable $e) {
+        error_log('Error buscando familia en categoria.php: ' . $e->getMessage());
+    }
+}
+
 if ($categoryName === '') {
     http_response_code(404);
 }
@@ -560,7 +573,7 @@ foreach ($products as $idx => $product) {
   </footer>
   <link rel="stylesheet" href="/assets/css/store/site-footer.css?v=politicas-20261027">
   <script src="/assets/js/store/site-footer.js?v=iva-20261027" defer></script>
-  <script src="/assets/js/store/storefront-discovery.js?v=subcat-20261028" defer></script>
+  <script src="/assets/js/store/storefront-discovery.js?v=familias-20261101" defer></script>
   <?php if ($categoryName !== '' && $totalProducts > 0): ?>
   <script>
     (() => {

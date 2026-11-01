@@ -766,6 +766,6 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
             });
         }
     </script>
-    <script src="/assets/js/store/storefront-discovery.js?v=subcat-20261028" defer></script>
+    <script src="/assets/js/store/storefront-discovery.js?v=familias-20261101" defer></script>
 </body>
 </html>
