@@ -162,6 +162,21 @@ if ($action === 'catalog' && $method === 'GET') {
     exit;
 }
 
+// Copia propia de las fotos de proveedor (GET: resumen; POST: procesa una tanda).
+if ($action === 'admin-archive-images') {
+    requireAdminAuth();
+    require_once __DIR__ . '/../lib/image-archive.php';
+    $pTable = getProductsTableName($pdo);
+    if ($method === 'POST') {
+        @set_time_limit(90);
+        if (!empty($body['retryFailed'])) smartispArchiveSaveFailed($pdo, []);
+        echo json_encode(smartispArchiveBatch($pdo, $pTable, (int)($body['limit'] ?? 15)));
+        exit;
+    }
+    echo json_encode(smartispArchiveStats($pdo, $pTable));
+    exit;
+}
+
 // Autocompletado del buscador de la tienda: productos, categorías y marcas que coinciden.
 if ($action === 'catalog-suggest' && $method === 'GET') {
     require_once __DIR__ . '/../lib/catalog-search.php';

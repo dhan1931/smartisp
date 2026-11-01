@@ -607,6 +607,17 @@ try {
   assert.ok((await req('catalog-suggest?q=busq')).data.categories.some(c => c.name === 'Smk Busqueda'), 'las sugerencias incluyen categorías');
   assert.ok((await req('catalog-suggest?q=hikv')).data.brands.includes('Hikvision'), 'las sugerencias incluyen marcas');
   await db.execute("DELETE FROM products_rows WHERE id LIKE 'smk-s_'");
+
+  await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku,image_url) VALUES ('smk-arch','Foto caida',5,1,'General','SKU-ARCH','http://127.0.0.1/no-existe.jpg')");
+  assert.equal((await req('admin-archive-images')).status, 401, 'guardar fotos requiere sesión de administrador');
+  const arch1 = await req('admin-archive-images', { method: 'POST', cookie: ac, body: { limit: 50 } });
+  assert.equal(arch1.status, 200, JSON.stringify(arch1.data));
+  assert.ok(arch1.data.failed.some(f => f.id === 'smk-arch') && arch1.data.unreachable >= 1, JSON.stringify(arch1.data));
+  const arch2 = await req('admin-archive-images', { method: 'POST', cookie: ac, body: { limit: 50 } });
+  assert.ok(!arch2.data.failed.some(f => f.id === 'smk-arch'), 'una foto que falló no se reintenta en cada tanda');
+  const [[archRow]] = await db.query("SELECT image_url FROM products_rows WHERE id = 'smk-arch'");
+  assert.equal(archRow.image_url, 'http://127.0.0.1/no-existe.jpg', 'si no se pudo descargar, la foto queda como estaba');
+  await db.execute("DELETE FROM products_rows WHERE id = 'smk-arch'");
   assert.ok(parentView.data.macroGroups.some(g => g.id === 'redes' && g.keywords.includes('router')), 'el catálogo trae las familias con sus palabras clave');
   const tree = Object.fromEntries(parentView.data.categories.filter(c => c.name.startsWith('Smk')).map(c => [c.name, c]));
   assert.equal(tree['Smk Switch hija'].parentCategoryId, 'smk-cat-padre');

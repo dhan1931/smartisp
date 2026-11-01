@@ -329,6 +329,25 @@
           </button>
         </div>
       </div>
+      <div class="card" id="imageArchiveCard" style="margin-top:20px;">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title"><i data-lucide="hard-drive-download" width="18"></i> Fotos guardadas en el servidor</h3>
+            <p class="card-desc">Las fotos que vienen del proveedor se copian a tu servidor para que no desaparezcan si el proveedor las borra o cambia de dirección. Se guardan en WebP de hasta 1200 px.</p>
+          </div>
+        </div>
+        <div style="display:flex; gap:24px; flex-wrap:wrap; margin:6px 0 14px;">
+          <div><strong id="archiveLocal">–</strong> <small>ya en el servidor</small></div>
+          <div><strong id="archivePending">–</strong> <small>por guardar</small></div>
+          <div><strong id="archiveUnreachable">–</strong> <small>el proveedor ya no las tiene</small></div>
+        </div>
+        <p id="archiveStatus" class="card-desc" role="status"></p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button type="button" class="btn btn-primary" id="archiveStart"><i data-lucide="download" width="16"></i> Guardar fotos ahora</button>
+          <button type="button" class="btn btn-secondary" id="archiveStop" hidden>Pausar</button>
+          <button type="button" class="btn btn-secondary" id="archiveRetry" hidden>Reintentar las que fallaron</button>
+        </div>
+      </div>
     </section>
 
   </main>
@@ -524,7 +543,7 @@
 
   <script src="/assets/js/admin/admin-page.js?v=ds-20261027" defer></script>
   <script src="/assets/js/admin/pricing.js?v=precios-20261028" defer></script>
-  <script src="/assets/js/admin/editor-catalogo-page.js?v=miles-20261031" defer></script>
+  <script src="/assets/js/admin/editor-catalogo-page.js?v=fotos-20261101" defer></script>
   <script src="/assets/js/admin/products-layout.js?v=ds-20261027"></script>
 </body>
 </html>
