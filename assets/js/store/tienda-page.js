@@ -190,7 +190,7 @@
 				const input = document.querySelector(selector);
 				if (!input) return;
 				if (document.activeElement !== input) input.value = catalogFilters[key];
-				input.placeholder = range && range[key] != null ? `${label} ${formatFilterPrice(key === 'min' ? Math.floor(range.min) : Math.ceil(range.max))}` : label;
+				input.placeholder = range && range[key] != null ? formatFilterPrice(key === 'min' ? Math.floor(range.min) : Math.ceil(range.max)) : label;
 			});
 		};
 		const resetCatalogFilters = () => { catalogFilters.brand = ''; catalogFilters.min = ''; catalogFilters.max = ''; };
