@@ -2048,3 +2048,6 @@
 			.search > button { border-radius: 0 19px 19px 0; }
 			.search-suggest { max-height: 62vh; }
 		}
+		.cart-whatsapp { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 10px; padding: 11px 14px; border: 1px solid #25a35a; border-radius: 10px; color: #128c4a; background: #f1fbf5; font-weight: 700; font-size: 14px; text-decoration: none; }
+		.cart-whatsapp:hover { background: #e3f7ea; }
+		.cart-whatsapp[hidden] { display: none; }
