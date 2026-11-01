@@ -1839,6 +1839,17 @@
 
     const importIncrements = () => ['importPriceMargin', 'importPriceMargin2'].map(id => Math.max(0, parseFloat(document.getElementById(id).value) || 0));
 
+    // "1,099.99", "1.099,99", "1,099" y "12,5": el último separador es el decimal salvo que agrupe miles.
+    const parseImportNumber = value => {
+      if (typeof value === 'number') return value;
+      let s = String(value ?? '').replace(/[^0-9.,]/g, '');
+      const comma = s.lastIndexOf(','), dot = s.lastIndexOf('.');
+      if (comma > -1 && dot > -1) s = comma > dot ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+      else if (comma > -1) s = /^\d{1,3}(,\d{3})+$/.test(s) ? s.replace(/,/g, '') : s.replace(',', '.');
+      else if (s.split('.').length > 2) s = s.replace(/\./g, '');
+      return parseFloat(s);
+    };
+
     const parseProductsForFile = fileState => {
       if (!fileState) return;
       const increments = importIncrements();
@@ -1855,8 +1866,7 @@
 
         const skuVal = fileState.mapping.sku !== null ? String(row[fileState.mapping.sku] || '').trim() : '';
         const priceProvided = fileState.mapping.price !== null && String(row[fileState.mapping.price] ?? '').trim() !== '';
-        const rawPriceStr = fileState.mapping.price !== null ? String(row[fileState.mapping.price] || '0').replace(/[^0-9.,]/g, '').replace(',', '.') : '0';
-        const basePrice = parseFloat(rawPriceStr) || 0;
+        const basePrice = fileState.mapping.price !== null ? parseImportNumber(row[fileState.mapping.price]) || 0 : 0;
         
         // Sin precio en el archivo queda en 0 (a cotizar).
         const finalPrice = applyIncrements(basePrice, increments);
@@ -1865,7 +1875,7 @@
         const imageUrl = fileState.mapping.imageUrl !== null ? String(row[fileState.mapping.imageUrl] || '').trim() : '';
         const description = fileState.mapping.description !== null ? String(row[fileState.mapping.description] || '').trim() : '';
         const rawCost = fileState.mapping.cost != null ? String(row[fileState.mapping.cost] ?? '').trim() : '';
-        const cost = rawCost !== '' ? parseFloat(rawCost.replace(/[^0-9.,]/g, '').replace(',', '.')) : NaN;
+        const cost = rawCost !== '' ? parseImportNumber(rawCost) : NaN;
 
         // Análisis de Afinidad en tiempo real
         const affinity = matchCategoryAffinity(rawCategory, name, categoriesList);
