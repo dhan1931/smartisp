@@ -607,6 +607,16 @@ try {
   assert.ok((await req('catalog-suggest?q=busq')).data.categories.some(c => c.name === 'Smk Busqueda'), 'las sugerencias incluyen categorías');
   assert.ok((await req('catalog-suggest?q=hikv')).data.brands.includes('Hikvision'), 'las sugerencias incluyen marcas');
   await db.execute("DELETE FROM products_rows WHERE id LIKE 'smk-s_'");
+
+  await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku) VALUES ('smk-nm','MOUSE/HPINC M170/WIRELESS T3170/T5170 5600MT/S',12,1,'Smk Nombres','SKU-NM')");
+  const named = await req('catalog?q=SKU-NM');
+  assert.equal(named.data.products[0].name, 'Mouse HP M170 Wireless T3170/T5170 5600MT/S', 'el nombre en mayúsculas del proveedor se muestra limpio');
+  const oldUrl = await fetch(`${baseUrl}/producto.php?slug=smk-nm-mouse-hpinc-m170-wireless`, { redirect: 'manual' });
+  assert.equal(oldUrl.status, 301, 'la URL con el nombre viejo redirige');
+  assert.ok(oldUrl.headers.get('location').endsWith('/producto/smk-nm-mouse-hp-m170-wireless-t3170-t5170-5600mt-s'), oldUrl.headers.get('location'));
+  const [[rawName]] = await db.query("SELECT name FROM products_rows WHERE id = 'smk-nm'");
+  assert.equal(rawName.name, 'MOUSE/HPINC M170/WIRELESS T3170/T5170 5600MT/S', 'la base conserva el nombre original para el importador');
+  await db.execute("DELETE FROM products_rows WHERE id = 'smk-nm'");
   assert.ok(parentView.data.macroGroups.some(g => g.id === 'redes' && g.keywords.includes('router')), 'el catálogo trae las familias con sus palabras clave');
   const tree = Object.fromEntries(parentView.data.categories.filter(c => c.name.startsWith('Smk')).map(c => [c.name, c]));
   assert.equal(tree['Smk Switch hija'].parentCategoryId, 'smk-cat-padre');
