@@ -41,7 +41,7 @@ try {
     $stmt = $pdo->query("SELECT id, name, updated_at, image_url, category FROM `$pTable` WHERE visible = 1 ORDER BY updated_at DESC");
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $id = (string)$row['id'];
-        $name = (string)$row['name'];
+        $name = smartispDisplayName((string)$row['name']);
         if (empty($id) || empty($name)) continue;
 
         $slug = $id . '-' . slugifySitemap($name);
