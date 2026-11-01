@@ -27,21 +27,20 @@ if ($action === 'catalog' && $method === 'GET') {
         $minPrice = trim((string)($_GET['min_price'] ?? ''));
         $maxPrice = trim((string)($_GET['max_price'] ?? ''));
 
+        require_once __DIR__ . '/../lib/catalog-search.php';
+        $brand = smartispFindBrand((string)($_GET['brand'] ?? ''));
         $where = 'visible = 1';
         $params = [];
+        $rankParams = [];
+        $rank = '';
         if ($search !== '') {
-            // Búsqueda directa por id/sku (enlaces de producto) o por nombre (DEV-20261005-022: antes el
-            // backend ignoraba ?q= y devolvía el primer producto de la tabla en vez del buscado).
-            // Placeholders distintos para el mismo valor: con PDO::ATTR_EMULATE_PREPARES=false (prepares
-            // nativos) un parámetro nombrado repetido da "SQLSTATE[HY093]: Invalid parameter number".
-            require_once __DIR__ . '/../lib/brands.php';
-            $brandKey = smartispBrandSearchKey($search);
-            $where .= ' AND (id = :search_id OR sku = :search_sku OR name LIKE :search_like'
-                . ($brandKey !== '' ? " OR REPLACE(REPLACE(REPLACE(LOWER(name), '-', ''), ' ', ''), '.', '') LIKE :search_brand" : '') . ')';
-            $params[':search_id'] = $search;
-            $params[':search_sku'] = $search;
-            $params[':search_like'] = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $search) . '%';
-            if ($brandKey !== '') $params[':search_brand'] = '%' . $brandKey . '%';
+            [$searchWhere, $rank] = smartispCatalogSearchSql($search, $params);
+            $where .= ' AND ' . $searchWhere;
+            foreach ([':rank_id', ':rank_sku', ':rank_start', ':rank_phrase'] as $key) { $rankParams[$key] = $params[$key]; unset($params[$key]); }
+        }
+        if ($brand !== null) {
+            $where .= ' AND LOWER(name) REGEXP :brand';
+            $params[':brand'] = smartispBrandPattern($brand);
         }
         // DEV-20261006-002: antes el filtro por categoria/subcategoria de la tienda publica era
         // 100% del lado del cliente -- forzaba a descargar el catalogo completo (2700+ productos)
@@ -56,11 +55,11 @@ if ($action === 'catalog' && $method === 'GET') {
             $params[':subcategory'] = $subcategory;
         }
         if ($minPrice !== '' && is_numeric($minPrice) && (float)$minPrice >= 0) {
-            $where .= ' AND price >= :min_price';
+            $where .= ' AND (price + 0) >= :min_price';
             $params[':min_price'] = (float)$minPrice;
         }
         if ($maxPrice !== '' && is_numeric($maxPrice) && (float)$maxPrice >= 0) {
-            $where .= ' AND price <= :max_price';
+            $where .= ' AND (price + 0) <= :max_price';
             $params[':max_price'] = (float)$maxPrice;
         }
         if ($categoryListRaw !== '') {
@@ -93,9 +92,12 @@ if ($action === 'catalog' && $method === 'GET') {
             $orderBy = '(price <= 0) ASC, price ASC, id ASC';
         } elseif ($sort === 'high') {
             $orderBy = '(price <= 0) ASC, price DESC, id ASC';
+        } elseif ($rank !== '') {
+            $orderBy = "$rank ASC, (price <= 0) ASC, created_at DESC, id ASC";
         }
+        $orderParams = $rank !== '' && $sort !== 'low' && $sort !== 'high' ? $rankParams : [];
         $stmt = $pdo->prepare("SELECT $cols FROM `$pTable` WHERE $where ORDER BY $orderBy LIMIT :limit OFFSET :offset");
-        foreach ($params as $key => $value) {
+        foreach ($params + $orderParams as $key => $value) {
             $stmt->bindValue($key, $value);
         }
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
@@ -115,6 +117,28 @@ if ($action === 'catalog' && $method === 'GET') {
         $categories = $page === 1 ? getDynamicCategoriesList($pdo, true) : [];
         $macroGroups = $page === 1 ? getCategoryMacroGroups($pdo) : [];
 
+        // Facetas del resultado (marcas y rango de precio), calculadas sin el propio filtro de marca y
+        // de precio para que elegir uno no haga desaparecer los demás.
+        $facets = null;
+        if ($page === 1 && (string)($_GET['facets'] ?? '') === '1') {
+            $facetWhere = $where;
+            $facetParams = $params;
+            foreach ([':brand' => ' AND LOWER(name) REGEXP :brand', ':min_price' => ' AND (price + 0) >= :min_price', ':max_price' => ' AND (price + 0) <= :max_price'] as $key => $sql) {
+                if (!array_key_exists($key, $facetParams)) continue;
+                $facetWhere = str_replace($sql, '', $facetWhere);
+                unset($facetParams[$key]);
+            }
+            $namesStmt = $pdo->prepare("SELECT name FROM `$pTable` WHERE $facetWhere LIMIT 5000");
+            $namesStmt->execute($facetParams);
+            $rangeStmt = $pdo->prepare("SELECT MIN(price + 0), MAX(price + 0) FROM `$pTable` WHERE $facetWhere AND (price + 0) > 0");
+            $rangeStmt->execute($facetParams);
+            [$minFacet, $maxFacet] = $rangeStmt->fetch(PDO::FETCH_NUM) ?: [null, null];
+            $facets = [
+                'brands' => smartispBrandFacets($namesStmt->fetchAll(PDO::FETCH_COLUMN)),
+                'price'  => ['min' => $minFacet !== null ? (float)$minFacet : null, 'max' => $maxFacet !== null ? (float)$maxFacet : null],
+            ];
+        }
+
         // Catálogo público: caché corta en el navegador/CDN en vez del no-store global (DEV-20261005-022).
         header('Cache-Control: public, max-age=30');
 
@@ -126,12 +150,55 @@ if ($action === 'catalog' && $method === 'GET') {
             'totalPages' => (int)ceil($total / max(1, $limit)),
             'content'    => $content,
             'categories' => $categories,
-            'macroGroups' => $macroGroups
+            'macroGroups' => $macroGroups,
+            'facets'     => $facets,
+            'brand'      => $brand
         ]);
     } catch (Exception $e) {
         error_log('SmartISP catalog error: ' . $e->getMessage());
         http_response_code(500);
         echo json_encode(['error' => 'No se pudo cargar el catálogo. Inténtalo nuevamente.', 'products' => [], 'content' => [], 'categories' => []]);
+    }
+    exit;
+}
+
+// Autocompletado del buscador de la tienda: productos, categorías y marcas que coinciden.
+if ($action === 'catalog-suggest' && $method === 'GET') {
+    require_once __DIR__ . '/../lib/catalog-search.php';
+    $search = mb_substr(trim((string)($_GET['q'] ?? '')), 0, 80);
+    if (mb_strlen($search) < 2) { echo json_encode(['products' => [], 'categories' => [], 'brands' => []]); exit; }
+    try {
+        $pTable = getProductsTableName($pdo);
+        $params = [];
+        [$searchWhere, $rank] = smartispCatalogSearchSql($search, $params);
+        $stmt = $pdo->prepare("SELECT id, name, price, category, subcategory, image_url, external_url, sku, visible FROM `$pTable` WHERE visible = 1 AND $searchWhere ORDER BY $rank ASC, (price <= 0) ASC, id ASC LIMIT 6");
+        $stmt->execute($params);
+        $products = array_map(static function ($row) {
+            $p = normalizeProductRow($row);
+            return ['id' => $p['id'], 'name' => $p['name'], 'price' => $p['price'], 'category' => $p['category'], 'imageUrl' => $p['imageUrl'] ?? ''];
+        }, $stmt->fetchAll());
+
+        $tokens = array_map(static fn($t) => smartispSlug(smartispCatalogSingular($t), 80, ''), smartispCatalogTokens($search));
+        $categories = [];
+        foreach ($pdo->query("SELECT category, COUNT(*) AS n FROM `$pTable` WHERE visible = 1 AND category IS NOT NULL AND category <> '' GROUP BY category")->fetchAll() as $row) {
+            $slug = smartispSlug((string)$row['category'], 120, '');
+            if ($tokens && count(array_filter($tokens, static fn($t) => $t !== '' && str_contains($slug, $t))) === count($tokens)) {
+                $categories[] = ['name' => (string)$row['category'], 'count' => (int)$row['n']];
+            }
+        }
+        usort($categories, static fn($a, $b) => $b['count'] <=> $a['count']);
+
+        $key = smartispBrandCompact($search);
+        $brands = [];
+        foreach (SMARTISP_BRANDS as $brand) {
+            if (strlen($key) >= 2 && str_starts_with(smartispBrandCompact($brand), $key)) $brands[] = $brand;
+        }
+
+        header('Cache-Control: public, max-age=60');
+        echo json_encode(['products' => $products, 'categories' => array_slice($categories, 0, 4), 'brands' => array_slice($brands, 0, 3)]);
+    } catch (Exception $e) {
+        error_log('SmartISP catalog-suggest error: ' . $e->getMessage());
+        echo json_encode(['products' => [], 'categories' => [], 'brands' => []]);
     }
     exit;
 }

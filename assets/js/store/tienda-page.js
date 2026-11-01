@@ -61,18 +61,49 @@
 
 		// Todas las vistas del catálogo se consultan por páginas. Las categorías exactas usan
 		// category/subcategory y los macrogrupos envían la lista de categorías asociadas.
-		let serverView = { active: false, page: 1, totalPages: 1, total: 0, items: [] };
+		let serverView = { active: false, page: 1, totalPages: 1, total: 0, items: [], facets: null, error: false };
+		const catalogFilters = { brand: '', min: '', max: '' };
+		let pendingCatalogPage = 1;
+		const hasExtraFilters = () => !!(catalogFilters.brand || catalogFilters.min !== '' || catalogFilters.max !== '');
 		const isServerMode = () => {
 			const q = document.querySelector('#searchInput').value.trim();
-			return q !== '' || selectedFilter === 'all' || !!(selectedFilter && ['macro', 'category', 'sub'].includes(selectedFilter.type));
+			return q !== '' || hasExtraFilters() || selectedFilter === 'all' || !!(selectedFilter && ['macro', 'category', 'sub'].includes(selectedFilter.type));
 		};
-		const fetchServerPage = async reset => {
-			if (reset) serverView.page = 1;
+		// Cada consulta invalida la anterior: sin esto, una respuesta lenta (por ejemplo la búsqueda
+		// que salió antes de cambiar de categoría) llegaba después y reemplazaba la vista correcta.
+		let catalogRequestSeq = 0;
+		let catalogAbort = null;
+		const syncCatalogUrl = () => {
+			if (!window.isCategoriasView) return;
+			const params = new URLSearchParams(window.location.search);
+			['category', 'categoria', 'macro', 'q', 'buscar', 's', 'orden', 'pagina', 'marca', 'min', 'max'].forEach(key => params.delete(key));
+			if (selectedFilter && selectedFilter.type === 'macro') params.set('macro', selectedFilter.id);
+			else if (selectedFilter && ['category', 'sub'].includes(selectedFilter.type)) params.set('category', selectedFilter.category);
+			const q = document.querySelector('#searchInput').value.trim();
+			if (q) params.set('q', q);
+			if (catalogFilters.brand) params.set('marca', catalogFilters.brand);
+			if (catalogFilters.min !== '') params.set('min', catalogFilters.min);
+			if (catalogFilters.max !== '') params.set('max', catalogFilters.max);
+			const sort = document.querySelector('#sortSelect').value;
+			if (sort === 'low' || sort === 'high') params.set('orden', sort);
+			if (serverView.page > 1) params.set('pagina', serverView.page);
+			const url = `${window.location.pathname}${params.toString() ? `?${params}` : ''}${window.location.hash}`;
+			if (url !== `${window.location.pathname}${window.location.search}${window.location.hash}`) history.replaceState(history.state, '', url);
+		};
+		const fetchServerPage = async (reset, targetPage) => {
+			const page = reset ? 1 : (targetPage || serverView.page);
+			const seq = ++catalogRequestSeq;
+			if (catalogAbort) catalogAbort.abort();
+			catalogAbort = typeof AbortController === 'function' ? new AbortController() : null;
 			const query = document.querySelector('#searchInput').value.trim();
 			const sort = document.querySelector('#sortSelect').value;
-			const params = new URLSearchParams({ page: serverView.page, limit: 36 });
+			const params = new URLSearchParams({ page, limit: 36 });
 			if (query) params.set('q', query);
 			if (sort === 'low' || sort === 'high') params.set('sort', sort);
+			if (catalogFilters.brand) params.set('brand', catalogFilters.brand);
+			if (catalogFilters.min !== '') params.set('min_price', catalogFilters.min);
+			if (catalogFilters.max !== '') params.set('max_price', catalogFilters.max);
+			if (page === 1) params.set('facets', '1');
 			if (selectedFilter && selectedFilter.type === 'category') params.set('category', selectedFilter.category);
 			else if (selectedFilter && selectedFilter.type === 'sub') params.set('subcategory', selectedFilter.category);
 			else if (selectedFilter && selectedFilter.type === 'macro') {
@@ -82,9 +113,10 @@
 				params.set('category_list', JSON.stringify(macroCategories));
 			}
 			try {
-				const res = await fetch(`/api/auth/catalog?${params.toString()}&_t=${Date.now()}`, { cache: 'no-store' });
+				const res = await fetch(`/api/auth/catalog?${params.toString()}&_t=${Date.now()}`, { cache: 'no-store', signal: catalogAbort ? catalogAbort.signal : undefined });
 				if (!res.ok) throw new Error('catalog view fetch failed');
 				const data = await res.json();
+				if (seq !== catalogRequestSeq) return false;
 				const mapped = (data.products || []).map(product => ({
 					...product,
 					brand: product.category || 'SmartISP',
@@ -94,8 +126,11 @@
 					specs: Array.isArray(product.specs) ? product.specs : []
 				}));
 				serverView.active = true;
+				serverView.error = false;
+				serverView.page = page;
 				serverView.total = data.total || 0;
 				serverView.totalPages = data.totalPages || 1;
+				if (page === 1) serverView.facets = data.facets || null;
 				// Paginacion real por numero de pagina: cada carga reemplaza la pagina mostrada,
 				// nunca se acumula (antes esto era un "ver mas" infinito que concatenaba).
 				serverView.items = mapped;
@@ -106,14 +141,18 @@
 				let changed = false;
 				mapped.forEach(p => { if (!existingIds.has(String(p.id))) { products.push(p); existingIds.add(String(p.id)); changed = true; } });
 				if (changed) rebuildProductIndex();
+				syncCatalogUrl();
+				return true;
 			} catch (e) {
+				if (seq !== catalogRequestSeq || e.name === 'AbortError') return false;
 				console.warn('Error cargando la vista filtrada del catálogo:', e);
-				serverView.active = false;
+				Object.assign(serverView, { error: true, items: [], total: 0, totalPages: 1 });
+				return true;
 			}
 		};
 		const refreshView = async (resetPage = true) => {
 			if (isServerMode()) {
-				await fetchServerPage(resetPage);
+				if (!await fetchServerPage(resetPage)) return;
 			} else {
 				serverView.active = false;
 				ensureFullCatalog();
@@ -121,6 +160,40 @@
 			if (resetPage) clientPage = 1;
 			render();
 		};
+		const formatFilterPrice = value => `$${Number(value).toLocaleString('es-EC', { maximumFractionDigits: 2 })}`;
+		const renderCatalogFilters = () => {
+			const q = document.querySelector('#searchInput').value.trim();
+			const box = document.querySelector('#activeFilters');
+			if (box) {
+				const chips = [];
+				if (q) chips.push(['q', `«${q}»`]);
+				if (catalogFilters.brand) chips.push(['brand', catalogFilters.brand]);
+				const { min, max } = catalogFilters;
+				if (min !== '' || max !== '') chips.push(['price', min !== '' && max !== '' ? `${formatFilterPrice(min)} – ${formatFilterPrice(max)}` : min !== '' ? `Desde ${formatFilterPrice(min)}` : `Hasta ${formatFilterPrice(max)}`]);
+				const activeCount = chips.length + (selectedFilter && selectedFilter !== 'all' ? 1 : 0);
+				box.innerHTML = chips.map(([key, label]) => `<span class="filter-chip">${escapeHtml(label)}<button type="button" data-remove-filter="${key}" aria-label="Quitar ${escapeHtml(label)}">×</button></span>`).join('')
+					+ (activeCount > 1 ? '<button type="button" class="filter-clear-all" data-clear-filters>Limpiar todo</button>' : '');
+			}
+			const filtersBox = document.querySelector('#catalogFilters');
+			if (filtersBox) filtersBox.hidden = !window.isCategoriasView;
+			const list = document.querySelector('#brandFilterList');
+			const block = document.querySelector('#brandFilterBlock');
+			if (list && block) {
+				const brands = (serverView.facets && serverView.facets.brands) || [];
+				const selected = catalogFilters.brand;
+				const items = selected && !brands.some(b => b.name === selected) ? [{ name: selected, count: null }, ...brands] : brands;
+				block.hidden = !items.length;
+				list.innerHTML = items.map(b => `<button type="button" class="brand-filter-btn${b.name === selected ? ' is-active' : ''}" data-brand-filter="${escapeHtml(b.name)}" aria-pressed="${b.name === selected}"><span>${escapeHtml(b.name)}</span>${b.count != null ? `<small>${b.count}</small>` : ''}</button>`).join('');
+			}
+			const range = serverView.facets && serverView.facets.price;
+			[['#priceMin', 'min', 'Mín'], ['#priceMax', 'max', 'Máx']].forEach(([selector, key, label]) => {
+				const input = document.querySelector(selector);
+				if (!input) return;
+				if (document.activeElement !== input) input.value = catalogFilters[key];
+				input.placeholder = range && range[key] != null ? `${label} ${formatFilterPrice(key === 'min' ? Math.floor(range.min) : Math.ceil(range.max))}` : label;
+			});
+		};
+		const resetCatalogFilters = () => { catalogFilters.brand = ''; catalogFilters.min = ''; catalogFilters.max = ''; };
 		const renderSkeletons = (count = 8) => {
 			const productsEl = document.querySelector('#products');
 			if (!productsEl) return;
@@ -598,9 +671,11 @@
 				if (countEl) countEl.textContent = 'Cargando catálogo...';
 				return;
 			}
-			const query = document.querySelector('#searchInput').value.toLowerCase();
+			const rawQuery = document.querySelector('#searchInput').value.trim();
+			const query = rawQuery.toLowerCase();
 			const sort = document.querySelector('#sortSelect').value;
 			const serverMode = isServerMode();
+			renderCatalogFilters();
 			// Modo servidor (catalogo, busqueda o filtro exacto): el backend ya filtro,
 			// ordeno y pagino en SQL (fetchServerPage) -- se usa tal cual, sin repetir el trabajo.
 			let shown = serverMode ? serverView.items : products.filter(product => productMatchesFilter(product, selectedFilter) && `${product.name} ${product.brand} ${product.category}`.toLowerCase().includes(query));
@@ -645,7 +720,7 @@
 			const countEl = document.querySelector('#resultCount');
 			if (countEl) {
 				const filterNote = breadcrumbLabel ? ` en ${breadcrumbLabel}` : '';
-				const queryNote = query ? ` para "${query}"` : '';
+				const queryNote = rawQuery ? ` para "${rawQuery}"` : '';
 				const countText = serverMode
 					? `Mostrando ${shown.length} de ${totalMatching} producto${totalMatching === 1 ? '' : 's'}`
 					: `Mostrando ${totalMatching} producto${totalMatching === 1 ? '' : 's'}`;
@@ -711,21 +786,24 @@
 			const paginationHtml = buildPaginationHtml(currentPageNum, totalPagesNum);
 			const paginationWrapHtml = paginationHtml ? `<div class="pagination-container" style="grid-column: 1 / -1; display:flex; justify-content:center; padding: 24px 0 16px;">${paginationHtml}</div>` : '';
 
+			const filtersActive = rawQuery || hasExtraFilters() || (selectedFilter && selectedFilter !== 'all');
 			const emptyHtml = catalogLoadError
 				? '<div class="empty"><p>No se pudo cargar el catálogo.</p><button type="button" class="primary" id="retryCatalogBtn">Reintentar</button></div>'
-				: '<div class="empty">No encontramos productos con esa búsqueda.</div>';
+				: serverMode && serverView.error
+					? '<div class="empty"><p>No pudimos cargar los productos. Revisa tu conexión.</p><button type="button" class="primary" id="retryViewBtn">Reintentar</button></div>'
+					: `<div class="empty"><p>No encontramos productos${rawQuery ? ` para «${escapeHtml(rawQuery)}»` : ''} con estos filtros.</p>${filtersActive ? '<button type="button" class="primary" data-clear-filters>Quitar filtros</button>' : ''}</div>`;
 			document.querySelector('#products').innerHTML = shown.length ? (productsHtml + paginationWrapHtml) : emptyHtml;
 			window.lucide && window.lucide.createIcons();
 			const retryCatalogBtn = document.querySelector('#retryCatalogBtn');
 			if (retryCatalogBtn) retryCatalogBtn.addEventListener('click', applyRemoteSite);
+			document.querySelector('#retryViewBtn')?.addEventListener('click', () => refreshView(false));
 
 			document.querySelectorAll('.pagination-btn[data-page]').forEach(btn => {
 				btn.addEventListener('click', () => {
 					const targetPage = Number(btn.dataset.page);
 					if (!targetPage || targetPage === currentPageNum || targetPage < 1 || targetPage > totalPagesNum) return;
 					if (serverMode) {
-						serverView.page = targetPage;
-						fetchServerPage(false).then(() => { render(); scrollToProductsTop(); });
+						fetchServerPage(false, targetPage).then(ok => { if (ok) { render(); scrollToProductsTop(); } });
 					} else {
 						ensureFullCatalog();
 						clientPage = targetPage;
@@ -1216,19 +1294,145 @@
 				}
 			});
 		}
+		let searchDebounceTimer = null;
+		const searchInputEl = document.querySelector('#searchInput');
+		const suggestBox = document.querySelector('#searchSuggest');
+		let suggestSeq = 0;
+		let suggestTimer = null;
+		let suggestActive = -1;
+		const suggestCache = new Map();
+		const goToCatalog = params => { window.location.href = `/categorias-destacadas?${new URLSearchParams(params)}`; };
+		const scrollToCatalog = () => document.querySelector('#catalogo')?.scrollIntoView({ behavior: 'smooth' });
+		const closeSuggest = () => {
+			if (!suggestBox) return;
+			suggestBox.hidden = true;
+			suggestActive = -1;
+			searchInputEl.setAttribute('aria-expanded', 'false');
+			searchInputEl.removeAttribute('aria-activedescendant');
+		};
+		const highlightMatch = (text, q) => {
+			let html = escapeHtml(text);
+			const words = q.toLowerCase().split(/\s+/).filter(w => w.length >= 2).map(w => escapeHtml(w).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+			if (words.length) html = html.replace(new RegExp(`(${words.join('|')})`, 'gi'), '<mark>$1</mark>');
+			return html;
+		};
+		const renderSuggest = (data, q) => {
+			if (!suggestBox) return;
+			const options = [];
+			(data.categories || []).forEach(c => options.push(`<button type="button" class="suggest-item" role="option" data-sg-cat="${escapeHtml(c.name)}"><i data-lucide="layout-grid" width="15"></i><span>${highlightMatch(formatCategoryName(c.name), q)}</span><small>${c.count} producto${c.count === 1 ? '' : 's'}</small></button>`));
+			(data.brands || []).forEach(b => options.push(`<button type="button" class="suggest-item" role="option" data-sg-brand="${escapeHtml(b)}"><i data-lucide="tag" width="15"></i><span>Marca <strong>${highlightMatch(b, q)}</strong></span></button>`));
+			(data.products || []).forEach(p => options.push(`<a class="suggest-item suggest-product" role="option" href="${escapeHtml(getProductUrl(p))}"><img src="${escapeHtml(getProductImageUrl(p))}" alt="" width="40" height="40" loading="lazy" onerror="this.style.visibility='hidden'"><span>${highlightMatch(p.name, q)}</span><small>${money(p.price)}</small></a>`));
+			options.push(`<button type="button" class="suggest-item suggest-all" role="option" data-sg-all><i data-lucide="search" width="15"></i><span>Ver todos los resultados para «${escapeHtml(q)}»</span></button>`);
+			suggestBox.innerHTML = options.join('');
+			suggestBox.querySelectorAll('.suggest-item').forEach((el, i) => { el.id = `suggest-opt-${i}`; el.tabIndex = -1; });
+			suggestActive = -1;
+			suggestBox.hidden = false;
+			searchInputEl.setAttribute('aria-expanded', 'true');
+			window.lucide && window.lucide.createIcons();
+		};
+		const loadSuggest = async () => {
+			const q = searchInputEl.value.trim();
+			if (q.length < 2 || document.activeElement !== searchInputEl) { closeSuggest(); return; }
+			const seq = ++suggestSeq;
+			let data = suggestCache.get(q.toLowerCase());
+			if (!data) {
+				try {
+					const res = await fetch(`/api/auth/catalog-suggest?q=${encodeURIComponent(q)}`);
+					data = res.ok ? await res.json() : null;
+				} catch (e) { data = null; }
+				if (data) suggestCache.set(q.toLowerCase(), data);
+			}
+			if (seq !== suggestSeq || !data || searchInputEl.value.trim() !== q) return;
+			renderSuggest(data, q);
+		};
+		const moveSuggest = step => {
+			const items = suggestBox ? [...suggestBox.querySelectorAll('.suggest-item')] : [];
+			if (!items.length || suggestBox.hidden) return false;
+			suggestActive = (suggestActive + 1 + step + items.length + 1) % (items.length + 1) - 1;
+			items.forEach((el, i) => el.classList.toggle('is-active', i === suggestActive));
+			if (suggestActive >= 0) { searchInputEl.setAttribute('aria-activedescendant', items[suggestActive].id); items[suggestActive].scrollIntoView({ block: 'nearest' }); }
+			else searchInputEl.removeAttribute('aria-activedescendant');
+			return true;
+		};
+		const submitSearch = () => {
+			clearTimeout(searchDebounceTimer);
+			clearTimeout(suggestTimer);
+			suggestSeq++;
+			closeSuggest();
+			const term = searchInputEl.value.trim();
+			if (!window.isCategoriasView) { goToCatalog(term ? { q: term } : {}); return; }
+			refreshView(true);
+			scrollToCatalog();
+		};
 		document.querySelector('#searchForm').addEventListener('submit', event => {
 			event.preventDefault();
-			const term = document.querySelector('#searchInput').value.trim();
-			if (!window.isCategoriasView) { window.location.href = `/categorias-destacadas${term ? `?q=${encodeURIComponent(term)}` : ''}`; return; }
-			refreshView(true);
-			document.querySelector('#catalogo').scrollIntoView({ behavior: 'smooth' });
+			if (suggestActive >= 0) { suggestBox.querySelectorAll('.suggest-item')[suggestActive]?.click(); return; }
+			submitSearch();
 		});
-		let searchDebounceTimer = null;
-		document.querySelector('#searchInput').addEventListener('input', () => {
+		searchInputEl.addEventListener('input', () => {
 			// DEV-20261006-002: antes cada tecla disparaba un render() completo (filtrar+ordenar
 			// sobre todo el catalogo) sin esperar a que la persona termine de escribir.
 			clearTimeout(searchDebounceTimer);
-			searchDebounceTimer = setTimeout(() => { refreshView(true); }, 250);
+			clearTimeout(suggestTimer);
+			suggestTimer = setTimeout(loadSuggest, 180);
+			if (window.isCategoriasView) searchDebounceTimer = setTimeout(() => { refreshView(true); }, 350);
+		});
+		searchInputEl.addEventListener('focus', () => { if (searchInputEl.value.trim().length >= 2) loadSuggest(); });
+		searchInputEl.addEventListener('keydown', event => {
+			if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { if (moveSuggest(event.key === 'ArrowDown' ? 1 : -1)) event.preventDefault(); }
+			else if (event.key === 'Escape' && suggestBox && !suggestBox.hidden) { event.preventDefault(); closeSuggest(); }
+		});
+		document.addEventListener('pointerdown', event => { if (!event.target.closest('#searchForm')) closeSuggest(); });
+		suggestBox?.addEventListener('click', event => {
+			const item = event.target.closest('.suggest-item');
+			if (!item || item.tagName === 'A') { closeSuggest(); return; }
+			if (item.hasAttribute('data-sg-all')) { submitSearch(); return; }
+			clearTimeout(searchDebounceTimer);
+			suggestSeq++;
+			closeSuggest();
+			searchInputEl.value = '';
+			if (item.dataset.sgCat) {
+				if (!window.isCategoriasView) { goToCatalog({ category: item.dataset.sgCat }); return; }
+				resetCatalogFilters();
+				setCategoryFilter(item.dataset.sgCat);
+			} else if (item.dataset.sgBrand) {
+				if (!window.isCategoriasView) { goToCatalog({ marca: item.dataset.sgBrand }); return; }
+				catalogFilters.brand = item.dataset.sgBrand;
+				refreshView(true);
+			}
+			scrollToCatalog();
+		});
+		document.addEventListener('click', event => {
+			const remove = event.target.closest('[data-remove-filter]');
+			if (remove) {
+				const key = remove.dataset.removeFilter;
+				if (key === 'q') searchInputEl.value = '';
+				if (key === 'brand') catalogFilters.brand = '';
+				if (key === 'price') { catalogFilters.min = ''; catalogFilters.max = ''; }
+				refreshView(true);
+				return;
+			}
+			if (event.target.closest('[data-clear-filters]')) {
+				searchInputEl.value = '';
+				resetCatalogFilters();
+				setCategoryFilter('all');
+				return;
+			}
+			const brandBtn = event.target.closest('[data-brand-filter]');
+			if (brandBtn) {
+				catalogFilters.brand = catalogFilters.brand === brandBtn.dataset.brandFilter ? '' : brandBtn.dataset.brandFilter;
+				refreshView(true);
+			}
+		});
+		document.querySelector('#priceFilterForm')?.addEventListener('submit', event => {
+			event.preventDefault();
+			const read = selector => { const v = parseFloat(document.querySelector(selector).value); return Number.isFinite(v) && v >= 0 ? String(v) : ''; };
+			let min = read('#priceMin'), max = read('#priceMax');
+			if (min !== '' && max !== '' && Number(min) > Number(max)) [min, max] = [max, min];
+			catalogFilters.min = min;
+			catalogFilters.max = max;
+			document.activeElement?.blur();
+			refreshView(true);
 		});
 		document.querySelector('#sortSelect').addEventListener('change', () => { refreshView(true); });
 		const cartDrawer = document.querySelector('#drawer');
@@ -1450,7 +1654,7 @@
 						// era trafico/tiempo de API desperdiciado en cada carga de /tienda.html. Solo
 						// se pide el catalogo completo cuando sí se va a mostrar (/categorias-destacadas).
 						const catalogLimit = window.isCategoriasView ? 36 : 1;
-						const response = await fetch(`/api/auth/catalog?page=1&limit=${catalogLimit}&_t=` + Date.now(), { cache: 'no-store' });
+						const response = await fetch(`/api/auth/catalog?page=1&limit=${catalogLimit}${window.isCategoriasView ? '&facets=1' : ''}&_t=` + Date.now(), { cache: 'no-store' });
 						if (!response.ok) throw new Error(`catalog request failed (${response.status})`);
 						const data = await response.json();
 						if (!Array.isArray(data.products) || (Number(data.total) > 0 && data.products.length === 0)) {
@@ -1480,7 +1684,9 @@
 						page: Number(remote.page) || 1,
 						totalPages: Number(remote.totalPages) || 1,
 						total: Number(remote.total) || products.length,
-						items: products.slice()
+						items: products.slice(),
+						facets: remote.facets || null,
+						error: false
 					};
 					rebuildProductIndex();
 					isCatalogLoading = false;
@@ -1489,8 +1695,9 @@
 						selectedFilter.macroId = macro.id;
 						expandedGroups.add(macro.id);
 					}
-					// La página 1 sin filtro solo sirve si la URL no pide categoría, familia o búsqueda.
-					if (isServerMode() && selectedFilter !== 'all' && (selectedFilter || document.querySelector('#searchInput').value.trim())) await refreshView(true);
+					// La página 1 sin filtro solo sirve si la URL no pide categoría, búsqueda, filtros, orden ni otra página.
+					const needsView = (selectedFilter && selectedFilter !== 'all') || document.querySelector('#searchInput').value.trim() || hasExtraFilters() || document.querySelector('#sortSelect').value !== 'featured' || pendingCatalogPage > 1;
+					if (needsView) { if (pendingCatalogPage > 1) { serverView.page = pendingCatalogPage; await refreshView(false); } else await refreshView(true); }
 					else render();
 					if (typeof renderSidebarCategories === 'function') renderSidebarCategories();
 					renderMiniCategories();
@@ -1738,11 +1945,12 @@
 			const item = miniCategoryItems.get(key);
 			if (!item) return;
 			const params = new URLSearchParams();
+			// La búsqueda se limpia antes de pedir la categoría; si no, la consulta salía con el texto viejo.
+			const search = document.querySelector('#searchInput');
+			if (search && search.value) search.value = '';
 			if (isMiniActive(key, item)) setCategoryFilter('all');
 			else if (item.categories.length === 1) { setCategoryFilter(item.categories[0]); params.set('category', item.categories[0]); }
 			else { setCategoryFilter({ type: 'macro', id: key }); params.set('macro', key); }
-			const search = document.querySelector('#searchInput');
-			if (search && search.value) search.value = '';
 			history.pushState({ miniCategory: true }, '', `${window.location.pathname}${params.toString() ? `?${params}` : ''}`);
 			syncMiniActive();
 			const catalog = document.querySelector('#catalogo');
@@ -1753,6 +1961,7 @@
 			const params = new URLSearchParams(window.location.search);
 			const category = params.get('category') || params.get('categoria');
 			const macro = params.get('macro');
+			applyCatalogUrlParams(params);
 			setCategoryFilter(category || (macro ? { type: 'macro', id: macro } : 'all'));
 			syncMiniActive();
 		});
@@ -2188,16 +2397,30 @@
 			}
 		};
 
+		// Búsqueda, marca, precio, orden y página desde la URL (al cargar y con atrás/adelante).
+		function applyCatalogUrlParams(params) {
+			const input = document.querySelector('#searchInput');
+			if (input) input.value = params.get('q') || params.get('buscar') || params.get('s') || '';
+			const brand = params.get('marca') || '';
+			catalogFilters.brand = brand;
+			['min', 'max'].forEach(key => { const v = parseFloat(params.get(key)); catalogFilters[key] = Number.isFinite(v) && v >= 0 ? String(v) : ''; });
+			const sortSelect = document.querySelector('#sortSelect');
+			const sort = params.get('orden');
+			if (sortSelect) sortSelect.value = sort === 'low' || sort === 'high' ? sort : 'featured';
+			pendingCatalogPage = Math.max(1, parseInt(params.get('pagina'), 10) || 1);
+		}
 		// Soporte de parámetros de URL para filtrar categorías, búsquedas y carrito al cargar
 		try {
 			const urlParams = new URLSearchParams(window.location.search);
 			const catParam = urlParams.get('categoria') || urlParams.get('category');
 			const macroParam = urlParams.get('macro');
 			const searchParam = urlParams.get('q') || urlParams.get('buscar') || urlParams.get('s');
+			const brandParam = urlParams.get('marca');
 			const cartParam = urlParams.get('openCart') || urlParams.get('carrito');
 			const accountParam = urlParams.get('openAccount') || urlParams.get('cuenta');
 			const pathIsCategorias = window.location.pathname.replace(/\/$/, '') === '/categorias-destacadas';
-			window.isCategoriasView = pathIsCategorias || Boolean(catParam) || Boolean(macroParam) || Boolean(searchParam);
+			window.isCategoriasView = pathIsCategorias || Boolean(catParam) || Boolean(macroParam) || Boolean(searchParam) || Boolean(brandParam);
+			if (window.isCategoriasView) applyCatalogUrlParams(urlParams);
 			if (window.isCategoriasView) {
 				document.querySelector('#catalogView').hidden = false;
 				document.querySelectorAll('#mNavHome,#mNavCategories').forEach(el => el.classList.toggle('active', el.id === 'mNavCategories'));
@@ -2214,10 +2437,9 @@
 				expandedGroups.add(macroParam);
 			}
 
-			if (searchParam) {
+			if (searchParam || brandParam) {
 				const sInput = document.querySelector('#searchInput');
 				if (sInput) {
-					sInput.value = searchParam;
 					setTimeout(() => {
 						const catEl = document.querySelector('#catalogo');
 						if (catEl) catEl.scrollIntoView({ behavior: 'smooth' });
@@ -2290,7 +2512,8 @@
 				if (typeof renderSidebarCategories === 'function') renderSidebarCategories();
 				const searchInput = document.querySelector('#searchInput');
 				if (searchInput) searchInput.value = '';
-				render();
+				resetCatalogFilters();
+				refreshView(true);
 				window.scrollTo({ top: 0, behavior: 'smooth' });
 				document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
 				mNavHome.classList.add('active');

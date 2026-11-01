@@ -590,6 +590,23 @@ try {
   assert.deepEqual(pairView.data.products.map(p => p.id), ['smk-cat-p1'], 'categoría + subcategoría real (categorias-destacadas) muestra los productos de la subcategoría');
   const listView = await req(`catalog?category_list=${encodeURIComponent(JSON.stringify(['Smk Redes padre']))}&limit=50`);
   assert.equal(listView.data.total, 3, 'la lista de categorías de una familia también incluye subcategorías');
+
+  await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku) VALUES ('smk-s1','Router TP-Link Archer C6 Smkq',40,1,'Smk Busqueda','SKU-S1'),('smk-s2','SWITCHES/TPLINK SG108 Smkq',25,1,'Smk Busqueda','SKU-S2'),('smk-s3','Cámara IP Hikvision Smkq',90,1,'Smk Busqueda','SKU-S3'),('smk-s4','Cable Smkq para router',3,1,'Smk Busqueda','SMKQ ROUTER')");
+  const searchIds = r => r.data.products.map(p => p.id).sort();
+  assert.deepEqual(searchIds(await req(`catalog?q=${encodeURIComponent('tp link router smkq')}`)), ['smk-s1'], 'las palabras se buscan en cualquier orden y sin guiones');
+  assert.deepEqual(searchIds(await req(`catalog?q=${encodeURIComponent('tplink smkq')}`)), ['smk-s1', 'smk-s2'], 'la marca compacta encuentra TP-Link y TPLINK');
+  assert.deepEqual(searchIds(await req(`catalog?q=${encodeURIComponent('camaras smkq')}`)), ['smk-s3'], 'el plural y los acentos no impiden encontrar');
+  assert.equal((await req(`catalog?q=${encodeURIComponent('SMKQ ROUTER')}`)).data.products[0].id, 'smk-s4', 'el SKU exacto aparece primero');
+  const branded = await req(`catalog?q=smkq&brand=${encodeURIComponent('tp link')}&facets=1`);
+  assert.deepEqual(searchIds(branded), ['smk-s1', 'smk-s2'], 'el filtro de marca reconoce la marca escrita de otra forma');
+  assert.deepEqual(branded.data.facets.brands.map(b => b.name).sort(), ['Hikvision', 'TP-Link'], 'las marcas disponibles no dependen de la marca elegida');
+  assert.deepEqual(branded.data.facets.price, { min: 3, max: 90 }, 'el rango de precio cubre todo el resultado');
+  assert.deepEqual(searchIds(await req('catalog?q=smkq&min_price=20&max_price=50')), ['smk-s1', 'smk-s2'], 'el rango de precio se combina con la búsqueda');
+  const suggest = await req(`catalog-suggest?q=${encodeURIComponent('smkq tp')}`);
+  assert.ok(suggest.data.products.some(p => p.id === 'smk-s1') && !('rawImageUrl' in suggest.data.products[0]), JSON.stringify(suggest.data));
+  assert.ok((await req('catalog-suggest?q=busq')).data.categories.some(c => c.name === 'Smk Busqueda'), 'las sugerencias incluyen categorías');
+  assert.ok((await req('catalog-suggest?q=hikv')).data.brands.includes('Hikvision'), 'las sugerencias incluyen marcas');
+  await db.execute("DELETE FROM products_rows WHERE id LIKE 'smk-s_'");
   assert.ok(parentView.data.macroGroups.some(g => g.id === 'redes' && g.keywords.includes('router')), 'el catálogo trae las familias con sus palabras clave');
   const tree = Object.fromEntries(parentView.data.categories.filter(c => c.name.startsWith('Smk')).map(c => [c.name, c]));
   assert.equal(tree['Smk Switch hija'].parentCategoryId, 'smk-cat-padre');

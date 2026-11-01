@@ -116,14 +116,14 @@
 	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 	<noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"></noscript>
 	<script src="/assets/vendor/lucide-icons.min.js?v=68df8f2b" defer onload="window.lucide && window.lucide.createIcons()"></script>
-	<link rel="stylesheet" href="/assets/css/store/tienda-page.css?v=politicas-20261027">
+	<link rel="stylesheet" href="/assets/css/store/tienda-page.css?v=buscador-20261031">
 	<link rel="stylesheet" href="/assets/css/store/site-footer.css?v=politicas-20261027">
 </head>
 <body>
 	<div class="topbar"><span><i data-lucide="truck" width="14"></i> Envío gratis en Guayas</span><span><i data-lucide="clock" width="13"></i> Atención experta · Lun a Vie 9:00 a 18:00</span><span><i data-lucide="map-pin" width="13"></i> CC. ATRIO PLAZA · Daule, Ecuador</span></div>
 	<header class="nav">
 		<a class="logo" href="/" title="SmartISP Tienda Online">SmartISP</a>
-		<form class="search" id="searchForm"><input id="searchInput" type="search" readonly name="product-search" autocomplete="off" data-lpignore="true" data-1p-ignore data-form-type="other" placeholder="¿Qué estás buscando hoy?" aria-label="Buscar productos"><button aria-label="Buscar"><i data-lucide="search" width="18"></i></button></form>
+		<form class="search" id="searchForm" role="search"><input id="searchInput" type="search" readonly name="product-search" autocomplete="off" data-lpignore="true" data-1p-ignore data-form-type="other" placeholder="¿Qué estás buscando hoy?" aria-label="Buscar productos" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="searchSuggest"><button aria-label="Buscar"><i data-lucide="search" width="18"></i></button><div class="search-suggest" id="searchSuggest" role="listbox" aria-label="Sugerencias de búsqueda" hidden></div></form>
 		<div class="nav-actions"><button class="nav-action" id="openAccount" aria-label="Abrir mi cuenta"><i data-lucide="user" width="16" aria-hidden="true"></i><span id="accountLabel">Mi cuenta</span></button><a class="admin-nav-link" id="adminNavLink" href="admin.html" style="display: none;"><i data-lucide="layout-dashboard" width="16"></i><span>Panel admin</span></a><button class="nav-action cart-button" id="openCart"><i data-lucide="shopping-cart" width="20"></i><span>Carrito</span><b class="cart-count" id="cartCount">0</b></button><button class="public-menu-btn" id="publicMenuBtn" type="button" aria-label="Abrir menú" aria-expanded="false"><i data-lucide="menu" width="20"></i></button></div>
 	</header>
 	<nav class="public-nav" id="publicNav" aria-label="Secciones principales">
@@ -202,6 +202,21 @@
 								<span class="sidebar-cat-count" id="catCountAll">4</span>
 							</button>
 						</div>
+						<div class="sidebar-filters" id="catalogFilters" hidden>
+							<form class="sidebar-filter-block" id="priceFilterForm">
+								<div class="sidebar-filter-title">Precio (USD, con IVA)</div>
+								<div class="price-filter-row">
+									<input type="number" id="priceMin" min="0" step="any" inputmode="decimal" placeholder="Mín" aria-label="Precio mínimo">
+									<span aria-hidden="true">–</span>
+									<input type="number" id="priceMax" min="0" step="any" inputmode="decimal" placeholder="Máx" aria-label="Precio máximo">
+									<button type="submit" aria-label="Aplicar rango de precio"><i data-lucide="check" width="15"></i></button>
+								</div>
+							</form>
+							<div class="sidebar-filter-block" id="brandFilterBlock" hidden>
+								<div class="sidebar-filter-title">Marca</div>
+								<div class="brand-filter-list" id="brandFilterList"></div>
+							</div>
+						</div>
 					</div>
 				</aside>
 				<main class="store-main">
@@ -212,6 +227,7 @@
 								<span id="activeCategoryName"></span>
 								<button type="button" id="removeCategoryPill" aria-label="Quitar filtro de categoría" title="Quitar filtro">×</button>
 							</div>
+							<div class="active-filters" id="activeFilters"></div>
 						</div>
 						<select class="select" id="sortSelect" aria-label="Ordenar productos">
 							<option value="featured">Más relevantes</option>
@@ -341,7 +357,7 @@
 		<aside class="drawer" id="drawer"><div class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="cartDrawerTitle"><div class="drawer-head"><h2 id="cartDrawerTitle">Tu carrito</h2><button class="icon-button" id="closeCart" aria-label="Cerrar carrito"><i data-lucide="x"></i></button></div><div class="cart-items" id="cartItems">Tu carrito está vacío.</div><div class="drawer-footer"><div class="cart-total"><span>Total</span><span id="cartTotal">$0</span></div><button class="primary checkout">Finalizar compra <i data-lucide="arrow-up-right" width="16"></i></button></div></div></aside>
 		<div class="modal" id="accountModal" style="display:none;" aria-hidden="true"></div>
 	<script src="/assets/js/store/brands-section.js?v=1"></script>
-	<script src="/assets/js/store/tienda-page.js?v=cuenta-20261030" defer></script>
+	<script src="/assets/js/store/tienda-page.js?v=buscador-20261031" defer></script>
 
 </body>
 </html>
