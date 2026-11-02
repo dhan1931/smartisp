@@ -196,7 +196,16 @@ try {
   cc = good.cookie;
   assert.equal((await req('me', { cookie: cc })).status, 200, 'la sesión que cambió la contraseña sigue abierta');
   assert.equal((await req('me', { cookie: otherSession })).status, 401, 'cambiar la contraseña cierra las demás sesiones');
-  await login(customer.email, 'nueva-123');
+  const favOther = await login(customer.email, 'nueva-123');
+
+  // --- Favoritos en la base: sobreviven a cerrar sesión y muestran los datos reales del producto
+  const favAdd = await req('customer-wishlist', { method: 'POST', cookie: cc, body: { productId: 'smk-prod', name: 'FALSO', price: 0.01 } });
+  assert.equal(favAdd.status, 200, JSON.stringify(favAdd.data));
+  await req('customer-wishlist', { method: 'POST', cookie: cc, body: { productId: 'no-existe' } });
+  const favList = await req('customer-wishlist', { cookie: favOther });
+  assert.deepEqual(favList.data.wishlist.map(i => [i.productId, i.name, Number(i.price)]), [['smk-prod', 'Nombre Real', 10]], 'los favoritos siguen en otra sesión, con datos del producto y sin ids inexistentes');
+  await req('customer-wishlist?productId=smk-prod', { method: 'DELETE', cookie: favOther });
+  assert.equal((await req('customer-wishlist', { cookie: cc })).data.wishlist.length, 0, 'quitar un favorito se refleja en todas las sesiones');
 
   // --- Inventario: stock controlado, reserva, consumo y liberación por estado del pedido
   await db.execute("DELETE FROM products_rows WHERE id = 'smk-stock'");
@@ -618,6 +627,15 @@ try {
   const [[archRow]] = await db.query("SELECT image_url FROM products_rows WHERE id = 'smk-arch'");
   assert.equal(archRow.image_url, 'http://127.0.0.1/no-existe.jpg', 'si no se pudo descargar, la foto queda como estaba');
   await db.execute("DELETE FROM products_rows WHERE id = 'smk-arch'");
+  await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku) VALUES ('smk-nm','MOUSE/HPINC M170/WIRELESS T3170/T5170 5600MT/S',12,1,'Smk Nombres','SKU-NM')");
+  const named = await req('catalog?q=SKU-NM');
+  assert.equal(named.data.products[0].name, 'Mouse HP M170 Wireless T3170/T5170 5600MT/S', 'el nombre en mayúsculas del proveedor se muestra limpio');
+  const oldUrl = await fetch(`${baseUrl}/producto.php?slug=smk-nm-mouse-hpinc-m170-wireless`, { redirect: 'manual' });
+  assert.equal(oldUrl.status, 301, 'la URL con el nombre viejo redirige');
+  assert.ok(oldUrl.headers.get('location').endsWith('/producto/smk-nm-mouse-hp-m170-wireless-t3170-t5170-5600mt-s'), oldUrl.headers.get('location'));
+  const [[rawName]] = await db.query("SELECT name FROM products_rows WHERE id = 'smk-nm'");
+  assert.equal(rawName.name, 'MOUSE/HPINC M170/WIRELESS T3170/T5170 5600MT/S', 'la base conserva el nombre original para el importador');
+  await db.execute("DELETE FROM products_rows WHERE id = 'smk-nm'");
   const pricey = Array.from({ length: 9 }, (_, i) => `('smk-pg${i}','Portátil Smk ${i}',${900 + i * 50},1,'Smk Portatiles','SKU-PG${i}',NULL)`).join(',');
   await db.execute(`INSERT INTO products_rows (id,name,price,visible,category,sku,cost) VALUES ${pricey},('smk-pgbad','Portátil Smk roto',1.46,1,'Smk Portatiles','SKU-PGBAD',NULL),('smk-pgcost','Mouse Smk bajo costo',8,1,'General','SKU-PGCOST',10)`);
   const suspicious = await req('admin-products?price=suspicious&limit=100', { cookie: ac });

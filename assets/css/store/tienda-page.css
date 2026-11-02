@@ -2047,4 +2047,17 @@
 			.search .suggest-item { width: 100% !important; flex-shrink: 1 !important; }
 			.search > button { border-radius: 0 19px 19px 0; }
 			.search-suggest { max-height: 62vh; }
+			/* En el cajón móvil los filtros van arriba y compactos; la lista de categorías se queda con el resto del alto. */
+			.sidebar-filters { order: 1; flex: 0 0 auto; grid-template-columns: minmax(0, 1fr); gap: 10px; margin: 0 0 10px; padding: 0 2px 12px; border-top: 0; border-bottom: 1px solid var(--line); }
+			.sidebar-categories { order: 2; }
+			.sidebar-filter-title { margin-bottom: 6px; }
+			.price-filter-row input, .price-filter-row button { height: 40px; }
+			.price-filter-row button { width: 40px; }
+			.brand-filter-list { display: flex; gap: 6px; max-height: none; overflow-x: auto; overflow-y: hidden; padding-bottom: 2px; scrollbar-width: none; overscroll-behavior-x: contain; }
+			.brand-filter-list::-webkit-scrollbar { display: none; }
+			.brand-filter-btn { flex: 0 0 auto; width: auto; gap: 6px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; background: #fff; white-space: nowrap; }
+			.brand-filter-btn.is-active { border-color: var(--blue); }
 		}
+		.cart-whatsapp { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 10px; padding: 11px 14px; border: 1px solid #25a35a; border-radius: 10px; color: #128c4a; background: #f1fbf5; font-weight: 700; font-size: 14px; text-decoration: none; }
+		.cart-whatsapp:hover { background: #e3f7ea; }
+		.cart-whatsapp[hidden] { display: none; }

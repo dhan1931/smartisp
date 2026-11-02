@@ -149,7 +149,7 @@ foreach ($categories as $idx => $category) {
   <meta name="robots" content="index, follow, max-image-preview:large">
   <link rel="canonical" href="<?= $siteUrl ?>/categorias-destacadas">
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
-  <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=iva-20261027">
+  <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=barra-movil-20261101">
   <script src="/assets/js/store/public-brand.js?v=seo2-20261025" defer></script>
   <script src="/assets/vendor/lucide-icons.min.js?v=68df8f2b"></script>
   <script type="application/ld+json">
@@ -274,7 +274,7 @@ foreach ($categories as $idx => $category) {
     </section>
   </main>
   <footer class="storefront-footer category-catalog-footer"><span>SmartISP Ecuador · Tecnología, conectividad e infraestructura TI.</span><a href="/tienda.html">Ir a la tienda <i data-lucide="arrow-up-right"></i></a></footer>
-  <script src="/assets/js/store/storefront-discovery.js?v=subcat-20261028" defer></script>
+  <script src="/assets/js/store/storefront-discovery.js?v=familias-20261101" defer></script>
   <script src="/assets/js/store/public-account.js?v=cuenta-pagina-20261030" defer></script>
   <script src="/assets/js/store/category-catalog.js?v=subcat-20261028" defer></script>
 </body>

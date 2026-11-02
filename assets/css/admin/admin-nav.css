@@ -219,7 +219,7 @@
   #smartisp-admin-nav .admin-nav-collapse { display: none; }
   #smartisp-admin-nav .admin-nav-body { position: fixed; top: var(--nav-mobile-h); left: 0; bottom: 0; width: min(320px, 86vw); background: var(--nav-bg); transform: translateX(-102%); visibility: hidden; transition: transform .22s var(--ease, ease), visibility 0s .22s; box-shadow: 12px 0 30px rgba(0, 0, 0, .3); overflow-y: auto; }
   #smartisp-admin-nav.is-mobile-open .admin-nav-body { transform: none; visibility: visible; transition: transform .22s var(--ease, ease); }
-  #smartisp-admin-nav .admin-nav-links { overflow: visible; }
+  #smartisp-admin-nav .admin-nav-links { flex: none; overflow: visible; }
   #smartisp-admin-nav .admin-nav-link { min-height: 44px; }
   #smartisp-admin-nav .admin-pop { position: fixed; left: 12px; right: 12px; bottom: 12px; width: auto; }
   #smartisp-admin-nav + .admin-nav-backdrop { position: fixed; inset: var(--nav-mobile-h) 0 0 0; z-index: calc(var(--nav-z-sidebar) - 1); display: none; padding: 0; border: 0; background: rgba(2, 8, 14, .5); }

@@ -411,6 +411,8 @@ function smartispCategoryRedirectBySlug(PDO $pdo, string $slug): string {
 }
 
 // Normaliza los nombres de columnas de productos de forma flexible
+require_once __DIR__ . '/product-name.php';
+
 function normalizeProductRow(array $row): array {
     $id = (string)($row['id'] ?? ($row['product_id'] ?? ($row['codigo'] ?? ($row['COL 1'] ?? uniqid()))));
     $name = (string)($row['name'] ?? ($row['nombre'] ?? ($row['title'] ?? ($row['titulo'] ?? ($row['product_name'] ?? ($row['item'] ?? ($row['articulo'] ?? ($row['COL 2'] ?? ''))))))));
@@ -439,7 +441,7 @@ function normalizeProductRow(array $row): array {
 
     return [
         'id'          => $id,
-        'name'        => $name,
+        'name'        => smartispDisplayName($name),
         'description' => $desc,
         'price'       => $price,
         'category'    => $cat,
