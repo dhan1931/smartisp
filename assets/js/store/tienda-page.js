@@ -986,6 +986,7 @@
 			updateCart(false);
 		};
 
+		let storeWhatsappDigits = '';
 		const updateCart = (animate = true) => {
 			storeSet('smartisp.cart', JSON.stringify(cart));
 			const totalQuantity = cart.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
@@ -1043,6 +1044,15 @@
 			const cartTotalEl = document.querySelector('#cartTotal');
 			if (cartTotalEl) {
 				cartTotalEl.textContent = totalNum > 0 ? money(totalNum) : (hasQuoteOnly ? 'Solicitar cotización' : '$0');
+			}
+			const cartWa = document.querySelector('#cartWhatsapp');
+			if (cartWa) {
+				cartWa.hidden = !cart.length || !storeWhatsappDigits;
+				if (!cartWa.hidden) {
+					const lines = cart.map(item => { const qty = Number(item.quantity) || 1; const price = Number(item.price) || 0; return `• ${qty} × ${item.name} — ${price > 0 ? money(price * qty) : 'a cotizar'}\n  ${window.location.origin}${getProductUrl(item)}`; });
+					const text = `Hola SmartISP, quiero consultar estos productos:\n${lines.join('\n')}\n${totalNum > 0 ? `Total: ${money(totalNum)}` : 'Total: a cotizar'}`;
+					cartWa.href = `https://wa.me/${storeWhatsappDigits}?text=${encodeURIComponent(text)}`;
+				}
 			}
 			window.lucide && window.lucide.createIcons();
 
@@ -1543,6 +1553,8 @@
 				if (brandP) brandP.textContent = content.footer_text;
 			}
 			const whatsappList = parseWhatsappList(content.footer_whatsapp);
+			storeWhatsappDigits = whatsappList.length ? whatsappList[0].digits : '';
+			updateCart(false);
 			if (whatsappList.length) {
 				const waHref = `https://wa.me/${whatsappList[0].digits}`;
 				const waLink = document.querySelector('#footerWhatsappLink');
