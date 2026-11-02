@@ -668,6 +668,48 @@ if ($action === 'admin-order-delete' && $method === 'POST') {
 // ACTUALIZAR PERFIL (/api/auth/update-profile) (QA-019)
 // -------------------------------------------------------------
 
+if ($action === 'customer-wishlist' && ($user = getAuthUser()) && smartispTableExists($pdo, 'customer_wishlist')) {
+    // Con sesión iniciada los favoritos viven en la base (migración 049); el nombre, precio y foto se
+    // leen del producto, no de lo que mandó el navegador.
+    $uid = (string)$user['id'];
+    $pTable = getProductsTableName($pdo);
+    $add = $pdo->prepare("INSERT IGNORE INTO customer_wishlist (user_id, product_id, sort_order)
+        SELECT :uid, p.id, COALESCE((SELECT MIN(sort_order) FROM customer_wishlist WHERE user_id = :uid2), 0) - 1 FROM `$pTable` p WHERE p.id = :pid");
+    $addProduct = static function (string $pid) use ($add, $uid) { if ($pid !== '') $add->execute([':uid' => $uid, ':uid2' => $uid, ':pid' => $pid]); };
+    $list = static function () use ($pdo, $pTable, $uid) {
+        $stmt = $pdo->prepare("SELECT p.* FROM customer_wishlist w JOIN `$pTable` p ON p.id = w.product_id WHERE w.user_id = :uid ORDER BY w.sort_order ASC, w.created_at DESC LIMIT 100");
+        $stmt->execute([':uid' => $uid]);
+        return array_map(static function ($row) {
+            $p = normalizeProductRow($row);
+            return ['productId' => $p['id'], 'id' => $p['id'], 'name' => $p['name'], 'price' => $p['price'], 'image' => $p['imageUrl'] ?? '', 'category' => $p['category'], 'sku' => $p['sku'] ?? '', 'visible' => !empty($row['visible'])];
+        }, $stmt->fetchAll());
+    };
+
+    // Lo que se guardó antes de iniciar sesión (o con la versión en sesión) pasa a la cuenta.
+    foreach (['guest_wishlist', 'wishlist_' . $uid] as $key) {
+        if (empty($_SESSION[$key]) || !is_array($_SESSION[$key])) continue;
+        foreach (array_reverse($_SESSION[$key]) as $item) $addProduct((string)($item['productId'] ?? ($item['id'] ?? '')));
+        unset($_SESSION[$key]);
+    }
+
+    if ($method === 'POST') {
+        if (isset($body['order']) && is_array($body['order'])) {
+            $sort = $pdo->prepare('UPDATE customer_wishlist SET sort_order = :sort WHERE user_id = :uid AND product_id = :pid');
+            foreach (array_slice(array_values($body['order']), 0, 100) as $i => $pid) $sort->execute([':sort' => $i, ':uid' => $uid, ':pid' => (string)$pid]);
+        } else {
+            $item = $body['item'] ?? $body;
+            $addProduct((string)($item['productId'] ?? ($item['id'] ?? '')));
+            $pdo->prepare('DELETE FROM customer_wishlist WHERE user_id = :uid AND product_id NOT IN (SELECT product_id FROM (SELECT product_id FROM customer_wishlist WHERE user_id = :uid2 ORDER BY sort_order ASC, created_at DESC LIMIT 100) AS keep)')->execute([':uid' => $uid, ':uid2' => $uid]);
+        }
+    } elseif ($method === 'DELETE') {
+        $delId = (string)($_GET['productId'] ?? ($body['productId'] ?? ($body['id'] ?? '')));
+        $stmt = $pdo->prepare('DELETE FROM customer_wishlist WHERE user_id = :uid' . ($delId !== '' ? ' AND product_id = :pid' : ''));
+        $stmt->execute($delId !== '' ? [':uid' => $uid, ':pid' => $delId] : [':uid' => $uid]);
+    }
+    echo json_encode($method === 'GET' ? ['wishlist' => $list()] : ['ok' => true, 'wishlist' => $list()]);
+    exit;
+}
+
 if ($action === 'customer-wishlist') {
     $user = getAuthUser();
     $uKey = $user ? 'wishlist_' . $user['id'] : 'guest_wishlist';
