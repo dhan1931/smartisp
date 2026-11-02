@@ -360,6 +360,8 @@ try {
   }
   const detected = execFileSync('php', ['-r', "require 'api/lib/image-proxy.php'; echo json_encode([smartispDetectImageType('<svg xmlns=\"http://www.w3.org/2000/svg\"><script>alert(1)</script></svg>'), smartispDetectImageType(base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='))]);"], { cwd: root }).toString();
   assert.deepEqual(JSON.parse(detected), [null, 'image/png'], 'el proxy solo acepta imágenes rasterizadas verificadas');
+  const s21 = execFileSync('php', ['-r', "require 'api/lib/image-proxy.php'; echo json_encode(array_map('smartispCurrentSupplierImageUrl', ['https://siglo21.net/wp-content/uploads/2023/11/AB-1_1_1.jpg', 'https://www.siglo21.net/wp-content/uploads/CD_1_1.jpg', 'https://intcomexpim.blob.core.windows.net/wp-content/uploads/x.jpg']));"], { cwd: root }).toString();
+  assert.deepEqual(JSON.parse(s21), ['https://siglo21.net/assets/images/product/AB-1_1_1.jpg', 'https://siglo21.net/assets/images/product/CD_1_1.jpg', 'https://intcomexpim.blob.core.windows.net/wp-content/uploads/x.jpg'], 'las fotos de Siglo21 se piden en su ruta nueva');
 
   // --- Contraseña heredada MD5: entra y se migra a bcrypt
   const legacyMd5 = createHash('md5').update('legacy-pass').digest('hex');

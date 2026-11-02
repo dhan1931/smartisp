@@ -69,7 +69,14 @@ function smartispDetectImageType(string $data): ?string {
 
 // Descarga la imagen siguiendo a mano hasta 3 redirecciones, validando cada destino.
 // Devuelve los bytes o null.
+// Siglo21 cambió de sitio el 2026-11-02: lo que estaba en /wp-content/uploads/[aaaa/mm/] ahora está en
+// /assets/images/product/ con el mismo nombre de archivo, y la ruta vieja responde HTML.
+function smartispCurrentSupplierImageUrl(string $url): string {
+    return (string)preg_replace('#^https?://(?:www\.)?siglo21\.net/wp-content/uploads/(?:\d{4}/\d{2}/)?#i', 'https://siglo21.net/assets/images/product/', $url);
+}
+
 function smartispFetchRemoteImage(string $url): ?string {
+    $url = smartispCurrentSupplierImageUrl($url);
     for ($hop = 0; $hop <= SMARTISP_PROXY_MAX_REDIRECTS; $hop++) {
         $target = smartispResolvePublicUrl($url);
         if ($target === null) return null;
