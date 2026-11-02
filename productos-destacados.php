@@ -134,7 +134,7 @@ foreach ($products as $idx => $product) {
   <meta name="twitter:description" content="<?= escFeatured($featuredPage['description']) ?>">
   <meta name="twitter:image" content="https://smart-isp.com.ec/assets/favicons/favicon-512x512.png">
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
-  <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=iva-20261027">
+  <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=barra-movil-20261101">
   <script src="/assets/js/store/public-brand.js?v=seo2-20261025" defer></script>
   <script src="/assets/vendor/lucide-icons.min.js?v=68df8f2b"></script>
   <script type="application/ld+json">
@@ -293,7 +293,7 @@ foreach ($products as $idx => $product) {
   </footer>
   <link rel="stylesheet" href="/assets/css/store/site-footer.css?v=politicas-20261027">
   <script src="/assets/js/store/site-footer.js?v=iva-20261027" defer></script>
-  <script src="/assets/js/store/storefront-discovery.js?v=subcat-20261028" defer></script>
+  <script src="/assets/js/store/storefront-discovery.js?v=familias-20261101" defer></script>
   <script src="/assets/js/store/public-account.js?v=cuenta-pagina-20261030" defer></script>
   <script>
     const featuredFilterPanel = document.getElementById('featuredFilterPanel');

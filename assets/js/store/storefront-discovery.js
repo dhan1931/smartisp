@@ -25,12 +25,17 @@
     if (!categoryList || !Array.isArray(categories) || !categories.length) return;
     const total = categories.reduce((sum, category) => sum + Number(category.productCount || 0), 0);
     const all = `<a href="/tienda.html#catalogo" data-store-category="todo el catalogo"><span>Todo el catálogo</span><small>${total.toLocaleString('es-EC')}</small><i data-lucide="chevron-right" width="18"></i></a>`;
-    const rows = categories.filter(category => !category.parentCategoryId).map((category, index) => {
+    const count = category => Number(category.totalCount ?? category.productCount ?? 0);
+    const familyTotals = categories.reduce((acc, category) => { if (category.macroGroupId) acc[category.macroGroupId] = (acc[category.macroGroupId] || 0) + count(category); return acc; }, {});
+    // Una categoría vacía con el nombre de su familia se enlaza a la familia; las demás vacías no se listan.
+    const asFamily = category => !count(category) && category.macroGroupId && slug(category.name) === slug(category.macroGroupName) && familyTotals[category.macroGroupId] > 0;
+    const rows = categories.filter(category => !category.parentCategoryId && (count(category) > 0 || asFamily(category))).map((category, index) => {
       const name = String(category.name || '').trim();
       const subs = Array.isArray(category.subcategories) ? category.subcategories.filter(Boolean) : [];
       const subId = `storeSubcategories${index}`;
-      const href = `/categoria/${encodeURIComponent(slug(name))}/`;
-      return `<section class="storefront-category-entry" data-category-entry="${esc(`${name} ${subs.join(' ')}`.toLocaleLowerCase())}"><div class="storefront-category-row"><a href="${href}" data-store-category="${esc(name.toLocaleLowerCase())}"><span>${esc(name)}</span><small>${Number(category.totalCount ?? category.productCount ?? 0).toLocaleString('es-EC')}</small></a>${subs.length ? `<button class="storefront-category-expand" type="button" aria-label="Ver subcategorías de ${esc(name)}" aria-expanded="false" aria-controls="${subId}"><i data-lucide="chevron-down" width="19"></i></button>` : ''}</div>${subs.length ? `<div class="storefront-subcategories" id="${subId}" hidden>${subs.map(sub => `<a href="/categoria/${encodeURIComponent(slug(sub))}/" data-store-category="${esc(sub.toLocaleLowerCase())}">${esc(sub)}</a>`).join('')}</div>` : ''}</section>`;
+      const family = asFamily(category);
+      const href = family ? `/categorias-destacadas?macro=${encodeURIComponent(category.macroGroupId)}` : `/categoria/${encodeURIComponent(slug(name))}/`;
+      return `<section class="storefront-category-entry" data-category-entry="${esc(`${name} ${subs.join(' ')}`.toLocaleLowerCase())}"><div class="storefront-category-row"><a href="${href}" data-store-category="${esc(name.toLocaleLowerCase())}"><span>${esc(name)}</span><small>${(family ? familyTotals[category.macroGroupId] : count(category)).toLocaleString('es-EC')}</small></a>${subs.length ? `<button class="storefront-category-expand" type="button" aria-label="Ver subcategorías de ${esc(name)}" aria-expanded="false" aria-controls="${subId}"><i data-lucide="chevron-down" width="19"></i></button>` : ''}</div>${subs.length ? `<div class="storefront-subcategories" id="${subId}" hidden>${subs.map(sub => `<a href="/categoria/${encodeURIComponent(slug(sub))}/" data-store-category="${esc(sub.toLocaleLowerCase())}">${esc(sub)}</a>`).join('')}</div>` : ''}</section>`;
     }).join('');
     categoryList.innerHTML = all + rows;
     window.lucide?.createIcons();

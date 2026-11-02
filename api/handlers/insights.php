@@ -68,6 +68,9 @@ function smartispInsightsAlerts(PDO $pdo, array $ctx): array {
     $catalog = $pdo->query("SELECT SUM($noPhoto) AS no_photo, SUM(p.price <= 0) AS no_price
         FROM `{$ctx['products']}` p WHERE p.visible = 1")->fetch(PDO::FETCH_ASSOC) ?: [];
 
+    require_once __DIR__ . '/../lib/price-guard.php';
+    $suspicious = count(smartispSuspiciousPrices($pdo, $ctx['products']));
+
     return [
         'stale_days' => $ctx['stale_days'],
         'orders_pending' => (int)($orders['pending'] ?? 0),
@@ -78,6 +81,7 @@ function smartispInsightsAlerts(PDO $pdo, array $ctx): array {
         'low_stock' => $stock['low_stock'],
         'products_no_photo' => (int)($catalog['no_photo'] ?? 0),
         'products_no_price' => (int)($catalog['no_price'] ?? 0),
+        'products_suspicious_price' => $suspicious,
     ];
 }
 
