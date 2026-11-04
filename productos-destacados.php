@@ -246,7 +246,7 @@ foreach ($products as $idx => $product) {
       </div>
       <nav class="site-footer-col" aria-label="Comprar">
         <h4>Comprar</h4>
-        <a href="/tienda.html">Catálogo</a>
+        <a href="/categorias-destacadas">Catálogo</a>
         <a href="/categorias-destacadas">Categorías</a>
         <a href="/productos-destacados">Productos destacados</a>
         <a href="/servicios">Servicios</a>

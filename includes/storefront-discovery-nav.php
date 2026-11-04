@@ -53,9 +53,9 @@ $storefrontNavLinks = [
 <script src="/assets/js/store/storefront-cart.js?v=cart-a11y-20261025" defer></script>
 <script src="/assets/js/store/storefront-product-card.js?v=cart-a11y-20261025" defer></script>
 <nav class="storefront-mobile-bar" aria-label="Accesos rápidos">
-  <a href="/tienda.html"><i data-lucide="store" width="19"></i><span>Tienda</span></a>
+  <a href="/categorias-destacadas"><i data-lucide="store" width="19"></i><span>Tienda</span></a>
   <a href="/categorias-destacadas"><i data-lucide="layout-grid" width="19"></i><span>Categorías</span></a>
-  <a href="/tienda.html#catalogo"><i data-lucide="search" width="19"></i><span>Buscar</span></a>
+  <a href="/categorias-destacadas"><i data-lucide="search" width="19"></i><span>Buscar</span></a>
   <a href="/tienda.html?openCart=1" data-open-cart><i data-lucide="shopping-cart" width="19"></i><span>Carrito</span></a>
   <a href="/mi-cuenta"><i data-lucide="user" width="19"></i><span>Cuenta</span></a>
 </nav>
