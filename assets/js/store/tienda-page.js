@@ -2431,8 +2431,9 @@
 			const cartParam = urlParams.get('openCart') || urlParams.get('carrito');
 			const accountParam = urlParams.get('openAccount') || urlParams.get('cuenta');
 			const pathIsCategorias = window.location.pathname.replace(/\/$/, '') === '/categorias-destacadas';
-			window.isCategoriasView = pathIsCategorias || Boolean(catParam) || Boolean(macroParam) || Boolean(searchParam) || Boolean(brandParam);
+			window.isCategoriasView = pathIsCategorias || window.location.hash === '#catalogo' || Boolean(catParam) || Boolean(macroParam) || Boolean(searchParam) || Boolean(brandParam);
 			if (window.isCategoriasView) applyCatalogUrlParams(urlParams);
+			if (!window.isCategoriasView) window.addEventListener('hashchange', () => { if (window.location.hash === '#catalogo') window.location.replace('/categorias-destacadas'); });
 			if (window.isCategoriasView) {
 				document.querySelector('#catalogView').hidden = false;
 				document.querySelectorAll('#mNavHome,#mNavCategories').forEach(el => el.classList.toggle('active', el.id === 'mNavCategories'));
@@ -2519,7 +2520,7 @@
 		const mNavHome = document.querySelector('#mNavHome');
 		if (mNavHome) {
 			mNavHome.addEventListener('click', () => {
-				if (window.isCategoriasView) { window.location.href = '/tienda.html'; return; }
+				if (!window.isCategoriasView) { window.location.href = '/categorias-destacadas'; return; }
 				selectedFilter = 'all';
 				if (typeof renderSidebarCategories === 'function') renderSidebarCategories();
 				const searchInput = document.querySelector('#searchInput');
