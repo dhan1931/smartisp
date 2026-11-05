@@ -534,6 +534,20 @@ if ($action === 'admin-products') {
             }
         }
 
+        // Una foto nueva pegada desde otro sitio se copia en el acto al servidor; si no se puede, queda la
+        // dirección y la copia el cron o Panel > Fotos.
+        require_once __DIR__ . '/../lib/image-archive.php';
+        $imageParts = explode('|', $imageUrl);
+        if (smartispIsExternalImage(trim($imageParts[0]))) {
+            $prevImage = $pdo->prepare("SELECT image_url FROM `$pTable` WHERE id = :id");
+            $prevImage->execute([':id' => $existingId ?: $id]);
+            if ((string)$prevImage->fetchColumn() !== $imageUrl) {
+                @set_time_limit(60);
+                $localImage = smartispArchiveImageUrl(trim($imageParts[0]));
+                if ($localImage !== null) { $imageParts[0] = $localImage; $imageUrl = implode('|', $imageParts); }
+            }
+        }
+
         $prodSlug = slugify($name);
 
         if ($existingId) {
