@@ -41,4 +41,11 @@ const walk = directory => {
 walk('dist');
 
 if (forbidden.length) throw new Error(`El artefacto contiene archivos privados/no desplegables: ${forbidden.join(', ')}`);
-console.log(`Artefacto válido: ${required.length} rutas presentes y sin .env ni dumps SQL.`);
+
+// Todas las páginas de la tienda llevan el mismo pie completo que tienda.html.
+const footerOf = file => (readFileSync(path.join('dist', file), 'utf8').match(/<footer class="site-footer">[\s\S]*?<\/footer>/) || [''])[0].replace(/\s+/g, ' ');
+const fullFooter = footerOf('tienda.html');
+const footerPages = ['nosotros.html', 'servicios.html', 'mi-cuenta.html', 'checkout.html', 'terminos.html', 'devoluciones.html', 'privacidad.html', 'garantias.html', 'envios.html', 'producto.php', 'categoria.php', 'productos-destacados.php', 'categorias-destacadas.php'];
+const badFooters = fullFooter ? footerPages.filter(file => footerOf(file) !== fullFooter || !readFileSync(file, 'utf8').includes('/assets/css/store/site-footer.css')) : ['tienda.html'];
+if (badFooters.length) throw new Error(`El pie de página completo falta o es distinto en: ${badFooters.join(', ')}`);
+console.log(`Artefacto válido: ${required.length} rutas presentes, sin .env ni dumps SQL y el mismo pie en ${footerPages.length + 1} páginas.`);

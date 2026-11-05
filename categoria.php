@@ -571,7 +571,7 @@ foreach ($products as $idx => $product) {
       <div><a href="/nosotros">Nosotros</a><a href="/terminos">Términos y condiciones</a><a href="/privacidad">Política de privacidad</a><a href="/garantias">Garantías</a></div>
     </div>
   </footer>
-  <link rel="stylesheet" href="/assets/css/store/site-footer.css?v=politicas-20261027">
+  <link rel="stylesheet" href="/assets/css/store/site-footer.css?v=pie-20261105">
   <script src="/assets/js/store/site-footer.js?v=iva-20261027" defer></script>
   <script src="/assets/js/store/storefront-discovery.js?v=familias-20261101" defer></script>
   <?php if ($categoryName !== '' && $totalProducts > 0): ?>

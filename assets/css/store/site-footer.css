@@ -1,4 +1,5 @@
 .site-footer { background: #0b2032; color: #a9c2d4; font-size: 13px; }
+.site-footer a { text-decoration: none; }
 .site-footer-top { display: grid; grid-template-columns: 1.5fr repeat(3, 1fr) 1.2fr; gap: 28px; padding: 44px 5vw 30px; }
 .site-footer-logo { display: inline-block; font-family: 'Space Grotesk', sans-serif; font-size: 23px; font-weight: 800; color: #fff; letter-spacing: -.02em; }
 .site-footer-logo-tag { display: block; font-family: system-ui, sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .12em; color: #6f93ad; margin-top: 3px; }
