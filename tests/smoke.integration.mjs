@@ -621,6 +621,22 @@ try {
   assert.ok((await req('catalog-suggest?q=hikv')).data.brands.includes('Hikvision'), 'las sugerencias incluyen marcas');
   await db.execute("DELETE FROM products_rows WHERE id LIKE 'smk-s_'");
 
+  await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku,image_url) VALUES ('smk-arch','Foto caida',5,1,'General','SKU-ARCH','http://127.0.0.1/no-existe.jpg')");
+  assert.equal((await req('admin-archive-images')).status, 401, 'guardar fotos requiere sesión de administrador');
+  const arch1 = await req('admin-archive-images', { method: 'POST', cookie: ac, body: { limit: 50 } });
+  assert.equal(arch1.status, 200, JSON.stringify(arch1.data));
+  assert.ok(arch1.data.failed.some(f => f.id === 'smk-arch') && arch1.data.unreachable >= 1, JSON.stringify(arch1.data));
+  const arch2 = await req('admin-archive-images', { method: 'POST', cookie: ac, body: { limit: 50 } });
+  assert.ok(!arch2.data.failed.some(f => f.id === 'smk-arch'), 'una foto que falló no se reintenta en cada tanda');
+  const [[archRow]] = await db.query("SELECT image_url FROM products_rows WHERE id = 'smk-arch'");
+  assert.equal(archRow.image_url, 'http://127.0.0.1/no-existe.jpg', 'si no se pudo descargar, la foto queda como estaba');
+  await db.execute("DELETE FROM products_rows WHERE id = 'smk-arch'");
+  await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku,image_url) VALUES ('smk-cron','Foto cron',5,1,'General','SKU-CRON','http://127.0.0.1/cron.jpg')");
+  const cronOut = execFileSync('php', ['api/cron/archivar-fotos.php', '--reintentar', '--minutos=1'], { cwd: root, env: process.env }).toString();
+  assert.match(cronOut, /Guardadas \d+ · sin respuesta del proveedor [1-9]\d* · pendientes 0/, cronOut);
+  const [[cronFailed]] = await db.query("SELECT setting_value FROM settings_rows WHERE setting_key = 'image_archive_failed'");
+  assert.ok(JSON.parse(cronFailed.setting_value)['smk-cron'], 'el cron anota las fotos que no pudo bajar');
+  await db.execute("DELETE FROM products_rows WHERE id = 'smk-cron'");
   await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku) VALUES ('smk-nm','MOUSE/HPINC M170/WIRELESS T3170/T5170 5600MT/S',12,1,'Smk Nombres','SKU-NM')");
   const named = await req('catalog?q=SKU-NM');
   assert.equal(named.data.products[0].name, 'Mouse HP M170 Wireless T3170/T5170 5600MT/S', 'el nombre en mayúsculas del proveedor se muestra limpio');

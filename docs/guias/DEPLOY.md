@@ -163,6 +163,21 @@ No hace falta subirlos ni borrarlos — no los sirve ninguna ruta mientras PHP s
       Si no existen, el código las crea solo en el primer uso (`@mkdir(..., true)`), pero conviene
       confirmar los permisos de escritura del usuario de PHP en Hostinger.
 
+### Copia propia de las fotos de proveedor (cron)
+
+Las fotos importadas apuntan al sitio del proveedor; si el proveedor cambia de sitio se pierden
+(pasó con Siglo21 el 2026-11-02). `api/cron/archivar-fotos.php` las copia a `uploads/products/`.
+En hPanel → Avanzado → Cron Jobs, dos tareas (cambiar `<usuario>` por el del hosting):
+
+```
+0 4 * * *   php /home/<usuario>/public_html/api/cron/archivar-fotos.php
+30 4 * * 0  php /home/<usuario>/public_html/api/cron/archivar-fotos.php --reintentar
+```
+
+La diaria guarda las pendientes (productos nuevos o importados); la semanal reintenta las que
+fallaron. Por HTTP no responde. El mismo proceso se puede lanzar a mano en Editor de catálogo →
+Importador → «Guardar fotos ahora».
+
 ## 5. Después de publicar: verificación mínima
 
 - [ ] `/` (portada) carga.

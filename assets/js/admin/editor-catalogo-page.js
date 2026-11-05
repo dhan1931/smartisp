@@ -2267,6 +2267,33 @@
     });
 
     // Verificación de sesión de Administrador
+    // Copia propia de las fotos de proveedor, por tandas hasta terminar o hasta que se pause.
+    const archiveCard = document.getElementById('imageArchiveCard');
+    if (archiveCard) {
+      const el = id => document.getElementById(id);
+      let archiving = false;
+      const paint = s => { el('archivePending').textContent = s.pending; el('archiveLocal').textContent = s.local; el('archiveUnreachable').textContent = s.unreachable; el('archiveRetry').hidden = archiving || !s.unreachable; el('archiveStart').disabled = archiving || !s.pending; };
+      const load = () => api('admin-archive-images').then(paint).catch(() => {});
+      const run = async retryFailed => {
+        archiving = true; el('archiveStart').disabled = true; el('archiveRetry').hidden = true; el('archiveStop').hidden = false;
+        let saved = 0, failed = 0, first = true;
+        try {
+          while (archiving) {
+            const res = await api('admin-archive-images', { method: 'POST', body: JSON.stringify({ limit: 15, retryFailed: first && retryFailed }) });
+            first = false; saved += res.saved || 0; failed += (res.failed || []).length; paint(res);
+            el('archiveStatus').textContent = `Guardadas ${saved} · sin respuesta del proveedor ${failed} · faltan ${res.pending}`;
+            if (!res.pending || (!res.saved && !(res.failed || []).length)) break;
+          }
+          showToast(`Fotos guardadas en el servidor: ${saved}.`);
+        } catch (error) { showToast(error.message || 'No se pudieron guardar las fotos.', 'error'); }
+        archiving = false; el('archiveStop').hidden = true; load();
+      };
+      el('archiveStart').addEventListener('click', () => run(false));
+      el('archiveRetry').addEventListener('click', () => run(true));
+      el('archiveStop').addEventListener('click', () => { archiving = false; });
+      load();
+    }
+
     (async () => {
       let user = null;
       try {
