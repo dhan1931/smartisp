@@ -32,7 +32,19 @@
 .quick-head h3 { margin: 0 0 4px; font-size: 15px; line-height: 1.35; }
 .quick-head p { margin: 0 0 12px; color: var(--text-3); font-size: 12.5px; }
 .quick-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.quick-progress { margin: 14px 0 0; color: var(--text-3); font-size: 12.5px; }
+.quick-status { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--success-soft); color: var(--success); font-size: 13px; font-weight: 600; }
+.quick-status.is-busy { background: var(--accent-soft); color: var(--accent-text); }
+.quick-status svg { flex: none; width: 16px; height: 16px; }
+.quick-status.is-busy svg { animation: sa-spin 1s linear infinite; }
+.pick-busy { margin: 12px 0 0; }
+.quick-auto { display: flex; align-items: center; gap: 8px; margin-top: 10px; color: var(--text-2); font-size: 13px; }
+.quick-msg { margin: 0; color: var(--danger); font-size: 13px; font-weight: 600; }
+.quick-msg:empty { display: none; }
+.quick-failed { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 12.5px; }
+.quick-failed p { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; color: var(--danger); font-weight: 600; }
+.quick-failed svg { width: 15px; height: 15px; }
+.quick-failed ul { display: grid; gap: 6px; max-height: 180px; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
+.quick-failed li { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .pick-search { display: flex; gap: 8px; margin-bottom: 12px; }
 .pick-search .input { flex: 1; min-width: 0; }
 .cand-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; min-height: 120px; }
