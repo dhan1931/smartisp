@@ -75,12 +75,6 @@ function smartispCurrentSupplierImageUrl(string $url): string {
     return (string)preg_replace('#^https?://(?:www\.)?siglo21\.net/wp-content/uploads/(?:\d{4}/\d{2}/)?#i', 'https://siglo21.net/assets/images/product/', $url);
 }
 
-// Siglo21 (Cloudflare) rechaza las descargas desde el hosting pero sí sirve la foto al navegador del cliente.
-function smartispDirectSupplierImageUrl(string $url): ?string {
-    $url = smartispCurrentSupplierImageUrl($url);
-    return preg_match('#^https://siglo21\.net/assets/images/product/[A-Za-z0-9._()-]+\.(?:jpe?g|png|webp|gif)$#i', $url) ? $url : null;
-}
-
 function smartispFetchRemoteImage(string $url): ?string {
     $url = smartispCurrentSupplierImageUrl($url);
     for ($hop = 0; $hop <= SMARTISP_PROXY_MAX_REDIRECTS; $hop++) {
