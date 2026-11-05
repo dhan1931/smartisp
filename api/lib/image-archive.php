@@ -6,6 +6,12 @@ require_once __DIR__ . '/image-proxy.php';
 const SMARTISP_ARCHIVE_FAILED_KEY = 'image_archive_failed';
 const SMARTISP_ARCHIVE_MAX_SIDE = 1200;
 
+// Imagen genérica de «sin imagen» de la tienda del proveedor (woocommerce-placeholder.png): no es una foto
+// del producto, así que no se copia ni se busca su copia archivada.
+function smartispIsPlaceholderImage(string $url): bool {
+    return (bool)preg_match('/placeholder|no[-_]?image|sin[-_]?imagen/i', basename((string)parse_url($url, PHP_URL_PATH)));
+}
+
 function smartispIsExternalImage(string $url): bool {
     return (bool)preg_match('#^https?://#i', trim($url));
 }
@@ -46,7 +52,7 @@ function smartispProxyCachedImage(string $url): ?string {
 // Descarga una URL y la guarda en uploads/products. Devuelve la URL local o null si no se pudo.
 function smartispArchiveImageUrl(string $url): ?string {
     $url = trim($url);
-    if (!smartispIsExternalImage($url)) return null;
+    if (!smartispIsExternalImage($url) || smartispIsPlaceholderImage($url)) return null;
     $data = smartispFetchRemoteImage($url) ?? smartispProxyCachedImage($url);
     if ($data === null) return null;
     $mime = smartispDetectImageType($data);
@@ -107,7 +113,11 @@ function smartispArchiveBatch(PDO $pdo, string $pTable, int $limit, float $timeB
     $saved = 0; $newFailed = [];
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
         if (microtime(true) - $started > $timeBudget) break;
-        $parts = array_values(array_filter(array_map('trim', explode('|', (string)$row['image_url'])), 'strlen'));
+        $parts = array_values(array_filter(array_map('trim', explode('|', (string)$row['image_url'])), static fn($p) => $p !== '' && !smartispIsPlaceholderImage($p)));
+        if (!$parts) {
+            $update->execute([':new' => '', ':id' => $row['id'], ':old' => $row['image_url']]);
+            continue;
+        }
         $out = []; $any = false;
         foreach ($parts as $part) {
             $local = smartispIsExternalImage($part) ? smartispArchiveImageUrl($part) : null;

@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
   const addFixed = items => {
     if (!items.length) return;
     $('#fixedBox').hidden = false;
+    items.forEach(f => $('#fixedList').querySelectorAll('[data-pick]').forEach(el => { if (el.dataset.pick === String(f.id)) el.remove(); }));
     $('#fixedList').insertAdjacentHTML('afterbegin', items.map(f => `<button type="button" class="photo-fixed-item" data-pick="${esc(f.id)}" data-name="${esc(f.name)}" title="Cambiar la foto de ${esc(f.name)}"><img src="${esc(f.url)}" alt="" loading="lazy"><span>${esc(f.name)}</span><small>${esc(SOURCE[f.source] || f.source)}</small></button>`).join(''));
   };
 
