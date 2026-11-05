@@ -1,6 +1,6 @@
 <?php
 // Fotos de producto: detectar las rotas o faltantes y reemplazarlas por copias guardadas en el servidor.
-if (!in_array($action ?? '', ['admin-photos', 'admin-photo-candidates', 'admin-photo-replace', 'admin-photo-auto', 'admin-photo-ok'], true)) return;
+if (!in_array($action ?? '', ['admin-photos', 'admin-photo-candidates', 'admin-photo-replace', 'admin-photo-auto', 'admin-photo-ok', 'admin-photo-match'], true)) return;
 
 requireAdminAuth();
 require_once __DIR__ . '/../lib/photo-sources.php';
@@ -96,6 +96,35 @@ if ($action === 'admin-photo-replace') {
     smartispPhotoSetLocal($pdo, $pTable, $id, $localUrl);
     smartispPhotoForget($pdo, SMARTISP_PHOTO_WEB_FIXED_KEY, [$id]);
     echo json_encode(['ok' => true, 'url' => $localUrl]);
+    exit;
+}
+
+// Subida en lote: cada archivo se asigna al producto cuyo SKU (o id) coincide con su nombre. Los proveedores
+// nombran las fotos «SKU_1_1.jpg», así que también se prueba sin ese sufijo.
+if ($action === 'admin-photo-match') {
+    smartispRequirePost();
+    $names = array_slice(array_values(array_filter(array_map('strval', (array)($body['names'] ?? [])), 'strlen')), 0, 1000);
+    $norm = static fn(string $s): string => preg_replace('/[^A-Z0-9]/', '', strtoupper($s));
+    $bySku = [];
+    $ids = [];
+    foreach ($pdo->query("SELECT id, name, sku FROM `$pTable`")->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $ids[(string)$row['id']] = $row;
+        $key = $norm((string)$row['sku']);
+        if (strlen($key) >= 4) $bySku[$key][] = $row;
+    }
+    $matches = [];
+    foreach ($names as $name) {
+        $base = preg_replace('/\.[a-z0-9]{3,4}$/i', '', trim(basename($name)));
+        $found = null;
+        foreach (array_unique([$base, preg_replace('/(?:[_-]\d{1,2}){1,2}$|\s*\(\d+\)$/', '', $base)]) as $candidate) {
+            if (isset($ids[$candidate])) { $found = [$ids[$candidate]]; break; }
+            if (isset($bySku[$norm($candidate)])) { $found = $bySku[$norm($candidate)]; break; }
+        }
+        $matches[] = $found
+            ? ['name' => $name, 'ids' => array_column($found, 'id'), 'product' => $found[0]['name'], 'sku' => $found[0]['sku']]
+            : ['name' => $name, 'ids' => []];
+    }
+    echo json_encode(['matches' => $matches]);
     exit;
 }
 
