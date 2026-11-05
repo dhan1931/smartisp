@@ -100,7 +100,7 @@ function smartispIcecatImages(string $brand, string $code): array {
 // Copia guardada en el Internet Archive de la URL que se rompió (o de sus miniaturas -300x300 de WordPress).
 function smartispWaybackImages(string $url): array {
     $url = trim($url);
-    if (!preg_match('#^https?://#i', $url)) return [];
+    if (!preg_match('#^https?://#i', $url) || smartispIsPlaceholderImage($url)) return [];
     $bare = preg_replace('#^https?://(www\.)?#i', '', strtok($url, '?'));
     $stem = preg_replace('/\.[a-z0-9]{3,4}$/i', '', $bare);
     $rows = smartispPhotoGetJson('https://web.archive.org/cdx/search/cdx?' . http_build_query(['url' => $stem, 'matchType' => 'prefix', 'output' => 'json', 'limit' => 40]), [], 15);

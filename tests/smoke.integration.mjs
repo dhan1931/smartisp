@@ -670,6 +670,13 @@ try {
   assert.deepEqual([auto.data.checked, auto.data.fixed.length, auto.data.remaining], [1, 0, 0], 'sin marca ni foto original no inventa una foto y no la vuelve a intentar');
   await db.execute("DELETE FROM products_rows WHERE id IN ('smk-ph1', 'smk-ph2')");
   await db.execute("DELETE FROM settings_rows WHERE setting_key IN ('image_auto_tried', 'image_archive_failed')");
+  const ph = execFileSync('php', ['-r', "require 'api/lib/photo-sources.php'; echo json_encode([smartispIsPlaceholderImage('https://siglo21.net/wp-content/uploads/woocommerce-placeholder.png'), smartispIsPlaceholderImage('https://web.archive.org/web/2024id_/https://siglo21.net/wp-content/uploads/woocommerce-placeholder-300x300.png'), smartispIsPlaceholderImage('https://siglo21.net/wp-content/uploads/2023/11/LOGTECWIR920-012278_1_1.jpg'), smartispArchiveImageUrl('https://siglo21.net/wp-content/uploads/woocommerce-placeholder.png'), smartispWaybackImages('https://siglo21.net/wp-content/uploads/woocommerce-placeholder.png')]);"], { cwd: root }).toString();
+  assert.deepEqual(JSON.parse(ph), [true, true, false, null, []], 'la imagen genérica de «sin imagen» no cuenta como foto');
+  await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku,image_url) VALUES ('smk-ph3','Placeholder smk',5,1,'General','SKU-PH3','https://siglo21.net/wp-content/uploads/woocommerce-placeholder.png')");
+  await req('admin-archive-images', { method: 'POST', cookie: ac, body: { limit: 50, retryFailed: true } });
+  const [[ph3]] = await db.query("SELECT image_url FROM products_rows WHERE id = 'smk-ph3'");
+  assert.equal(ph3.image_url, '', 'un producto con la imagen genérica queda como «sin foto»');
+  await db.execute("DELETE FROM products_rows WHERE id = 'smk-ph3'");
   const webQuery = execFileSync('php', ['-r', "require 'api/lib/photo-sources.php'; echo smartispPhotoWebQuery(['name' => 'MOUSE/LOGITECH M170/WIRELESS', 'sku' => 'LOGMOUWIR910-006863']);"], { cwd: root }).toString();
   assert.equal(webQuery, 'Mouse Logitech M170 Wireless 910-006863', 'la búsqueda web usa el nombre limpio y el número de parte');
   const noKey = await req('admin-photo-auto', { method: 'POST', cookie: ac, body: { web: true } });
