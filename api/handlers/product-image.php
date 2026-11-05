@@ -146,5 +146,12 @@ if ($imgData !== null && $contentType !== null) {
     exit;
 }
 
+$direct = smartispDirectSupplierImageUrl($targetUrl);
+if ($direct !== null) {
+    header('Cache-Control: public, max-age=3600');
+    header('Location: ' . $direct, true, 302);
+    exit;
+}
+
 // Si falló la descarga o no era una imagen admitida, servir el placeholder de SmartISP
 $servePlaceholder();
