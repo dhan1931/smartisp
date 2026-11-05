@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
     try {
       const data = await api(`admin-photos?${new URLSearchParams({ status: st.status, q: st.q, page: st.page, limit: 40 })}`);
       if (seq !== loadSeq) return;
-      webSearch = !!data.webSearch; products = data.products || []; st.totalPages = data.totalPages || 1;
+      webSearch = !!data.webSearch; products = data.products || []; st.totalPages = data.totalPages || 1; st.total = data.total || 0;
       const c = data.counts || {};
       $('#stats').innerHTML = STATS.map(([key, icon, label]) => `<button type="button" class="stat ${key === st.status ? 'is-active' : ''} ${(key === 'rotas' || key === 'sin-foto') && c[key] ? 'is-alert' : ''}" data-status="${key}" aria-pressed="${key === st.status}"><span><i data-lucide="${icon}" aria-hidden="true"></i>${label}</span><strong>${c[key] || 0}</strong></button>`).join('');
       $('#count').textContent = `${data.total || 0} producto${data.total === 1 ? '' : 's'}`;
@@ -123,49 +123,116 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
   ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('is-over'); }));
   drop.addEventListener('drop', e => bulkUpload(e.dataTransfer.files));
 
-  // Modo rápido: un producto a la vez; al pegar la dirección de la foto se guarda y pasa al siguiente.
+  const googleUrl = p => 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(p.query || p.name);
+  // Lo pegado puede ser la imagen misma (clic derecho → «Copiar imagen») o la miniatura de Google en data: URL.
+  const pastedBlob = (clip, text) => {
+    const file = [...(clip?.files || [])].find(f => f.type.startsWith('image/'));
+    if (file || !/^data:image\/[\w+.-]+;base64,/i.test(text)) return file || null;
+    return new Blob([Uint8Array.from(atob(text.slice(text.indexOf(',') + 1)), ch => ch.charCodeAt(0))], { type: text.slice(5, text.indexOf(';')) });
+  };
+  // Se achica en el navegador: sube más rápido y no choca con el límite de 8 MB.
+  const shrink = async blob => {
+    const bmp = await createImageBitmap(blob).catch(() => null);
+    if (!bmp) throw new Error('Lo pegado no es una imagen válida.');
+    const side = Math.max(bmp.width, bmp.height);
+    if (side < 200) throw new Error('La imagen es muy pequeña (es la miniatura). Ábrela en grande y cópiala otra vez.');
+    const scale = Math.min(1, 1600 / side);
+    if (scale === 1 && blob.size < 1.5e6 && /^image\/(png|jpeg|webp)$/.test(blob.type)) return new File([blob], 'foto.' + blob.type.slice(6), { type: blob.type });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bmp.width * scale); canvas.height = Math.round(bmp.height * scale);
+    canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    const out = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.9));
+    return new File([out], 'foto.' + out.type.slice(6), { type: out.type });
+  };
+
+  // Modo rápido: lo pegado se guarda en segundo plano y se pasa al siguiente sin esperar al servidor.
   $('#quickMode').addEventListener('click', () => {
-    let queue = products.filter(p => !p.image), skipped = new Set(), saved = 0, busy = false, current = null;
-    const m = modal({ title: 'Modo rápido', subtitle: 'Pega la dirección de la foto y pasa solo al siguiente.', body: '', onClose: () => load() });
-    const refill = async () => {
-      const data = await api(`admin-photos?${new URLSearchParams({ status: st.status, q: st.q, page: 1, limit: 100 })}`);
-      queue = (data.products || []).filter(p => !p.image && !skipped.has(p.id));
-    };
-    const show = async () => {
-      if (!queue.length) await refill().catch(() => { queue = []; });
-      current = queue.shift();
-      if (!current) { m.body.innerHTML = stateHtml('empty', 'No quedan productos en esta lista', `Guardadas: ${saved} · saltadas: ${skipped.size}`, 'circle-check'); icons(); return; }
-      const google = 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(current.query || current.name);
-      m.body.innerHTML = `<div class="quick-head"><h3>${esc(current.name)}</h3><p>${esc(current.sku || '')}</p></div><a class="button primary" id="qGoogle" href="${esc(google)}" target="_blank" rel="noopener"><i data-lucide="external-link" aria-hidden="true"></i> Buscar en Google Imágenes</a><div class="pick-extra"><label for="qUrl">Pega aquí la dirección de la imagen (clic derecho sobre la foto → «Copiar dirección de imagen»)</label><div class="pick-row"><input class="input" id="qUrl" type="url" placeholder="https://…" autocomplete="off"><button class="button" type="button" id="qUse">Guardar</button></div><label for="qFile">O sube el archivo</label><input id="qFile" type="file" accept="image/png,image/jpeg,image/webp"><p class="pick-note" id="qMsg" role="status"></p></div><div class="quick-actions"><button class="button" type="button" id="qSkip">Saltar</button></div><p class="quick-progress">Guardadas: ${saved} · saltadas: ${skipped.size}</p>`;
+    let queue = products.filter(p => !p.image), current = null, saved = 0, working = false, autoOpen = SmartAdmin.remembered('fotos.autoGoogle', true);
+    const total = st.total, skipped = new Set(), sent = new Set(), jobs = [], failed = [];
+    const onPaste = e => { if (!current || e.target.id === 'qFile') return; e.preventDefault(); accept(e.clipboardData, (e.clipboardData?.getData('text') || '').trim(), true); };
+    const m = modal({ title: 'Modo rápido', subtitle: 'En Google: clic derecho sobre la foto → «Copiar imagen». Aquí: Ctrl+V. Se guarda sola y pasa al siguiente.', body: '<div class="quick-status" id="qStatus" role="status" aria-live="polite"></div><div id="qCard"></div><div class="quick-failed" id="qFailed" hidden></div>', onClose: () => { document.removeEventListener('paste', onPaste); load(); } });
+    const $q = sel => m.body.querySelector(sel);
+    const paint = () => {
+      if (!m.body.isConnected) return;
+      const left = ` · quedan ${Math.max(0, total - sent.size - skipped.size)}`;
+      $q('#qStatus').classList.toggle('is-busy', jobs.length > 0);
+      $q('#qStatus').innerHTML = jobs.length ? `<i data-lucide="refresh-cw" aria-hidden="true"></i> Guardando en tu servidor (${jobs.length})… puedes seguir con el siguiente${left}` : `<i data-lucide="circle-check" aria-hidden="true"></i> Guardadas: ${saved}${failed.length ? ` · con error: ${failed.length}` : ''}${left}`;
+      $q('#qFailed').hidden = !failed.length;
+      $q('#qFailed').innerHTML = failed.length ? `<p><i data-lucide="triangle-alert" aria-hidden="true"></i> No se pudieron guardar:</p><ul>${failed.map((f, i) => `<li><span>${esc(f.p.name)} — ${esc(f.error)}</span><button class="button small" type="button" data-retry="${i}">Elegir otra</button></li>`).join('')}</ul>` : '';
       icons();
-      const input = m.body.querySelector('#qUrl');
-      input.focus();
-      input.addEventListener('paste', () => setTimeout(() => save(input.value.trim()), 0));
-      input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); save(input.value.trim()); } });
-      m.body.querySelector('#qUse').addEventListener('click', () => save(input.value.trim()));
-      m.body.querySelector('#qSkip').addEventListener('click', () => { skipped.add(current.id); show(); });
-      m.body.querySelector('#qFile').addEventListener('change', async e => { const f = e.target.files[0]; if (!f || busy) return; busy = true; try { const url = await uploadFile(f); busy = false; save(url); } catch (err) { busy = false; m.body.querySelector('#qMsg').textContent = err.message; } });
     };
-    const save = async url => {
-      if (busy || !url || !current) return;
-      busy = true;
-      const msg = m.body.querySelector('#qMsg');
-      msg.textContent = 'Guardando en tu servidor…';
+    const work = async () => {
+      if (working) return;
+      working = true;
+      while (jobs.length) {
+        paint();
+        const job = jobs[0];
+        try {
+          const url = job.file ? await uploadFile(job.file) : job.url;
+          const res = await post('admin-photo-replace', { id: job.p.id, url });
+          saved++; addFixed([{ id: job.p.id, name: job.p.name, source: 'manual', url: res.url }]);
+        } catch (e) {
+          sent.delete(job.p.id); failed.push({ p: job.p, error: e.message });
+          if (!m.body.isConnected) toast(`${job.p.name}: ${e.message}`, true);
+        }
+        jobs.shift();
+      }
+      working = false; paint();
+      if (!m.body.isConnected) load();
+    };
+    const refill = async () => {
+      for (let page = 1, pages = 1; page <= pages && !queue.length; page++) {
+        const data = await api(`admin-photos?${new URLSearchParams({ status: st.status, q: st.q, page, limit: 100 })}`);
+        pages = data.totalPages || 1;
+        queue = (data.products || []).filter(p => !p.image && !skipped.has(p.id) && !sent.has(p.id) && !failed.some(f => f.p.id === p.id));
+      }
+    };
+    const show = async (p, openSearch) => {
+      if (!p) { if (!queue.length) await refill().catch(() => { queue = []; }); p = queue.shift(); }
+      current = p || null;
+      paint();
+      if (!current) { $q('#qCard').innerHTML = stateHtml('empty', 'No quedan productos en esta lista', '', 'circle-check'); icons(); return; }
+      if (openSearch && autoOpen) window.open(googleUrl(current), '_blank', 'noopener');
+      $q('#qCard').innerHTML = `<div class="quick-head"><h3>${esc(current.name)}</h3><p>${esc(current.sku || '')}${current.visible ? '' : ' · oculto'}</p></div><a class="button primary" id="qGoogle" href="${esc(googleUrl(current))}" target="_blank" rel="noopener"><i data-lucide="external-link" aria-hidden="true"></i> Buscar en Google Imágenes</a><label class="quick-auto"><input type="checkbox" id="qAuto"${autoOpen ? ' checked' : ''}> Al pegar, abrir sola la búsqueda del siguiente</label><div class="pick-extra"><label for="qUrl">Pega aquí la foto con Ctrl+V (también sirve su dirección)</label><div class="pick-row"><input class="input" id="qUrl" placeholder="Ctrl+V" autocomplete="off"><button class="button" type="button" id="qUse">Guardar</button></div><label for="qFile">O sube el archivo</label><input id="qFile" type="file" accept="image/png,image/jpeg,image/webp"><p class="quick-msg" id="qMsg" role="alert"></p></div><div class="quick-actions"><button class="button" type="button" id="qSkip">Saltar</button></div>`;
+      icons();
+      $q('#qUrl').focus();
+    };
+    const accept = async (clip, text, fromPaste) => {
+      const p = current, msg = $q('#qMsg');
+      msg.textContent = '';
+      let job;
       try {
-        const res = await post('admin-photo-replace', { id: current.id, url });
-        saved++; addFixed([{ id: current.id, name: current.name, source: 'manual', url: res.url }]);
-        busy = false; show();
-      } catch (e) { busy = false; msg.textContent = e.message + ' Prueba con otra foto (ábrela en tamaño completo antes de copiar la dirección).'; }
+        const blob = pastedBlob(clip, text);
+        if (blob) job = { p, file: await shrink(blob) };
+        else if (/^https?:\/\/\S+$/i.test(text)) job = { p, url: text };
+        else throw new Error(text ? 'Eso no es una imagen ni la dirección de una imagen.' : 'No hay nada que guardar: en Google, clic derecho sobre la foto → «Copiar imagen», y aquí Ctrl+V.');
+      } catch (e) { msg.textContent = e.message; $q('#qUrl').value = ''; return; }
+      if (p !== current) return;
+      sent.add(p.id); jobs.push(job); work();
+      show(null, fromPaste);
     };
+    m.body.addEventListener('click', e => {
+      const retry = e.target.closest('[data-retry]');
+      if (retry) { const [f] = failed.splice(Number(retry.dataset.retry), 1); if (current) queue.unshift(current); show(f.p); return; }
+      if (!current) return;
+      if (e.target.closest('#qSkip')) { skipped.add(current.id); show(); }
+      else if (e.target.closest('#qUse')) accept(null, $q('#qUrl').value.trim(), false);
+    });
+    m.body.addEventListener('change', e => {
+      if (e.target.id === 'qAuto') { autoOpen = e.target.checked; SmartAdmin.remember('fotos.autoGoogle', autoOpen); }
+      else if (e.target.id === 'qFile' && current && e.target.files.length) accept({ files: e.target.files }, '', false);
+    });
+    m.body.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'qUrl') { e.preventDefault(); accept(null, e.target.value.trim(), false); } });
+    document.addEventListener('paste', onPaste);
     show();
   });
 
   const openPicker = (id, name, query) => {
     let busy = false;
     const google = 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(query || name);
-    const m = modal({ title: 'Elegir foto', subtitle: name, body: `<form class="pick-search" id="pickForm"><label class="sr-only" for="pickQ">Buscar</label><input class="input" id="pickQ" value="${esc(query || name)}"><button class="button" type="submit"><i data-lucide="search" aria-hidden="true"></i> Buscar</button></form><div class="cand-grid" id="pickGrid"></div><div class="pick-extra"><a class="button small" href="${esc(google)}" target="_blank" rel="noopener"><i data-lucide="external-link" aria-hidden="true"></i> Buscar en Google Imágenes</a><p class="pick-note">Abre la foto que corresponda, clic derecho → «Copiar dirección de imagen» y pégala aquí abajo.</p><label for="pickUrl">Pegar la dirección de una imagen</label><div class="pick-row"><input class="input" id="pickUrl" type="url" placeholder="https://…/foto.jpg"><button class="button" type="button" id="pickUseUrl">Usar</button></div><label for="pickFile">O subir un archivo desde tu equipo</label><input id="pickFile" type="file" accept="image/png,image/jpeg,image/webp"><p class="pick-note">${webSearch ? 'Se busca en el fabricante (Icecat), en el Internet Archive y en la web.' : 'Se busca en el fabricante (Icecat) y en el Internet Archive. Para buscar también en toda la web, agrega SMARTISP_BRAVE_SEARCH_KEY al .env del servidor.'}</p></div>` });
+    const m = modal({ title: 'Elegir foto', subtitle: name, body: `<form class="pick-search" id="pickForm"><label class="sr-only" for="pickQ">Buscar</label><input class="input" id="pickQ" value="${esc(query || name)}"><button class="button" type="submit"><i data-lucide="search" aria-hidden="true"></i> Buscar</button></form><div class="cand-grid" id="pickGrid"></div><div class="pick-extra"><a class="button small" href="${esc(google)}" target="_blank" rel="noopener"><i data-lucide="external-link" aria-hidden="true"></i> Buscar en Google Imágenes</a><p class="pick-note">Abre la foto que corresponda, clic derecho → «Copiar imagen» y pégala aquí con Ctrl+V (o «Copiar dirección de imagen» y pégala abajo).</p><label for="pickUrl">Pegar la dirección de una imagen</label><div class="pick-row"><input class="input" id="pickUrl" type="url" placeholder="https://…/foto.jpg"><button class="button" type="button" id="pickUseUrl">Usar</button></div><label for="pickFile">O subir un archivo desde tu equipo</label><input id="pickFile" type="file" accept="image/png,image/jpeg,image/webp"><p class="pick-note">${webSearch ? 'Se busca en el fabricante (Icecat), en el Internet Archive y en la web.' : 'Se busca en el fabricante (Icecat) y en el Internet Archive. Para buscar también en toda la web, agrega SMARTISP_BRAVE_SEARCH_KEY al .env del servidor.'}</p></div><p class="quick-status is-busy pick-busy" id="pickBusy" role="status" hidden><i data-lucide="refresh-cw" aria-hidden="true"></i> Guardando en tu servidor…</p>` });
     const grid = m.body.querySelector('#pickGrid');
-    const lock = on => { busy = on; m.body.querySelectorAll('button,input').forEach(el => { el.disabled = on; }); };
+    const lock = on => { busy = on; m.body.querySelectorAll('button,input').forEach(el => { el.disabled = on; }); m.body.querySelector('#pickBusy').hidden = !on; };
     const search = async q => {
       grid.innerHTML = '<p class="pick-note">Buscando fotos…</p>';
       try {
@@ -195,6 +262,15 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
       const fd = new FormData(); fd.append('image', file);
       lock(true);
       try { const up = await api('upload-image', { method: 'POST', body: fd }); lock(false); choose(up.url); }
+      catch (err) { toast(err.message, true); lock(false); }
+    });
+    m.body.addEventListener('paste', async e => {
+      let blob;
+      try { blob = pastedBlob(e.clipboardData, (e.clipboardData?.getData('text') || '').trim()); } catch { return; }
+      if (!blob || busy) return;
+      e.preventDefault();
+      lock(true);
+      try { const url = await uploadFile(await shrink(blob)); lock(false); choose(url); }
       catch (err) { toast(err.message, true); lock(false); }
     });
     search('');

@@ -25,6 +25,7 @@ await db.execute("INSERT INTO users_rows (id,email,password_hash,name,role) VALU
 await db.execute("DELETE FROM products_rows WHERE id LIKE 'e2e-%'");
 await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku,specs_json,warranty_text,content_text,external_url) VALUES ('e2e-router','Router E2E Mikrotik',89.9,1,'Redes','E2E-RTR','[{\"label\":\"Puertos\",\"value\":\"5\"}]','1 año','Contenido','https://example.test/router')");
 await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku) VALUES ('e2e-switch','Switch E2E 8 puertos',34.5,1,'Redes','E2E-SW')");
+await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku,image_url) VALUES ('e2e-foto-a','Foto E2E Alfa',10,1,'Redes','E2E-FA',''),('e2e-foto-b','Foto E2E Beta',10,1,'Redes','E2E-FB','')");
 await db.execute('ALTER TABLE orders_rows ADD COLUMN IF NOT EXISTS customer_email VARCHAR(255) NULL');
 await db.execute("DELETE FROM orders_rows WHERE id LIKE 'E2E-%'");
 const items = JSON.stringify([{ id: 'e2e-router', productId: 'e2e-router', name: 'Router E2E Mikrotik', sku: 'E2E-RTR', price: 89.9, quantity: 1 }]);
@@ -62,7 +63,7 @@ const open = async (page, url) => { await page.goto(baseUrl + url, { waitUntil: 
 try {
   const { context, page } = await session();
 
-  for (const screen of ['admin', 'pedidos', 'clientes', 'cotizaciones', 'inventario', 'estadisticas', 'reportes', 'categorias', 'configuracion', 'campanas', 'portada', 'editor-catalogo', 'editor-landing', 'equipo', 'actividad']) {
+  for (const screen of ['admin', 'pedidos', 'clientes', 'cotizaciones', 'inventario', 'estadisticas', 'reportes', 'categorias', 'configuracion', 'campanas', 'portada', 'editor-catalogo', 'editor-landing', 'equipo', 'actividad', 'fotos']) {
     await open(page, `/${screen}.html`);
     assert.ok(new URL(page.url()).pathname.endsWith(`/${screen}.html`), `${screen}.html no debe redirigir: ${page.url()}`);
   }
@@ -145,6 +146,33 @@ try {
   await page.locator('.tree-children [data-category-id="e2e-cat-hija"]').waitFor({ timeout: 5000 }).catch(() => {});
   assert.equal(await page.locator('.tree-children [data-category-id="e2e-cat-hija"]').count(), 1, 'el árbol muestra la hija bajo su principal');
   await db.execute("DELETE FROM categories_rows WHERE id IN ('e2e-cat-padre','e2e-cat-hija')");
+  await open(page, '/fotos.html?status=sin-foto');
+  await page.fill('#search', 'Foto E2E');
+  await page.locator('#grid .photo-card').nth(1).waitFor();
+  await page.click('#quickMode');
+  const quickName = () => page.textContent('#qCard h3');
+  assert.equal(await quickName(), 'Foto E2E Alfa');
+  await page.evaluate(async () => {
+    window.openedTabs = []; window.open = url => { window.openedTabs.push(url); return null; };
+    const canvas = Object.assign(document.createElement('canvas'), { width: 320, height: 320 });
+    const g = canvas.getContext('2d'); g.fillStyle = '#c33'; g.fillRect(0, 0, 320, 320);
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    const data = new DataTransfer(); data.items.add(new File([blob], 'foto.png', { type: 'image/png' }));
+    document.querySelector('#qUrl').dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }));
+  });
+  await page.waitForFunction(() => document.querySelector('#qCard h3')?.textContent === 'Foto E2E Beta');
+  assert.ok(decodeURIComponent((await page.evaluate(() => window.openedTabs))[0] || '').toLowerCase().includes('beta'), 'al pegar abre la búsqueda del siguiente producto');
+  await page.waitForFunction(() => document.querySelector('#qStatus')?.textContent.includes('Guardadas: 1'));
+  const [[pasted]] = await db.query("SELECT image_url FROM products_rows WHERE id = 'e2e-foto-a'");
+  assert.match(pasted.image_url, /^\/api\/auth\/serve-upload\?category=products&file=/, 'pegar la imagen la guarda en el servidor');
+  await page.evaluate(() => {
+    const data = new DataTransfer(); data.setData('text/plain', 'hola');
+    document.querySelector('#qUrl').dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }));
+  });
+  await page.waitForFunction(() => document.querySelector('#qMsg')?.textContent.includes('no es una imagen'));
+  assert.equal(await quickName(), 'Foto E2E Beta', 'si lo pegado no sirve, se queda en el mismo producto');
+  assert.equal(await page.inputValue('#qUrl'), '', 'y la casilla queda vacía para pegar de nuevo');
+  await page.keyboard.press('Escape');
   await context.close();
 
   const mobile = await session({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
