@@ -1418,39 +1418,20 @@ if ($action === 'categories-reassign' || $action === 'categories/reassign') {
 // BÚSQUEDA Y PROXY DE IMÁGENES (/api/auth/search-product-image, /api/auth/proxy-image)
 // -------------------------------------------------------------
 if ($action === 'search-product-image' || $action === 'search-images') {
+    requireAdminAuth();
+    require_once __DIR__ . '/../lib/photo-sources.php';
+    @set_time_limit(40);
     $q = trim($_GET['q'] ?? '');
-    if (!$q) {
-        echo json_encode(['images' => []]);
-        exit;
-    }
-    $wikiUrl = 'https://en.wikipedia.org/w/api.php?action=query&format=json&prop=pageimages&generator=search&gsrsearch=' . urlencode($q) . '&gsrlimit=6&piprop=thumbnail|original&pithumbsize=600';
-    $ch = curl_init($wikiUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_USERAGENT, 'SmartISP/1.0');
-    curl_setopt($ch, CURLOPT_TIMEOUT, 4);
-    $res = curl_exec($ch);
-    curl_close($ch);
-
+    $store = (string)($_GET['store'] ?? 'all');
     $images = [];
-    if ($res) {
-        $data = json_decode($res, true);
-        $pages = $data['query']['pages'] ?? [];
-        foreach ($pages as $p) {
-            $url = $p['original']['source'] ?? ($p['thumbnail']['source'] ?? '');
-            if ($url) {
-                $images[] = [
-                    'url' => $url,
-                    'thumb' => $url,
-                    'thumbnail' => $url,
-                    'title' => $q,
-                    'source' => 'wiki',
-                    'store' => 'Wiki',
-                    'storeName' => 'Wiki'
-                ];
-            }
+    if ($q !== '') {
+        $found = $store === 'web' ? smartispWebImageSearch($q, (int)($_GET['limit'] ?? 15)) : smartispPhotoCandidates(['name' => $q, 'sku' => '', 'image_url' => ''], $store !== 'icecat', $q);
+        foreach (array_slice($found, 0, max(1, min(30, (int)($_GET['limit'] ?? 15)))) as $c) {
+            $label = $c['source'] === 'icecat' ? 'Fabricante (Icecat)' : ($c['source'] === 'archivo' ? 'Internet Archive' : ($c['label'] ?: 'Web'));
+            $images[] = ['url' => $c['url'], 'thumb' => $c['thumb'], 'thumbnail' => $c['thumb'], 'title' => $c['label'], 'source' => $c['source'], 'store' => $label, 'storeName' => $label];
         }
     }
-    echo json_encode(['images' => $images]);
+    echo json_encode(['images' => $images, 'webSearch' => smartispPhotoWebSearchEnabled()]);
     exit;
 }
 

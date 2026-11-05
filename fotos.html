@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SmartISP | Fotos de productos</title>
+  <link rel="icon" href="/assets/favicons/favicon.ico">
+  <meta name="theme-color" content="#102A43">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <script src="/assets/js/admin/admin-theme.js?v=ds-20261027"></script>
+  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=menu-movil-20261101">
+  <link rel="stylesheet" href="/assets/css/admin/fotos-page.css?v=fotos-20261105">
+  <script src="/assets/vendor/lucide-icons.min.js?v=fotos-20261105" defer></script>
+  <script src="/assets/js/admin/admin-nav.js?v=fotos-20261105" defer></script>
+  <script src="/assets/js/admin/admin-page.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/fotos-page.js?v=fotos-20261105" defer></script>
+</head>
+<body>
+  <div id="smartisp-admin-nav" class="is-loading" data-active="fotos"></div>
+  <main class="shell" id="app" hidden>
+    <header class="page-head">
+      <div>
+        <p class="eyebrow"><i data-lucide="images" aria-hidden="true"></i> Catálogo</p>
+        <h1>Fotos de productos</h1>
+        <p>Detecta las fotos rotas o faltantes y las reemplaza. Toda foto que se elige aquí se guarda en tu servidor: deja de depender del sitio del proveedor.</p>
+      </div>
+      <div class="head-actions"><button class="button" id="refresh" type="button"><i data-lucide="refresh-cw" aria-hidden="true"></i> Actualizar</button></div>
+    </header>
+    <section class="stats" id="stats" aria-label="Estado de las fotos"></section>
+    <section class="card photo-tools" aria-labelledby="toolsTitle">
+      <h2 id="toolsTitle">Reparar en masa</h2>
+      <ol class="photo-steps">
+        <li><strong>Revisar las fotos del proveedor.</strong> Copia a tu servidor las que todavía existen y marca como rotas las que ya no.
+          <div class="photo-actions"><button class="button" id="checkAll" type="button"><i data-lucide="scan-search" aria-hidden="true"></i> Revisar y guardar</button></div></li>
+        <li><strong>Reparar automáticamente.</strong> Para cada foto rota o faltante busca la foto oficial del fabricante por marca y número de parte, o la copia del Internet Archive, y la guarda en tu servidor.
+          <div class="photo-actions"><button class="button primary" id="autoFix" type="button"><i data-lucide="wand-sparkles" aria-hidden="true"></i> Reparar automáticamente</button><button class="button" id="autoRetry" type="button" hidden>Volver a intentar todas</button></div></li>
+        <li><strong>Las que queden:</strong> elige la foto a mano en la lista de abajo (candidatas, pegar una dirección o subir un archivo).</li>
+      </ol>
+      <div class="photo-run" id="runBox" hidden>
+        <p id="runStatus" role="status"></p>
+        <button class="button small" id="stop" type="button"><i data-lucide="pause" aria-hidden="true"></i> Pausar</button>
+      </div>
+      <div class="photo-fixed" id="fixedBox" hidden>
+        <h3>Reparadas en esta sesión <small>revisa que la foto corresponda; si no, cámbiala</small></h3>
+        <div class="photo-fixed-list" id="fixedList"></div>
+      </div>
+    </section>
+    <section class="card workspace" aria-label="Productos">
+      <div class="toolbar">
+        <div class="search">
+          <i data-lucide="search" aria-hidden="true"></i>
+          <label class="sr-only" for="search">Buscar productos</label>
+          <input id="search" type="search" placeholder="Buscar por nombre o SKU…" autocomplete="off">
+        </div>
+        <span class="result-count" id="count" aria-live="polite"></span>
+      </div>
+      <div class="photo-grid" id="grid"></div>
+      <div id="empty" hidden></div>
+      <footer class="pager"><button class="button small" id="prev" type="button"><i data-lucide="arrow-left" aria-hidden="true"></i> Anterior</button><span id="pageInfo"></span><button class="button small" id="next" type="button">Siguiente <i data-lucide="arrow-right" aria-hidden="true"></i></button></footer>
+    </section>
+  </main>
+</body>
+</html>
