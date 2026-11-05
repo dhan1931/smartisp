@@ -393,7 +393,7 @@ function buildProductProxyImageUrl(string $id, string $rawUrl): string {
     $token = rtrim(strtr(base64_encode($rawUrl), '+/', '-_'), '=');
     return '/api/auth/product-image?id=' . rawurlencode($id) . '&t=' . $token . '&f=' . rawurlencode($basename) . '&w=640'
         // Los navegadores guardan un día el placeholder que recibieron mientras la ruta vieja de Siglo21 fallaba.
-        . (stripos($rawUrl, 'siglo21.net/wp-content/') !== false ? '&v=s21' : '');
+        . (stripos($rawUrl, 'siglo21.net/wp-content/') !== false ? '&v=s21b' : '');
 }
 
 // Nombre actual de una categoría renombrada o fusionada (tabla de la migración 048).
