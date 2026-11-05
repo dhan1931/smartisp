@@ -49,6 +49,19 @@ function smartispProxyCachedImage(string $url): ?string {
     return null;
 }
 
+// Una foto marcada como fallida vuelve a la cola si el producto ya tiene otra dirección (alguien la cambió).
+function smartispArchivePruneFailed(PDO $pdo, string $pTable, array $failed): array {
+    if (!$failed) return $failed;
+    $ids = array_map('strval', array_slice(array_keys($failed), -3000));
+    $stmt = $pdo->prepare("SELECT id, image_url FROM `$pTable` WHERE id IN (" . implode(',', array_fill(0, count($ids), '?')) . ')');
+    $stmt->execute($ids);
+    $current = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) $current[(string)$row['id']] = trim(explode('|', (string)$row['image_url'])[0]);
+    $kept = array_filter($failed, static fn($url, $id) => ($current[(string)$id] ?? null) === (string)$url, ARRAY_FILTER_USE_BOTH);
+    if (count($kept) !== count($failed)) smartispArchiveSaveFailed($pdo, $kept);
+    return $kept;
+}
+
 // Descarga una URL y la guarda en uploads/products. Devuelve la URL local o null si no se pudo.
 function smartispArchiveImageUrl(string $url): ?string {
     $url = trim($url);
@@ -96,7 +109,7 @@ function smartispArchivePendingWhere(): string {
 
 // Procesa una tanda de productos con foto externa (visibles primero). Devuelve el resumen.
 function smartispArchiveBatch(PDO $pdo, string $pTable, int $limit, float $timeBudget = 20.0): array {
-    $failed = smartispArchiveFailed($pdo);
+    $failed = smartispArchivePruneFailed($pdo, $pTable, smartispArchiveFailed($pdo));
     $started = microtime(true);
     $where = smartispArchivePendingWhere();
     $exclude = '';
@@ -138,7 +151,7 @@ function smartispArchiveBatch(PDO $pdo, string $pTable, int $limit, float $timeB
 }
 
 function smartispArchiveStats(PDO $pdo, string $pTable, ?array $failed = null): array {
-    $failed = $failed ?? smartispArchiveFailed($pdo);
+    $failed = $failed ?? smartispArchivePruneFailed($pdo, $pTable, smartispArchiveFailed($pdo));
     $where = smartispArchivePendingWhere();
     $external = (int)$pdo->query("SELECT COUNT(*) FROM `$pTable` WHERE $where")->fetchColumn();
     $failedStillExternal = 0;

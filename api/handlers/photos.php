@@ -21,7 +21,7 @@ if ($action === 'admin-photos') {
     $tried = smartispPhotoMap($pdo, SMARTISP_PHOTO_AUTO_TRIED_KEY);
     $webFixed = smartispPhotoMap($pdo, SMARTISP_PHOTO_WEB_FIXED_KEY);
     $params = [];
-    $in = $photoIdsIn(array_keys(smartispArchiveFailed($pdo)), 'f', $params);
+    $in = $photoIdsIn(array_keys(smartispArchivePruneFailed($pdo, $pTable, smartispArchiveFailed($pdo))), 'f', $params);
     $inWeb = $photoIdsIn(array_keys($webFixed), 'w', $params);
     $filters = [
         'rotas' => "($external AND id IN ($in))",
@@ -117,6 +117,7 @@ if ($action === 'admin-photo-auto') {
         echo json_encode(['error' => 'Falta la clave de búsqueda web (SMARTISP_BRAVE_SEARCH_KEY en el .env del servidor).']);
         exit;
     }
+    smartispArchivePruneFailed($pdo, $pTable, smartispArchiveFailed($pdo));
     $triedKey = $web ? SMARTISP_PHOTO_WEB_TRIED_KEY : SMARTISP_PHOTO_AUTO_TRIED_KEY;
     $tried = smartispPhotoMap($pdo, $triedKey);
     if (!empty($body['retry'])) $tried = [];

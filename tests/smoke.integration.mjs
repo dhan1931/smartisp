@@ -677,6 +677,13 @@ try {
   const [[ph3]] = await db.query("SELECT image_url FROM products_rows WHERE id = 'smk-ph3'");
   assert.equal(ph3.image_url, '', 'un producto con la imagen genérica queda como «sin foto»');
   await db.execute("DELETE FROM products_rows WHERE id = 'smk-ph3'");
+  await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku,image_url) VALUES ('smk-ch1','Cambiada smkch',5,1,'General','SKU-CH1','http://127.0.0.1/vieja.jpg')");
+  await db.execute("INSERT INTO settings_rows (setting_key, setting_value) VALUES ('image_archive_failed', '{\"smk-ch1\":\"http://127.0.0.1/vieja.jpg\"}') ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+  assert.equal((await req('admin-photos?status=rotas&q=smkch', { cookie: ac })).data.total, 1);
+  await db.execute("UPDATE products_rows SET image_url = 'http://127.0.0.1/nueva.jpg' WHERE id = 'smk-ch1'");
+  const changed = await req('admin-photos?status=por-revisar&q=smkch', { cookie: ac });
+  assert.deepEqual(changed.data.products.map(p => p.id), ['smk-ch1'], 'si se cambia la foto de un producto roto vuelve a la cola de copia');
+  await db.execute("DELETE FROM products_rows WHERE id = 'smk-ch1'");
   const webQuery = execFileSync('php', ['-r', "require 'api/lib/photo-sources.php'; echo smartispPhotoWebQuery(['name' => 'MOUSE/LOGITECH M170/WIRELESS', 'sku' => 'LOGMOUWIR910-006863']);"], { cwd: root }).toString();
   assert.equal(webQuery, 'Mouse Logitech M170 Wireless 910-006863', 'la búsqueda web usa el nombre limpio y el número de parte');
   const noKey = await req('admin-photo-auto', { method: 'POST', cookie: ac, body: { web: true } });
