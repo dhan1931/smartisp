@@ -3,8 +3,12 @@
 // a uploads/products con smartispArchiveImageUrl: la tienda nunca vuelve a depender de la URL original.
 require_once __DIR__ . '/image-archive.php';
 require_once __DIR__ . '/brands.php';
+require_once __DIR__ . '/product-name.php';
 
 const SMARTISP_PHOTO_AUTO_TRIED_KEY = 'image_auto_tried';
+const SMARTISP_PHOTO_WEB_TRIED_KEY = 'image_web_tried';
+// Fotos puestas desde la búsqueda web, pendientes de que alguien confirme que corresponden.
+const SMARTISP_PHOTO_WEB_FIXED_KEY = 'image_web_fixed';
 
 // Prefijo del código de Siglo21 → marca. El código es prefijo de 9 caracteres + número de parte del
 // fabricante (LOGTECWIR + 920-012278). Sacado del catálogo de Siglo21 de 2026-10-30.
@@ -149,7 +153,7 @@ function smartispPhotoCandidates(array $product, bool $includeWeb = true, ?strin
     $parts = array_values(array_filter(array_map('trim', explode('|', (string)($product['image_url'] ?? ''))), 'strlen'));
     if ($firstSourceOnly && $out) return $out;
     if ($parts && smartispIsExternalImage($parts[0])) $out = array_merge($out, smartispWaybackImages($parts[0]));
-    if ($includeWeb) $out = array_merge($out, smartispWebImageSearch($query ?? trim($brand . ' ' . $name)));
+    if ($includeWeb) $out = array_merge($out, smartispWebImageSearch($query ?? smartispPhotoWebQuery($product)));
     $seen = [];
     return array_values(array_filter($out, static function ($c) use (&$seen) {
         if (isset($seen[$c['url']])) return false;
@@ -162,6 +166,26 @@ function smartispPhotoMap(PDO $pdo, string $key): array {
     $stmt->execute([':k' => $key]);
     $map = json_decode((string)$stmt->fetchColumn(), true);
     return is_array($map) ? $map : [];
+}
+
+// Consulta para buscar la foto en la web: nombre limpio, con la marca y el número de parte si faltan.
+function smartispPhotoWebQuery(array $product): string {
+    $name = smartispDisplayName((string)($product['name'] ?? ''));
+    $sku = (string)($product['sku'] ?? '');
+    $words = preg_split('/\s+/u', trim(preg_replace('/[\/|]+/u', ' ', $name)));
+    $query = implode(' ', array_slice($words, 0, 9));
+    $brand = smartispPhotoBrand($name, $sku);
+    if ($brand !== '' && stripos($query, $brand) === false) $query = $brand . ' ' . $query;
+    $codes = smartispPhotoPartNumbers($name, $sku);
+    if ($codes && stripos($query, $codes[0]) === false) $query .= ' ' . $codes[0];
+    return trim($query);
+}
+
+function smartispPhotoForget(PDO $pdo, string $key, array $ids): void {
+    $map = smartispPhotoMap($pdo, $key);
+    $before = count($map);
+    foreach ($ids as $id) unset($map[$id]);
+    if (count($map) !== $before) smartispPhotoSaveMap($pdo, $key, $map);
 }
 
 function smartispPhotoSaveMap(PDO $pdo, string $key, array $map): void {

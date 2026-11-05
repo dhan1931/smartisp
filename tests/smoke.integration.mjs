@@ -670,6 +670,18 @@ try {
   assert.deepEqual([auto.data.checked, auto.data.fixed.length, auto.data.remaining], [1, 0, 0], 'sin marca ni foto original no inventa una foto y no la vuelve a intentar');
   await db.execute("DELETE FROM products_rows WHERE id IN ('smk-ph1', 'smk-ph2')");
   await db.execute("DELETE FROM settings_rows WHERE setting_key IN ('image_auto_tried', 'image_archive_failed')");
+  const webQuery = execFileSync('php', ['-r', "require 'api/lib/photo-sources.php'; echo smartispPhotoWebQuery(['name' => 'MOUSE/LOGITECH M170/WIRELESS', 'sku' => 'LOGMOUWIR910-006863']);"], { cwd: root }).toString();
+  assert.equal(webQuery, 'Mouse Logitech M170 Wireless 910-006863', 'la búsqueda web usa el nombre limpio y el número de parte');
+  const noKey = await req('admin-photo-auto', { method: 'POST', cookie: ac, body: { web: true } });
+  assert.equal(noKey.status, 400, 'sin clave de búsqueda web no se intenta');
+  await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku,image_url) VALUES ('smk-w1','Foto web smkweb',5,1,'General','SKU-W1','/api/auth/serve-upload?category=products&file=arch_w1.webp')");
+  await db.execute("INSERT INTO settings_rows (setting_key, setting_value) VALUES ('image_web_fixed', '{\"smk-w1\":\"/api/auth/serve-upload?category=products&file=arch_w1.webp\"}') ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+  const webList = await req('admin-photos?status=web&q=smkweb', { cookie: ac });
+  assert.deepEqual([webList.data.counts.web, webList.data.products.map(p => p.fromWeb)], [1, [true]], JSON.stringify(webList.data));
+  assert.equal((await req('admin-photo-ok', { method: 'POST', cookie: ac, body: { ids: ['smk-w1'] } })).status, 200);
+  assert.equal((await req('admin-photos?status=web&q=smkweb', { cookie: ac })).data.counts.web, 0, 'confirmar la foto la saca de la lista de revisión');
+  await db.execute("DELETE FROM products_rows WHERE id = 'smk-w1'");
+  await db.execute("DELETE FROM settings_rows WHERE setting_key = 'image_web_fixed'");
   await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku) VALUES ('smk-nm','MOUSE/HPINC M170/WIRELESS T3170/T5170 5600MT/S',12,1,'Smk Nombres','SKU-NM')");
   const named = await req('catalog?q=SKU-NM');
   assert.equal(named.data.products[0].name, 'Mouse HP M170 Wireless T3170/T5170 5600MT/S', 'el nombre en mayúsculas del proveedor se muestra limpio');

@@ -1,13 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => {
   const { $, esc, api, post, toast, icons, state: stateHtml, modal } = SmartAdmin;
-  const STATS = [['rotas', 'image-off', 'Rotas'], ['sin-foto', 'image-minus', 'Sin foto'], ['por-revisar', 'hourglass', 'Por revisar'], ['propias', 'hard-drive', 'En tu servidor']];
+  const STATS = [['rotas', 'image-off', 'Rotas'], ['sin-foto', 'image-minus', 'Sin foto'], ['por-revisar', 'hourglass', 'Por revisar'], ['web', 'globe', 'Desde la web: revisar'], ['propias', 'hard-drive', 'En tu servidor']];
   const SOURCE = { icecat: 'Fabricante', archivo: 'Internet Archive', web: 'Web', manual: 'Elegida a mano' };
   const params = new URLSearchParams(location.search);
   const st = { status: STATS.some(s => s[0] === params.get('status')) ? params.get('status') : 'rotas', q: '', page: 1, totalPages: 1 };
   let webSearch = false, loadSeq = 0, running = false, products = [];
 
   const thumb = p => p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy">` : '<i data-lucide="image-off" aria-hidden="true"></i>';
-  const card = p => `<article class="photo-card"><div class="photo-thumb">${thumb(p)}</div><div><h3>${esc(p.name)}</h3><div class="meta">${p.sku ? `<span>${esc(p.sku)}</span>` : ''}${p.visible ? '' : '<span class="badge">Oculto</span>'}${p.autoTried && !p.image ? '<span class="badge warn">Sin coincidencia automática</span>' : ''}</div></div><button class="button small${p.image ? '' : ' primary'}" type="button" data-pick="${esc(p.id)}"><i data-lucide="image-plus" aria-hidden="true"></i> ${p.image ? 'Cambiar foto' : 'Elegir foto'}</button></article>`;
+  const card = p => `<article class="photo-card"><div class="photo-thumb">${thumb(p)}</div><div><h3>${esc(p.name)}</h3><div class="meta">${p.sku ? `<span>${esc(p.sku)}</span>` : ''}${p.visible ? '' : '<span class="badge">Oculto</span>'}${p.autoTried && !p.image ? '<span class="badge warn">Sin coincidencia automática</span>' : ''}</div></div><div class="photo-card-actions">${p.fromWeb && p.image ? `<button class="button small primary" type="button" data-ok="${esc(p.id)}"><i data-lucide="check" aria-hidden="true"></i> Está bien</button>` : ''}<button class="button small${p.image ? '' : ' primary'}" type="button" data-pick="${esc(p.id)}"><i data-lucide="image-plus" aria-hidden="true"></i> ${p.image ? 'Cambiar foto' : 'Elegir foto'}</button></div></article>`;
 
   const load = async () => {
     const seq = ++loadSeq;
@@ -16,11 +16,13 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
       if (seq !== loadSeq) return;
       webSearch = !!data.webSearch; products = data.products || []; st.totalPages = data.totalPages || 1;
       const c = data.counts || {};
-      $('#stats').innerHTML = STATS.map(([key, icon, label]) => `<button type="button" class="stat ${key === st.status ? 'is-active' : ''} ${key !== 'propias' && key !== 'por-revisar' && c[key] ? 'is-alert' : ''}" data-status="${key}" aria-pressed="${key === st.status}"><span><i data-lucide="${icon}" aria-hidden="true"></i>${label}</span><strong>${c[key] || 0}</strong></button>`).join('');
+      $('#stats').innerHTML = STATS.map(([key, icon, label]) => `<button type="button" class="stat ${key === st.status ? 'is-active' : ''} ${(key === 'rotas' || key === 'sin-foto') && c[key] ? 'is-alert' : ''}" data-status="${key}" aria-pressed="${key === st.status}"><span><i data-lucide="${icon}" aria-hidden="true"></i>${label}</span><strong>${c[key] || 0}</strong></button>`).join('');
       $('#count').textContent = `${data.total || 0} producto${data.total === 1 ? '' : 's'}`;
       $('#pageInfo').textContent = `Página ${data.page || 1} de ${st.totalPages}`;
       $('#prev').disabled = st.page <= 1; $('#next').disabled = st.page >= st.totalPages;
       $('#grid').innerHTML = products.map(card).join('');
+      $('#approvePage').hidden = st.status !== 'web' || !products.length;
+      $('#webFix').disabled = running || !webSearch; $('#webHint').hidden = webSearch;
       $('#empty').hidden = products.length !== 0;
       if (!products.length) $('#empty').innerHTML = st.q ? stateHtml('search', 'Ningún producto coincide', 'Prueba con otra búsqueda.') : stateHtml('empty', st.status === 'propias' ? 'Todavía no hay fotos en tu servidor' : 'Nada pendiente aquí', st.status === 'por-revisar' ? 'Todas las fotos del proveedor ya fueron revisadas.' : '', 'circle-check');
       icons();
@@ -30,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
     }
   };
 
-  const setRunning = on => { running = on; $('#runBox').hidden = !on && !$('#runStatus').textContent; $('#stop').hidden = !on; ['checkAll', 'autoFix', 'autoRetry'].forEach(id => { $('#' + id).disabled = on; }); };
+  const setRunning = on => { running = on; $('#runBox').hidden = !on && !$('#runStatus').textContent; $('#stop').hidden = !on; ['checkAll', 'autoFix', 'autoRetry'].forEach(id => { $('#' + id).disabled = on; }); $('#webFix').disabled = on || !webSearch; };
   const say = text => { $('#runStatus').textContent = text; $('#runBox').hidden = false; };
 
   const addFixed = items => {
@@ -48,34 +50,44 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
         saved += res.saved || 0; broken += (res.failed || []).length;
         say(`Guardadas en tu servidor: ${saved} · rotas: ${broken} · faltan revisar: ${res.pending}`);
         if (!res.pending || (!res.saved && !(res.failed || []).length)) break;
+        await load();
       }
     } catch (e) { toast(e.message, true); }
     setRunning(false); load();
   });
 
-  const autoFix = async retry => {
+  const autoFix = async (retry, web = false) => {
     setRunning(true);
     let fixed = 0, checked = 0, first = true;
     try {
       while (running) {
-        const res = await post('admin-photo-auto', { limit: 3, retry: first && retry });
+        const res = await post('admin-photo-auto', { limit: web ? 6 : 3, retry: first && retry, web });
         first = false; fixed += (res.fixed || []).length; checked += res.checked || 0;
         addFixed(res.fixed || []);
         say(`Reparadas: ${fixed} de ${checked} revisadas · faltan ${res.remaining}`);
         if (!res.remaining || !res.checked) break;
-        load();
+        await load();
       }
-      $('#autoRetry').hidden = false;
+      if (!web) $('#autoRetry').hidden = false;
+      if (web && fixed) toast('Revisa las fotos puestas desde la web en «Desde la web: revisar».');
     } catch (e) { toast(e.message, true); }
     setRunning(false); load();
   };
   $('#autoFix').addEventListener('click', () => autoFix(false));
   $('#autoRetry').addEventListener('click', () => autoFix(true));
+  $('#webFix').addEventListener('click', () => autoFix(false, true));
+  const approve = async ids => {
+    if (!ids.length) return;
+    try { await post('admin-photo-ok', { ids }); toast(ids.length === 1 ? 'Foto confirmada.' : `${ids.length} fotos confirmadas.`); load(); }
+    catch (e) { toast(e.message, true); }
+  };
+  $('#approvePage').addEventListener('click', () => approve(products.filter(p => p.fromWeb && p.image).map(p => p.id)));
   $('#stop').addEventListener('click', () => { running = false; say('Pausando al terminar la tanda en curso…'); });
 
-  const openPicker = (id, name) => {
+  const openPicker = (id, name, query) => {
     let busy = false;
-    const m = modal({ title: 'Elegir foto', subtitle: name, body: `<form class="pick-search" id="pickForm"><label class="sr-only" for="pickQ">Buscar</label><input class="input" id="pickQ" value="${esc(name)}"><button class="button" type="submit"><i data-lucide="search" aria-hidden="true"></i> Buscar</button></form><div class="cand-grid" id="pickGrid"></div><div class="pick-extra"><label for="pickUrl">Pegar la dirección de una imagen</label><div class="pick-row"><input class="input" id="pickUrl" type="url" placeholder="https://…/foto.jpg"><button class="button" type="button" id="pickUseUrl">Usar</button></div><label for="pickFile">O subir un archivo desde tu equipo</label><input id="pickFile" type="file" accept="image/png,image/jpeg,image/webp"><p class="pick-note">${webSearch ? 'Se busca en el fabricante (Icecat), en el Internet Archive y en la web.' : 'Se busca en el fabricante (Icecat) y en el Internet Archive. Para buscar también en toda la web, agrega SMARTISP_BRAVE_SEARCH_KEY al .env del servidor.'}</p></div>` });
+    const google = 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(query || name);
+    const m = modal({ title: 'Elegir foto', subtitle: name, body: `<form class="pick-search" id="pickForm"><label class="sr-only" for="pickQ">Buscar</label><input class="input" id="pickQ" value="${esc(query || name)}"><button class="button" type="submit"><i data-lucide="search" aria-hidden="true"></i> Buscar</button></form><div class="cand-grid" id="pickGrid"></div><div class="pick-extra"><a class="button small" href="${esc(google)}" target="_blank" rel="noopener"><i data-lucide="external-link" aria-hidden="true"></i> Buscar en Google Imágenes</a><p class="pick-note">Abre la foto que corresponda, clic derecho → «Copiar dirección de imagen» y pégala aquí abajo.</p><label for="pickUrl">Pegar la dirección de una imagen</label><div class="pick-row"><input class="input" id="pickUrl" type="url" placeholder="https://…/foto.jpg"><button class="button" type="button" id="pickUseUrl">Usar</button></div><label for="pickFile">O subir un archivo desde tu equipo</label><input id="pickFile" type="file" accept="image/png,image/jpeg,image/webp"><p class="pick-note">${webSearch ? 'Se busca en el fabricante (Icecat), en el Internet Archive y en la web.' : 'Se busca en el fabricante (Icecat) y en el Internet Archive. Para buscar también en toda la web, agrega SMARTISP_BRAVE_SEARCH_KEY al .env del servidor.'}</p></div>` });
     const grid = m.body.querySelector('#pickGrid');
     const lock = on => { busy = on; m.body.querySelectorAll('button,input').forEach(el => { el.disabled = on; }); };
     const search = async q => {
@@ -113,10 +125,12 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
   };
 
   document.addEventListener('click', e => {
+    const ok = e.target.closest('[data-ok]');
+    if (ok) { approve([ok.dataset.ok]); return; }
     const b = e.target.closest('[data-pick]');
     if (!b) return;
     const p = products.find(x => x.id === b.dataset.pick);
-    openPicker(b.dataset.pick, p ? p.name : (b.dataset.name || ''));
+    openPicker(b.dataset.pick, p ? p.name : (b.dataset.name || ''), p ? p.query : '');
   });
   $('#stats').addEventListener('click', e => { const b = e.target.closest('[data-status]'); if (b && b.dataset.status !== st.status) { st.status = b.dataset.status; st.page = 1; load(); } });
   let debounce; $('#search').addEventListener('input', e => { clearTimeout(debounce); debounce = setTimeout(() => { st.q = e.target.value.trim(); st.page = 1; load(); }, 300); });

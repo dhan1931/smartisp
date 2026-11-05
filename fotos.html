@@ -12,11 +12,11 @@
   <script src="/assets/js/admin/admin-theme.js?v=ds-20261027"></script>
   <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261027">
   <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=menu-movil-20261101">
-  <link rel="stylesheet" href="/assets/css/admin/fotos-page.css?v=fotos-20261105">
-  <script src="/assets/vendor/lucide-icons.min.js?v=fotos-20261105" defer></script>
+  <link rel="stylesheet" href="/assets/css/admin/fotos-page.css?v=fotos-web-20261105">
+  <script src="/assets/vendor/lucide-icons.min.js?v=fotos-web-20261105" defer></script>
   <script src="/assets/js/admin/admin-nav.js?v=fotos-20261105" defer></script>
   <script src="/assets/js/admin/admin-page.js?v=ds-20261027" defer></script>
-  <script src="/assets/js/admin/fotos-page.js?v=fotos-20261105" defer></script>
+  <script src="/assets/js/admin/fotos-page.js?v=fotos-web-20261105" defer></script>
 </head>
 <body>
   <div id="smartisp-admin-nav" class="is-loading" data-active="fotos"></div>
@@ -37,7 +37,10 @@
           <div class="photo-actions"><button class="button" id="checkAll" type="button"><i data-lucide="scan-search" aria-hidden="true"></i> Revisar y guardar</button></div></li>
         <li><strong>Reparar automáticamente.</strong> Para cada foto rota o faltante busca la foto oficial del fabricante por marca y número de parte, o la copia del Internet Archive, y la guarda en tu servidor.
           <div class="photo-actions"><button class="button primary" id="autoFix" type="button"><i data-lucide="wand-sparkles" aria-hidden="true"></i> Reparar automáticamente</button><button class="button" id="autoRetry" type="button" hidden>Volver a intentar todas</button></div></li>
-        <li><strong>Las que queden:</strong> elige la foto a mano en la lista de abajo (candidatas, pegar una dirección o subir un archivo).</li>
+        <li><strong>Reparar con búsqueda web.</strong> Para las que siguen sin foto busca el producto por marca y modelo en la web y guarda la mejor foto en tu servidor. Después revísalas en «Desde la web: revisar».
+          <div class="photo-actions"><button class="button" id="webFix" type="button" disabled><i data-lucide="globe" aria-hidden="true"></i> Reparar con búsqueda web</button></div>
+          <p class="photo-hint" id="webHint" hidden>Para activarlo: crea una clave gratuita en brave.com/search/api y agrégala al <code>.env</code> del servidor como <code>SMARTISP_BRAVE_SEARCH_KEY</code>.</p></li>
+        <li><strong>Las que queden:</strong> elige la foto a mano en la lista de abajo (candidatas, Google Imágenes, pegar una dirección o subir un archivo).</li>
       </ol>
       <div class="photo-run" id="runBox" hidden>
         <p id="runStatus" role="status"></p>
@@ -56,6 +59,7 @@
           <input id="search" type="search" placeholder="Buscar por nombre o SKU…" autocomplete="off">
         </div>
         <span class="result-count" id="count" aria-live="polite"></span>
+        <button class="button small" id="approvePage" type="button" hidden><i data-lucide="check-check" aria-hidden="true"></i> Confirmar todas las de esta página</button>
       </div>
       <div class="photo-grid" id="grid"></div>
       <div id="empty" hidden></div>
