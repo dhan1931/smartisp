@@ -631,6 +631,14 @@ try {
   const [[archRow]] = await db.query("SELECT image_url FROM products_rows WHERE id = 'smk-arch'");
   assert.equal(archRow.image_url, 'http://127.0.0.1/no-existe.jpg', 'si no se pudo descargar, la foto queda como estaba');
   await db.execute("DELETE FROM products_rows WHERE id = 'smk-arch'");
+  const cachedUrl = 'http://127.0.0.1/borrada-del-proveedor.jpg';
+  fs.mkdirSync(path.join(root, 'uploads/cache'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'uploads/cache', createHash('md5').update(cachedUrl + '|w=640|webp=1').digest('hex') + '.png'), Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64'));
+  await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku,image_url) VALUES ('smk-cache','Foto en cache',5,1,'General','SKU-CACHE',?)", [cachedUrl]);
+  const archCache = await req('admin-archive-images', { method: 'POST', cookie: ac, body: { limit: 50 } });
+  const [[cacheRow]] = await db.query("SELECT image_url FROM products_rows WHERE id = 'smk-cache'");
+  assert.ok(cacheRow.image_url.startsWith('/api/auth/serve-upload'), 'la copia del proxy rescata la foto que el proveedor ya borró: ' + JSON.stringify(archCache.data));
+  await db.execute("DELETE FROM products_rows WHERE id = 'smk-cache'");
   await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku,image_url) VALUES ('smk-cron','Foto cron',5,1,'General','SKU-CRON','http://127.0.0.1/cron.jpg')");
   const cronOut = execFileSync('php', ['api/cron/archivar-fotos.php', '--reintentar', '--minutos=1'], { cwd: root, env: process.env }).toString();
   assert.match(cronOut, /Guardadas \d+ · sin respuesta del proveedor [1-9]\d* · pendientes 0/, cronOut);

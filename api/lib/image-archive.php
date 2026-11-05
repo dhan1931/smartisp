@@ -23,11 +23,31 @@ function smartispArchiveSaveFailed(PDO $pdo, array $map): void {
         ->execute([':k' => SMARTISP_ARCHIVE_FAILED_KEY, ':v' => json_encode($map)]);
 }
 
+// Copia que el proxy guardó al mostrarla (product-image.php, cualquier antigüedad mientras siga en disco):
+// rescata fotos que el proveedor borró después de que la tienda las sirvió.
+function smartispProxyCachedImage(string $url): ?string {
+    foreach ([dirname(__DIR__, 2) . '/uploads/cache', sys_get_temp_dir() . '/smartisp_img_cache'] as $dir) {
+        if (!is_dir($dir)) continue;
+        foreach ([640, 800, 480, 320] as $width) {
+            foreach (['0', '1'] as $webp) {
+                $hash = md5($url . '|w=' . $width . '|webp=' . $webp);
+                foreach (SMARTISP_PROXY_IMAGE_TYPES as $ext) {
+                    $file = "$dir/$hash.$ext";
+                    if (!is_file($file) || filesize($file) <= 0) continue;
+                    $data = file_get_contents($file);
+                    if (is_string($data) && smartispDetectImageType($data) !== null) return $data;
+                }
+            }
+        }
+    }
+    return null;
+}
+
 // Descarga una URL y la guarda en uploads/products. Devuelve la URL local o null si no se pudo.
 function smartispArchiveImageUrl(string $url): ?string {
     $url = trim($url);
     if (!smartispIsExternalImage($url)) return null;
-    $data = smartispFetchRemoteImage($url);
+    $data = smartispFetchRemoteImage($url) ?? smartispProxyCachedImage($url);
     if ($data === null) return null;
     $mime = smartispDetectImageType($data);
     if ($mime === null || !isset(SMARTISP_PROXY_IMAGE_TYPES[$mime])) return null;
