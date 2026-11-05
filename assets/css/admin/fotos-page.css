@@ -24,6 +24,15 @@
 .photo-card .button { width: 100%; justify-content: center; }
 .photo-hint { margin: 6px 0 0; color: var(--text-3); font-size: 12.5px; }
 .pick-extra > .button { justify-self: start; }
+.photo-drop { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 96px; margin-top: 10px; padding: 16px; border: 2px dashed var(--border); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text-2); font-weight: 600; text-align: center; cursor: pointer; }
+.photo-drop:hover, .photo-drop.is-over { border-color: var(--accent); color: var(--accent); }
+.photo-drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.photo-bulk-status { margin: 10px 0 0; font-weight: 600; }
+.photo-bulk-miss { margin: 8px 0 0; padding-left: 18px; max-height: 160px; overflow-y: auto; color: var(--text-3); font-size: 12.5px; }
+.quick-head h3 { margin: 0 0 4px; font-size: 15px; line-height: 1.35; }
+.quick-head p { margin: 0 0 12px; color: var(--text-3); font-size: 12.5px; }
+.quick-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.quick-progress { margin: 14px 0 0; color: var(--text-3); font-size: 12.5px; }
 .pick-search { display: flex; gap: 8px; margin-bottom: 12px; }
 .pick-search .input { flex: 1; min-width: 0; }
 .cand-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; min-height: 120px; }

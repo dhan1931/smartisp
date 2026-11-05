@@ -12,11 +12,11 @@
   <script src="/assets/js/admin/admin-theme.js?v=ds-20261027"></script>
   <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261027">
   <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=menu-movil-20261101">
-  <link rel="stylesheet" href="/assets/css/admin/fotos-page.css?v=fotos-web-20261105">
-  <script src="/assets/vendor/lucide-icons.min.js?v=fotos-web-20261105" defer></script>
+  <link rel="stylesheet" href="/assets/css/admin/fotos-page.css?v=fotos-lote-20261105">
+  <script src="/assets/vendor/lucide-icons.min.js?v=fotos-lote-20261105" defer></script>
   <script src="/assets/js/admin/admin-nav.js?v=fotos-20261105" defer></script>
   <script src="/assets/js/admin/admin-page.js?v=ds-20261027" defer></script>
-  <script src="/assets/js/admin/fotos-page.js?v=fotos-sin-imagen-20261105" defer></script>
+  <script src="/assets/js/admin/fotos-page.js?v=fotos-lote-20261105" defer></script>
 </head>
 <body>
   <div id="smartisp-admin-nav" class="is-loading" data-active="fotos"></div>
@@ -51,6 +51,13 @@
         <div class="photo-fixed-list" id="fixedList"></div>
       </div>
     </section>
+    <section class="card photo-tools" aria-labelledby="bulkTitle">
+      <h2 id="bulkTitle">Subir fotos en lote</h2>
+      <p class="photo-hint">Nombra cada archivo con el SKU del producto: <code>LOGTECWIR920-012278.jpg</code> (también sirve <code>LOGTECWIR920-012278_1_1.jpg</code>, como las nombra Siglo21). Cada foto se asigna sola a su producto y queda en tu servidor.</p>
+      <label class="photo-drop" id="bulkDrop" for="bulkFiles"><i data-lucide="upload" aria-hidden="true"></i><span>Arrastra aquí las fotos o haz clic para elegirlas</span><input type="file" id="bulkFiles" multiple accept="image/png,image/jpeg,image/webp"></label>
+      <p class="photo-bulk-status" id="bulkStatus" role="status"></p>
+      <ul class="photo-bulk-miss" id="bulkMiss" hidden></ul>
+    </section>
     <section class="card workspace" aria-label="Productos">
       <div class="toolbar">
         <div class="search">
@@ -59,6 +66,7 @@
           <input id="search" type="search" placeholder="Buscar por nombre o SKU…" autocomplete="off">
         </div>
         <span class="result-count" id="count" aria-live="polite"></span>
+        <button class="button small primary" id="quickMode" type="button"><i data-lucide="zap" aria-hidden="true"></i> Modo rápido</button>
         <button class="button small" id="approvePage" type="button" hidden><i data-lucide="check-check" aria-hidden="true"></i> Confirmar todas las de esta página</button>
       </div>
       <div class="photo-grid" id="grid"></div>

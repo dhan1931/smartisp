@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => {
   const { $, esc, api, post, toast, icons, state: stateHtml, modal } = SmartAdmin;
   const STATS = [['rotas', 'image-off', 'Rotas'], ['sin-foto', 'image-minus', 'Sin foto'], ['por-revisar', 'hourglass', 'Por revisar'], ['web', 'globe', 'Desde la web: revisar'], ['propias', 'hard-drive', 'En tu servidor']];
-  const SOURCE = { icecat: 'Fabricante', archivo: 'Internet Archive', web: 'Web', manual: 'Elegida a mano' };
+  const SOURCE = { icecat: 'Fabricante', archivo: 'Internet Archive', web: 'Web', manual: 'Elegida a mano', lote: 'Subida en lote' };
   const params = new URLSearchParams(location.search);
   const st = { status: STATS.some(s => s[0] === params.get('status')) ? params.get('status') : 'rotas', q: '', page: 1, totalPages: 1 };
   let webSearch = false, loadSeq = 0, running = false, products = [];
@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
       $('#prev').disabled = st.page <= 1; $('#next').disabled = st.page >= st.totalPages;
       $('#grid').innerHTML = products.map(card).join('');
       $('#approvePage').hidden = st.status !== 'web' || !products.length;
+      $('#quickMode').hidden = !['rotas', 'sin-foto'].includes(st.status) || !products.length;
       $('#webFix').disabled = running || !webSearch; $('#webHint').hidden = webSearch;
       $('#empty').hidden = products.length !== 0;
       if (!products.length) $('#empty').innerHTML = st.q ? stateHtml('search', 'Ningún producto coincide', 'Prueba con otra búsqueda.') : stateHtml('empty', st.status === 'propias' ? 'Todavía no hay fotos en tu servidor' : 'Nada pendiente aquí', st.status === 'por-revisar' ? 'Todas las fotos del proveedor ya fueron revisadas.' : '', 'circle-check');
@@ -84,6 +85,80 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
   };
   $('#approvePage').addEventListener('click', () => approve(products.filter(p => p.fromWeb && p.image).map(p => p.id)));
   $('#stop').addEventListener('click', () => { running = false; say('Pausando al terminar la tanda en curso…'); });
+
+  const uploadFile = async file => { const fd = new FormData(); fd.append('image', file); return (await api('upload-image', { method: 'POST', body: fd })).url; };
+
+  // Subida en lote: el nombre de cada archivo es el SKU del producto.
+  const bulkUpload = async files => {
+    files = [...files].filter(f => /^image\/(png|jpeg|webp)$/.test(f.type));
+    if (!files.length || running) return;
+    setRunning(true);
+    const status = $('#bulkStatus'), miss = $('#bulkMiss');
+    miss.hidden = true; miss.innerHTML = '';
+    let done = 0, failed = [];
+    try {
+      const { matches = [] } = await post('admin-photo-match', { names: files.map(f => f.name) });
+      const byName = new Map(matches.map(m => [m.name, m]));
+      const todo = files.filter(f => (byName.get(f.name)?.ids || []).length);
+      failed = files.filter(f => !todo.includes(f)).map(f => `${f.name}: ningún producto tiene ese SKU`);
+      for (const file of todo) {
+        if (!running) break;
+        const m = byName.get(file.name);
+        status.textContent = `Subiendo ${done + 1} de ${todo.length}: ${m.product}`;
+        try {
+          if (file.size > 8 * 1024 * 1024) throw new Error('pesa más de 8 MB');
+          const url = await uploadFile(file);
+          for (const id of m.ids) { const res = await post('admin-photo-replace', { id, url }); addFixed([{ id, name: m.product, source: 'lote', url: res.url }]); }
+          done++;
+        } catch (e) { failed.push(`${file.name}: ${e.message}`); }
+      }
+      status.textContent = `Fotos asignadas: ${done} de ${files.length}.`;
+      if (failed.length) { miss.hidden = false; miss.innerHTML = failed.map(t => `<li>${esc(t)}</li>`).join(''); }
+    } catch (e) { toast(e.message, true); }
+    setRunning(false); $('#bulkFiles').value = ''; load();
+  };
+  $('#bulkFiles').addEventListener('change', e => bulkUpload(e.target.files));
+  const drop = $('#bulkDrop');
+  ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('is-over'); }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('is-over'); }));
+  drop.addEventListener('drop', e => bulkUpload(e.dataTransfer.files));
+
+  // Modo rápido: un producto a la vez; al pegar la dirección de la foto se guarda y pasa al siguiente.
+  $('#quickMode').addEventListener('click', () => {
+    let queue = products.filter(p => !p.image), skipped = new Set(), saved = 0, busy = false, current = null;
+    const m = modal({ title: 'Modo rápido', subtitle: 'Pega la dirección de la foto y pasa solo al siguiente.', body: '', onClose: () => load() });
+    const refill = async () => {
+      const data = await api(`admin-photos?${new URLSearchParams({ status: st.status, q: st.q, page: 1, limit: 100 })}`);
+      queue = (data.products || []).filter(p => !p.image && !skipped.has(p.id));
+    };
+    const show = async () => {
+      if (!queue.length) await refill().catch(() => { queue = []; });
+      current = queue.shift();
+      if (!current) { m.body.innerHTML = stateHtml('empty', 'No quedan productos en esta lista', `Guardadas: ${saved} · saltadas: ${skipped.size}`, 'circle-check'); icons(); return; }
+      const google = 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(current.query || current.name);
+      m.body.innerHTML = `<div class="quick-head"><h3>${esc(current.name)}</h3><p>${esc(current.sku || '')}</p></div><a class="button primary" id="qGoogle" href="${esc(google)}" target="_blank" rel="noopener"><i data-lucide="external-link" aria-hidden="true"></i> Buscar en Google Imágenes</a><div class="pick-extra"><label for="qUrl">Pega aquí la dirección de la imagen (clic derecho sobre la foto → «Copiar dirección de imagen»)</label><div class="pick-row"><input class="input" id="qUrl" type="url" placeholder="https://…" autocomplete="off"><button class="button" type="button" id="qUse">Guardar</button></div><label for="qFile">O sube el archivo</label><input id="qFile" type="file" accept="image/png,image/jpeg,image/webp"><p class="pick-note" id="qMsg" role="status"></p></div><div class="quick-actions"><button class="button" type="button" id="qSkip">Saltar</button></div><p class="quick-progress">Guardadas: ${saved} · saltadas: ${skipped.size}</p>`;
+      icons();
+      const input = m.body.querySelector('#qUrl');
+      input.focus();
+      input.addEventListener('paste', () => setTimeout(() => save(input.value.trim()), 0));
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); save(input.value.trim()); } });
+      m.body.querySelector('#qUse').addEventListener('click', () => save(input.value.trim()));
+      m.body.querySelector('#qSkip').addEventListener('click', () => { skipped.add(current.id); show(); });
+      m.body.querySelector('#qFile').addEventListener('change', async e => { const f = e.target.files[0]; if (!f || busy) return; busy = true; try { const url = await uploadFile(f); busy = false; save(url); } catch (err) { busy = false; m.body.querySelector('#qMsg').textContent = err.message; } });
+    };
+    const save = async url => {
+      if (busy || !url || !current) return;
+      busy = true;
+      const msg = m.body.querySelector('#qMsg');
+      msg.textContent = 'Guardando en tu servidor…';
+      try {
+        const res = await post('admin-photo-replace', { id: current.id, url });
+        saved++; addFixed([{ id: current.id, name: current.name, source: 'manual', url: res.url }]);
+        busy = false; show();
+      } catch (e) { busy = false; msg.textContent = e.message + ' Prueba con otra foto (ábrela en tamaño completo antes de copiar la dirección).'; }
+    };
+    show();
+  });
 
   const openPicker = (id, name, query) => {
     let busy = false;
