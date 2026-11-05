@@ -3,6 +3,7 @@
 if (!in_array($action ?? '', ['admin-photos', 'admin-photo-candidates', 'admin-photo-replace', 'admin-photo-auto', 'admin-photo-ok', 'admin-photo-match'], true)) return;
 
 requireAdminAuth();
+smartispReleaseSession();
 require_once __DIR__ . '/../lib/photo-sources.php';
 $pTable = getProductsTableName($pdo);
 

@@ -53,7 +53,7 @@ await db.execute("INSERT INTO users_rows (id,email,password_hash,name,role) VALU
 await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku) VALUES ('smk-prod','Nombre Real',10,1,'General','SKU-REAL')");
 await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku) VALUES ('smk-free','Producto a cotizar',0,1,'General','SKU-FREE')");
 
-const php = spawn('php', ['-S', `127.0.0.1:${port}`, '-t', root], { cwd: root, env: process.env, stdio: ['ignore', 'ignore', 'pipe'] });
+const php = spawn('php', ['-S', `127.0.0.1:${port}`, '-t', root], { cwd: root, env: { ...process.env, PHP_CLI_SERVER_WORKERS: '4' }, stdio: ['ignore', 'ignore', 'pipe'] });
 for (let i = 0; i < 40; i++) { try { await fetch(`${baseUrl}/api/router.php?action=me`); break; } catch { await new Promise(r => setTimeout(r, 150)); } }
 
 try {
@@ -663,6 +663,18 @@ try {
   assert.equal(phRow.image_url, phUp.data.url, 'la foto elegida queda guardada en el servidor');
   const [[phFailed]] = await db.query("SELECT setting_value FROM settings_rows WHERE setting_key = 'image_archive_failed'");
   assert.ok(!JSON.parse(phFailed.setting_value)['smk-ph1'], 'el producto reparado sale de la lista de rotas');
+  const rowLock = await mysql.createConnection({ host: '127.0.0.1', port: 3306, user: process.env.MYSQL_USER, password: process.env.MYSQL_PASSWORD, database: process.env.MYSQL_DATABASE });
+  await rowLock.beginTransaction();
+  await rowLock.query("SELECT id FROM products_rows WHERE id = 'smk-ph1' FOR UPDATE");
+  const slowSave = req('admin-photo-replace', { method: 'POST', cookie: ac, body: { id: 'smk-ph1', url: phUp.data.url } });
+  const unlock = new Promise(r => setTimeout(r, 3000)).then(() => rowLock.rollback()).then(() => rowLock.end());
+  await new Promise(r => setTimeout(r, 600));
+  const sameBrowserStart = Date.now();
+  assert.equal((await req('session', { cookie: ac })).status, 200);
+  const sameBrowserWait = Date.now() - sameBrowserStart;
+  await unlock;
+  assert.equal((await slowSave).status, 200);
+  assert.ok(sameBrowserWait < 1500, `mientras el panel guarda una foto, la tienda en otra pestaña del mismo navegador esperó ${sameBrowserWait} ms`);
   const [phOthers] = await db.query("SELECT id FROM products_rows WHERE id <> 'smk-ph2'");
   await db.execute("INSERT INTO settings_rows (setting_key, setting_value) VALUES ('image_auto_tried', ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)", [JSON.stringify(Object.fromEntries(phOthers.map(r => [r.id, 1])))]);
   const auto = await req('admin-photo-auto', { method: 'POST', cookie: ac, body: { limit: 5 } });
