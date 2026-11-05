@@ -27,9 +27,9 @@
   <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=menu-movil-20261101">
   <link rel="stylesheet" href="/assets/css/admin/editor-catalogo-page.css?v=precios-20261028">
   <link rel="stylesheet" href="/assets/css/admin/products-admin.css?v=ds-20261027">
-  <script src="/assets/vendor/lucide-icons.min.js?v=68df8f2b"></script>
+  <script src="/assets/vendor/lucide-icons.min.js?v=fotos-20261105"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAI062MaV8sfjQKYVGjOBaZBOA87z+IhZE9DA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="/assets/js/admin/admin-nav.js?v=precios-20261101" defer></script>
+  <script src="/assets/js/admin/admin-nav.js?v=fotos-20261105" defer></script>
 </head>
 <body>
   <div id="smartisp-admin-nav" class="is-loading" data-active="productos"></div>
@@ -516,7 +516,7 @@
     <div class="modal-dialog" style="max-width:780px;" role="dialog" aria-modal="true" aria-label="Buscar foto del producto">
       <div class="modal-head">
         <div>
-          <h3 class="modal-title" style="display:flex; align-items:center; gap:7px;"><i data-lucide="search" width="17"></i> Buscar Foto en Amazon e Internet</h3>
+          <h3 class="modal-title" style="display:flex; align-items:center; gap:7px;"><i data-lucide="search" width="17"></i> Buscar foto del producto</h3>
           <small id="searchModalProductTitle" style="color:var(--muted); font-size:12px;"></small>
         </div>
         <button type="button" class="modal-close-btn" onclick="closeModal('imageSearchModal')" aria-label="Cerrar">✕</button>
@@ -527,8 +527,8 @@
       </form>
       <div style="display:flex; gap:8px; margin-bottom:14px;">
         <button type="button" class="btn btn-sm btn-secondary active-store" data-store="all"><i data-lucide="globe" width="13"></i> Todos</button>
-        <button type="button" class="btn btn-sm btn-secondary" data-store="amazon"><i data-lucide="shopping-cart" width="13"></i> Solo Amazon</button>
-        <button type="button" class="btn btn-sm btn-secondary" data-store="web"><i data-lucide="search" width="13"></i> Google & Web</button>
+        <button type="button" class="btn btn-sm btn-secondary" data-store="icecat"><i data-lucide="factory" width="13"></i> Fabricante</button>
+        <button type="button" class="btn btn-sm btn-secondary" data-store="web"><i data-lucide="search" width="13"></i> Web</button>
       </div>
       <div id="imageResultsGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:10px; max-height:360px; overflow-y:auto; padding:4px;">
         <!-- Image cards dynamically populated -->

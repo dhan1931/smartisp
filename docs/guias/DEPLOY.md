@@ -175,8 +175,18 @@ En hPanel → Avanzado → Cron Jobs, dos tareas (cambiar `<usuario>` por el del
 ```
 
 La diaria guarda las pendientes (productos nuevos o importados); la semanal reintenta las que
-fallaron. Por HTTP no responde. El mismo proceso se puede lanzar a mano en Editor de catálogo →
-Importador → «Guardar fotos ahora».
+fallaron. Por HTTP no responde. El mismo proceso se puede lanzar a mano en Panel → Fotos →
+«Revisar y guardar».
+
+Las que el proveedor ya no tiene se reparan en Panel → Fotos: «Reparar automáticamente» busca la
+foto oficial del fabricante en Open Icecat (marca + número de parte) o la copia del Internet Archive;
+las que queden se eligen a mano. Todo lo elegido se guarda en `uploads/products/`. Variables opcionales
+en el `.env`:
+
+- `SMARTISP_ICECAT_USER`: usuario de una cuenta gratuita de icecat.biz (sin ella se usa la cuenta
+  pública de demostración `openIcecat-live`).
+- `SMARTISP_BRAVE_SEARCH_KEY`: clave de la API de Brave Search para buscar también en toda la web
+  al elegir a mano. Sin clave esa búsqueda no aparece.
 
 ## 5. Después de publicar: verificación mínima
 

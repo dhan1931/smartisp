@@ -23,6 +23,7 @@ export default defineConfig({
         pedidos: 'pedidos.html',
         comprobante: 'comprobante.html',
         cotizaciones: 'cotizaciones.html',
+        fotos: 'fotos.html',
         clientes: 'clientes.html',
         categorias: 'categorias.html',
         portada: 'portada.html',

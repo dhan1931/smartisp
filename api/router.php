@@ -459,6 +459,9 @@ if ($action === 'admin-insights-alerts' && isAdminUser()) {
 if (in_array($action, ['store-campaigns', 'admin-store-campaigns', 'upload-campaign-image'], true)) {
     require __DIR__ . '/handlers/campaigns.php';
 }
+if (in_array($action, ['admin-photos', 'admin-photo-candidates', 'admin-photo-replace', 'admin-photo-auto'], true)) {
+    require __DIR__ . '/handlers/photos.php';
+}
 
 // 'categories' y 'categories-reset' vivian tambien aca arriba, duplicados y desactualizados
 // (sin macro_group_id ni los campos nuevos de familia) -- como este bloque corria ANTES del
