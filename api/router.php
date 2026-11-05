@@ -371,6 +371,12 @@ function requireAdminAuth(): void {
     }
 }
 
+// PHP bloquea la sesión mientras dura la petición y las demás del mismo navegador (por ejemplo, la tienda
+// abierta en otra pestaña) esperan en fila. Las tareas largas del panel la sueltan al empezar.
+function smartispReleaseSession(): void {
+    if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;

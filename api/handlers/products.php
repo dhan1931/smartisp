@@ -165,6 +165,7 @@ if ($action === 'catalog' && $method === 'GET') {
 // Copia propia de las fotos de proveedor (GET: resumen; POST: procesa una tanda).
 if ($action === 'admin-archive-images') {
     requireAdminAuth();
+    smartispReleaseSession();
     require_once __DIR__ . '/../lib/image-archive.php';
     $pTable = getProductsTableName($pdo);
     if ($method === 'POST') {
@@ -542,6 +543,7 @@ if ($action === 'admin-products') {
             $prevImage = $pdo->prepare("SELECT image_url FROM `$pTable` WHERE id = :id");
             $prevImage->execute([':id' => $existingId ?: $id]);
             if ((string)$prevImage->fetchColumn() !== $imageUrl) {
+                smartispReleaseSession();
                 @set_time_limit(60);
                 $localImage = smartispArchiveImageUrl(trim($imageParts[0]));
                 if ($localImage !== null) { $imageParts[0] = $localImage; $imageUrl = implode('|', $imageParts); }
