@@ -6,9 +6,10 @@ require_once __DIR__ . '/brands.php';
 const SMARTISP_CATALOG_COMPACT_NAME = "REPLACE(REPLACE(REPLACE(REPLACE(LOWER(name), '-', ''), ' ', ''), '.', ''), '/', '')";
 
 // Nombres con que los proveedores escriben algunas marcas.
-const SMARTISP_BRAND_ALIASES = ['HP' => ['hpinc', 'hpe'], 'A-Data' => ['adata'], 'TP-Link' => ['tplink'], 'D-Link' => ['dlink'], 'Nexxt Solutions' => ['nexxt'],
+const SMARTISP_BRAND_ALIASES = ['HP' => ['hpinc', 'hpe'], 'A-Data' => ['adata'], 'TP-Link' => ['tplink', 'tapo'], 'D-Link' => ['dlink'], 'Nexxt Solutions' => ['nexxt'],
     'Hikvision' => ['hik'], 'Western Digital' => ['wd'], 'Klip Xtreme' => ['kx'], 'Acer' => ['predator'], 'HPE' => ['aruba'], 'Canon' => ['imageprograf'],
-    'Logitech' => ['astro gaming'], 'Kingston ValueRAM' => ['kvr'], 'CNet' => ['cnet']];
+    'Logitech' => ['astro gaming'], 'Kingston ValueRAM' => ['kvr'], 'CNet' => ['cnet'], 'Genius' => ['slimstar', 'scorpion'],
+    'HiLook' => ['hil'], 'Microsoft' => ['ms office', 'msf office']];
 
 function smartispCatalogTokens(string $search): array {
     $words = preg_split('/[\s,;]+/u', mb_strtolower(trim($search)), -1, PREG_SPLIT_NO_EMPTY) ?: [];
@@ -103,7 +104,8 @@ function smartispBrandFacets(array $names, int $max = 12): array {
     return $out;
 }
 
-// Marca del producto para los datos estructurados: solo entre las primeras cuatro palabras del nombre y
+// Marca del producto para los datos estructurados: solo entre las primeras cinco palabras del nombre (sin contar
+// el «Promo 12+1» del comienzo) y
 // nunca tras «para»/«compatible», porque muchas marcas no están en la lista («Genius … para Sony»,
 // «Cartucho compatible para HP»). Con dos marcas en la misma posición gana la más larga («HPE» sobre «HP»).
 function smartispProductBrand(string $name): ?string {
@@ -113,13 +115,14 @@ function smartispProductBrand(string $name): ?string {
         foreach (SMARTISP_BRANDS as $brand) $patterns[$brand] = '/' . smartispBrandPattern($brand) . '/';
     }
     $text = str_replace('-', ' ', strtolower(smartispSlug($name, 300, '')));
+    $text = preg_replace('/^(promo(\s+por)?\s+(\d+x\d+|\d+(\s+\d+)?)|precio especial)\s+/', '', $text);
     $best = null;
     $bestPos = PHP_INT_MAX;
     foreach ($patterns as $brand => $pattern) {
         if (!preg_match_all($pattern, $text, $all, PREG_OFFSET_CAPTURE)) continue;
         foreach ($all[2] as [, $pos]) {
             $before = preg_split('/\s+/', trim(substr($text, 0, $pos)), -1, PREG_SPLIT_NO_EMPTY);
-            if (count($before) > 3 || in_array(end($before), ['para', 'for', 'con', 'compatible', 'compatibles'], true)) continue;
+            if (count($before) > 4 || in_array(end($before), ['para', 'for', 'con', 'compatible', 'compatibles'], true)) continue;
             if ($pos < $bestPos || ($pos === $bestPos && strlen($brand) > strlen((string)$best))) {
                 $best = $brand;
                 $bestPos = $pos;
