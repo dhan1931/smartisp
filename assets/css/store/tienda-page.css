@@ -216,6 +216,7 @@
 		.product h3 { font-family: 'DM Sans', sans-serif; font-size: 15px; letter-spacing: 0; line-height: 1.35; margin: 6px 0 10px; min-height: 41px; }
 		.product-card-link { display: contents; text-decoration: none; color: inherit; }
 		.product-title-link { text-decoration: none; color: inherit; display: block; }
+		.product-title-link h3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 		.product-title-link:hover h3 { color: var(--blue); }
 		.btn-card-view { color: var(--muted); border: 1px solid #cbd5e1; background: #f8fafc; width: 33px; height: 33px; flex-shrink: 0; display: grid; place-items: center; border-radius: 4px; text-decoration: none; transition: all .2s; }
 		.btn-card-view:hover { background: #e2e8f0; color: var(--blue); border-color: #94a3b8; }

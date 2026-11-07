@@ -18,7 +18,7 @@
       const key = productKey(item);
       const qty = Math.max(1, Math.min(99, Number(item.quantity) || 1));
       if (map.has(key)) map.get(key).quantity = Math.min(99, map.get(key).quantity + qty);
-      else map.set(key, { id: item.id ?? '', sku: item.sku || '', name: String(item.name || 'Producto'), price: Math.max(0, Number(item.price) || 0), image: item.image || item.imageUrl || '', category: item.category || '', quantity: qty });
+      else map.set(key, { id: item.id ?? '', sku: item.sku || '', name: String(item.name || 'Producto'), title: String(item.title || ''), price: Math.max(0, Number(item.price) || 0), image: item.image || item.imageUrl || '', category: item.category || '', quantity: qty });
     });
     return [...map.values()];
   };
@@ -60,7 +60,7 @@
       itemsList.innerHTML = '<div class="cart-empty">Tu carrito está vacío.<br><a href="/tienda.html">Ir al catálogo</a></div>';
     } else {
       itemsList.innerHTML = cart.map((item, index) => {
-        const name = escapeHtml(item.name);
+        const name = escapeHtml(item.title || item.name);
         return `<div class="cart-line">
           <img src="${escapeHtml(item.image || shared.fallbackImage)}" alt="${name}" width="52" height="52" data-fallback="${escapeHtml(shared.fallbackImage)}" onerror="this.onerror=null;this.src=this.dataset.fallback">
           <div class="cart-line-info">
@@ -184,7 +184,7 @@
     $('#successItemsBody').innerHTML = items.map(item => {
       const quantity = Math.max(1, Number(item.quantity) || 1);
       const detail = item.category || (item.sku ? `SKU: ${item.sku}` : 'SmartISP');
-      return `<tr><td><strong>${escapeHtml(item.name || 'Producto')}</strong><small>${escapeHtml(detail)}</small></td><td class="qty">${quantity}</td><td class="num">${money((Number(item.price) || 0) * quantity)}</td></tr>`;
+      return `<tr><td><strong>${escapeHtml(item.title || item.name || 'Producto')}</strong><small>${escapeHtml(detail)}</small></td><td class="qty">${quantity}</td><td class="num">${money((Number(item.price) || 0) * quantity)}</td></tr>`;
     }).join('');
     const { base, iva } = taxBreakdown(total);
     $('#successSubtotalBaseText').textContent = amountText(base, isQuote);

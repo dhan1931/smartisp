@@ -217,6 +217,7 @@
 			id: product.id ?? '',
 			sku: product.sku || '',
 			name: String(product.name || ''),
+			title: String(product.title || ''),
 			price: Math.max(0, Number(product.price || 0)),
 			image: product.image || product.imageUrl || '',
 			category: product.category || '',
@@ -778,7 +779,7 @@
 					: `<div><span class="reviews" style="margin-left:0;font-style:italic;">Sin reseñas aún</span></div>`;
 				const productIndex = productIndexMap.get(product) ?? productIndexMap.get(String(product.id));
 				const priority = productIndex < 4;
-				const pName = escapeHtml(product.name);
+				const pName = escapeHtml(product.title || product.name);
 				const saved = wishlistIds.has(productKey(product));
 				return `<article class="product" data-index="${productIndex}" tabindex="0" role="group" aria-label="Ver especificaciones de ${pName}"><div class="product-image">${product.tag ? `<span class="tag">${escapeHtml(product.tag)}</span>` : ''}<button class="heart${saved ? ' is-saved' : ''}" aria-label="Agregar a favoritos" aria-pressed="${saved}"><i data-lucide="heart" width="16"></i></button><a href="${escapeHtml(pUrl)}" class="product-card-link" aria-label="${pName}" tabindex="-1"><img src="${escapeHtml(pImg)}" alt="${pName}" width="320" height="278" loading="${priority ? 'eager' : 'lazy'}" fetchpriority="${productIndex < 2 ? 'high' : 'auto'}" data-fallback="${escapeHtml(fbImg)}" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src=this.dataset.fallback;}"></a></div><div class="product-info"><div class="product-brand">${escapeHtml(product.brand)}</div><a href="${escapeHtml(pUrl)}" class="product-title-link" title="${pName}"><h3>${pName}</h3></a>${reviewsHtml}<div class="price-row"><div class="price-block"><span class="price ${Number(product.price || 0) <= 0 ? 'is-quote' : ''}">${money(product.price)}</span>${Number(product.price || 0) > 0 ? '<span class="price-tax-label">Precios incluyen IVA</span>' : ''}</div><a href="${escapeHtml(pUrl)}" class="btn-card-view" title="Ver producto en página completa" aria-label="Ver ficha completa de ${pName}"><i data-lucide="external-link" width="15"></i></a></div><button class="add" data-index="${productIndex}" aria-label="Agregar ${pName} al carrito"><i data-lucide="shopping-cart" width="16"></i> Agregar</button></div></article>`;
 			}).join('');
@@ -1331,7 +1332,7 @@
 			const options = [];
 			(data.categories || []).forEach(c => options.push(`<button type="button" class="suggest-item" role="option" data-sg-cat="${escapeHtml(c.name)}"><i data-lucide="layout-grid" width="15"></i><span>${highlightMatch(formatCategoryName(c.name), q)}</span><small>${c.count} producto${c.count === 1 ? '' : 's'}</small></button>`));
 			(data.brands || []).forEach(b => options.push(`<button type="button" class="suggest-item" role="option" data-sg-brand="${escapeHtml(b)}"><i data-lucide="tag" width="15"></i><span>Marca <strong>${highlightMatch(b, q)}</strong></span></button>`));
-			(data.products || []).forEach(p => options.push(`<a class="suggest-item suggest-product" role="option" href="${escapeHtml(getProductUrl(p))}"><img src="${escapeHtml(getProductImageUrl(p))}" alt="" width="40" height="40" loading="lazy" onerror="this.style.visibility='hidden'"><span>${highlightMatch(p.name, q)}</span><small>${money(p.price)}</small></a>`));
+			(data.products || []).forEach(p => options.push(`<a class="suggest-item suggest-product" role="option" href="${escapeHtml(getProductUrl(p))}"><img src="${escapeHtml(getProductImageUrl(p))}" alt="" width="40" height="40" loading="lazy" onerror="this.style.visibility='hidden'"><span>${highlightMatch(p.title || p.name, q)}</span><small>${money(p.price)}</small></a>`));
 			options.push(`<button type="button" class="suggest-item suggest-all" role="option" data-sg-all><i data-lucide="search" width="15"></i><span>Ver todos los resultados para «${escapeHtml(q)}»</span></button>`);
 			suggestBox.innerHTML = options.join('');
 			suggestBox.querySelectorAll('.suggest-item').forEach((el, i) => { el.id = `suggest-opt-${i}`; el.tabIndex = -1; });
@@ -1919,9 +1920,9 @@
 				const imageUrl = getProductImageUrl(product);
 				const productUrl = getProductUrl(product);
 				return `<article class="campaign-product">
-					<a class="campaign-product-image" href="${escapeHtml(productUrl)}" aria-label="Ver ${escapeHtml(product.name)}"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(product.name)}" width="320" height="246" loading="${index < 2 ? 'eager' : 'lazy'}" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${escapeHtml(fallbackImage(product))}';}"></a>
+					<a class="campaign-product-image" href="${escapeHtml(productUrl)}" aria-label="Ver ${escapeHtml(product.title || product.name)}"><img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(product.title || product.name)}" width="320" height="246" loading="${index < 2 ? 'eager' : 'lazy'}" onerror="if(!this.dataset.failed){this.dataset.failed='1';this.src='${escapeHtml(fallbackImage(product))}';}"></a>
 					<div class="campaign-product-category">${escapeHtml(product.category || 'SmartISP')}</div>
-					<a class="campaign-product-title" href="${escapeHtml(productUrl)}">${escapeHtml(product.name || 'Producto')}</a>
+					<a class="campaign-product-title" href="${escapeHtml(productUrl)}">${escapeHtml(product.title || product.name || 'Producto')}</a>
 					<p class="campaign-product-description">${escapeHtml(product.description || '')}</p>
 					<div class="campaign-product-bottom"><span class="campaign-product-price-block"><strong class="campaign-product-price">${money(product.price)}</strong>${Number(product.price || 0) > 0 ? '<span class="campaign-product-tax">IVA incluido</span>' : ''}</span><button type="button" class="campaign-product-add" data-campaign-add="${index}" aria-label="Agregar ${escapeHtml(product.name)} al carrito"><i data-lucide="shopping-cart" width="15"></i> Agregar</button></div>
 				</article>`;

@@ -26,7 +26,7 @@
     const cart = readCart();
     const existing = cart.find(item => keyOf(item) === keyOf(product));
     if (existing) existing.quantity = Math.min(99, Math.max(1, Number(existing.quantity) || 1) + 1);
-    else cart.push({ id: product.id ?? '', sku: product.sku || '', name: String(product.name || ''), price: Math.max(0, Number(product.price) || 0), image: product.image || product.imageUrl || '', category: product.category || '', quantity: 1 });
+    else cart.push({ id: product.id ?? '', sku: product.sku || '', name: String(product.name || ''), title: String(product.title || ''), price: Math.max(0, Number(product.price) || 0), image: product.image || product.imageUrl || '', category: product.category || '', quantity: 1 });
     try { localStorage.setItem('smartisp.cart', JSON.stringify(cart)); }
     catch { return; }
     updateCount();
