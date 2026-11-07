@@ -2008,6 +2008,13 @@
 			if (request === featuredRequest && featuredFilter === filter) renderStorefrontFeatured();
 		};
 		document.querySelector('#miniCategoriesGrid')?.addEventListener('click', event => {
+			const more = event.target.closest('.mini-category-more');
+			if (more) {
+				const open = document.querySelector('#miniCategories').classList.toggle('is-expanded');
+				more.setAttribute('aria-expanded', String(open));
+				more.querySelector('.mini-category-name').textContent = open ? 'Menos categorías' : 'Más Categorías';
+				return;
+			}
 			const card = event.target.closest('[data-mini-key]');
 			if (!card || event.ctrlKey || event.metaKey || event.shiftKey || event.button) return;
 			event.preventDefault();
@@ -2034,27 +2041,31 @@
 			});
 			const sorted = [...groups.values()].filter(g => g.visible).sort((a, b) => (a.sortOrder - b.sortOrder) || (b.count - a.count));
 			sorted.forEach(g => { g.image = g.macroImage || g.image; });
-			const chosen = storefrontFeaturedCategoryIds.length
-				? storefrontFeaturedCategoryIds.map(id => catalogCategoryRows.find(cat => String(cat.id) === String(id))).filter(cat => cat && Number(cat.productCount || 0) > 0).slice(0, 7)
-				: [];
+			const asItem = cat => ({ id:cat.id, name:cat.name, icon:cat.icon || cat.macroGroupIcon || 'package', categories:[cat.name], image:cat.iconImageUrl || '', alt:cat.name, description:cat.description || '' });
+			const withProducts = cat => cat && Number(cat.productCount || 0) > 0;
+			const chosen = storefrontFeaturedCategoryIds.map(id => catalogCategoryRows.find(cat => String(cat.id) === String(id))).filter(withProducts);
 			const displayItems = chosen.length
-				? chosen.map(cat => ({ id:cat.id, name:cat.name, icon:cat.icon || cat.macroGroupIcon || 'package', categories:[cat.name], image:cat.iconImageUrl || '', alt:cat.name, description:cat.description || '' }))
+				? chosen.slice(0, 7).map(asItem)
 				: sorted.slice(0, 7).map(g => ({ ...g, categories: catalogCategoryRows.filter(cat => getMacroCategory(cat.name).id === g.id && Number(cat.productCount || 0) > 0).map(cat => cat.name) }));
-			miniCategoryItems = new Map(displayItems.map(g => [String(g.id), g]));
-			const cardsHtml = displayItems.map(g => {
+			// Las elegidas después de la séptima se despliegan con «Más categorías»; sin elegidas, las de más productos que aún no se ven.
+			const shown = new Set(displayItems.flatMap(g => g.categories));
+			const extraItems = (chosen.length > 7 ? chosen.slice(7) : catalogCategoryRows.filter(cat => withProducts(cat) && !shown.has(cat.name)).sort((a, b) => Number(b.productCount || 0) - Number(a.productCount || 0)).slice(0, 21)).map(asItem);
+			miniCategoryItems = new Map([...displayItems, ...extraItems].map(g => [String(g.id), g]));
+			const cardHtml = (g, extra) => {
 				const href = g.categories.length === 1 ? `/categorias-destacadas?category=${encodeURIComponent(g.categories[0])}` : (g.id && g.id !== 'otros' ? `/categorias-destacadas?macro=${encodeURIComponent(g.id)}` : '/categorias-destacadas');
 				const active = isMiniActive(String(g.id), g);
-				return `<a class="mini-category-card${active ? ' is-active' : ''}" href="${escapeHtml(href)}" data-mini-key="${escapeHtml(String(g.id))}" role="button" aria-pressed="${active}">
+				return `<a class="mini-category-card${extra ? ' is-extra' : ''}${active ? ' is-active' : ''}" href="${escapeHtml(href)}" data-mini-key="${escapeHtml(String(g.id))}" role="button" aria-pressed="${active}">
 					<span class="mini-category-visual">${g.image ? `<img src="${escapeHtml(g.image)}" alt="${escapeHtml(g.alt)}" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><i data-lucide="${escapeHtml(g.icon)}" width="24" hidden></i>` : `<i data-lucide="${escapeHtml(g.icon)}" width="24"></i>`}</span>
 					<span class="mini-category-name">${escapeHtml(g.name)}</span>
 					${g.description ? `<span class="mini-category-description">${escapeHtml(g.description)}</span>` : ''}
 				</a>`;
-			}).join('');
-			const moreHtml = `<a class="mini-category-card" href="/categorias-destacadas">
-				<span class="mini-category-visual"><i data-lucide="more-horizontal" width="24"></i></span>
-				<span class="mini-category-name">Más Categorías</span>
-			</a>`;
-			grid.innerHTML = cardsHtml + moreHtml;
+			};
+			const expanded = section.classList.contains('is-expanded');
+			const moreHtml = extraItems.length
+				? `<button type="button" class="mini-category-card mini-category-more" aria-expanded="${expanded}" aria-controls="miniCategoriesGrid"><span class="mini-category-visual"><i data-lucide="chevron-down" width="24"></i></span><span class="mini-category-name">${expanded ? 'Menos categorías' : 'Más Categorías'}</span></button>`
+				: `<a class="mini-category-card" href="/categorias-destacadas"><span class="mini-category-visual"><i data-lucide="more-horizontal" width="24"></i></span><span class="mini-category-name">Más Categorías</span></a>`;
+			const allHtml = extraItems.length ? `<a class="mini-category-card is-extra" href="/categorias-destacadas"><span class="mini-category-visual"><i data-lucide="layout-grid" width="24"></i></span><span class="mini-category-name">Ver todas</span></a>` : '';
+			grid.innerHTML = displayItems.map(g => cardHtml(g, false)).join('') + moreHtml + extraItems.map(g => cardHtml(g, true)).join('') + allHtml;
 			section.classList.add('is-visible');
 			section.classList.remove('is-pending');
 			window.lucide?.createIcons();

@@ -40,7 +40,7 @@ const port = 8941;
 const baseUrl = `http://127.0.0.1:${port}`;
 const uploads = fs.mkdtempSync(path.join(os.tmpdir(), 'smartisp-e2e-'));
 const php = spawn('php', ['-S', `127.0.0.1:${port}`, path.join(root, 'scripts/dev-router.php')], {
-  cwd: root, env: { ...process.env, PHP_CLI_SERVER_WORKERS: '4', SMARTISP_UPLOADS_DIR: uploads }, stdio: ['ignore', 'ignore', 'pipe'],
+  cwd: root, env: { ...process.env, PHP_CLI_SERVER_WORKERS: '4', SMARTISP_UPLOADS_DIR: uploads }, stdio: 'ignore',
 });
 for (let i = 0; i < 40; i++) { try { await fetch(`${baseUrl}/api/router.php?action=me`); break; } catch { await new Promise(r => setTimeout(r, 150)); } }
 
@@ -146,6 +146,30 @@ try {
   await page.locator('.tree-children [data-category-id="e2e-cat-hija"]').waitFor({ timeout: 5000 }).catch(() => {});
   assert.equal(await page.locator('.tree-children [data-category-id="e2e-cat-hija"]').count(), 1, 'el árbol muestra la hija bajo su principal');
   await db.execute("DELETE FROM categories_rows WHERE id IN ('e2e-cat-padre','e2e-cat-hija')");
+  // Portada: las 7 primeras categorías destacadas se ven siempre y las demás se despliegan con «Más categorías».
+  const featuredIds = Array.from({ length: 9 }, (_, i) => `e2e-mc-${i + 1}`);
+  await db.execute("DELETE FROM categories_rows WHERE id LIKE 'e2e-mc-%'");
+  await db.execute(`INSERT INTO categories_rows (id,name,subcategories,macro_group_id) VALUES ${featuredIds.map((id, i) => `('${id}','E2E Destacada ${i + 1}','[]','redes')`).join(',')}`);
+  await db.execute(`INSERT INTO products_rows (id,name,price,visible,category,sku) VALUES ${featuredIds.map((id, i) => `('${id}-p','Producto ${id}',10,1,'E2E Destacada ${i + 1}','E2E-MC${i}')`).join(',')}`);
+  const [[savedFeatured]] = await db.query("SELECT setting_value FROM settings_rows WHERE setting_key = 'store_featured_category_ids'");
+  await db.execute("INSERT INTO settings_rows (setting_key, setting_value) VALUES ('store_featured_category_ids', ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)", [JSON.stringify(featuredIds)]);
+  const store = await session();
+  await open(store.page, '/tienda.html');
+  await store.page.waitForSelector('#miniCategories.is-visible .mini-category-more');
+  const visibleMini = () => store.page.$$eval('#miniCategoriesGrid [data-mini-key]', cards => cards.filter(card => card.offsetParent !== null).map(card => card.dataset.miniKey));
+  assert.deepEqual(await visibleMini(), featuredIds.slice(0, 7), 'se ven las 7 primeras en el orden elegido');
+  await store.page.click('.mini-category-more');
+  assert.deepEqual(await visibleMini(), featuredIds, 'al tocar «Más categorías» se despliegan las demás');
+  assert.equal(await store.page.getAttribute('.mini-category-more', 'aria-expanded'), 'true');
+  assert.equal((await store.page.textContent('.mini-category-more')).trim(), 'Menos categorías');
+  await store.page.click('.mini-category-more');
+  assert.equal((await visibleMini()).length, 7, 'y se vuelven a plegar');
+  await store.context.close();
+  await db.execute("DELETE FROM products_rows WHERE id LIKE 'e2e-mc-%'");
+  await db.execute("DELETE FROM categories_rows WHERE id LIKE 'e2e-mc-%'");
+  if (savedFeatured) await db.execute("UPDATE settings_rows SET setting_value = ? WHERE setting_key = 'store_featured_category_ids'", [savedFeatured.setting_value]);
+  else await db.execute("DELETE FROM settings_rows WHERE setting_key = 'store_featured_category_ids'");
+
   await open(page, '/fotos.html?status=sin-foto');
   await page.fill('#search', 'Foto E2E');
   await page.locator('#grid .photo-card').nth(1).waitFor();

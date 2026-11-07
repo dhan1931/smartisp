@@ -50,6 +50,7 @@ textarea{resize:vertical}
 .category-choice img{flex-shrink:0;width:48px;height:38px;object-fit:cover;border-radius:4px;background:#fff}
 .category-choice span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .category-selected-list{display:grid;gap:8px;min-height:40px}
+.category-selected-divider{margin:6px 0 2px;padding-top:10px;border-top:1px dashed var(--border);color:var(--muted);font-size:12px;font-weight:700}
 .category-selected-row{display:grid;grid-template-columns:28px 48px minmax(0,1fr) auto;align-items:center;gap:12px;padding:9px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2)}
 .category-selected-row .drag-index{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent-text);font-size:12px;font-weight:700}
 .category-selected-row img{width:48px;height:38px;object-fit:cover;border-radius:4px;background:#fff}

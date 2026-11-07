@@ -198,7 +198,7 @@ if ($action === 'admin-store-campaigns') {
         $settings = is_array($body['campaign'] ?? null) ? $body['campaign'] : [];
         $slides = is_array($body['slides'] ?? null) ? array_slice($body['slides'], 0, 12) : [];
         $productIds = ($isPrimaryZone && is_array($body['product_ids'] ?? null)) ? array_values(array_unique(array_slice(array_filter(array_map(static fn($id) => trim((string)$id), $body['product_ids']), static fn($id) => $id !== ''), 0, 12))) : [];
-        $categoryIds = ($isPrimaryZone && is_array($body['category_ids'] ?? null)) ? array_values(array_unique(array_slice(array_filter(array_map(static fn($id) => trim((string)$id), $body['category_ids']), static fn($id) => $id !== ''), 0, 7))) : [];
+        $categoryIds = ($isPrimaryZone && is_array($body['category_ids'] ?? null)) ? array_values(array_unique(array_slice(array_filter(array_map(static fn($id) => trim((string)$id), $body['category_ids']), static fn($id) => $id !== ''), 0, 28))) : [];
         $name = trim((string)($settings['name'] ?? ($existingCampaign['name'] ?? 'Portada de la tienda')));
         $rotation = max(4, min(20, (int)($settings['rotation_seconds'] ?? ($existingCampaign['rotation_seconds'] ?? 7))));
         $heroHeightPct = max(60, min(100, (int)($settings['hero_height_pct'] ?? ($existingCampaign['hero_height_pct'] ?? 100))));
