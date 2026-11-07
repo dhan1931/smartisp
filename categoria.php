@@ -7,6 +7,7 @@
  */
 
 require_once __DIR__ . '/api/lib/db.php';
+require_once __DIR__ . '/api/lib/catalog-search.php';
 
 function slugifyCategoryPage(string $text): string {
     return smartispSlug($text, 90, 'categoria');
@@ -43,6 +44,8 @@ $categoryBannerUrl = '';
 $categoryBannerAlt = '';
 $categoryIcon = 'package';
 $customCategoryDescription = '';
+$categoryMinPrice = null;
+$categoryTopBrands = [];
 $pageSize = 24;
 $currentPage = max(1, (int)($_GET['page'] ?? 1));
 $totalPages = 1;
@@ -175,6 +178,16 @@ if ($pdo && $slug !== '') {
             $allCountStmt = $pdo->prepare("SELECT COUNT(*) FROM `$pTable` WHERE $where");
             $allCountStmt->execute($params);
             $allProductCount = (int)$allCountStmt->fetchColumn();
+            $statsStmt = $pdo->prepare("SELECT name, price FROM `$pTable` WHERE $where");
+            $statsStmt->execute($params);
+            $brandCounts = [];
+            foreach ($statsStmt->fetchAll(PDO::FETCH_ASSOC) as $statRow) {
+                if ((float)$statRow['price'] > 0) $categoryMinPrice = $categoryMinPrice === null ? (float)$statRow['price'] : min($categoryMinPrice, (float)$statRow['price']);
+                $statBrand = smartispProductBrand((string)$statRow['name']);
+                if ($statBrand !== null) $brandCounts[$statBrand] = ($brandCounts[$statBrand] ?? 0) + 1;
+            }
+            arsort($brandCounts);
+            $categoryTopBrands = array_slice(array_keys($brandCounts), 0, 4);
             if ($selectedSubcategory !== '') {
                 $where .= ' AND (TRIM(subcategory) = :filter_subcategory OR TRIM(category) = :filter_category)';
                 $params[':filter_subcategory'] = $selectedSubcategory;
@@ -253,32 +266,55 @@ if ($categoryName === '') {
     http_response_code(404);
 }
 
+// Las vistas filtradas u ordenadas repiten productos de la categoría: noindex y canonical a la limpia.
+// Las páginas 2+ sin filtros sí se indexan con su propio canonical (lo que pide Google para la
+// paginación): con canonical a la página 1 los productos del fondo solo se descubrían por el sitemap.
+$hasActiveFilters = $selectedSubcategory !== '' || $selectedPriceMin !== '' || $selectedPriceMax !== '' || $filterInStock || $sortOrder !== 'relevancia';
+$pagedCanonical = $categoryName !== '' && $currentPage > 1 && !$hasActiveFilters;
+$categoryBaseUrl = $categoryName !== '' ? $siteUrl . '/categoria/' . slugifyCategoryPage($categoryName) . '/' : '';
 $canonicalUrl = $categoryName !== ''
-    ? $siteUrl . '/categoria/' . slugifyCategoryPage($categoryName) . '/'
+    ? $categoryBaseUrl . ($pagedCanonical ? '?page=' . $currentPage : '')
     : $siteUrl . '/tienda.html';
 $pageTitle = $categoryName !== ''
-    ? $categoryName . ' | Productos SmartISP Ecuador'
+    ? $categoryName . ($pagedCanonical ? ' (página ' . $currentPage . ')' : '') . ' | Productos SmartISP Ecuador'
     : 'Categoria no encontrada | SmartISP';
+$joinNames = static fn(array $names): string => count($names) > 1 ? implode(', ', array_slice($names, 0, -1)) . ' y ' . end($names) : (string)($names[0] ?? '');
+$autoDescription = number_format($allProductCount, 0, ',', '.') . ($allProductCount === 1 ? ' producto' : ' productos') . ' de ' . $categoryName . ' en SmartISP Ecuador'
+    . ($categoryMinPrice !== null ? ' desde $' . number_format($categoryMinPrice, 2, '.', ',') : '')
+    . ($categoryTopBrands ? ', de marcas como ' . $joinNames($categoryTopBrands) : '')
+    . '. Precios con IVA, envío gratis en Guayas y despacho a todo Ecuador.';
 $metaDesc = $categoryName !== ''
     ? ($customCategoryDescription !== '' ? $customCategoryDescription : (slugifyCategoryPage($categoryName) === slugifyCategoryPage('Audio y Video')
         ? 'Encuentra equipos de audio y video para entretenimiento, reuniones y creación de contenido.'
-        : 'Explora ' . $categoryName . ' y compara opciones del catálogo para encontrar lo que necesitas.'))
+        : ($allProductCount > 0 ? $autoDescription : 'Explora ' . $categoryName . ' y compara opciones del catálogo para encontrar lo que necesitas.')))
     : 'Categoria no encontrada en el catalogo de SmartISP Ecuador.';
-// El canonical siempre apunta a la categoria "limpia" (sin filtros, pagina 1): paginas 2+ y
-// vistas filtradas/ordenadas serian contenido casi duplicado si se indexaran por separado, asi
-// que se marcan noindex (pero follow, para no cortar el rastreo de los productos que enlazan).
-$hasActiveFilters = $selectedSubcategory !== '' || $selectedPriceMin !== '' || $selectedPriceMax !== '' || $filterInStock || $sortOrder !== 'relevancia';
 $robots = $categoryName !== ''
-    ? (($currentPage <= 1 && !$hasActiveFilters) ? 'index, follow, max-image-preview:large' : 'noindex, follow')
+    ? (!$hasActiveFilters ? 'index, follow, max-image-preview:large' : 'noindex, follow')
     : 'noindex, follow';
 $relatedNames = array_slice(array_keys($allCategoryNames), 0, 12);
 $productItemList = [];
 foreach ($products as $idx => $product) {
     $productItemList[] = [
         '@type' => 'ListItem',
-        'position' => $idx + 1,
+        'position' => ($currentPage - 1) * $pageSize + $idx + 1,
         'url' => $siteUrl . '/producto/' . productSlugForCategoryPage($product),
         'name' => (string)$product['name']
+    ];
+}
+$absoluteUrl = static fn(string $url): string => str_starts_with($url, '/') && !str_starts_with($url, '//') ? $siteUrl . $url : $url;
+$shareImage = $siteUrl . '/assets/favicons/favicon-512x512.png';
+foreach (array_merge([$categoryBannerUrl], array_map(static fn($p) => (string)($p['imageUrl'] ?? ''), $products)) as $candidate) {
+    if (preg_match('#^https?://#i', $absoluteUrl($candidate))) { $shareImage = $absoluteUrl($candidate); break; }
+}
+$breadcrumbSchema = null;
+if ($categoryName !== '') {
+    $crumbs = [['Inicio', $siteUrl . '/']];
+    if ($categoryParentName !== '') $crumbs[] = [$categoryParentName, $siteUrl . '/categoria/' . slugifyCategoryPage($categoryParentName) . '/'];
+    $crumbs[] = [$categoryName, $categoryBaseUrl];
+    $breadcrumbSchema = [
+        '@context' => 'https://schema.org',
+        '@type' => 'BreadcrumbList',
+        'itemListElement' => array_map(static fn($crumb, $index) => ['@type' => 'ListItem', 'position' => $index + 1, 'name' => $crumb[0], 'item' => $crumb[1]], $crumbs, array_keys($crumbs)),
     ];
 }
 ?>
@@ -291,6 +327,10 @@ foreach ($products as $idx => $product) {
   <meta name="description" content="<?= escapeCategoryPage($metaDesc) ?>">
   <meta name="robots" content="<?= $robots ?>">
   <link rel="canonical" href="<?= escapeCategoryPage($canonicalUrl) ?>">
+  <?php if ($categoryName !== '' && !$hasActiveFilters): ?>
+  <?php if ($currentPage > 1): ?><link rel="prev" href="<?= escapeCategoryPage($categoryBaseUrl . ($currentPage > 2 ? '?page=' . ($currentPage - 1) : '')) ?>"><?php endif; ?>
+  <?php if ($currentPage < $totalPages): ?><link rel="next" href="<?= escapeCategoryPage($categoryBaseUrl . '?page=' . ($currentPage + 1)) ?>"><?php endif; ?>
+  <?php endif; ?>
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
   <link rel="icon" type="image/svg+xml" href="/assets/favicons/favicon.svg">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
@@ -303,11 +343,14 @@ foreach ($products as $idx => $product) {
   <meta property="og:title" content="<?= escapeCategoryPage($pageTitle) ?>">
   <meta property="og:description" content="<?= escapeCategoryPage($metaDesc) ?>">
   <meta property="og:url" content="<?= escapeCategoryPage($canonicalUrl) ?>">
-  <meta property="og:image" content="<?= $siteUrl ?>/assets/favicons/favicon-512x512.png">
+  <meta property="og:image" content="<?= escapeCategoryPage($shareImage) ?>">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="<?= escapeCategoryPage($pageTitle) ?>">
   <meta name="twitter:description" content="<?= escapeCategoryPage($metaDesc) ?>">
-  <meta name="twitter:image" content="<?= $siteUrl ?>/assets/favicons/favicon-512x512.png">
+  <meta name="twitter:image" content="<?= escapeCategoryPage($shareImage) ?>">
+  <?php if ($breadcrumbSchema): ?>
+  <script type="application/ld+json"><?= json_encode($breadcrumbSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
+  <?php endif; ?>
   <?php if ($categoryName !== ''): ?>
   <script type="application/ld+json">
   {

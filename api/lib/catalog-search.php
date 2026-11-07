@@ -100,3 +100,30 @@ function smartispBrandFacets(array $names, int $max = 12): array {
     foreach (array_slice($counts, 0, $max, true) as $brand => $count) $out[] = ['name' => $brand, 'count' => $count];
     return $out;
 }
+
+// Marca del producto para los datos estructurados: solo entre las primeras cuatro palabras del nombre y
+// nunca tras «para»/«compatible», porque muchas marcas no están en la lista («Genius … para Sony»,
+// «Cartucho compatible para HP»). Con dos marcas en la misma posición gana la más larga («HPE» sobre «HP»).
+function smartispProductBrand(string $name): ?string {
+    static $patterns = null;
+    if ($patterns === null) {
+        $patterns = [];
+        foreach (SMARTISP_BRANDS as $brand) $patterns[$brand] = '/' . smartispBrandPattern($brand) . '/';
+    }
+    $text = str_replace('-', ' ', strtolower(smartispSlug($name, 300, '')));
+    $best = null;
+    $bestPos = PHP_INT_MAX;
+    foreach ($patterns as $brand => $pattern) {
+        if (!preg_match_all($pattern, $text, $all, PREG_OFFSET_CAPTURE)) continue;
+        foreach ($all[2] as [, $pos]) {
+            $before = preg_split('/\s+/', trim(substr($text, 0, $pos)), -1, PREG_SPLIT_NO_EMPTY);
+            if (count($before) > 3 || in_array(end($before), ['para', 'for', 'con', 'compatible', 'compatibles'], true)) continue;
+            if ($pos < $bestPos || ($pos === $bestPos && strlen($brand) > strlen((string)$best))) {
+                $best = $brand;
+                $bestPos = $pos;
+            }
+            break;
+        }
+    }
+    return $best;
+}

@@ -7,6 +7,7 @@
  */
 
 require_once __DIR__ . '/api/lib/db.php';
+require_once __DIR__ . '/api/lib/catalog-search.php';
 
 $pdo = getDbConnection();
 $pTable = $pdo ? getProductsTableName($pdo) : 'products_rows';
@@ -114,32 +115,64 @@ $productSku = $product ? htmlspecialchars($product['sku'] ?: $product['id'], ENT
 $productPrice = $product ? (float)$product['price'] : 0.0;
 $formattedPrice = number_format($productPrice, 2, '.', ',');
 
+$productBrand = $product ? smartispProductBrand((string)$product['name']) : null;
 $rawDesc = $product ? trim(strip_tags((string)$product['description'])) : '';
 if (empty($rawDesc) && $product) {
-    $rawDesc = "Adquiere {$product['name']} en SmartISP Ecuador. Equipamiento tecnológico garantizado con envíos a todo el país.";
+    $rawDesc = "Compra {$product['name']} en SmartISP Ecuador"
+        . ($productPrice > 0 ? " por \${$formattedPrice} con IVA incluido" : '')
+        . ($productBrand ? ", marca {$productBrand}" : '')
+        . '. Envío gratis en Guayas y despacho a todo Ecuador.';
 }
-$metaDesc = htmlspecialchars(mb_substr($rawDesc, 0, 160), ENT_QUOTES, 'UTF-8');
+$plainDesc = trim(preg_replace('/\s+/u', ' ', html_entity_decode($rawDesc, ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+$metaDescText = $plainDesc;
+if ($product && $productPrice > 0 && !str_contains($plainDesc, $formattedPrice)) {
+    $metaDescText = "\${$formattedPrice} con IVA · " . $plainDesc;
+}
+if (mb_strlen($metaDescText) > 160) {
+    $metaDescText = mb_substr($metaDescText, 0, 157);
+    $metaDescText = preg_replace('/\s+\S*$/u', '', $metaDescText) . '…';
+}
+$metaDesc = htmlspecialchars($metaDescText, ENT_QUOTES, 'UTF-8');
 
 $canonicalSlug = $product ? ($product['id'] . '-' . slugify($product['name'])) : '';
 $canonicalUrl = $product ? ($siteUrl . '/producto/' . $canonicalSlug) : ($siteUrl . '/tienda.html');
 $robotsMeta = $product ? 'index, follow, max-image-preview:large' : 'noindex, follow';
 
-// Imagen absoluta para redes sociales y Googlebot
-$imgSrc = $product ? $product['imageUrl'] : ($siteUrl . '/assets/favicons/favicon-512x512.png');
-if (strpos($imgSrc, '/') === 0) {
-    $imgSrc = $siteUrl . $imgSrc;
+// Galeria real de imagenes (product_images); si no hay ninguna, se usa solo la foto principal.
+$galleryImages = [];
+if ($product && $pdo) {
+    try {
+        $galStmt = $pdo->prepare('SELECT image_url, image_alt, is_primary FROM product_images WHERE product_id = :id ORDER BY sort_order, id');
+        $galStmt->execute([':id' => $product['id']]);
+        $galleryImages = $galStmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) {}
 }
+if (!$galleryImages && $product) {
+    foreach (($product['images'] ?: [$product['imageUrl']]) as $index => $url) {
+        $galleryImages[] = ['image_url' => $url, 'image_alt' => $productName, 'is_primary' => $index === 0 ? 1 : 0];
+    }
+}
+
+// Imagen absoluta para redes sociales y Googlebot
+$absoluteUrl = static fn(string $url): string => str_starts_with($url, '/') && !str_starts_with($url, '//') ? $siteUrl . $url : $url;
+$imgSrc = $absoluteUrl($product ? (string)$product['imageUrl'] : '');
+if ($imgSrc === '') $imgSrc = $siteUrl . '/assets/favicons/favicon-512x512.png';
 $productSchema = null;
 if ($product) {
+    $schemaImages = array_values(array_unique(array_filter(array_map(static fn($img) => $absoluteUrl(trim((string)$img['image_url'])), $galleryImages), static fn($url) => preg_match('#^https?://#i', $url))));
     $productSchema = [
         '@context' => 'https://schema.org/',
         '@type' => 'Product',
+        '@id' => $canonicalUrl . '#producto',
         'name' => $product['name'],
-        'image' => [$imgSrc],
-        'description' => $rawDesc,
+        'url' => $canonicalUrl,
+        'description' => $plainDesc,
         'sku' => $product['sku'] ?: $product['id'],
         'category' => $product['category'],
     ];
+    // Sin foto no se pone el logo: Google lo marca como imagen de producto engañosa.
+    if ($schemaImages) $productSchema['image'] = $schemaImages;
+    if ($productBrand) $productSchema['brand'] = ['@type' => 'Brand', 'name' => $productBrand];
     if ($productPrice > 0) {
         // Search Console (Datos estructurados de Fichas de comerciantes) marcó 'availability'
         // como campo faltante en 'offers'. Se calcula igual que en categoria.php/productos-
@@ -168,11 +201,38 @@ if ($product) {
             'itemCondition' => 'https://schema.org/NewCondition',
             'seller' => [
                 '@type' => 'Organization',
-                'name' => 'SmartISP',
-                'url' => $siteUrl,
+                '@id' => $siteUrl . '/#organization',
+                'name' => 'SmartISP Ecuador',
+                'url' => $siteUrl . '/',
+            ],
+            // Lo publicado en /devoluciones: 15 días hábiles desde la entrega (aquí 15 días, el mínimo
+            // seguro), en el local o por transportista; el cliente paga el envío si cambió de opinión
+            // y SmartISP lo asume si el producto llegó dañado o con defecto.
+            'hasMerchantReturnPolicy' => [
+                '@type' => 'MerchantReturnPolicy',
+                'applicableCountry' => 'EC',
+                'returnPolicyCategory' => 'https://schema.org/MerchantReturnFiniteReturnWindow',
+                'merchantReturnDays' => 15,
+                'returnMethod' => ['https://schema.org/ReturnByMail', 'https://schema.org/ReturnInStore'],
+                'returnFees' => 'https://schema.org/ReturnFeesCustomerResponsibility',
+                'itemDefectReturnFees' => 'https://schema.org/FreeReturn',
+                'merchantReturnLink' => $siteUrl . '/devoluciones',
             ],
         ];
     }
+}
+$breadcrumbSchema = null;
+if ($product) {
+    $crumbs = [
+        ['Inicio', $siteUrl . '/'],
+        [trim((string)$product['category']) !== '' ? trim((string)$product['category']) : 'Categorías', $siteUrl . $productCategoryUrl],
+        [$product['name'], $canonicalUrl],
+    ];
+    $breadcrumbSchema = [
+        '@context' => 'https://schema.org',
+        '@type' => 'BreadcrumbList',
+        'itemListElement' => array_map(static fn($crumb, $index) => ['@type' => 'ListItem', 'position' => $index + 1, 'name' => $crumb[0], 'item' => $crumb[1]], $crumbs, array_keys($crumbs)),
+    ];
 }
 
 // Productos relacionados en la misma categoría
@@ -219,21 +279,6 @@ if ($product && $pdo) {
             }
         }
     } catch (Throwable $e) {}
-}
-
-// Galeria real de imagenes (product_images); si no hay ninguna, se usa solo la foto principal.
-$galleryImages = [];
-if ($product && $pdo) {
-    try {
-        $galStmt = $pdo->prepare('SELECT image_url, image_alt, is_primary FROM product_images WHERE product_id = :id ORDER BY sort_order, id');
-        $galStmt->execute([':id' => $product['id']]);
-        $galleryImages = $galStmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (Throwable $e) {}
-}
-if (!$galleryImages && $product) {
-    foreach (($product['images'] ?: [$product['imageUrl']]) as $index => $url) {
-        $galleryImages[] = ['image_url' => $url, 'image_alt' => $productName, 'is_primary' => $index === 0 ? 1 : 0];
-    }
 }
 
 // Pestanas de la ficha: Caracteristicas siempre (es la descripcion real); Especificaciones,
@@ -291,36 +336,7 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
     <?php endif; ?>
     <?php if ($product): ?>
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        {
-          "@type": "ListItem",
-          "position": 1,
-          "name": "Inicio",
-          "item": "https://smart-isp.com.ec/"
-        },
-        {
-          "@type": "ListItem",
-          "position": 2,
-          "name": "Tienda",
-          "item": "https://smart-isp.com.ec/tienda.html"
-        },
-        {
-          "@type": "ListItem",
-          "position": 3,
-          "name": <?= json_encode($product['category'], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
-          "item": <?= json_encode($siteUrl . $productCategoryUrl, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) ?>
-        },
-        {
-          "@type": "ListItem",
-          "position": 4,
-          "name": <?= json_encode($product['name'], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>,
-          "item": <?= json_encode($canonicalUrl, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) ?>
-        }
-      ]
-    }
+    <?= json_encode($breadcrumbSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
     </script>
     <?php endif; ?>
 
@@ -387,7 +403,7 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
 
         /* Columna de detalles */
         .product-info h1 { font-family: 'Space Grotesk', sans-serif; font-size: 26px; line-height: 1.25; color: var(--navy); margin-bottom: 12px; }
-        .sku-row { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+        .sku-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 13px; color: var(--muted); margin-bottom: 16px; }
         .stock-badge { background: #dcfce7; color: #15803d; font-weight: 700; padding: 2px 8px; border-radius: 4px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
         .stock-badge-out { background: #fee2e2; color: #b91c1c; }
 
@@ -496,6 +512,9 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
                 <!-- Información y Compra -->
                 <div class="product-info">
                     <div class="sku-row">
+                        <?php if ($productBrand): ?>
+                            <span>Marca: <strong><?= htmlspecialchars($productBrand, ENT_QUOTES, 'UTF-8') ?></strong></span>
+                        <?php endif; ?>
                         <?php if ($productSku): ?>
                             <span>SKU: <strong><?= $productSku ?></strong></span>
                         <?php endif; ?>

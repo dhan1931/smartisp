@@ -3,7 +3,7 @@
 header('Content-Type: text/plain; charset=utf-8');
 header('Cache-Control: public, max-age=3600');
 
-$cacheFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'smartisp_llms_v2.txt';
+$cacheFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'smartisp_llms_v3.txt';
 if (is_file($cacheFile) && time() - filemtime($cacheFile) < 21600 && filesize($cacheFile) > 200) {
     readfile($cacheFile);
     exit;
@@ -90,9 +90,23 @@ $lines[] = '- Seguridad y monitoreo: cámaras, grabadores y control de acceso.';
 $lines[] = '- Cómputo y periféricos: laptops, computadores, monitores, impresoras y accesorios.';
 $lines[] = '- Implementación y soporte: proyectos para empresas e ISP, con acompañamiento postventa.';
 $lines[] = '';
+$lines[] = '## Cómo comprar';
+$lines[] = '';
+$lines[] = 'Resumen de las políticas publicadas; el texto vigente y completo está en cada enlace.';
+$lines[] = '';
+$lines[] = '- Precios en dólares (USD) con IVA (15 %) incluido. Los productos sin precio publicado se cotizan por WhatsApp.';
+$lines[] = '- Pedido: se registra en el sitio con el carrito o por WhatsApp; un asesor confirma el pedido, el pago y la fecha de despacho. El sitio no cobra en línea.';
+$lines[] = '- Pago, coordinado con el asesor: transferencia bancaria, tarjeta de crédito o débito, o contra entrega según la zona.';
+$lines[] = '- [Envíos](' . $siteUrl . '/envios): gratis en la provincia del Guayas; despacho a todo Ecuador, con el costo fuera de Guayas informado al coordinar el pedido.';
+$lines[] = '- [Devoluciones](' . $siteUrl . '/devoluciones): 15 días hábiles desde que se recibe el producto (Ley Orgánica de Defensa del Consumidor, art. 45). Reembolso en un máximo de 5 días hábiles tras recibir y revisar el producto.';
+$lines[] = '- [Garantías](' . $siteUrl . '/garantias): el plazo de cada producto está en su ficha; si no indica otro, los equipos de red, computadoras, UPS y cámaras tienen 12 meses.';
+$lines[] = '- [Términos y condiciones](' . $siteUrl . '/terminos) · [Privacidad](' . $siteUrl . '/privacidad)';
+$lines[] = '';
 $lines[] = '## Datos para citar';
 $lines[] = '';
+$lines[] = '- Catálogo completo en texto (nombre, precio, marca y enlace de cada producto): ' . $siteUrl . '/llms-full.txt';
 $lines[] = '- Precio, disponibilidad y especificaciones vigentes están en cada ficha: ' . $siteUrl . '/producto/<id>-<nombre>.';
+$lines[] = '- Búsqueda en la tienda: ' . $siteUrl . '/tienda.html?q=<término>';
 $lines[] = '- Listado completo de URLs: ' . $siteUrl . '/sitemap.xml';
 $lines[] = '';
 

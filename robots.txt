@@ -35,9 +35,18 @@ Disallow: /campanas.html
 Disallow: /inventario.html
 Disallow: /estadisticas.html
 Disallow: /reportes.html
+Disallow: /fotos.html
+Disallow: /equipo.html
+Disallow: /actividad.html
+Disallow: /comprobante.html
+Disallow: /mi-cuenta.html
 Disallow: /login.html
 Disallow: /checkout.html
 Disallow: /reset-password.html
 Disallow: /api/
 
 Sitemap: https://smart-isp.com.ec/sitemap.xml
+
+# Resumen del negocio y catálogo completo en texto para asistentes de IA (llmstxt.org):
+# https://smart-isp.com.ec/llms.txt
+# https://smart-isp.com.ec/llms-full.txt
