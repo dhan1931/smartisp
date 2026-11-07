@@ -51,7 +51,7 @@ main.storefront-page,footer.storefront-footer{width:min(1680px,calc(100% - 48px)
 .store-product-media.is-empty{background:#f7fafb}
 .store-product-content{display:flex;flex:1;flex-direction:column;min-width:0;padding:10px 12px 12px}
 .store-product-category{overflow:hidden;color:var(--sd-blue);font-size:10px;font-weight:850;text-overflow:ellipsis;text-transform:uppercase;white-space:nowrap}
-.store-product-content h2{margin:4px 0 12px;color:var(--sd-navy);font-size:14px;line-height:1.35;overflow-wrap:anywhere}
+.store-product-content h2{display:-webkit-box;margin:4px 0 12px;overflow:hidden;color:var(--sd-navy);font-size:14px;line-height:1.35;overflow-wrap:anywhere;-webkit-box-orient:vertical;-webkit-line-clamp:3}
 .store-product-content h2 a:hover{color:var(--sd-blue)}
 .store-product-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;padding-top:8px}
 .store-product-foot strong{color:var(--sd-navy);font-size:17px;font-weight:900}.store-product-price{display:flex;flex-direction:column;gap:1px;min-width:0}.store-product-price small{color:#64748b;font-size:10px;font-weight:600;line-height:1.2}

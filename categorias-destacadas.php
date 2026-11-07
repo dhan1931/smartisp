@@ -149,7 +149,7 @@ foreach ($categories as $idx => $category) {
   <meta name="robots" content="index, follow, max-image-preview:large">
   <link rel="canonical" href="<?= $siteUrl ?>/categorias-destacadas">
   <link rel="icon" href="/assets/favicons/favicon.ico" sizes="any">
-  <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=barra-movil-20261101">
+  <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=titulos-20261107">
   <script src="/assets/js/store/public-brand.js?v=seo2-20261025" defer></script>
   <script src="/assets/vendor/lucide-icons.min.js?v=68df8f2b"></script>
   <script type="application/ld+json">

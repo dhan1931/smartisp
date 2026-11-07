@@ -106,9 +106,9 @@
         const img = item.image || item.imageUrl || FALLBACK_SVG;
         return (
           '<div class="storefront-cart-item">' +
-          '<img src="' + escapeHtml(img) + '" alt="' + escapeHtml(item.name || '') + '" onerror="this.src=\'' + FALLBACK_SVG + '\'">' +
+          '<img src="' + escapeHtml(img) + '" alt="' + escapeHtml(item.title || item.name || '') + '" onerror="this.src=\'' + FALLBACK_SVG + '\'">' +
           '<div class="storefront-cart-item-copy">' +
-          '<strong>' + escapeHtml(item.name || 'Producto') + '</strong>' +
+          '<strong>' + escapeHtml(item.title || item.name || 'Producto') + '</strong>' +
           '<small>' + (unitPrice > 0 ? money(unitPrice) : 'Cotizar') + '</small>' +
           '<div class="storefront-cart-qty">' +
           '<button type="button" data-qty-delta="-1" data-index="' + index + '" aria-label="Restar una unidad">－</button>' +
@@ -116,7 +116,7 @@
           '<button type="button" data-qty-delta="1" data-index="' + index + '" aria-label="Sumar una unidad">＋</button>' +
           (lineTotal > 0 ? '<span style="margin-left:6px;font-weight:700;color:var(--sd-blue);font-size:12px;">= ' + money(lineTotal) + '</span>' : '') +
           '</div></div>' +
-          '<button type="button" class="storefront-cart-remove" data-remove-index="' + index + '" aria-label="Eliminar ' + escapeHtml(item.name || '') + ' del carrito"><i data-lucide="trash-2" width="16"></i></button>' +
+          '<button type="button" class="storefront-cart-remove" data-remove-index="' + index + '" aria-label="Eliminar ' + escapeHtml(item.title || item.name || '') + ' del carrito"><i data-lucide="trash-2" width="16"></i></button>' +
           '</div>'
         );
       }).join('');

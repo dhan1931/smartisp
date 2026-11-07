@@ -819,6 +819,20 @@ try {
     assert.match(llmsText, /llms-full\.txt/);
     assert.match(llmsText, /15 días hábiles/);
     await db.execute("DELETE FROM products_rows WHERE id LIKE 'prod\\_smkseo%'");
+
+    // Título corto: lo que Intcomex mete en el nombre pasa a una lista; la URL sigue con el nombre completo.
+    await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku) VALUES ('prod_smktit1','Kingston FURY Beast - DDR4 - módulo - 8 GB - DIMM de 288 contactos - CL16 - negro',50,1,'Smk Tit','SKU-TIT1')");
+    const titleMoved = await fetch(`${baseUrl}/producto.php?slug=prod_smktit1`, { redirect: 'manual' });
+    assert.match(titleMoved.headers.get('location'), /\/producto\/prod_smktit1-kingston-fury-beast-ddr4-modulo-8-gb-dimm-de-288-contactos-cl16-negro$/, 'la URL de la ficha no cambia con el título corto');
+    const titleHtml = await productPage('prod_smktit1');
+    assert.match(titleHtml, /<h1>Kingston FURY Beast - DDR4 - módulo - 8 GB - negro<\/h1>/);
+    assert.match(titleHtml, /<li>DIMM de 288 contactos<\/li>\s*<li>CL16<\/li>/, 'las características van en una lista bajo el título');
+    assert.equal(jsonLd(titleHtml).find(x => x['@type'] === 'Product').name, 'Kingston FURY Beast - DDR4 - módulo - 8 GB - negro');
+    const titleApi = await (await fetch(`${baseUrl}/api/router.php?action=catalog&category=Smk%20Tit`)).json();
+    assert.equal(titleApi.products[0].title, 'Kingston FURY Beast - DDR4 - módulo - 8 GB - negro');
+    assert.deepEqual(titleApi.products[0].features, ['DIMM de 288 contactos', 'CL16']);
+    assert.match(titleApi.products[0].name, /DIMM de 288 contactos/, 'el nombre completo sigue disponible para el panel y la búsqueda');
+    await db.execute("DELETE FROM products_rows WHERE id = 'prod_smktit1'");
   }
 
   console.log('SMOKE-OK');

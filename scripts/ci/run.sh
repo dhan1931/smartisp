@@ -7,6 +7,7 @@ npm ci --silent >/dev/null 2>&1
 quiet() { n=$1; shift; "$@" > /tmp/step.log 2>&1 || { cat /tmp/step.log; exit 1; }; tail -n "$n" /tmp/step.log; }
 echo "== lint";          npm run lint
 echo "== roles";         php tests/assert-auth-roles.php
+echo "== títulos";       php tests/assert-product-title.php
 echo "== precios";       php tests/assert-pricing.php && node tests/pricing.test.mjs
 echo "== build";         quiet 5 npm test
 echo "== bootstrap";     php tests/bootstrap-mariadb.php

@@ -1,5 +1,5 @@
 <?php
-$storeProductName = (string)($storeProduct['name'] ?? 'Producto SmartISP');
+$storeProductName = (string)($storeProduct['title'] ?? $storeProduct['name'] ?? 'Producto SmartISP');
 $storeProductImage = (string)($storeProduct['imageUrl'] ?? '');
 $storeProductCategory = trim((string)($storeProduct['category'] ?? '')) ?: 'SmartISP';
 $storeProductPrice = (float)($storeProduct['price'] ?? 0);
@@ -21,6 +21,6 @@ if (preg_match('~^/api/auth/(?:product-image|proxy-image)(?:\?|$)~', $storeProdu
       <a class="store-product-view" href="<?= htmlspecialchars($storeProductUrl, ENT_QUOTES, 'UTF-8') ?>" aria-label="Ver ficha de <?= htmlspecialchars($storeProductName, ENT_QUOTES, 'UTF-8') ?>"><i data-lucide="external-link" width="16"></i></a>
     </div>
     <?php if (array_key_exists('available_qty', $storeProduct)): ?><span class="store-product-stock<?= (int)$storeProduct['available_qty'] > 0 ? ' is-available' : '' ?>"><?= $storeProduct['available_qty'] === null ? 'Consultar disponibilidad' : ((int)$storeProduct['available_qty'] > 0 ? 'En stock' : 'Agotado') ?></span><?php endif; ?>
-    <button class="store-product-add" type="button" data-add-to-cart="<?= htmlspecialchars(base64_encode(json_encode(['id'=>$storeProduct['id']??'','name'=>$storeProductName,'price'=>$storeProductPrice,'category'=>$storeProductCategory,'image'=>$storeProductImage,'imageUrl'=>$storeProductImage,'sku'=>$storeProduct['sku']??''], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)), ENT_QUOTES, 'UTF-8') ?>" <?= $storeProductOutOfStock ? 'disabled' : '' ?>><i data-lucide="<?= $storeProductOutOfStock ? 'ban' : 'shopping-cart' ?>" width="16"></i> <?= $storeProductOutOfStock ? 'Agotado' : 'Agregar' ?></button>
+    <button class="store-product-add" type="button" data-add-to-cart="<?= htmlspecialchars(base64_encode(json_encode(['id'=>$storeProduct['id']??'','name'=>(string)($storeProduct['name'] ?? $storeProductName),'title'=>$storeProductName,'price'=>$storeProductPrice,'category'=>$storeProductCategory,'image'=>$storeProductImage,'imageUrl'=>$storeProductImage,'sku'=>$storeProduct['sku']??''], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)), ENT_QUOTES, 'UTF-8') ?>" <?= $storeProductOutOfStock ? 'disabled' : '' ?>><i data-lucide="<?= $storeProductOutOfStock ? 'ban' : 'shopping-cart' ?>" width="16"></i> <?= $storeProductOutOfStock ? 'Agotado' : 'Agregar' ?></button>
   </div>
 </article>

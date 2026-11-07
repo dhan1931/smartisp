@@ -440,10 +440,13 @@ function normalizeProductRow(array $row): array {
         }
     }
     $maskedImg = $images[0] ?? '';
+    $display = smartispProductTitle($name);
 
     return [
         'id'          => $id,
         'name'        => smartispDisplayName($name),
+        'title'       => $display['title'],
+        'features'    => $display['features'],
         'description' => $desc,
         'price'       => $price,
         'category'    => $cat,

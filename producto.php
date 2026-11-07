@@ -106,7 +106,8 @@ if ($product && in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['GET', 'HEAD'], t
 
 // Datos calculados para SEO
 $siteUrl = 'https://smart-isp.com.ec';
-$productName = $product ? htmlspecialchars($product['name'], ENT_QUOTES, 'UTF-8') : 'Producto no encontrado';
+$productName = $product ? htmlspecialchars($product['title'] ?? $product['name'], ENT_QUOTES, 'UTF-8') : 'Producto no encontrado';
+$productFeatures = $product ? ($product['features'] ?? []) : [];
 $productCategory = $product ? htmlspecialchars($product['category'] ?: 'Equipos TI', ENT_QUOTES, 'UTF-8') : 'Catálogo';
 $productCategoryUrl = $product && trim((string)$product['category']) !== ''
     ? '/categoria/' . smartispSlug(trim((string)$product['category']), 90, 'categoria') . '/'
@@ -118,7 +119,7 @@ $formattedPrice = number_format($productPrice, 2, '.', ',');
 $productBrand = $product ? smartispProductBrand((string)$product['name']) : null;
 $rawDesc = $product ? trim(strip_tags((string)$product['description'])) : '';
 if (empty($rawDesc) && $product) {
-    $rawDesc = "Compra {$product['name']} en SmartISP Ecuador"
+    $rawDesc = "Compra " . ($product['title'] ?? $product['name']) . " en SmartISP Ecuador"
         . ($productPrice > 0 ? " por \${$formattedPrice} con IVA incluido" : '')
         . ($productBrand ? ", marca {$productBrand}" : '')
         . '. Envío gratis en Guayas y despacho a todo Ecuador.';
@@ -164,7 +165,7 @@ if ($product) {
         '@context' => 'https://schema.org/',
         '@type' => 'Product',
         '@id' => $canonicalUrl . '#producto',
-        'name' => $product['name'],
+        'name' => $product['title'] ?? $product['name'],
         'url' => $canonicalUrl,
         'description' => $plainDesc,
         'sku' => $product['sku'] ?: $product['id'],
@@ -226,7 +227,7 @@ if ($product) {
     $crumbs = [
         ['Inicio', $siteUrl . '/'],
         [trim((string)$product['category']) !== '' ? trim((string)$product['category']) : 'Categorías', $siteUrl . $productCategoryUrl],
-        [$product['name'], $canonicalUrl],
+        [$product['title'] ?? $product['name'], $canonicalUrl],
     ];
     $breadcrumbSchema = [
         '@context' => 'https://schema.org',
@@ -415,6 +416,8 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
         .product-tab-btn:hover { color: var(--navy); }
         .product-tab-panel { display: none; padding: 20px 24px 24px; }
         .product-tab-panel.is-active { display: block; }
+        .product-features { margin: -6px 0 18px; padding-left: 18px; color: var(--muted); font-size: 14px; line-height: 1.55; }
+        .product-features li { margin: 2px 0; }
         .product-specs-table { width: 100%; border-collapse: collapse; }
         .product-specs-table tr { border-bottom: 1px solid var(--border); }
         .product-specs-table tr:last-child { border-bottom: 0; }
@@ -466,7 +469,7 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
         .toast { position: fixed; bottom: 24px; right: 24px; background: #0f172a; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); display: none; align-items: center; gap: 8px; z-index: 100; animation: slideUp .3s ease; }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
-    <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=barra-movil-20261101">
+    <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=titulos-20261107">
     <style>header { position: relative !important; top: auto !important; }.storefront-logo img { height: auto; max-height: 140px; border-radius: 0; }</style>
 </head>
 <body>
@@ -526,6 +529,13 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
                     </div>
 
                     <h1><?= $productName ?></h1>
+                    <?php if ($productFeatures): ?>
+                        <ul class="product-features">
+                            <?php foreach (array_slice($productFeatures, 0, 8) as $feature): ?>
+                                <li><?= htmlspecialchars($feature, ENT_QUOTES, 'UTF-8') ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
 
                     <div class="price-box">
                         <?php if ($productPrice > 0): ?>
@@ -544,7 +554,7 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
                             <i data-lucide="ban" width="18"></i> Agotado
                         </button>
                         <?php else: ?>
-                        <button class="btn-action btn-cart" id="btnAddToCart" type="button" data-open-cart-after data-add-to-cart="<?= htmlspecialchars(base64_encode(json_encode(['id' => (string)$product['id'], 'name' => (string)$product['name'], 'price' => $productPrice, 'category' => (string)$product['category'], 'image' => (string)$product['imageUrl'], 'sku' => (string)($product['sku'] ?? '')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)), ENT_QUOTES, 'UTF-8') ?>">
+                        <button class="btn-action btn-cart" id="btnAddToCart" type="button" data-open-cart-after data-add-to-cart="<?= htmlspecialchars(base64_encode(json_encode(['id' => (string)$product['id'], 'name' => (string)$product['name'], 'title' => (string)($product['title'] ?? ''), 'price' => $productPrice, 'category' => (string)$product['category'], 'image' => (string)$product['imageUrl'], 'sku' => (string)($product['sku'] ?? '')], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)), ENT_QUOTES, 'UTF-8') ?>">
                             <i data-lucide="shopping-cart" width="18"></i> Agregar al Carrito
                         </button>
                         <?php endif; ?>
