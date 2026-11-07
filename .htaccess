@@ -18,6 +18,7 @@ DirectoryIndex tienda.html index.html index.htm index.php
     RewriteRule ^sitemap-products\.xml$ sitemap-products.php [QSA,L]
     RewriteRule ^sitemap-categories\.xml$ sitemap-categories.php [QSA,L]
     RewriteRule ^llms\.txt$ llms.php [L]
+    RewriteRule ^llms-full\.txt$ llms-full.php [L]
     RewriteRule ^productos-destacados/?$ productos-destacados.php [QSA,L]
     # categorias-destacadas.php (hub con tarjetas) quedo reemplazada por el catalogo real:
     # ahora esta ruta sirve tienda.html, que detecta el modo catalogo por location.pathname
@@ -75,7 +76,7 @@ DirectoryIndex tienda.html index.html index.htm index.php
     Header always set Content-Security-Policy "frame-ancestors 'self'"
 
     # Panel y checkout fuera de los buscadores
-    <FilesMatch "^(admin|pedidos|cotizaciones|clientes|configuracion|categorias|editor-catalogo|editor-landing|portada|campanas|inventario|estadisticas|reportes|login|checkout|reset-password|mi-cuenta)\.html$">
+    <FilesMatch "^(admin|pedidos|cotizaciones|clientes|configuracion|categorias|editor-catalogo|editor-landing|portada|campanas|inventario|estadisticas|reportes|login|checkout|reset-password|mi-cuenta|fotos|equipo|actividad|comprobante)\.html$">
         Header set X-Robots-Tag "noindex, nofollow"
     </FilesMatch>
 

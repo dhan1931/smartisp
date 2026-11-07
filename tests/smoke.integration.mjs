@@ -771,6 +771,56 @@ try {
   assert.equal(Number(custAudit.n), 0, 'Las acciones de clientes no se registran como actividad del equipo');
   await db.execute('DELETE FROM admin_audit_log WHERE user_id = ?', [admin.id]);
 
+  // --- SEO e IA: marca y devoluciones en la ficha, migas, paginación indexable y catálogo en texto
+  {
+    const cables = Array.from({ length: 25 }, (_, i) => `('prod_smkseox${i}','Cable Smkseo ${String(i).padStart(2, '0')}',${20 + i},1,'Smk Seo','SKU-SEOX${i}')`).join(',');
+    await db.execute(`INSERT INTO products_rows (id,name,price,visible,category,sku) VALUES ('prod_smkseo1','Switch TP-Link TL-SG108 8 puertos',30,1,'Smk Seo','SKU-SEO1'),('prod_smkseo2','Cartucho compatible para HP 85A',5,1,'Smk Seo','SKU-SEO2'),${cables}`);
+    const jsonLd = html => [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map(m => JSON.parse(m[1]));
+    const productPage = async id => {
+      const moved = await fetch(`${baseUrl}/producto.php?slug=${id}`, { redirect: 'manual' });
+      assert.equal(moved.status, 301);
+      return (await fetch(`${baseUrl}/producto.php?slug=${moved.headers.get('location').split('/producto/')[1]}`)).text();
+    };
+    const seoHtml = await productPage('prod_smkseo1');
+    const seoLd = jsonLd(seoHtml);
+    const seoProduct = seoLd.find(x => x['@type'] === 'Product');
+    assert.equal(seoProduct?.brand?.name, 'TP-Link', 'la ficha declara la marca que trae el nombre');
+    assert.equal(seoProduct.offers.hasMerchantReturnPolicy.merchantReturnDays, 15, 'la oferta declara la política de devoluciones publicada');
+    assert.equal(seoProduct.image, undefined, 'sin foto no se declara el logo como imagen del producto');
+    assert.match(seoHtml, /<meta property="og:image" content="https:\/\/smart-isp\.com\.ec\/assets\/favicons\/favicon-512x512\.png">/, 'sin foto, la vista previa en redes usa el logo');
+    assert.match(seoHtml, /Marca: <strong>TP-Link<\/strong>/);
+    assert.match(seoHtml, /<meta name="description" content="Compra Switch TP-Link TL-SG108 8 puertos en SmartISP Ecuador por \$30\.00 con IVA incluido, marca TP-Link\./);
+    assert.deepEqual(seoLd.find(x => x['@type'] === 'BreadcrumbList').itemListElement.map(i => i.name), ['Inicio', 'Smk Seo', 'Switch TP-Link TL-SG108 8 puertos'], 'las migas no repiten la portada como «Tienda»');
+    await db.execute("UPDATE products_rows SET description = 'Primera línea\nSegunda línea' WHERE id = 'prod_smkseo2'");
+    const compatibleHtml = await productPage('prod_smkseo2');
+    assert.equal(jsonLd(compatibleHtml).find(x => x['@type'] === 'Product').brand, undefined, 'un cartucho «compatible para HP» no se declara de marca HP');
+    assert.match(compatibleHtml, /Primera línea<br \/>\s*Segunda línea/, 'la descripción visible conserva sus saltos de línea');
+    assert.match(compatibleHtml, /<meta name="description" content="\$5\.00 con IVA · Primera línea Segunda línea">/);
+
+    const seoCat = await (await fetch(`${baseUrl}/categoria.php?slug=smk-seo`)).text();
+    assert.match(seoCat, /<meta name="description" content="27 productos de Smk Seo en SmartISP Ecuador desde \$5\.00, de marcas como TP-Link\./);
+    assert.match(seoCat, /<link rel="canonical" href="https:\/\/smart-isp\.com\.ec\/categoria\/smk-seo\/">/);
+    assert.match(seoCat, /<link rel="next" href="https:\/\/smart-isp\.com\.ec\/categoria\/smk-seo\/\?page=2">/);
+    assert.deepEqual(jsonLd(seoCat).find(x => x['@type'] === 'BreadcrumbList')?.itemListElement.map(i => i.name), ['Inicio', 'Smk Seo']);
+    const seoCat2 = await (await fetch(`${baseUrl}/categoria.php?slug=smk-seo&page=2`)).text();
+    assert.match(seoCat2, /<link rel="canonical" href="https:\/\/smart-isp\.com\.ec\/categoria\/smk-seo\/\?page=2">/, 'la página 2 tiene su propio canonical');
+    assert.match(seoCat2, /<meta name="robots" content="index, follow/, 'la página 2 se indexa para que Google llegue a sus productos');
+    assert.equal(jsonLd(seoCat2).find(x => x['@type'] === 'CollectionPage').mainEntity.itemListElement[0].position, 25);
+    const seoSorted = await (await fetch(`${baseUrl}/categoria.php?slug=smk-seo&orden=nombre`)).text();
+    assert.match(seoSorted, /<meta name="robots" content="noindex, follow">/, 'las vistas ordenadas no se indexan');
+    assert.match(seoSorted, /<link rel="canonical" href="https:\/\/smart-isp\.com\.ec\/categoria\/smk-seo\/">/);
+
+    const full = await fetch(`${baseUrl}/llms-full.php`);
+    const fullText = await full.text();
+    assert.equal(full.status, 200);
+    assert.match(fullText, /^# SmartISP Ecuador: catálogo completo/);
+    assert.match(fullText, /## Smk Seo \(27 productos\)/);
+    assert.match(fullText, /- \[Switch TP-Link TL-SG108 8 puertos\]\(https:\/\/smart-isp\.com\.ec\/producto\/prod_smkseo1-switch-tp-link-tl-sg108-8-puertos\): \$30\.00 · marca TP-Link · SKU SKU-SEO1\n/);
+    assert.match(llmsText, /llms-full\.txt/);
+    assert.match(llmsText, /15 días hábiles/);
+    await db.execute("DELETE FROM products_rows WHERE id LIKE 'prod\\_smkseo%'");
+  }
+
   console.log('SMOKE-OK');
 } finally {
   php.kill();
