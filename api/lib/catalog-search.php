@@ -6,7 +6,9 @@ require_once __DIR__ . '/brands.php';
 const SMARTISP_CATALOG_COMPACT_NAME = "REPLACE(REPLACE(REPLACE(REPLACE(LOWER(name), '-', ''), ' ', ''), '.', ''), '/', '')";
 
 // Nombres con que los proveedores escriben algunas marcas.
-const SMARTISP_BRAND_ALIASES = ['HP' => ['hpinc', 'hpe'], 'A-Data' => ['adata'], 'TP-Link' => ['tplink'], 'D-Link' => ['dlink'], 'Nexxt Solutions' => ['nexxt']];
+const SMARTISP_BRAND_ALIASES = ['HP' => ['hpinc', 'hpe'], 'A-Data' => ['adata'], 'TP-Link' => ['tplink'], 'D-Link' => ['dlink'], 'Nexxt Solutions' => ['nexxt'],
+    'Hikvision' => ['hik'], 'Western Digital' => ['wd'], 'Klip Xtreme' => ['kx'], 'Acer' => ['predator'], 'HPE' => ['aruba'], 'Canon' => ['imageprograf'],
+    'Logitech' => ['astro gaming'], 'Kingston ValueRAM' => ['kvr'], 'CNet' => ['cnet']];
 
 function smartispCatalogTokens(string $search): array {
     $words = preg_split('/[\s,;]+/u', mb_strtolower(trim($search)), -1, PREG_SPLIT_NO_EMPTY) ?: [];
