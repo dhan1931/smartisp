@@ -3,7 +3,7 @@
 // sirven para que la búsqueda reconozca la marca escrita de otra forma y para llms.txt.
 const SMARTISP_BRANDS = [
     'A-Data', 'Ablerex', 'AccessPRO', 'Acer', 'Acronis', 'Acros', 'Actiontec', 'Advance', 'Agiler', 'AKG', 'Amazon', 'AMD', 'Anker',
-    'Antec', 'AOC', 'Aorus', 'APC', 'Apple', 'ASUS', 'Audiobox', 'AudioCodes', 'Avaya', 'Axis', 'Belkin', 'BenQ', 'Biwin', 'Blaupunkt',
+    'Antec', 'AOC', 'Aorus', 'APC', 'Apple', 'Artecma', 'ASUS', 'Audiobox', 'AudioCodes', 'Avaya', 'Axis', 'Belkin', 'BenQ', 'Biwin', 'Blaupunkt',
     'Blue Code', 'Bluetti', 'Boetech', 'Broadcom', 'Brother', 'Canon', 'Case Logic', 'CDP', 'Cisco', 'CNet', 'Codegen', 'Compaq',
     'Cooler Master', 'Corsair', 'Crucial', 'Cyrus', 'D-Link', 'Dahua', 'Datalogic', 'DBX', 'Dell', 'Dell EMC', 'Denwa', 'DJI', 'DuroMax',
     'DuroStar', 'Eaton', 'EcoFlow', 'ECS', 'Elo', 'ENV', 'Epson', 'Eufy', 'Extreme', 'EyeSight', 'EZVIZ', 'Firelite', 'Folksafe',
