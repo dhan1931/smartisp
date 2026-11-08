@@ -63,3 +63,4 @@
   .photo-thumb { height: 100px; }
   .pick-row, .pick-search { flex-wrap: wrap; }
 }
+#category { max-width: 260px; }

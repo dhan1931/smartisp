@@ -12,11 +12,11 @@
   <script src="/assets/js/admin/admin-theme.js?v=ds-20261027"></script>
   <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261027">
   <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=menu-movil-20261101">
-  <link rel="stylesheet" href="/assets/css/admin/fotos-page.css?v=fotos-rapido-20261105">
+  <link rel="stylesheet" href="/assets/css/admin/fotos-page.css?v=fotos-categoria-20261108">
   <script src="/assets/vendor/lucide-icons.min.js?v=fotos-lote-20261105" defer></script>
   <script src="/assets/js/admin/admin-nav.js?v=fotos-20261105" defer></script>
   <script src="/assets/js/admin/admin-page.js?v=ds-20261027" defer></script>
-  <script src="/assets/js/admin/fotos-page.js?v=fotos-rapido-20261105" defer></script>
+  <script src="/assets/js/admin/fotos-page.js?v=fotos-categoria-20261108" defer></script>
 </head>
 <body>
   <div id="smartisp-admin-nav" class="is-loading" data-active="fotos"></div>
@@ -65,6 +65,8 @@
           <label class="sr-only" for="search">Buscar productos</label>
           <input id="search" type="search" placeholder="Buscar por nombre o SKU…" autocomplete="off">
         </div>
+        <label class="sr-only" for="category">Filtrar por categoría</label>
+        <select id="category"><option value="">Todas las categorías</option></select>
         <span class="result-count" id="count" aria-live="polite"></span>
         <button class="button small primary" id="quickMode" type="button"><i data-lucide="zap" aria-hidden="true"></i> Modo rápido</button>
         <button class="button small" id="approvePage" type="button" hidden><i data-lucide="check-check" aria-hidden="true"></i> Confirmar todas las de esta página</button>
