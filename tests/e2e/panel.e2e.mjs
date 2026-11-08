@@ -59,6 +59,7 @@ async function session(options = {}) {
   return { context, page };
 }
 const open = async (page, url) => { await page.goto(baseUrl + url, { waitUntil: 'networkidle' }); await page.waitForTimeout(400); };
+const shot = async (page, name) => { if (process.env.E2E_SHOTS) await page.screenshot({ path: `${process.env.E2E_SHOTS}/${name}.png`, fullPage: true }); };
 
 try {
   const { context, page } = await session();
@@ -93,6 +94,19 @@ try {
   assert.ok(String(product.specs_json).includes('Puertos'), 'ni las specs');
   assert.equal(product.external_url, 'https://example.test/router', 'ni el enlace');
   assert.equal(Number(product.visible), 1);
+  const [[hiddenCount]] = await db.query('SELECT COUNT(*) n FROM products_rows WHERE visible = 0');
+  assert.equal(await page.textContent('#statProductsHidden'), String(hiddenCount.n), 'la tarjeta de ocultos cuenta los productos ocultos');
+  assert.match(await page.locator('#filterMacroCat option[value="Redes"]').textContent(), /^Redes \(\d+\)$/, 'cada categoría del filtro muestra cuántos productos tiene');
+  const scopedLoad = page.waitForResponse(res => res.url().includes('action=admin-products&') && res.url().includes('category=Redes'));
+  await page.selectOption('#filterMacroCat', 'Redes');
+  await scopedLoad;
+  await page.waitForSelector('#scopeSummary:not([hidden])');
+  assert.match(await page.textContent('#scopeSummary'), /Redes\s*\d+ productos?/, 'filtrar por categoría muestra cuántos productos tiene, visibles y ocultos');
+  await shot(page, 'productos');
+  const hiddenLoad = page.waitForResponse(res => res.url().includes('action=admin-products&') && res.url().includes('visible=hidden'));
+  await page.click('#scopeSummary [data-scope-value="hidden"]');
+  await hiddenLoad;
+  assert.equal(await page.inputValue('#filterVisibility'), 'hidden', 'la cifra de ocultos del resumen filtra los ocultos');
 
   await page.evaluate(() => { for (const id of ['importPriceMargin', 'importPriceMargin2']) { const input = document.getElementById(id); input.value = '15'; input.dispatchEvent(new Event('input', { bubbles: true })); } });
   assert.ok((await page.textContent('#importPriceFormula')).includes('132,25'), 'el importador aplica 15 % y luego 15 % (× 1,3225)');
@@ -133,6 +147,7 @@ try {
   await db.execute("DELETE FROM categories_rows WHERE id IN ('e2e-cat-padre','e2e-cat-hija')");
   await db.execute("INSERT INTO categories_rows (id,name,subcategories,macro_group_id) VALUES ('e2e-cat-padre','E2E Principal','[]','redes'),('e2e-cat-hija','E2E Hija','[]','gaming')");
   await open(page, '/categorias.html');
+  await shot(page, 'categorias');
   await page.fill('#search', 'E2E Principal');
   await page.click('[data-edit="e2e-cat-padre"]');
   await page.fill('#childSearch', 'E2E Hija');

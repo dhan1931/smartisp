@@ -25,8 +25,8 @@
   <script src="/assets/js/admin/admin-theme.js?v=ds-20261027"></script>
   <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261027">
   <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=menu-movil-20261101">
-  <link rel="stylesheet" href="/assets/css/admin/editor-catalogo-page.css?v=precios-20261028">
-  <link rel="stylesheet" href="/assets/css/admin/products-admin.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/editor-catalogo-page.css?v=conteos-20261108">
+  <link rel="stylesheet" href="/assets/css/admin/products-admin.css?v=conteos-20261108">
   <script src="/assets/vendor/lucide-icons.min.js?v=fotos-20261105"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAI062MaV8sfjQKYVGjOBaZBOA87z+IhZE9DA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="/assets/js/admin/admin-nav.js?v=fotos-20261105" defer></script>
@@ -53,6 +53,13 @@
           <div>
             <div class="stat-num" id="statProductsVisible">0</div>
             <div class="stat-label">Visibles en Tienda</div>
+          </div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-icon-wrap tone-warn"><i data-lucide="eye-off" width="24"></i></div>
+          <div>
+            <div class="stat-num" id="statProductsHidden">0</div>
+            <div class="stat-label">Ocultos en Tienda</div>
           </div>
         </div>
         <div class="stat-box">
@@ -120,6 +127,8 @@
             <option value="without_photo">Sin Imagen (Pendientes)</option>
           </select>
         </div>
+
+        <div id="scopeSummary" class="scope-summary" role="status" hidden></div>
 
         <div id="bulkBar" class="bulk-bar" role="region" aria-label="Acciones masivas" hidden>
           <strong id="bulkCount">0 seleccionados</strong>
@@ -544,8 +553,8 @@
 
   <script src="/assets/js/admin/admin-page.js?v=ds-20261027" defer></script>
   <script src="/assets/js/admin/pricing.js?v=precios-20261028" defer></script>
-  <script src="/assets/js/admin/editor-catalogo-page.js?v=fotos-20261101" defer></script>
-  <script src="/assets/js/admin/products-layout.js?v=ds-20261027"></script>
+  <script src="/assets/js/admin/editor-catalogo-page.js?v=conteos-20261108" defer></script>
+  <script src="/assets/js/admin/products-layout.js?v=conteos-20261108"></script>
 </body>
 </html>
 
