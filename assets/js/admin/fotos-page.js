@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
   const STATS = [['rotas', 'image-off', 'Rotas'], ['sin-foto', 'image-minus', 'Sin foto'], ['por-revisar', 'hourglass', 'Por revisar'], ['web', 'globe', 'Desde la web: revisar'], ['propias', 'hard-drive', 'En tu servidor']];
   const SOURCE = { icecat: 'Fabricante', archivo: 'Internet Archive', web: 'Web', manual: 'Elegida a mano', lote: 'Subida en lote' };
   const params = new URLSearchParams(location.search);
-  const st = { status: STATS.some(s => s[0] === params.get('status')) ? params.get('status') : 'rotas', q: '', page: 1, totalPages: 1 };
+  const st = { status: STATS.some(s => s[0] === params.get('status')) ? params.get('status') : 'rotas', q: '', category: '', page: 1, totalPages: 1 };
   let webSearch = false, loadSeq = 0, running = false, products = [];
 
   const thumb = p => p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy">` : '<i data-lucide="image-off" aria-hidden="true"></i>';
@@ -12,11 +12,14 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
   const load = async () => {
     const seq = ++loadSeq;
     try {
-      const data = await api(`admin-photos?${new URLSearchParams({ status: st.status, q: st.q, page: st.page, limit: 40 })}`);
+      const data = await api(`admin-photos?${new URLSearchParams({ status: st.status, q: st.q, category: st.category, page: st.page, limit: 40 })}`);
       if (seq !== loadSeq) return;
       webSearch = !!data.webSearch; products = data.products || []; st.totalPages = data.totalPages || 1; st.total = data.total || 0;
       const c = data.counts || {};
       $('#stats').innerHTML = STATS.map(([key, icon, label]) => `<button type="button" class="stat ${key === st.status ? 'is-active' : ''} ${(key === 'rotas' || key === 'sin-foto') && c[key] ? 'is-alert' : ''}" data-status="${key}" aria-pressed="${key === st.status}"><span><i data-lucide="${icon}" aria-hidden="true"></i>${label}</span><strong>${c[key] || 0}</strong></button>`).join('');
+      const cats = data.categories || [];
+      if (st.category && !cats.some(cat => cat.name === st.category)) cats.unshift({ name: st.category, count: 0 });
+      $('#category').innerHTML = '<option value="">Todas las categorías</option>' + cats.map(cat => `<option value="${esc(cat.name)}"${cat.name === st.category ? ' selected' : ''}>${esc(cat.name)} (${cat.count})</option>`).join('');
       $('#count').textContent = `${data.total || 0} producto${data.total === 1 ? '' : 's'}`;
       $('#pageInfo').textContent = `Página ${data.page || 1} de ${st.totalPages}`;
       $('#prev').disabled = st.page <= 1; $('#next').disabled = st.page >= st.totalPages;
@@ -25,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
       $('#quickMode').hidden = !['rotas', 'sin-foto'].includes(st.status) || !products.length;
       $('#webFix').disabled = running || !webSearch; $('#webHint').hidden = webSearch;
       $('#empty').hidden = products.length !== 0;
-      if (!products.length) $('#empty').innerHTML = st.q ? stateHtml('search', 'Ningún producto coincide', 'Prueba con otra búsqueda.') : stateHtml('empty', st.status === 'propias' ? 'Todavía no hay fotos en tu servidor' : 'Nada pendiente aquí', st.status === 'por-revisar' ? 'Todas las fotos del proveedor ya fueron revisadas.' : '', 'circle-check');
+      if (!products.length) $('#empty').innerHTML = st.q || st.category ? stateHtml('search', 'Ningún producto coincide', 'Prueba con otra búsqueda o categoría.') : stateHtml('empty', st.status === 'propias' ? 'Todavía no hay fotos en tu servidor' : 'Nada pendiente aquí', st.status === 'por-revisar' ? 'Todas las fotos del proveedor ya fueron revisadas.' : '', 'circle-check');
       icons();
     } catch (e) {
       if (seq !== loadSeq) return;
@@ -182,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
     };
     const refill = async () => {
       for (let page = 1, pages = 1; page <= pages && !queue.length; page++) {
-        const data = await api(`admin-photos?${new URLSearchParams({ status: st.status, q: st.q, page, limit: 100 })}`);
+        const data = await api(`admin-photos?${new URLSearchParams({ status: st.status, q: st.q, category: st.category, page, limit: 100 })}`);
         pages = data.totalPages || 1;
         queue = (data.products || []).filter(p => !p.image && !skipped.has(p.id) && !sent.has(p.id) && !failed.some(f => f.p.id === p.id));
       }
@@ -286,6 +289,7 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
   });
   $('#stats').addEventListener('click', e => { const b = e.target.closest('[data-status]'); if (b && b.dataset.status !== st.status) { st.status = b.dataset.status; st.page = 1; load(); } });
   let debounce; $('#search').addEventListener('input', e => { clearTimeout(debounce); debounce = setTimeout(() => { st.q = e.target.value.trim(); st.page = 1; load(); }, 300); });
+  $('#category').addEventListener('change', e => { st.category = e.target.value; st.page = 1; load(); });
   $('#refresh').addEventListener('click', load);
   $('#prev').addEventListener('click', () => { if (st.page > 1) { st.page--; load(); } });
   $('#next').addEventListener('click', () => { if (st.page < st.totalPages) { st.page++; load(); } });

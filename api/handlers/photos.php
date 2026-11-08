@@ -31,14 +31,21 @@ if ($action === 'admin-photos') {
         'web' => "($local AND id IN ($inWeb))",
         'propias' => $local,
     ];
+    $category = trim((string)($_GET['category'] ?? ''));
+    $byCategory = '';
+    if ($category !== '') { $byCategory = ' AND category = :cat'; $params[':cat'] = $category; }
     $counts = [];
     foreach ($filters as $key => $where) {
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM `$pTable` WHERE $where");
-        $stmt->execute($paramsFor($where, $params));
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM `$pTable` WHERE $where$byCategory");
+        $stmt->execute($paramsFor($where . $byCategory, $params));
         $counts[$key] = (int)$stmt->fetchColumn();
     }
     $status = isset($filters[$_GET['status'] ?? '']) ? $_GET['status'] : 'rotas';
     $where = $filters[$status];
+    $stmt = $pdo->prepare("SELECT category, COUNT(*) AS n FROM `$pTable` WHERE $where AND category <> '' GROUP BY category ORDER BY category");
+    $stmt->execute($paramsFor($where, $params));
+    $categories = array_map(static fn($row) => ['name' => (string)$row['category'], 'count' => (int)$row['n']], $stmt->fetchAll(PDO::FETCH_ASSOC));
+    $where .= $byCategory;
     $queryParams = $paramsFor($where, $params);
     $q = trim((string)($_GET['q'] ?? ''));
     if ($q !== '') { $where .= ' AND (name LIKE :q1 OR sku LIKE :q2)'; $queryParams[':q1'] = $queryParams[':q2'] = '%' . $q . '%'; }
@@ -61,7 +68,7 @@ if ($action === 'admin-photos') {
             'query' => smartispPhotoWebQuery($row),
         ];
     }, $stmt->fetchAll(PDO::FETCH_ASSOC));
-    echo json_encode(['counts' => $counts, 'status' => $status, 'products' => $products, 'total' => $total, 'page' => $page, 'totalPages' => max(1, (int)ceil($total / $limit)), 'webSearch' => smartispPhotoWebSearchEnabled()]);
+    echo json_encode(['counts' => $counts, 'status' => $status, 'categories' => $categories, 'products' => $products, 'total' => $total, 'page' => $page, 'totalPages' => max(1, (int)ceil($total / $limit)), 'webSearch' => smartispPhotoWebSearchEnabled()]);
     exit;
 }
 

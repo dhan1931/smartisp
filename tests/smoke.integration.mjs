@@ -653,6 +653,12 @@ try {
   assert.deepEqual(broken.data.products.map(p => p.id), ['smk-ph1'], JSON.stringify(broken.data));
   assert.ok(broken.data.counts.rotas >= 1 && broken.data.counts['sin-foto'] >= 1, JSON.stringify(broken.data.counts));
   assert.deepEqual((await req('admin-photos?status=sin-foto&q=smkph', { cookie: ac })).data.products.map(p => p.id), ['smk-ph2']);
+  await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku,image_url) VALUES ('smk-ph3','Sin foto smkph en otra categoría',5,0,'Smoke Fotos','SKU-PH3','')");
+  const byCat = await req('admin-photos?status=sin-foto&q=smkph&category=' + encodeURIComponent('Smoke Fotos'), { cookie: ac });
+  assert.deepEqual(byCat.data.products.map(p => p.id), ['smk-ph3'], 'filtra por categoría: ' + JSON.stringify(byCat.data));
+  assert.equal(byCat.data.counts['sin-foto'], 1, 'los contadores respetan la categoría elegida');
+  assert.ok(byCat.data.categories.some(c => c.name === 'Smoke Fotos' && c.count === 1) && byCat.data.categories.some(c => c.name === 'General'), 'la lista de categorías no se reduce a la elegida: ' + JSON.stringify(byCat.data.categories));
+  await db.execute("DELETE FROM products_rows WHERE id = 'smk-ph3'");
   const ssrf = await req('admin-photo-replace', { method: 'POST', cookie: ac, body: { id: 'smk-ph1', url: 'http://127.0.0.1/otra.jpg' } });
   assert.equal(ssrf.status, 422, 'no se descargan fotos de direcciones internas');
   const phUp = await req('upload-image', { method: 'POST', cookie: ac, body: { image: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==' } });
