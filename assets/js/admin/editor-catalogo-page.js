@@ -114,8 +114,9 @@
     let productsPageSize = 50; // feedback: 100 por página se sentía pesado para revisar en la tabla
     let productsTotal = 0;
     let productsTotalPages = 1;
-    let productsStats = { total: 0, visible: 0, with_photo: 0, without_photo: 0, by_category: [] };
+    let productsStats = { total: 0, visible: 0, hidden: 0, with_photo: 0, without_photo: 0, by_category: [] };
     let productsStatsLoaded = false;
+    let productsSummary = null;
     let currentAdminUser = null;
     const isAdminRole = user => !!user && ['admin', 'administrator', 'administrador'].includes(String(user.role || '').trim().toLowerCase());
     let currentImportState = null;
@@ -511,7 +512,7 @@
     const loadProductsPage = async (page = productsPage) => {
       const seq = ++productsPageSeq;
       const filters = currentProductFilters();
-      const params = new URLSearchParams({ page: String(page), limit: String(productsPageSize) });
+      const params = new URLSearchParams({ page: String(page), limit: String(productsPageSize), summary: '1' });
       Object.entries(filters).forEach(([key, value]) => { if (value && value !== 'all') params.set(key, value); });
       const res = await api(`admin-products?${params.toString()}`);
       if (seq !== productsPageSeq) return;
@@ -519,7 +520,9 @@
       productsPage = res.page || page;
       productsTotal = res.total || 0;
       productsTotalPages = res.totalPages || 1;
+      productsSummary = res.summary || null;
       renderProductsTab();
+      renderScopeSummary();
     };
 
     const loadProductsStats = async () => {
@@ -528,10 +531,36 @@
       renderProductsTab();
     };
     const updateProductStats = () => {
-      for(const [id,key] of [['statProductsTotal','total'],['statProductsVisible','visible'],['statProductsWithPhoto','with_photo'],['statProductsWithoutPhoto','without_photo']]) {
+      for(const [id,key] of [['statProductsTotal','total'],['statProductsVisible','visible'],['statProductsHidden','hidden'],['statProductsWithPhoto','with_photo'],['statProductsWithoutPhoto','without_photo']]) {
         const element=document.getElementById(id);if(element)element.textContent=productsStatsLoaded?(productsStats[key]??0):'—';
       }
     };
+
+    // Resumen de lo filtrado (familia, categoría, búsqueda…): cuántos hay, visibles, ocultos y sin foto.
+    // Cada cifra es un atajo al filtro de visibilidad o de foto.
+    const countText = n => Number(n || 0).toLocaleString('es-EC');
+    const renderScopeSummary = () => {
+      const box = document.getElementById('scopeSummary');
+      if (!box) return;
+      const f = currentProductFilters(), parts = [];
+      if (f.family !== 'all') parts.push(f.family === 'ungrouped' ? 'Sin familia' : (productFamilies.find(group => group.id === f.family)?.name || f.family));
+      if (f.category !== 'all') parts.push(f.category);
+      if (f.subcategory !== 'all') parts.push(f.subcategory);
+      if (f.price !== 'all') parts.push(document.getElementById('filterPrice')?.selectedOptions[0]?.textContent || '');
+      if (f.q) parts.push(`«${f.q}»`);
+      const s = productsSummary;
+      if (!s || !parts.length) { box.hidden = true; box.innerHTML = ''; return; }
+      const chip = (n, one, many, select, value, tone) => `<button type="button" class="scope-chip${n && tone ? ` is-${tone}` : ''}${document.getElementById(select)?.value === value ? ' is-active' : ''}" data-scope-filter="${select}" data-scope-value="${value}">${countText(n)} ${n === 1 ? one : many}</button>`;
+      box.innerHTML = `<span class="scope-title">${escapeHtmlEditor(parts.join(' › '))}</span><strong>${countText(s.total)} producto${s.total === 1 ? '' : 's'}</strong>${chip(s.visible, 'visible', 'visibles', 'filterVisibility', 'visible')}${chip(s.hidden, 'oculto', 'ocultos', 'filterVisibility', 'hidden', 'warn')}${chip(s.without_photo, 'sin foto', 'sin foto', 'filterPhoto', 'without_photo', 'bad')}`;
+      box.hidden = false;
+    };
+    document.getElementById('scopeSummary')?.addEventListener('click', event => {
+      const button = event.target.closest('[data-scope-filter]');
+      const select = button && document.getElementById(button.dataset.scopeFilter);
+      if (!select) return;
+      select.value = select.value === button.dataset.scopeValue ? 'all' : button.dataset.scopeValue;
+      select.dispatchEvent(new Event('input'));
+    });
 
     // Llamar después de cualquier alta/edición/borrado: refresca la página visible y las
     // estadísticas (tarjetas, conteo por categoría), que ya no viven en productsList completo.
@@ -586,15 +615,16 @@
 
       const familyFilter = document.getElementById('filterFamily');
       const familyValue = familyFilter.value || 'all';
-      familyFilter.innerHTML = '<option value="all">Todas las familias</option>' + productFamilies.map(group => `<option value="${escapeHtmlEditor(group.id)}">${escapeHtmlEditor(group.name)}</option>`).join('') + '<option value="ungrouped">Sin familia</option>';
+      const familyCount = id => categoriesList.reduce((sum, cat) => sum + ((id === 'ungrouped' ? !cat.macroGroupId : cat.macroGroupId === id) ? Number(cat.productCount || 0) : 0), 0);
+      familyFilter.innerHTML = '<option value="all">Todas las familias</option>' + productFamilies.map(group => `<option value="${escapeHtmlEditor(group.id)}">${escapeHtmlEditor(group.name)} (${countText(familyCount(group.id))})</option>`).join('') + `<option value="ungrouped">Sin familia (${countText(familyCount('ungrouped'))})</option>`;
       familyFilter.value = [...familyFilter.options].some(option => option.value === familyValue) ? familyValue : 'all';
       const available = categoriesList.filter(cat => familyFilter.value === 'all' || (familyFilter.value === 'ungrouped' ? !cat.macroGroupId : cat.macroGroupId === familyFilter.value));
-      const groupedOptions = list => [...productFamilies.map(group => ({...group, categories:list.filter(cat => cat.macroGroupId === group.id)})), {name:'Sin familia', categories:list.filter(cat => !productFamilies.some(group => group.id === cat.macroGroupId))}].filter(group => group.categories.length).map(group => `<optgroup label="${escapeHtmlEditor(group.name)}">${group.categories.map(cat => `<option value="${escapeHtmlEditor(cat.name)}">${escapeHtmlEditor(cat.name)}</option>`).join('')}</optgroup>`).join('');
+      const groupedOptions = (list, withCount = false) => [...productFamilies.map(group => ({...group, categories:list.filter(cat => cat.macroGroupId === group.id)})), {name:'Sin familia', categories:list.filter(cat => !productFamilies.some(group => group.id === cat.macroGroupId))}].filter(group => group.categories.length).map(group => `<optgroup label="${escapeHtmlEditor(group.name)}">${group.categories.map(cat => `<option value="${escapeHtmlEditor(cat.name)}">${escapeHtmlEditor(cat.name)}${withCount ? ` (${countText(cat.productCount)})` : ''}</option>`).join('')}</optgroup>`).join('');
       const catOptions = groupedOptions(categoriesList);
 
       if (macroFilter) {
         const cur = macroFilter.value;
-        macroFilter.innerHTML = `<option value="all">Todas las categorías</option>${groupedOptions(available)}`;
+        macroFilter.innerHTML = `<option value="all">Todas las categorías</option>${groupedOptions(available, true)}`;
         macroFilter.value = [...macroFilter.options].some(option => option.value === cur) ? cur : 'all';
       }
       if (prodCat) {
@@ -620,11 +650,12 @@
       const subFilter = document.getElementById('filterSubCat');
       if (!subFilter) return;
 
-      const subcatSet = new Set();
+      const subcatSet = new Set(), subcatCounts = {};
       categoriesList.forEach(c => {
         const family = document.getElementById('filterFamily').value;
         if ((family === 'all' || (family === 'ungrouped' ? !c.macroGroupId : c.macroGroupId === family)) && (macroVal === 'all' || c.name === macroVal)) {
           (c.subcategories || []).forEach(s => subcatSet.add(s));
+          Object.entries(c.subcategoryCounts || {}).forEach(([s, n]) => { subcatCounts[s] = (subcatCounts[s] || 0) + Number(n || 0); });
         }
       });
       // Also add any subcategories found in current products
@@ -634,8 +665,10 @@
         }
       });
 
-      const options = Array.from(subcatSet).sort().map(s => `<option value="${s}">${s}</option>`).join('');
+      const currentSub = subFilter.value;
+      const options = Array.from(subcatSet).sort().map(s => `<option value="${escapeHtmlEditor(s)}">${escapeHtmlEditor(s)} (${countText(subcatCounts[s])})</option>`).join('');
       subFilter.innerHTML = `<option value="all">Todas las Subcategorías</option>${options}`;
+      subFilter.value = [...subFilter.options].some(option => option.value === currentSub) ? currentSub : 'all';
 
       // Update datalist for product modal
       const dl = document.getElementById('subcatDataList');

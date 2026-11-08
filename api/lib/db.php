@@ -667,7 +667,7 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
     $pTable = getProductsTableName($pdo);
     // 1. Obtener todas las macrocategorías, subcategorías y conteo real de productos
     $visibilityFilter = $visibleOnly ? 'visible = 1 AND ' : '';
-    $prodCatsStmt = $pdo->query("SELECT category, subcategory, COUNT(*) as p_count FROM `$pTable` WHERE $visibilityFilter category IS NOT NULL AND TRIM(category) != '' GROUP BY category, subcategory");
+    $prodCatsStmt = $pdo->query("SELECT category, subcategory, COUNT(*) as p_count, SUM(visible = 1) AS v_count, SUM(image_url IS NULL OR TRIM(image_url) = '') AS np_count FROM `$pTable` WHERE $visibilityFilter category IS NOT NULL AND TRIM(category) != '' GROUP BY category, subcategory");
     $prodCatRows = $prodCatsStmt ? $prodCatsStmt->fetchAll() : [];
 
     $catMap = [];
@@ -677,10 +677,14 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
         if (!isset($catMap[$cName])) {
             $catMap[$cName] = [
                 'count'         => 0,
+                'visible'       => 0,
+                'noPhoto'       => 0,
                 'subcategories' => []
             ];
         }
         $catMap[$cName]['count'] += (int)($r['p_count'] ?? 1);
+        $catMap[$cName]['visible'] += (int)($r['v_count'] ?? 0);
+        $catMap[$cName]['noPhoto'] += (int)($r['np_count'] ?? 0);
         $sName = trim((string)($r['subcategory'] ?? ''));
         if ($sName && !in_array($sName, $catMap[$cName]['subcategories'], true)) {
             $catMap[$cName]['subcategories'][] = $sName;
@@ -688,6 +692,9 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
         if ($sName) {
             $subKey = smartispCategoryKey($sName);
             $catMap[$cName]['subCounts'][$subKey] = ($catMap[$cName]['subCounts'][$subKey] ?? 0) + (int)($r['p_count'] ?? 1);
+            $catMap[$cName]['subVisible'][$subKey] = ($catMap[$cName]['subVisible'][$subKey] ?? 0) + (int)($r['v_count'] ?? 0);
+            $catMap[$cName]['subNoPhoto'][$subKey] = ($catMap[$cName]['subNoPhoto'][$subKey] ?? 0) + (int)($r['np_count'] ?? 0);
+            $catMap[$cName]['subByName'][$sName] = ($catMap[$cName]['subByName'][$sName] ?? 0) + (int)($r['p_count'] ?? 1);
         }
     }
 
@@ -800,6 +807,16 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
         } catch (Throwable $e) {}
     }
 
+    // Solo el panel: visibles, sin foto y cuántos productos lleva cada subcategoría escrita en el producto.
+    if (!$visibleOnly) {
+        foreach ($cats as $i => $cat) {
+            $info = $catMap[$cat['name']] ?? [];
+            $cats[$i]['visibleCount'] = (int)($info['visible'] ?? 0);
+            $cats[$i]['noPhotoCount'] = (int)($info['noPhoto'] ?? 0);
+            $cats[$i]['subcategoryCounts'] = (object)($info['subByName'] ?? []);
+        }
+    }
+
     // totalCount: lo que muestra filtrar por la categoría. Una principal suma sus subcategorías;
     // una subcategoría suma los productos de su principal que la llevan como subcategoría.
     $byId = [];
@@ -810,15 +827,26 @@ function getDynamicCategoriesList(PDO $pdo, bool $visibleOnly = false): array {
     }
     foreach ($cats as $i => $cat) {
         $total = (int)$cat['productCount'];
+        $totalVisible = (int)($cat['visibleCount'] ?? 0);
+        $totalNoPhoto = (int)($cat['noPhotoCount'] ?? 0);
         foreach ($childrenOf[$cat['id']] ?? [] as $childIndex) {
             $total += (int)$cats[$childIndex]['productCount'];
+            $totalVisible += (int)($cats[$childIndex]['visibleCount'] ?? 0);
+            $totalNoPhoto += (int)($cats[$childIndex]['noPhotoCount'] ?? 0);
             if (!in_array($cats[$childIndex]['name'], $cats[$i]['subcategories'], true)) $cats[$i]['subcategories'][] = $cats[$childIndex]['name'];
         }
         if (isset($byId[$cat['parentCategoryId']])) {
             $parentName = $cats[$byId[$cat['parentCategoryId']]]['name'];
-            $total += (int)($catMap[$parentName]['subCounts'][smartispCategoryKey($cat['name'])] ?? 0);
+            $subKey = smartispCategoryKey($cat['name']);
+            $total += (int)($catMap[$parentName]['subCounts'][$subKey] ?? 0);
+            $totalVisible += (int)($catMap[$parentName]['subVisible'][$subKey] ?? 0);
+            $totalNoPhoto += (int)($catMap[$parentName]['subNoPhoto'][$subKey] ?? 0);
         }
         $cats[$i]['totalCount'] = $total;
+        if (!$visibleOnly) {
+            $cats[$i]['totalVisibleCount'] = $totalVisible;
+            $cats[$i]['totalNoPhotoCount'] = $totalNoPhoto;
+        }
     }
 
     usort($cats, function($a, $b) {

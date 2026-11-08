@@ -601,6 +601,19 @@ try {
   assert.deepEqual(pairView.data.products.map(p => p.id), ['smk-cat-p1'], 'categoría + subcategoría real (categorias-destacadas) muestra los productos de la subcategoría');
   const listView = await req(`catalog?category_list=${encodeURIComponent(JSON.stringify(['Smk Redes padre']))}&limit=50`);
   assert.equal(listView.data.total, 3, 'la lista de categorías de una familia también incluye subcategorías');
+  const publicPadre = parentView.data.categories.find(c => c.name === 'Smk Redes padre');
+  assert.ok(publicPadre && !('totalVisibleCount' in publicPadre) && !('subcategoryCounts' in publicPadre), 'la tienda no recibe los conteos internos del panel');
+  await db.execute("INSERT INTO products_rows (id, name, price, visible, category, subcategory, image_url) VALUES ('smk-cat-p4', 'Smk router oculto', 10, 0, 'Smk Redes padre', 'Smk Patch', 'https://example.com/f.jpg')");
+  const adminTree = Object.fromEntries((await req('categories', { cookie: ac })).data.categories.filter(c => c.name.startsWith('Smk')).map(c => [c.name, c]));
+  const padre = adminTree['Smk Redes padre'];
+  assert.deepEqual([padre.totalCount, padre.totalVisibleCount, padre.totalNoPhotoCount], [4, 3, 3], 'el panel ve visibles y sin foto de la principal con sus subcategorías: ' + JSON.stringify(padre));
+  assert.equal(padre.subcategoryCounts['Smk Patch'], 2, 'cuántos productos llevan cada subcategoría');
+  assert.deepEqual([adminTree['Smk Patch'].totalCount, adminTree['Smk Patch'].totalVisibleCount], [2, 1], 'la subcategoría también desglosa los ocultos');
+  const scoped = await req(`admin-products?category=${encodeURIComponent('Smk Redes padre')}&visible=hidden&summary=1`, { cookie: ac });
+  assert.deepEqual([scoped.data.total, scoped.data.summary], [1, { total: 3, visible: 2, hidden: 1, without_photo: 2, with_photo: 1 }], 'el resumen desglosa lo filtrado sin aplicar visibilidad ni foto: ' + JSON.stringify(scoped.data.summary));
+  const catalogStats = (await req('admin-products-stats', { cookie: ac })).data;
+  assert.equal(catalogStats.hidden, catalogStats.total - catalogStats.visible, 'las estadísticas traen los ocultos');
+  await db.execute("DELETE FROM products_rows WHERE id = 'smk-cat-p4'");
 
   await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku) VALUES ('smk-s1','Router TP-Link Archer C6 Smkq',40,1,'Smk Busqueda','SKU-S1'),('smk-s2','SWITCHES/TPLINK SG108 Smkq',25,1,'Smk Busqueda','SKU-S2'),('smk-s3','Cámara IP Hikvision Smkq',90,1,'Smk Busqueda','SKU-S3'),('smk-s4','Cable Smkq para router',3,1,'Smk Busqueda','SMKQ ROUTER')");
   const searchIds = r => r.data.products.map(p => p.id).sort();

@@ -113,3 +113,5 @@ dialog form{display:flex;flex-direction:column;max-height:90dvh}
 
 @media(max-width:800px){.page-heading{flex-direction:column;align-items:stretch;gap:12px}.page-heading .button{align-self:flex-start}.filters{flex-wrap:wrap}.filters label:first-child{flex-basis:100%}.category-row{flex-wrap:wrap;gap:12px;padding:14px}.category-visual{width:52px;height:52px}.category-actions{width:100%;padding-left:64px}.dialog-heading,.dialog-body,.dialog-actions{padding-left:16px;padding-right:16px}.image-editor{align-items:flex-start}.image-preview.square{width:78px;height:78px}.dialog-actions .button{flex:1}.tree-children{margin-left:12px;padding-left:10px}.bulk-bar label{min-width:0;flex-basis:100%}}
 @media(max-width:380px){.category-actions{padding-left:0}}
+.category-meta span.is-warn{background:var(--warning-soft);color:var(--warning)}
+.category-meta span.is-bad{background:var(--danger-soft);color:var(--danger)}
