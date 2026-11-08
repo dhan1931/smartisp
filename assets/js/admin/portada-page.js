@@ -30,12 +30,12 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async user =
       selectedHost.innerHTML=state.categoryIds.map((id,index)=>{
         const category=byId(id);
         if(!category)return '';
-        return `<div class="category-selected-row" data-category-id="${escapeHtml(id)}"><span class="drag-index">${index+1}</span><img src="${escapeHtml(category.iconImageUrl||'/assets/favicons/favicon-96x96.png')}" alt="" loading="lazy"><div><strong>${escapeHtml(category.name)}</strong><small>${Number(category.productCount||0)} productos</small></div><div class="icon-actions"><button class="icon-button" type="button" data-move-category="-1" aria-label="Mover arriba" ${index===0?'disabled':''}><i data-lucide="arrow-up"></i></button><button class="icon-button" type="button" data-move-category="1" aria-label="Mover abajo" ${index===state.categoryIds.length-1?'disabled':''}><i data-lucide="arrow-down"></i></button><button class="icon-button" type="button" data-remove-category aria-label="Quitar categoría"><i data-lucide="x"></i></button></div></div>`;
+        return `${index===7?'<p class="category-selected-divider">Se despliegan al tocar «Más categorías»</p>':''}<div class="category-selected-row" data-category-id="${escapeHtml(id)}"><span class="drag-index">${index+1}</span><img src="${escapeHtml(category.iconImageUrl||'/assets/favicons/favicon-96x96.png')}" alt="" loading="lazy"><div><strong>${escapeHtml(category.name)}</strong><small>${Number(category.productCount||0)} productos</small></div><div class="icon-actions"><button class="icon-button" type="button" data-move-category="-1" aria-label="Mover arriba" ${index===0?'disabled':''}><i data-lucide="arrow-up"></i></button><button class="icon-button" type="button" data-move-category="1" aria-label="Mover abajo" ${index===state.categoryIds.length-1?'disabled':''}><i data-lucide="arrow-down"></i></button><button class="icon-button" type="button" data-remove-category aria-label="Quitar categoría"><i data-lucide="x"></i></button></div></div>`;
       }).join('')||'<p class="category-selected-empty">Ninguna elegida todavía: la portada muestra automáticamente las familias con más productos. Toca una de abajo para destacarla aquí.</p>';
       syncDirty();
       if(!availableCategories.length){availableHost.innerHTML='<p class="muted">No se pudieron cargar categorías disponibles.</p>';icons();return;}
       const query=($('#categoryAvailableSearch').value||'').trim().toLocaleLowerCase();
-      const atLimit=state.categoryIds.length>=7;
+      const atLimit=state.categoryIds.length>=28;
       availableHost.innerHTML=availableCategories.filter(category=>Number(category.productCount||0)>0 && !state.categoryIds.includes(String(category.id)) && (!query||category.name.toLocaleLowerCase().includes(query))).map(category=>`<button class="category-choice" type="button" data-add-category="${escapeHtml(category.id)}" ${atLimit?'disabled':''}><img src="${escapeHtml(category.iconImageUrl||'/assets/favicons/favicon-96x96.png')}" alt="" loading="lazy"><span>${escapeHtml(category.name)} · ${Number(category.productCount||0)}</span></button>`).join('')||'<p class="muted">No hay más categorías disponibles.</p>';
       icons();
     }
@@ -148,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async user =
     document.querySelectorAll('#featuredEyebrow,#featuredTitle,#featuredDescription,#featuredNote,#featuredProductsTitle,#featuredProductsDescription').forEach(el=>el.addEventListener('input',()=>{renderFeaturedCopyPreview();syncDirty();}));
     $('#categoryAvailableList').addEventListener('click',event=>{
       const btn=event.target.closest('[data-add-category]');if(!btn)return;
-      if(state.categoryIds.length>=7){message('Puedes elegir hasta 7 categorías.',true);return;}
+      if(state.categoryIds.length>=28){message('Puedes elegir hasta 28 categorías.',true);return;}
       state.categoryIds=[...state.categoryIds,btn.dataset.addCategory];
       renderCategoryChoices();
     });
