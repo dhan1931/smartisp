@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => {
   const { $, esc, api, post, toast, icons, state: stateHtml, modal } = SmartAdmin;
   const STATS = [['rotas', 'image-off', 'Rotas'], ['sin-foto', 'image-minus', 'Sin foto'], ['por-revisar', 'hourglass', 'Por revisar'], ['web', 'globe', 'Desde la web: revisar'], ['propias', 'hard-drive', 'En tu servidor']];
-  const SOURCE = { icecat: 'Fabricante', archivo: 'Internet Archive', web: 'Web', manual: 'Elegida a mano', lote: 'Subida en lote' };
+  const SOURCE = { icecat: 'Fabricante', archivo: 'Internet Archive', web: 'Web', manual: 'Elegida a mano', lote: 'Subida en lote', importada: 'Importada desde enlace' };
   const params = new URLSearchParams(location.search);
   const st = { status: STATS.some(s => s[0] === params.get('status')) ? params.get('status') : 'rotas', q: '', category: '', page: 1, totalPages: 1 };
   let webSearch = false, loadSeq = 0, running = false, products = [];
@@ -125,6 +125,141 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
   ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('is-over'); }));
   ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('is-over'); }));
   drop.addEventListener('drop', e => bulkUpload(e.dataTransfer.files));
+
+  // Exportar la lista actual (pestaña, categoría y búsqueda) e importar fotos desde enlaces con vista previa.
+  const STATUS_LABEL = Object.fromEntries(STATS.map(([key, , label]) => [key, label]));
+  const EXPORT_HEAD = ['id', 'sku', 'nombre', 'categoria', 'visible', 'estado', 'foto_actual', 'foto_nueva'];
+  let xlsxReady = null;
+  const loadXlsx = () => xlsxReady || (xlsxReady = new Promise((resolve, reject) => {
+    if (window.XLSX) { resolve(window.XLSX); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+    s.integrity = 'sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAI062MaV8sfjQKYVGjOBaZBOA87z+IhZE9DA==';
+    s.crossOrigin = 'anonymous'; s.referrerPolicy = 'no-referrer';
+    s.onload = () => resolve(window.XLSX);
+    s.onerror = () => { xlsxReady = null; reject(new Error('No se pudo cargar el lector de Excel. Revisa la conexión o usa CSV.')); };
+    document.head.append(s);
+  }));
+  const exportRows = async () => {
+    const data = await api(`admin-photos?${new URLSearchParams({ status: st.status, q: $('#search').value.trim(), category: $('#category').value, all: 1 })}`);
+    return (data.products || []).map(p => [p.id, p.sku || '', p.name, p.category || '', p.visible ? 'Sí' : 'No', STATUS_LABEL[st.status] || st.status, p.image || p.original || '', '']);
+  };
+  const exportName = ext => `fotos-${st.status}${st.category ? '-' + st.category.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-') : ''}.${ext}`;
+  const exportList = async xlsx => {
+    try {
+      const [X, rows] = await Promise.all([xlsx ? loadXlsx() : null, exportRows()]);
+      if (!rows.length) { toast('No hay productos en esta lista.', true); return; }
+      if (xlsx) {
+        const ws = X.utils.aoa_to_sheet([EXPORT_HEAD, ...rows]);
+        ws['!cols'] = [18, 22, 60, 26, 8, 12, 50, 50].map(wch => ({ wch }));
+        const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'Fotos'); X.writeFile(wb, exportName('xlsx'));
+      } else SmartAdmin.csv(exportName('csv'), EXPORT_HEAD, rows);
+      toast(`${rows.length} producto${rows.length === 1 ? '' : 's'} exportado${rows.length === 1 ? '' : 's'}.`);
+    } catch (e) { toast(e.message, true); }
+  };
+  $('#exportCsv').addEventListener('click', () => exportList(false));
+  $('#exportXlsx').addEventListener('click', () => exportList(true));
+
+  const parseCsv = text => {
+    text = text.replace(/^\uFEFF/, '');
+    const first = text.split(/\r?\n/, 1)[0];
+    const sep = [';', ',', '\t'].reduce((best, c) => first.split(c).length > first.split(best).length ? c : best, ';');
+    const rows = []; let row = [], cell = '', quoted = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (quoted) { if (ch !== '"') cell += ch; else if (text[i + 1] === '"') { cell += '"'; i++; } else quoted = false; }
+      else if (ch === '"') quoted = true;
+      else if (ch === sep) { row.push(cell); cell = ''; }
+      else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+      else cell += ch;
+    }
+    if (cell || row.length) { row.push(cell); rows.push(row); }
+    return rows;
+  };
+  const readTable = async file => {
+    if (!/\.xlsx?$/i.test(file.name)) return parseCsv(await file.text());
+    const X = await loadXlsx(), wb = X.read(await file.arrayBuffer(), { type: 'array' });
+    return X.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '', raw: false });
+  };
+  const colName = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  const cellText = v => String(v ?? '').trim().replace(/^'/, '');
+  // Columnas: id y/o sku, y foto_nueva (o url, imagen, foto, enlace…; también foto_nueva_2…). Sin encabezados: A = SKU o id, B = foto.
+  const toImportRows = table => {
+    const head = (table[0] || []).map(colName);
+    const idCol = head.indexOf('id'), skuCol = head.findIndex(h => ['sku', 'codigo', 'sku_proveedor', 'item_code', 'itemcode', 'numero_de_parte'].includes(h));
+    let urlCols = head.map((h, i) => /^(foto_nueva|url|imagen|image|image_url|foto|enlace|link)(_\d+)?$/.test(h) ? i : -1).filter(i => i >= 0);
+    let body = table.slice(1), offset = 2, keyCols = [idCol, skuCol].filter(i => i >= 0);
+    if (!keyCols.length && !urlCols.length) { body = table; offset = 1; keyCols = [0]; urlCols = [1]; }
+    return body.map((r, i) => ({ row: i + offset, key: keyCols.map(c => cellText(r[c])).find(Boolean) || '', urls: urlCols.map(c => cellText(r[c])).filter(Boolean).join('|') }))
+      .filter(r => r.key && r.urls);
+  };
+
+  const IMPORT_STATUS = {
+    missing: ['ok', 'Sin foto: se pone'], broken: ['ok', 'Foto rota: se reemplaza'], external: ['info', 'Foto del proveedor: se reemplaza'],
+    own: ['warn', 'Ya tiene foto en tu servidor'], not_found: ['bad', 'Ningún producto con ese SKU o id'], bad_url: ['bad', 'La dirección no es válida'],
+    saved: ['ok', 'Guardada en tu servidor'], download_failed: ['bad', 'No se pudo descargar una imagen de esa dirección'], pending: ['info', 'Pendiente']
+  };
+  let importRows = [];
+  const writable = r => ['missing', 'broken', 'external'].includes(r.status) || (r.status === 'own' && $('#importOverwrite').checked);
+  const thumbOf = url => url ? `<img src="${esc(url)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<i data-lucide="image-off" aria-hidden="true"></i>';
+  const renderImport = () => {
+    const box = $('#importBox'), counts = {};
+    importRows.forEach(r => { counts[r.status] = (counts[r.status] || 0) + 1; });
+    const todo = importRows.filter(r => r.checked && writable(r) && !r.done).length;
+    box.hidden = false;
+    box.innerHTML = `<div class="photo-import-summary"><strong>${importRows.length} fila${importRows.length === 1 ? '' : 's'}</strong>${Object.entries(counts).map(([k, n]) => `<span class="badge ${IMPORT_STATUS[k]?.[0] || ''}">${n} · ${esc(IMPORT_STATUS[k]?.[1] || k)}</span>`).join('')}</div>
+      <div class="photo-actions"><button class="button primary" type="button" id="importApply"${todo && !running ? '' : ' disabled'}><i data-lucide="check" aria-hidden="true"></i> Guardar ${todo} foto${todo === 1 ? '' : 's'}</button><button class="button" type="button" id="importReport"><i data-lucide="file-down" aria-hidden="true"></i> Descargar resultado (CSV)</button><button class="button" type="button" id="importClose">Cerrar</button></div>
+      <div class="table-wrap photo-import-table"><table><thead><tr><th><span class="sr-only">Guardar</span></th><th>Fila</th><th>Producto</th><th>Foto actual</th><th>Foto nueva</th><th>Qué pasa</th></tr></thead><tbody>${importRows.map((r, i) => {
+        const [tone, label] = IMPORT_STATUS[r.status] || ['', r.status];
+        const can = writable(r) && !r.done;
+        return `<tr><td><input type="checkbox" data-import-row="${i}" aria-label="Guardar la foto de la fila ${r.row}"${r.checked && can ? ' checked' : ''}${can && !running ? '' : ' disabled'}></td><td>${r.row}</td><td>${r.name ? `<strong>${esc(r.name)}</strong><small>${esc(r.sku || r.key)}${r.visible === false ? ' · oculto' : ''}</small>` : `<small>${esc(r.key)}</small>`}</td><td class="photo-import-thumb">${thumbOf(r.current)}</td><td class="photo-import-thumb">${thumbOf((r.saved || r.urls || [])[0])}${(r.urls || []).length > 1 ? `<small>+${r.urls.length - 1} más</small>` : ''}</td><td><span class="badge ${tone}">${esc(label)}</span></td></tr>`;
+      }).join('')}</tbody></table></div>`;
+    box.querySelectorAll('img').forEach(img => img.addEventListener('error', () => { img.replaceWith(Object.assign(document.createElement('small'), { textContent: 'No carga' })); }));
+    icons();
+  };
+  const previewImport = async file => {
+    if (!file || running) return;
+    try {
+      const rows = toImportRows(await readTable(file));
+      if (!rows.length) { toast('El archivo no tiene filas con SKU (o id) y foto_nueva.', true); return; }
+      if (rows.length > 3000) { toast('Máximo 3000 filas por archivo.', true); return; }
+      const { results = [] } = await post('admin-photo-import', { rows });
+      importRows = results.map(r => ({ ...r, checked: ['missing', 'broken', 'external'].includes(r.status) }));
+      renderImport();
+    } catch (e) { toast(e.message, true); }
+    $('#importFile').value = '';
+  };
+  const applyImport = async () => {
+    const todo = importRows.filter(r => r.checked && writable(r) && !r.done);
+    if (!todo.length || running) return;
+    const overwrite = $('#importOverwrite').checked;
+    setRunning(true); renderImport();
+    let saved = 0, failed = 0;
+    try {
+      while (running && todo.some(r => !r.done)) {
+        const batch = todo.filter(r => !r.done).slice(0, 6);
+        const { results = [] } = await post('admin-photo-import', { apply: true, overwrite, rows: batch.map(r => ({ key: r.id, urls: r.urls.join('|'), row: r.row })) });
+        for (const out of results) {
+          const r = batch.find(x => x.id === out.id);
+          if (!r || out.status === 'pending') continue;
+          Object.assign(r, { status: out.status, saved: out.saved, done: true });
+          if (out.status === 'saved') { saved++; addFixed([{ id: r.id, name: r.name, source: 'importada', url: out.saved[0] }]); } else failed++;
+        }
+        batch.forEach(r => { if (!results.some(o => o.id === r.id)) Object.assign(r, { status: 'not_found', done: true }); });
+        say(`Fotos importadas: ${saved}${failed ? ` · sin guardar: ${failed}` : ''} · faltan ${todo.filter(r => !r.done).length}`);
+        renderImport();
+      }
+    } catch (e) { toast(e.message, true); }
+    setRunning(false); renderImport(); load();
+  };
+  $('#importFile').addEventListener('change', e => previewImport(e.target.files[0]));
+  $('#importOverwrite').addEventListener('change', () => { importRows.forEach(r => { if (r.status === 'own') r.checked = $('#importOverwrite').checked; }); if (importRows.length) renderImport(); });
+  $('#importBox').addEventListener('change', e => { const cb = e.target.closest('[data-import-row]'); if (cb) { importRows[Number(cb.dataset.importRow)].checked = cb.checked; renderImport(); } });
+  $('#importBox').addEventListener('click', e => {
+    if (e.target.closest('#importApply')) applyImport();
+    else if (e.target.closest('#importClose')) { importRows = []; $('#importBox').hidden = true; $('#importBox').innerHTML = ''; }
+    else if (e.target.closest('#importReport')) SmartAdmin.csv('fotos-importacion-resultado.csv', ['fila', 'sku_o_id', 'producto', 'resultado', 'foto_nueva', 'foto_guardada'], importRows.map(r => [r.row, r.key, r.name || '', IMPORT_STATUS[r.status]?.[1] || r.status, (r.urls || []).join('|'), (r.saved || []).join('|')]));
+  });
 
   const googleUrl = p => 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(p.query || p.name);
   // Lo pegado puede ser la imagen misma (clic derecho → «Copiar imagen») o la miniatura de Google en data: URL.

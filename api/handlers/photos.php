@@ -1,6 +1,6 @@
 <?php
 // Fotos de producto: detectar las rotas o faltantes y reemplazarlas por copias guardadas en el servidor.
-if (!in_array($action ?? '', ['admin-photos', 'admin-photo-candidates', 'admin-photo-replace', 'admin-photo-auto', 'admin-photo-ok', 'admin-photo-match'], true)) return;
+if (!in_array($action ?? '', ['admin-photos', 'admin-photo-candidates', 'admin-photo-replace', 'admin-photo-auto', 'admin-photo-ok', 'admin-photo-match', 'admin-photo-import'], true)) return;
 
 requireAdminAuth();
 smartispReleaseSession();
@@ -49,8 +49,10 @@ if ($action === 'admin-photos') {
     $queryParams = $paramsFor($where, $params);
     $q = trim((string)($_GET['q'] ?? ''));
     if ($q !== '') { $where .= ' AND (name LIKE :q1 OR sku LIKE :q2)'; $queryParams[':q1'] = $queryParams[':q2'] = '%' . $q . '%'; }
-    $limit = max(1, min(100, (int)($_GET['limit'] ?? 40)));
-    $page = max(1, (int)($_GET['page'] ?? 1));
+    // all=1: la lista completa para exportarla a Excel o CSV.
+    $all = (string)($_GET['all'] ?? '') === '1';
+    $limit = $all ? 5000 : max(1, min(100, (int)($_GET['limit'] ?? 40)));
+    $page = $all ? 1 : max(1, (int)($_GET['page'] ?? 1));
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM `$pTable` WHERE $where");
     $stmt->execute($queryParams);
     $total = (int)$stmt->fetchColumn();
@@ -133,6 +135,64 @@ if ($action === 'admin-photo-match') {
             : ['name' => $name, 'ids' => []];
     }
     echo json_encode(['matches' => $matches]);
+    exit;
+}
+
+// Importar fotos desde enlaces (Excel o CSV): cada fila trae el id o el SKU y una o varias direcciones.
+// Sin apply solo dice qué pasaría; con apply descarga y guarda en el servidor. Una foto que ya está en el
+// servidor (elegida a mano o copiada antes) no se reemplaza salvo con overwrite.
+if ($action === 'admin-photo-import') {
+    smartispRequirePost();
+    $apply = !empty($body['apply']);
+    $overwrite = !empty($body['overwrite']);
+    $rows = array_slice(array_values(array_filter((array)($body['rows'] ?? []), 'is_array')), 0, $apply ? 8 : 3000);
+    if ($apply) @set_time_limit(90);
+    $norm = static fn(string $s): string => preg_replace('/[^A-Z0-9]/', '', strtoupper($s));
+    $byId = [];
+    $bySku = [];
+    foreach ($pdo->query("SELECT id, name, sku, image_url, visible FROM `$pTable`")->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $byId[(string)$row['id']] = $row;
+        $key = $norm((string)$row['sku']);
+        if (strlen($key) >= 3) $bySku[$key][] = $row;
+    }
+    $failed = smartispArchivePruneFailed($pdo, $pTable, smartispArchiveFailed($pdo));
+    $started = microtime(true);
+    $downloaded = [];
+    $results = [];
+    foreach ($rows as $i => $row) {
+        $key = trim((string)($row['key'] ?? ''));
+        $urls = array_slice(array_values(array_unique(array_filter(array_map('trim', explode('|', (string)($row['urls'] ?? ''))), static fn($u) => (bool)preg_match('#^https?://\S+$#i', $u)))), 0, 4);
+        $matches = isset($byId[$key]) ? [$byId[$key]] : ($key !== '' ? ($bySku[$norm($key)] ?? []) : []);
+        $base = ['row' => $row['row'] ?? $i + 1, 'key' => $key, 'urls' => $urls];
+        if (!$matches) { $results[] = $base + ['status' => 'not_found']; continue; }
+        foreach ($matches as $product) {
+            $id = (string)$product['id'];
+            $current = trim(explode('|', (string)$product['image_url'])[0]);
+            $status = !$urls ? 'bad_url'
+                : ($current === '' ? 'missing'
+                : (!preg_match('#^https?://#i', $current) ? 'own'
+                : (isset($failed[$id]) ? 'broken' : 'external')));
+            $result = $base + ['id' => $id, 'name' => (string)$product['name'], 'sku' => (string)$product['sku'], 'visible' => (int)$product['visible'] === 1, 'current' => $current, 'status' => $status];
+            $writable = in_array($status, ['missing', 'broken', 'external'], true) || ($status === 'own' && $overwrite);
+            if ($apply && $writable) {
+                if (microtime(true) - $started > 45) { $results[] = ['status' => 'pending'] + $result; continue; }
+                $saved = [];
+                foreach ($urls as $url) {
+                    $downloaded[$url] ??= smartispArchiveImageUrl($url);
+                    if ($downloaded[$url] !== null) $saved[] = $downloaded[$url];
+                }
+                if ($saved) {
+                    smartispPhotoSetLocal($pdo, $pTable, $id, implode('|', $saved));
+                    smartispPhotoForget($pdo, SMARTISP_PHOTO_WEB_FIXED_KEY, [$id]);
+                    $result = ['status' => 'saved', 'saved' => $saved] + $result;
+                } else {
+                    $result = ['status' => 'download_failed'] + $result;
+                }
+            }
+            $results[] = $result;
+        }
+    }
+    echo json_encode(['results' => $results]);
     exit;
 }
 

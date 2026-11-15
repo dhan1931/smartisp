@@ -12,11 +12,11 @@
   <script src="/assets/js/admin/admin-theme.js?v=ds-20261027"></script>
   <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261027">
   <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=menu-movil-20261101">
-  <link rel="stylesheet" href="/assets/css/admin/fotos-page.css?v=fotos-categoria-20261108">
+  <link rel="stylesheet" href="/assets/css/admin/fotos-page.css?v=fotos-importar-20261115">
   <script src="/assets/vendor/lucide-icons.min.js?v=fotos-lote-20261105" defer></script>
   <script src="/assets/js/admin/admin-nav.js?v=fotos-20261105" defer></script>
   <script src="/assets/js/admin/admin-page.js?v=ds-20261027" defer></script>
-  <script src="/assets/js/admin/fotos-page.js?v=fotos-categoria-20261108" defer></script>
+  <script src="/assets/js/admin/fotos-page.js?v=fotos-importar-20261115" defer></script>
 </head>
 <body>
   <div id="smartisp-admin-nav" class="is-loading" data-active="fotos"></div>
@@ -58,6 +58,12 @@
       <p class="photo-bulk-status" id="bulkStatus" role="status"></p>
       <ul class="photo-bulk-miss" id="bulkMiss" hidden></ul>
     </section>
+    <section class="card photo-tools" aria-labelledby="importTitle">
+      <h2 id="importTitle">Importar fotos desde enlaces</h2>
+      <p class="photo-hint">Sube un Excel o CSV con el <strong>SKU</strong> (o el <strong>id</strong>) del producto y la dirección de la foto en la columna <strong>foto_nueva</strong> (varias, separadas con |). Antes de guardar ves qué cambia en cada producto y cuáles ya tienen una foto en tu servidor; nada se guarda hasta que confirmas. Para empezar, exporta la lista de abajo con «CSV» o «Excel» y completa <strong>foto_nueva</strong>.</p>
+      <div class="photo-actions"><label class="button" for="importFile"><i data-lucide="file-up" aria-hidden="true"></i> Elegir Excel o CSV</label><input type="file" id="importFile" accept=".csv,.txt,.xlsx,.xls" hidden><label class="photo-check"><input type="checkbox" id="importOverwrite"> Reemplazar también las que ya tienen foto en tu servidor</label></div>
+      <div class="photo-import" id="importBox" hidden></div>
+    </section>
     <section class="card workspace" aria-label="Productos">
       <div class="toolbar">
         <div class="search">
@@ -68,6 +74,8 @@
         <label class="sr-only" for="category">Filtrar por categoría</label>
         <select id="category"><option value="">Todas las categorías</option></select>
         <span class="result-count" id="count" aria-live="polite"></span>
+        <button class="button small" id="exportCsv" type="button" title="Exportar esta lista a CSV"><i data-lucide="file-down" aria-hidden="true"></i> CSV</button>
+        <button class="button small" id="exportXlsx" type="button" title="Exportar esta lista a Excel"><i data-lucide="file-down" aria-hidden="true"></i> Excel</button>
         <button class="button small primary" id="quickMode" type="button"><i data-lucide="zap" aria-hidden="true"></i> Modo rápido</button>
         <button class="button small" id="approvePage" type="button" hidden><i data-lucide="check-check" aria-hidden="true"></i> Confirmar todas las de esta página</button>
       </div>

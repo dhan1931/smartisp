@@ -64,3 +64,9 @@
   .pick-row, .pick-search { flex-wrap: wrap; }
 }
 #category { max-width: 260px; }
+.photo-check { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); font-size: 13px; }
+.photo-import { margin-top: 14px; display: grid; gap: 10px; }
+.photo-import-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.photo-import-table { max-height: 520px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.photo-import-table td small { display: block; color: var(--text-3); font-size: 12px; }
+.photo-import-thumb img, .photo-import-thumb svg { width: 56px; height: 56px; object-fit: contain; border-radius: 6px; background: #fff; color: var(--text-3); }

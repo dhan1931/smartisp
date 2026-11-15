@@ -197,6 +197,18 @@ try {
   assert.equal(await quickName(), 'Foto E2E Beta', 'si lo pegado no sirve, se queda en el mismo producto');
   assert.equal(await page.inputValue('#qUrl'), '', 'y la casilla queda vacía para pegar de nuevo');
   await page.keyboard.press('Escape');
+  const csvDownload = page.waitForEvent('download');
+  await page.click('#exportCsv');
+  const csvFile = await csvDownload;
+  assert.equal(csvFile.suggestedFilename(), 'fotos-sin-foto.csv', 'exporta la lista de la pestaña a CSV');
+  const csvText = fs.readFileSync(await csvFile.path(), 'utf8');
+  assert.deepEqual(csvText.trim().split(/\r?\n/).slice(1).map(l => l.split(';')[2]), ['Foto E2E Beta'], 'el CSV trae lo que se ve con la búsqueda y la columna para completar: ' + csvText);
+  await page.setInputFiles('#importFile', { name: 'fotos.csv', mimeType: 'text/csv', buffer: Buffer.from('id;sku;foto_nueva\ne2e-foto-b;;https://example.test/beta.jpg\n;NO-EXISTE;https://example.test/x.jpg\n') });
+  await page.waitForSelector('#importBox:not([hidden]) table');
+  const importText = await page.textContent('#importBox');
+  assert.ok(importText.includes('Sin foto: se pone') && importText.includes('Ningún producto con ese SKU o id'), 'la vista previa dice qué pasa con cada fila: ' + importText.slice(0, 300));
+  assert.equal((await page.textContent('#importApply')).trim(), 'Guardar 1 foto', 'solo ofrece guardar las que se pueden poner');
+  if (process.env.E2E_SHOTS) await page.screenshot({ path: `${process.env.E2E_SHOTS}/fotos-importar.png`, fullPage: true });
   await context.close();
 
   const mobile = await session({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
