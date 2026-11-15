@@ -828,6 +828,21 @@ try {
     assert.match(seoHtml, /Marca: <strong>TP-Link<\/strong>/);
     assert.match(seoHtml, /<meta name="description" content="Compra Switch TP-Link TL-SG108 8 puertos en SmartISP Ecuador por \$30\.00 con IVA incluido, marca TP-Link\./);
     assert.deepEqual(seoLd.find(x => x['@type'] === 'BreadcrumbList').itemListElement.map(i => i.name), ['Inicio', 'Smk Seo', 'Switch TP-Link TL-SG108 8 puertos'], 'las migas no repiten la portada como «Tienda»');
+    await db.execute(`UPDATE products_rows SET image_url = 'https://example.com/switch.jpg', specs_json = '[{"label":"Número de parte","value":"TL-SG108"},{"label":"Puertos","value":"8"}]' WHERE id = 'prod_smkseo1'`);
+    const specLd = jsonLd(await productPage('prod_smkseo1')).find(x => x['@type'] === 'Product');
+    assert.equal(specLd.mpn, 'TL-SG108', 'el número de parte de la ficha técnica va como mpn');
+    assert.deepEqual(specLd.additionalProperty.map(x => [x.name, x.value]), [['Número de parte', 'TL-SG108'], ['Puertos', '8']], 'la ficha técnica va en los datos estructurados');
+    const feed = await fetch(`${baseUrl}/feed-google.php`);
+    const feedXml = await feed.text();
+    assert.equal(feed.status, 200);
+    const feedItem = (feedXml.match(/<item>\s*<g:id>prod_smkseo1<\/g:id>[\s\S]*?<\/item>/) || [''])[0];
+    for (const tag of ['<g:price>30.00 USD</g:price>', '<g:brand>TP-Link</g:brand>', '<g:mpn>TL-SG108</g:mpn>', '<g:condition>new</g:condition>', '<g:availability>in_stock</g:availability>', '<g:link>https://smart-isp.com.ec/producto/prod_smkseo1-switch-tp-link-tl-sg108-8-puertos</g:link>']) {
+      assert.ok(feedItem.includes(tag), `el feed de Merchant trae ${tag}: ${feedItem}`);
+    }
+    assert.match(feedItem, /<g:image_link>https:\/\/smart-isp\.com\.ec\/[^<]+<\/g:image_link>/, 'la foto del feed sale por el dominio de la tienda');
+    assert.ok(!feedXml.includes('<g:id>prod_smkseo2</g:id>'), 'un producto sin foto no entra al feed');
+    const notifyPath = execFileSync('php', ['-r', "require 'api/lib/db.php'; echo smartispProductPath('smk-nm', 'MOUSE/HPINC M170/WIRELESS T3170/T5170 5600MT/S');"], { cwd: root, env: process.env }).toString();
+    assert.equal(notifyPath, '/producto/smk-nm-mouse-hp-m170-wireless-t3170-t5170-5600mt-s', 'IndexNow avisa la misma URL canónica a la que redirige la ficha');
     await db.execute("UPDATE products_rows SET description = 'Primera línea\nSegunda línea' WHERE id = 'prod_smkseo2'");
     const compatibleHtml = await productPage('prod_smkseo2');
     assert.equal(jsonLd(compatibleHtml).find(x => x['@type'] === 'Product').brand, undefined, 'un cartucho «compatible para HP» no se declara de marca HP');

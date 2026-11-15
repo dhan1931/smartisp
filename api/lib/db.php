@@ -463,6 +463,20 @@ function normalizeProductRow(array $row): array {
     ];
 }
 
+// Ruta canónica de la ficha (la misma que redirige producto.php): id + slug del nombre ya limpio.
+function smartispProductPath(string $id, string $rawName): string {
+    return '/producto/' . str_replace('%3A', ':', rawurlencode($id)) . '-' . smartispSlug(smartispDisplayName($rawName), 80, 'articulo');
+}
+
+// Número de parte del fabricante, solo si la ficha técnica lo trae con esa etiqueta.
+function smartispProductMpn(array $specs): string {
+    foreach ($specs as $spec) {
+        $label = mb_strtolower(trim((string)($spec['label'] ?? '')));
+        if (preg_match('/^(n[uú]mero de parte|n\.?º? de parte|part number|mpn)$/u', $label)) return trim((string)($spec['value'] ?? ''));
+    }
+    return '';
+}
+
 // Directorio persistente para archivos subidos en tiempo real (banners, fotos de producto
 // subidas a mano). Vive FUERA de public_html a propósito: en Hostinger cada deploy reconstruye
 // dist/ desde cero y reemplaza la publicación anterior entera -- cualquier archivo que no haya

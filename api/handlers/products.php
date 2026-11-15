@@ -564,7 +564,6 @@ if ($action === 'admin-products') {
             }
         }
 
-        $prodSlug = slugify($name);
 
         if ($existingId) {
             // Los campos opcionales solo se tocan si vienen en el cuerpo: guardados parciales
@@ -597,7 +596,7 @@ if ($action === 'admin-products') {
             }
             $stmt = $pdo->prepare("UPDATE `$pTable` SET " . implode(', ', $sets) . ", updated_at = CURRENT_TIMESTAMP WHERE id = :id");
             $stmt->execute($params);
-            $publicUrl = '/producto/' . $existingId . '-' . $prodSlug;
+            $publicUrl = smartispProductPath((string)$existingId, $name);
             echo json_encode([
                 'ok'      => true,
                 'id'      => $existingId,
@@ -624,7 +623,7 @@ if ($action === 'admin-products') {
                 ':content_text' => $contentText,
                 ':warranty_text' => $warrantyText
             ]);
-            $publicUrl = '/producto/' . $id . '-' . $prodSlug;
+            $publicUrl = smartispProductPath((string)$id, $name);
             echo json_encode([
                 'ok'      => true,
                 'id'      => $id,
@@ -640,9 +639,13 @@ if ($action === 'admin-products') {
     if ($method === 'DELETE') {
         $id = $_GET['id'] ?? ($body['id'] ?? '');
         if ($id) {
+            $old = $pdo->prepare("SELECT id, name FROM `$pTable` WHERE id = :id");
+            $old->execute([':id' => $id]);
+            $oldRow = $old->fetch(PDO::FETCH_ASSOC);
             $stmt = $pdo->prepare("DELETE FROM `$pTable` WHERE id = :id");
             $stmt->execute([':id' => $id]);
             echo json_encode(['ok' => true]);
+            if ($oldRow) smartispNotifySearchEngines([smartispProductPath((string)$oldRow['id'], (string)$oldRow['name'])]);
         } else {
             http_response_code(400);
             echo json_encode(['error' => 'ID requerido.']);
@@ -987,7 +990,7 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
                 continue;
             }
             $inserted++;
-            $changedPaths[] = '/producto/' . ($existingId ?: $id) . '-' . slugify($name);
+            $changedPaths[] = smartispProductPath((string)($existingId ?: $id), $name);
         }
 
         $pdo->commit();
@@ -1144,6 +1147,7 @@ if ($action === 'admin-products-bulk-update') {
         exit;
     }
 
+    if (!$dryRun && $foundIds) smartispNotifyProducts($pdo, $pTable, $foundIds);
     echo json_encode(['ok' => true, 'op' => $op, 'dryRun' => $dryRun, 'requested' => count($ids), 'updated' => $updated,
         'skipped' => $skipped, 'changes' => array_slice($changes, 0, 200)]);
     exit;

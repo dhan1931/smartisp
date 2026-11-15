@@ -174,6 +174,13 @@ if ($product) {
     // Sin foto no se pone el logo: Google lo marca como imagen de producto engañosa.
     if ($schemaImages) $productSchema['image'] = $schemaImages;
     if ($productBrand) $productSchema['brand'] = ['@type' => 'Brand', 'name' => $productBrand];
+    if (($productMpn = smartispProductMpn($product['specs'] ?? [])) !== '') $productSchema['mpn'] = $productMpn;
+    $specProps = [];
+    foreach (array_slice($product['specs'] ?? [], 0, 25) as $spec) {
+        $label = trim((string)($spec['label'] ?? '')); $value = trim((string)($spec['value'] ?? ''));
+        if ($label !== '' && $value !== '') $specProps[] = ['@type' => 'PropertyValue', 'name' => $label, 'value' => $value];
+    }
+    if ($specProps) $productSchema['additionalProperty'] = $specProps;
     if ($productPrice > 0) {
         // Search Console (Datos estructurados de Fichas de comerciantes) marcó 'availability'
         // como campo faltante en 'offers'. Se calcula igual que en categoria.php/productos-

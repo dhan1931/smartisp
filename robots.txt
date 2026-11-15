@@ -47,6 +47,9 @@ Disallow: /api/
 
 Sitemap: https://smart-isp.com.ec/sitemap.xml
 
+# Feed de productos para Google Merchant Center (fichas gratuitas de Google Shopping):
+# https://smart-isp.com.ec/feed-google.xml
+
 # Resumen del negocio y catálogo completo en texto para asistentes de IA (llmstxt.org):
 # https://smart-isp.com.ec/llms.txt
 # https://smart-isp.com.ec/llms-full.txt
