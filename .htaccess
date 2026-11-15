@@ -3,6 +3,8 @@ DirectoryIndex tienda.html index.html index.htm index.php
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
+    RewriteCond %{HTTP_HOST} ^www\.smart-isp\.com\.ec$ [NC]
+    RewriteRule ^(.*)$ https://smart-isp.com.ec/$1 [R=301,L]
 
     # Proteger archivos sensibles
     RewriteRule ^\.env - [F,L]
@@ -17,6 +19,11 @@ DirectoryIndex tienda.html index.html index.htm index.php
     # Rutas amigables SEO para productos individuales y sitemaps
     RewriteRule ^sitemap-products\.xml$ sitemap-products.php [QSA,L]
     RewriteRule ^sitemap-categories\.xml$ sitemap-categories.php [QSA,L]
+    RewriteRule ^feed-google\.xml$ feed-google.php [L]
+    RewriteCond %{THE_REQUEST} \s/(nosotros|servicios|terminos|devoluciones|privacidad|garantias|envios)\.html[\s?]
+    RewriteRule ^(nosotros|servicios|terminos|devoluciones|privacidad|garantias|envios)\.html$ /$1 [R=301,L]
+    RewriteCond %{THE_REQUEST} \s/productos-destacados\.php[\s?]
+    RewriteRule ^productos-destacados\.php$ /productos-destacados [R=301,L]
     RewriteRule ^llms\.txt$ llms.php [L]
     RewriteRule ^llms-full\.txt$ llms-full.php [L]
     RewriteRule ^productos-destacados/?$ productos-destacados.php [QSA,L]

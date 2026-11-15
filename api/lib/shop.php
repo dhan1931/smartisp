@@ -459,6 +459,14 @@ function smartispIndexNowKey(): string {
     return preg_match('/^[A-Za-z0-9-]{8,128}$/', $key) ? $key : '';
 }
 
+function smartispNotifyProducts(PDO $pdo, string $pTable, array $ids): void {
+    $ids = array_slice(array_values(array_unique(array_filter(array_map('strval', $ids), 'strlen'))), 0, 1000);
+    if (!$ids || smartispIndexNowKey() === '') return;
+    $stmt = $pdo->prepare("SELECT id, name FROM `$pTable` WHERE id IN (" . implode(',', array_fill(0, count($ids), '?')) . ')');
+    $stmt->execute($ids);
+    smartispNotifySearchEngines(array_map(static fn($r) => smartispProductPath((string)$r['id'], (string)$r['name']), $stmt->fetchAll(PDO::FETCH_ASSOC)));
+}
+
 function smartispNotifySearchEngines(array $paths): void {
     $key = smartispIndexNowKey();
     $paths = array_values(array_unique(array_filter($paths, fn($p) => is_string($p) && str_starts_with($p, '/'))));
