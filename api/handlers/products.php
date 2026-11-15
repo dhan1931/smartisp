@@ -1195,8 +1195,11 @@ if ($action === 'categories') {
             $find->execute([':id' => $id]);
             $name = $find->fetchColumn();
             $table = getProductsTableName($pdo);
-            $count = $pdo->prepare("SELECT COUNT(*) FROM `$table` WHERE category = :name");
-            $count->execute([':name' => $name ?: '']);
+            $parentStmt = $pdo->prepare('SELECT p.id, p.name, p.subcategories FROM categories_rows c JOIN categories_rows p ON p.id = c.parent_category_id WHERE c.id = :id');
+            $parentStmt->execute([':id' => $id]);
+            $parent = $parentStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+            $count = $pdo->prepare("SELECT COUNT(*) FROM `$table` WHERE category = :name" . ($parent ? ' OR (category = :parent AND subcategory = :sub)' : ''));
+            $count->execute([':name' => $name ?: ''] + ($parent ? [':parent' => $parent['name'], ':sub' => $name ?: ''] : []));
             if ($count->fetchColumn()) {
                 $pdo->rollBack();
                 http_response_code(409);
@@ -1205,6 +1208,17 @@ if ($action === 'categories') {
             }
             $pdo->prepare('UPDATE categories_rows SET parent_category_id = NULL WHERE parent_category_id = :id')->execute([':id' => $id]);
             $pdo->prepare('DELETE FROM categories_rows WHERE id = :id')->execute([':id' => $id]);
+            if ($parent && $name) {
+                $subs = json_decode((string)$parent['subcategories'], true);
+                if (is_array($subs)) {
+                    $kept = array_values(array_filter($subs, static fn($s) => smartispCategoryKey((string)$s) !== smartispCategoryKey((string)$name)));
+                    if (count($kept) !== count($subs)) $pdo->prepare('UPDATE categories_rows SET subcategories = :subs WHERE id = :id')->execute([':subs' => json_encode($kept, JSON_UNESCAPED_UNICODE), ':id' => $parent['id']]);
+                }
+                if (smartispTableExists($pdo, 'category_redirects')) {
+                    $pdo->prepare('INSERT IGNORE INTO category_redirects (old_slug, old_name, target_name) VALUES (:slug, :old, :target)')
+                        ->execute([':slug' => smartispSlug((string)$name, 90, 'categoria'), ':old' => (string)$name, ':target' => $parent['name']]);
+                }
+            }
             $pdo->commit();
         } catch (Throwable $error) {
             if ($pdo->inTransaction()) $pdo->rollBack();
@@ -1436,11 +1450,25 @@ if ($action === 'categories-reassign' || $action === 'categories/reassign') {
     if ($fromSubcategory && $toSubcategory !== '') {
         $stmt = $pdo->prepare("UPDATE `$pTable` SET category = :toCat, subcategory = :toSub WHERE category = :fromCat AND subcategory = :fromSub");
         $stmt->execute([':toCat' => $toCategory, ':toSub' => $toSubcategory, ':fromCat' => $fromCategory, ':fromSub' => $fromSubcategory]);
+        $updated = $stmt->rowCount();
     } else {
-        $stmt = $pdo->prepare("UPDATE `$pTable` SET category = :toCat WHERE category = :fromCat");
+        $pdo->beginTransaction();
+        $stmt = $pdo->prepare("UPDATE `$pTable` SET category = :toCat, updated_at = CURRENT_TIMESTAMP WHERE category = :fromCat");
         $stmt->execute([':toCat' => $toCategory, ':fromCat' => $fromCategory]);
+        $updated = $stmt->rowCount();
+        // Una subcategoría (p. ej. «Rack» de «Servidores») también incluye los productos de su principal marcados
+        // con ella: pasan al destino sin esa subcategoría. Si el destino es la principal, quedan ahí sin dividir.
+        $parent = $pdo->prepare('SELECT p.name FROM categories_rows c JOIN categories_rows p ON p.id = c.parent_category_id WHERE c.name = :name LIMIT 1');
+        $parent->execute([':name' => $fromCategory]);
+        $parentName = (string)($parent->fetchColumn() ?: '');
+        if ($parentName !== '') {
+            $marked = $pdo->prepare("UPDATE `$pTable` SET category = :toCat, subcategory = '', updated_at = CURRENT_TIMESTAMP WHERE category = :parent AND subcategory = :fromCat");
+            $marked->execute([':toCat' => $toCategory, ':parent' => $parentName, ':fromCat' => $fromCategory]);
+            $updated += $marked->rowCount();
+        }
+        $pdo->commit();
     }
-    echo json_encode(['ok' => true, 'updated' => $stmt->rowCount()]);
+    echo json_encode(['ok' => true, 'updated' => $updated]);
     exit;
 }
 

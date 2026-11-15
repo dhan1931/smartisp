@@ -207,7 +207,9 @@ document.addEventListener('click',async event=>{
   if(button.dataset.move){
     const cat=categories.find(item=>item.id===button.dataset.move),form=$('#moveForm');form.elements.fromCategory.value=cat.name;
     form.elements.toCategory.innerHTML=categories.filter(item=>item.id!==cat.id).map(item=>`<option value="${escapeHtml(item.name)}">${escapeHtml(item.name)}</option>`).join('');
-    $('#moveDescription').textContent=`Mover todos los productos de ${cat.name} a otra categoría.`;$('#moveError').hidden=true;openDialog($('#moveDialog'));return;
+    const parent=cat.parentCategoryId?byId(cat.parentCategoryId):null;
+    if(parent)form.elements.toCategory.value=parent.name;
+    $('#moveDescription').textContent=parent?`Mover los ${plural(countOf(cat),'producto','productos')} de ${cat.name} a otra categoría. Los que están en ${parent.name} marcados como «${cat.name}» quedan sin subcategoría: elige ${parent.name} para dejarlos ahí sin dividir.`:`Mover todos los productos de ${cat.name} a otra categoría.`;$('#moveError').hidden=true;openDialog($('#moveDialog'));return;
   }
   if(button.dataset.delete){const cat=categories.find(item=>item.id===button.dataset.delete);if(!confirm(`¿Eliminar ${cat.name}? Solo se puede eliminar si no tiene productos.${childrenOf(cat.id).length?' Sus subcategorías pasarán a ser categorías principales.':''}`))return;try{await api(`categories?id=${encodeURIComponent(cat.id)}`,{method:'DELETE'});await load();notice('Categoría eliminada.');}catch(error){notice(error.message,'error');}}
 });
