@@ -782,6 +782,18 @@ try {
   assert.ok(!parentSearch.data.categories.some(c => c.parentCategoryId), 'como principal solo se ofrecen categorías principales');
   const categoryPage = await (await fetch(`${baseUrl}/categoria.php?slug=smk-redes-padre`)).text();
   assert.ok(categoryPage.includes('Smk switch') && categoryPage.includes('Smk router'), 'la página de la categoría principal muestra los productos de sus subcategorías');
+  const [[patchCat]] = await db.query("SELECT id FROM categories_rows WHERE name = 'Smk Patch'");
+  assert.equal((await req(`categories?id=${encodeURIComponent(patchCat.id)}`, { method: 'DELETE', cookie: ac })).status, 409, 'no se borra una subcategoría mientras la principal tenga productos marcados con ella');
+  const movedSub = await req('categories-reassign', { method: 'POST', cookie: ac, body: { fromCategory: 'Smk Patch', toCategory: 'Smk Redes padre' } });
+  assert.equal(movedSub.data.updated, 1, 'mover una subcategoría lleva los productos de la principal marcados con ella: ' + JSON.stringify(movedSub.data));
+  const [[p2moved]] = await db.query("SELECT category, subcategory FROM products_rows WHERE id = 'smk-cat-p2'");
+  assert.deepEqual([p2moved.category, p2moved.subcategory], ['Smk Redes padre', ''], 'moverla a su principal deja los productos ahí, sin subcategoría');
+  assert.equal((await req(`categories?id=${encodeURIComponent(patchCat.id)}`, { method: 'DELETE', cookie: ac })).status, 200, 'vacía, la subcategoría se puede borrar');
+  const [[padreSubs]] = await db.query("SELECT subcategories FROM categories_rows WHERE id = 'smk-cat-padre'");
+  assert.ok(!String(padreSubs.subcategories).includes('Smk Patch'), 'la subcategoría borrada sale de la lista de su principal: ' + padreSubs.subcategories);
+  const [[patchRedirect]] = await db.query("SELECT target_name FROM category_redirects WHERE old_slug = 'smk-patch'");
+  assert.equal(patchRedirect?.target_name, 'Smk Redes padre', 'la dirección de la subcategoría borrada lleva a su principal');
+  await db.execute("DELETE FROM category_redirects WHERE old_slug = 'smk-patch'");
   await db.execute("DELETE FROM products_rows WHERE id LIKE 'smk-cat-%'");
   await db.execute("DELETE FROM categories_rows WHERE id LIKE 'smk-cat-%' OR name IN ('Smk Etiqueta', 'Smk Patch')");
 
