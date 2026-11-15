@@ -25,7 +25,7 @@ await db.execute("INSERT INTO users_rows (id,email,password_hash,name,role) VALU
 await db.execute("DELETE FROM products_rows WHERE id LIKE 'e2e-%'");
 await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku,specs_json,warranty_text,content_text,external_url) VALUES ('e2e-router','Router E2E Mikrotik',89.9,1,'Redes','E2E-RTR','[{\"label\":\"Puertos\",\"value\":\"5\"}]','1 año','Contenido','https://example.test/router')");
 await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku) VALUES ('e2e-switch','Switch E2E 8 puertos',34.5,1,'Redes','E2E-SW')");
-await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku,image_url) VALUES ('e2e-foto-a','Foto E2E Alfa',10,1,'Redes','E2E-FA',''),('e2e-foto-b','Foto E2E Beta',10,1,'Redes','E2E-FB','')");
+await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku,image_url) VALUES ('e2e-foto-a','Foto E2E Alfa',10,1,'Redes','E2E-FA',''),('e2e-foto-b','Foto E2E Beta',10,1,'Redes','E2E-FB',''),('e2e-foto-c','Foto E2E Gamma',10,1,'Redes','E2E-FC','/api/auth/serve-upload?category=products&file=e2e-gamma.webp')");
 await db.execute('ALTER TABLE orders_rows ADD COLUMN IF NOT EXISTS customer_email VARCHAR(255) NULL');
 await db.execute("DELETE FROM orders_rows WHERE id LIKE 'E2E-%'");
 const items = JSON.stringify([{ id: 'e2e-router', productId: 'e2e-router', name: 'Router E2E Mikrotik', sku: 'E2E-RTR', price: 89.9, quantity: 1 }]);
@@ -224,6 +224,22 @@ try {
   assert.ok(importText.includes('Sin foto: se pone') && importText.includes('Ningún producto con ese SKU o id'), 'la vista previa dice qué pasa con cada fila: ' + importText.slice(0, 300));
   assert.equal((await page.textContent('#importApply')).trim(), 'Guardar 1 foto', 'solo ofrece guardar las que se pueden poner');
   if (process.env.E2E_SHOTS) await page.screenshot({ path: `${process.env.E2E_SHOTS}/fotos-importar.png`, fullPage: true });
+  await page.click('#importClose');
+  await page.click('[data-status="una-foto"]');
+  await page.fill('#search', 'Foto E2E Gamma');
+  await page.waitForFunction(() => [...document.querySelectorAll('#grid .photo-card h3')].map(h => h.textContent).join() === 'Foto E2E Gamma');
+  assert.ok(await page.isVisible('#grid [data-add="e2e-foto-c"]'), 'en «Una sola foto» cada producto ofrece añadir otra foto');
+  const extraDownload = page.waitForEvent('download');
+  await page.click('#exportCsv');
+  const extraCsv = fs.readFileSync(await (await extraDownload).path(), 'utf8');
+  assert.ok(extraCsv.split(/\r?\n/)[0].endsWith('foto_extra'), 'la lista de «Una sola foto» se exporta con la columna foto_extra: ' + extraCsv.slice(0, 200));
+  await page.setInputFiles('#importFile', { name: 'extra.csv', mimeType: 'text/csv', buffer: Buffer.from('id;foto_extra\ne2e-foto-c;https://example.test/gamma-2.jpg|https://example.test/gamma-3.jpg\n') });
+  await page.waitForSelector('#importBox:not([hidden]) table');
+  assert.ok(await page.isChecked('#importExtra'), 'un archivo con foto_extra se importa como fotos extra');
+  const extraText = await page.textContent('#importBox');
+  assert.ok(extraText.includes('Se añaden 2 fotos (tiene 1)'), 'la vista previa dice cuántas fotos se suman: ' + extraText.slice(0, 300));
+  assert.equal((await page.textContent('#importApply')).trim(), 'Añadir fotos a 1 producto', 'el botón dice a cuántos productos se añaden fotos');
+  if (process.env.E2E_SHOTS) await page.screenshot({ path: `${process.env.E2E_SHOTS}/fotos-extra.png`, fullPage: true });
   await context.close();
 
   const mobile = await session({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });

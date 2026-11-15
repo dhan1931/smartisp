@@ -200,6 +200,22 @@ function smartispPhotoSetLocal(PDO $pdo, string $pTable, string $id, string $loc
     if (isset($failed[$id])) { unset($failed[$id]); smartispArchiveSaveFailed($pdo, $failed); }
 }
 
+// Fotos extra: van detrás de las que ya tiene; si el producto usa la galería (product_images), también ahí.
+function smartispPhotoAppend(PDO $pdo, string $pTable, string $id, array $list, array $localUrls, bool $gallery): void {
+    $merged = array_values(array_unique(array_merge($list, $localUrls)));
+    $pdo->prepare("UPDATE `$pTable` SET image_url = :url WHERE id = :id")->execute([':url' => implode('|', $merged), ':id' => $id]);
+    if (!$gallery) return;
+    $rows = $pdo->prepare('SELECT image_url FROM product_images WHERE product_id = :pid');
+    $rows->execute([':pid' => $id]);
+    $have = $rows->fetchAll(PDO::FETCH_COLUMN);
+    if (!$have) return;
+    $next = $pdo->prepare('SELECT COALESCE(MAX(sort_order), -1) + 1 FROM product_images WHERE product_id = :pid');
+    $next->execute([':pid' => $id]);
+    $sort = (int)$next->fetchColumn();
+    $ins = $pdo->prepare('INSERT INTO product_images (product_id, image_url, sort_order, is_primary) VALUES (:pid, :url, :sort, 0)');
+    foreach ($localUrls as $url) if (!in_array($url, $have, true)) $ins->execute([':pid' => $id, ':url' => $url, ':sort' => $sort++]);
+}
+
 function smartispIsLocalProductUpload(string $url): bool {
     return (bool)preg_match('#^/api/auth/serve-upload\?category=products&file=[A-Za-z0-9._-]+$#', $url);
 }
