@@ -30,11 +30,15 @@ const isTop = cat => !cat.parentCategoryId || !byId(cat.parentCategoryId);
 const familyName = id => families.find(group => group.id === id)?.name || 'Sin familia';
 const familyOf = cat => families.some(group => group.id === cat.macroGroupId) ? cat.macroGroupId : '';
 const countOf = cat => Number(cat.totalCount ?? cat.productCount ?? 0);
+const hiddenOf = cat => Math.max(0, countOf(cat) - Number(cat.totalVisibleCount ?? countOf(cat)));
+const noPhotoOf = cat => Number(cat.totalNoPhotoCount ?? 0);
+const stateChips = (total, hidden, noPhoto) => `${hidden?`<span>${plural(total-hidden,'visible','visibles')}</span><span class="is-warn">${plural(hidden,'oculto','ocultos')}</span>`:''}${noPhoto?`<span class="is-bad">${noPhoto} sin foto</span>`:''}`;
+const familyTotals = id => categories.filter(cat=>isTop(cat)&&familyOf(cat)===id).reduce((sum,cat)=>({products:sum.products+countOf(cat),hidden:sum.hidden+hiddenOf(cat),noPhoto:sum.noPhoto+noPhotoOf(cat)}),{products:0,hidden:0,noPhoto:0});
 const plural = (n, one, many) => `${n} ${n===1?one:many}`;
 function categoryRow(cat, child=false) {
   const kids = child ? [] : childrenOf(cat.id);
   const own = Number(cat.productCount||0), total = countOf(cat);
-  const meta = [`<span>${plural(total,'producto','productos')}${kids.length&&total!==own?` (${own} propios)`:''}</span>`, kids.length?`<span>${plural(kids.length,'subcategoría','subcategorías')}</span>`:'', cat.iconImageUrl?'<span>Imagen propia</span>':'', cat.bannerImageUrl?'<span>Con banner</span>':''].join('');
+  const meta = [`<span>${plural(total,'producto','productos')}${kids.length&&total!==own?` (${own} propios)`:''}</span>`, stateChips(total,hiddenOf(cat),noPhotoOf(cat)), kids.length?`<span>${plural(kids.length,'subcategoría','subcategorías')}</span>`:'', cat.iconImageUrl?'<span>Imagen propia</span>':'', cat.bannerImageUrl?'<span>Con banner</span>':''].join('');
   const pick = child ? '' : `<label class="row-select" title="Seleccionar para cambiar su familia"><input type="checkbox" data-select="${escapeHtml(cat.id)}" ${selected.has(cat.id)?'checked':''} aria-label="Seleccionar ${escapeHtml(cat.name)}"></label>`;
   return `<article class="category-row${child?' is-child':''}" data-category-id="${escapeHtml(cat.id)}">${pick}<div class="category-visual">${visual(cat.iconImageUrl,cat.icon)}</div><div class="category-info"><h3>${escapeHtml(cat.name)}</h3>${child?`<p>Subcategoría de ${escapeHtml(byId(cat.parentCategoryId)?.name||'')}</p>`:''}<p class="category-meta">${meta}</p></div><div class="category-actions"><button class="button secondary" data-edit="${escapeHtml(cat.id)}">Editar</button><a class="button secondary" href="/editor-catalogo.html?category=${encodeURIComponent(cat.name)}">Productos ↗</a><details><summary class="button secondary" aria-label="Más opciones para ${escapeHtml(cat.name)}">⋯</summary><div class="more-actions"><button data-move="${escapeHtml(cat.id)}">Mover sus productos</button><button class="danger" data-delete="${escapeHtml(cat.id)}">Eliminar categoría</button></div></details></div></article>`;
 }
@@ -48,12 +52,12 @@ function render() {
     const tops=categories.filter(cat=>isTop(cat)&&familyOf(cat)===group.id).sort((a,b)=>a.name.localeCompare(b.name,'es'));
     const rows=tops.map(cat=>{const kids=childrenOf(cat.id),keep=matches(cat)?kids:kids.filter(matches);if(!matches(cat)&&!keep.length)return '';shown+=1+keep.length;return `<div class="tree-branch">${categoryRow(cat)}${keep.length?`<div class="tree-children">${keep.map(kid=>categoryRow(kid,true)).join('')}</div>`:''}</div>`;}).join('');
     if(!rows)return '';
-    const products=tops.reduce((sum,cat)=>sum+countOf(cat),0);
-    return `<section class="tree-family"><header><h3>${escapeHtml(group.name)}</h3><span>${plural(tops.length,'categoría','categorías')} · ${plural(products,'producto','productos')}</span></header>${rows}</section>`;
+    const totals=familyTotals(group.id);
+    return `<section class="tree-family"><header><h3>${escapeHtml(group.name)}</h3><span>${plural(tops.length,'categoría','categorías')} · ${plural(totals.products,'producto','productos')}${totals.hidden?` · ${plural(totals.hidden,'oculto','ocultos')}`:''}${totals.noPhoto?` · ${totals.noPhoto} sin foto`:''}</span></header>${rows}</section>`;
   }).join('');
   $('#resultCount').textContent=`${shown} de ${categories.length} categorías`;
   $('#categoryList').innerHTML=html || '<p class="empty">No hay categorías que coincidan. Prueba otra búsqueda o crea una categoría.</p>';
-  $('#familyList').innerHTML=families.map(group=>`<article class="category-row"><div class="category-visual">${visual(group.imageUrl,group.icon)}</div><div class="category-info"><h3>${escapeHtml(group.name)}</h3><p>${categories.filter(cat=>cat.macroGroupId===group.id&&isTop(cat)).length} categorías · ${group.visible?'Visible en tienda':'Oculta en tienda'} · Orden ${Number(group.sortOrder||0)}</p></div><div class="category-actions"><button class="button secondary" data-edit-family="${escapeHtml(group.id)}">Editar familia</button></div></article>`).join('') || '<p class="empty">Crea una familia para organizar tus categorías.</p>';
+  $('#familyList').innerHTML=families.map(group=>`<article class="category-row"><div class="category-visual">${visual(group.imageUrl,group.icon)}</div><div class="category-info"><h3>${escapeHtml(group.name)}</h3><p>${categories.filter(cat=>cat.macroGroupId===group.id&&isTop(cat)).length} categorías · ${group.visible?'Visible en tienda':'Oculta en tienda'} · Orden ${Number(group.sortOrder||0)}</p><p class="category-meta">${(totals=>`<span>${plural(totals.products,'producto','productos')}</span>${stateChips(totals.products,totals.hidden,totals.noPhoto)}`)(familyTotals(group.id))}</p></div><div class="category-actions"><button class="button secondary" data-edit-family="${escapeHtml(group.id)}">Editar familia</button></div></article>`).join('') || '<p class="empty">Crea una familia para organizar tus categorías.</p>';
   renderBulk(); renderTagNotice();
   window.lucide?.createIcons();
 }

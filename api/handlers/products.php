@@ -283,6 +283,7 @@ if ($action === 'admin-products-stats') {
     echo json_encode([
         'total'         => (int)($totals['total'] ?? 0),
         'visible'       => (int)($totals['visible_count'] ?? 0),
+        'hidden'        => (int)($totals['total'] ?? 0) - (int)($totals['visible_count'] ?? 0),
         'with_photo'    => (int)($totals['with_photo'] ?? 0),
         'without_photo' => (int)($totals['without_photo'] ?? 0),
         'by_category'   => array_map(fn($r) => ['category' => $r['category'], 'total' => (int)$r['total']], $byCategory),
@@ -330,13 +331,15 @@ if ($action === 'admin-products') {
             $where[] = 'subcategory = :subcategory';
             $params[':subcategory'] = $subcategory;
         }
+        // Visibilidad y foto van aparte: el resumen (summary=1) los desglosa en vez de filtrar por ellos.
+        $stateWhere = [];
         $visible = trim((string)($_GET['visible'] ?? ''));
-        if ($visible === 'visible') $where[] = 'visible = 1';
-        elseif ($visible === 'hidden') $where[] = 'visible = 0';
+        if ($visible === 'visible') $stateWhere[] = 'visible = 1';
+        elseif ($visible === 'hidden') $stateWhere[] = 'visible = 0';
 
         $photo = trim((string)($_GET['photo'] ?? ''));
-        if ($photo === 'with_photo') $where[] = "(image_url IS NOT NULL AND image_url != '')";
-        elseif ($photo === 'without_photo') $where[] = "(image_url IS NULL OR image_url = '')";
+        if ($photo === 'with_photo') $stateWhere[] = "(image_url IS NOT NULL AND image_url != '')";
+        elseif ($photo === 'without_photo') $stateWhere[] = "(image_url IS NULL OR image_url = '')";
 
         $price = trim((string)($_GET['price'] ?? ''));
         if ($price === 'with_price') $where[] = '(price IS NOT NULL AND price > 0)';
@@ -363,7 +366,8 @@ if ($action === 'admin-products') {
             $params[':q_desc'] = $likeSearch;
         }
 
-        $whereSql = implode(' AND ', $where);
+        $scopeSql = implode(' AND ', $where);
+        $whereSql = implode(' AND ', array_merge($where, $stateWhere));
         $hasCost = in_array('cost', smartispTableColumns($pdo, $pTable), true);
 
         // compact=1: todas las filas que cumplen el filtro, con pocos campos, para "seleccionar todos
@@ -408,12 +412,22 @@ if ($action === 'admin-products') {
         }
         unset($product);
 
+        $summary = null;
+        if ((string)($_GET['summary'] ?? '') === '1') {
+            $sumStmt = $pdo->prepare("SELECT COUNT(*) AS total, COALESCE(SUM(visible = 1), 0) AS visible, COALESCE(SUM(image_url IS NULL OR image_url = ''), 0) AS without_photo FROM `$pTable` WHERE $scopeSql");
+            $sumStmt->execute($params);
+            $sum = $sumStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+            $summary = ['total' => (int)($sum['total'] ?? 0), 'visible' => (int)($sum['visible'] ?? 0), 'hidden' => (int)($sum['total'] ?? 0) - (int)($sum['visible'] ?? 0),
+                'without_photo' => (int)($sum['without_photo'] ?? 0), 'with_photo' => (int)($sum['total'] ?? 0) - (int)($sum['without_photo'] ?? 0)];
+        }
+
         echo json_encode([
             'products'   => $products,
             'total'      => $total,
             'page'       => $page,
             'limit'      => $limit,
             'totalPages' => (int)ceil($total / max(1, $limit)),
+            'summary'    => $summary,
         ]);
         exit;
     }
