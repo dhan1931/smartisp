@@ -294,6 +294,36 @@ if ($product && $pdo) {
 $productSpecs = $product ? ($product['specs'] ?? []) : [];
 $productContentText = $product ? trim((string)($product['contentText'] ?? '')) : '';
 $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? '')) : '';
+
+// Reseñas publicadas (migración 050): las primeras van en el HTML (y en los datos estructurados) y el resto se pide a la API.
+require_once __DIR__ . '/api/lib/reviews.php';
+$reviewSummary = ['avg' => 0, 'count' => 0, 'dist' => [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0]];
+$reviewList = [];
+$reviewsReady = false;
+if ($product && $pdo) {
+    try {
+        $reviewsReady = smartispReviewsReady($pdo);
+        if ($reviewsReady) {
+            $reviewSummary = smartispReviewSummary($pdo, (string)$product['id']);
+            $reviewList = smartispReviewList($pdo, (string)$product['id'], 10);
+        }
+    } catch (Throwable $e) { $reviewsReady = false; }
+}
+if ($productSchema && $reviewSummary['count'] > 0) {
+    $productSchema['aggregateRating'] = ['@type' => 'AggregateRating', 'ratingValue' => $reviewSummary['avg'], 'reviewCount' => $reviewSummary['count'], 'bestRating' => 5, 'worstRating' => 1];
+    $productSchema['review'] = array_map(static fn($r) => ['@type' => 'Review', 'author' => ['@type' => 'Person', 'name' => $r['author']], 'datePublished' => substr($r['date'], 0, 10),
+        'reviewRating' => ['@type' => 'Rating', 'ratingValue' => $r['rating'], 'bestRating' => 5, 'worstRating' => 1], 'reviewBody' => $r['body']] + ($r['title'] !== '' ? ['name' => $r['title']] : []), array_slice($reviewList, 0, 5));
+}
+$reviewStars = static fn(float $value): string => str_repeat('★', (int)round($value)) . '<span class="is-off">' . str_repeat('★', 5 - (int)round($value)) . '</span>';
+$reviewDate = static function (string $date): string {
+    $ts = strtotime($date . ' UTC');
+    if (!$ts) return '';
+    $months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    $local = new DateTime('@' . $ts);
+    $local->setTimezone(new DateTimeZone('America/Guayaquil'));
+    return $local->format('j') . ' ' . $months[(int)$local->format('n') - 1] . ' ' . $local->format('Y');
+};
+$reviewAvgText = number_format((float)$reviewSummary['avg'], 1, ',', '');
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -476,7 +506,8 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
         .toast { position: fixed; bottom: 24px; right: 24px; background: #0f172a; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); display: none; align-items: center; gap: 8px; z-index: 100; animation: slideUp .3s ease; }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
-    <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=titulos-20261107">
+    <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=resenas-20261115">
+    <link rel="stylesheet" href="/assets/css/store/product-reviews.css?v=resenas-20261115">
     <style>header { position: relative !important; top: auto !important; }.storefront-logo img { height: auto; max-height: 140px; border-radius: 0; }</style>
 </head>
 <body>
@@ -536,6 +567,11 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
                     </div>
 
                     <h1><?= $productName ?></h1>
+                    <?php if ($reviewSummary['count'] > 0): ?>
+                        <a class="rating-summary" href="#resenas" aria-label="<?= $reviewAvgText ?> de 5 estrellas, <?= $reviewSummary['count'] ?> reseña<?= $reviewSummary['count'] === 1 ? '' : 's' ?>"><span class="rating-stars" aria-hidden="true"><?= $reviewStars((float)$reviewSummary['avg']) ?></span> <strong><?= $reviewAvgText ?></strong> <span>(<?= $reviewSummary['count'] ?> reseña<?= $reviewSummary['count'] === 1 ? '' : 's' ?>)</span></a>
+                    <?php elseif ($reviewsReady): ?>
+                        <a class="rating-summary is-empty" href="#resenas">Sin reseñas aún · Sé el primero en opinar</a>
+                    <?php endif; ?>
                     <?php if ($productFeatures): ?>
                         <ul class="product-features">
                             <?php foreach (array_slice($productFeatures, 0, 8) as $feature): ?>
@@ -632,6 +668,45 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
                 </div>
                 <?php endif; ?>
             </section>
+
+            <?php if ($reviewsReady): ?>
+            <section class="reviews-section" id="resenas" aria-labelledby="reviewsTitle" data-product-id="<?= htmlspecialchars((string)$product['id'], ENT_QUOTES, 'UTF-8') ?>" data-total="<?= (int)$reviewSummary['count'] ?>">
+                <h2 class="reviews-title" id="reviewsTitle">Opiniones de clientes</h2>
+                <div class="reviews-layout">
+                    <div class="reviews-summary">
+                        <?php if ($reviewSummary['count'] > 0): ?>
+                            <div class="reviews-score"><strong><?= $reviewAvgText ?></strong><div><span class="rating-stars" aria-hidden="true"><?= $reviewStars((float)$reviewSummary['avg']) ?></span><small><?= $reviewSummary['count'] ?> reseña<?= $reviewSummary['count'] === 1 ? '' : 's' ?></small></div></div>
+                            <ul class="reviews-dist" aria-label="Reseñas por estrellas">
+                                <?php foreach ($reviewSummary['dist'] as $stars => $n): ?>
+                                    <li><span><?= $stars ?> ★</span><span class="reviews-bar"><i style="width: <?= $reviewSummary['count'] ? round($n / $reviewSummary['count'] * 100) : 0 ?>%"></i></span><span><?= $n ?></span></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <p class="reviews-empty">Todavía no hay opiniones de este producto. ¿Lo compraste? Cuéntales a otros clientes cómo te fue.</p>
+                        <?php endif; ?>
+                        <div class="reviews-cta" id="reviewCta">
+                            <a class="btn-action btn-cart" id="btnWriteReview" href="/login.html?redirect=<?= rawurlencode('/producto/' . $canonicalSlug . '#resenas') ?>"><i data-lucide="star" width="17"></i> Escribir una reseña</a>
+                            <p class="reviews-cta-msg" id="reviewMsg" role="status" hidden></p>
+                        </div>
+                        <p class="reviews-note">Para opinar necesitas una cuenta. «Compra verificada» indica que la persona compró este producto en SmartISP.</p>
+                    </div>
+                    <div class="reviews-main">
+                        <div class="review-form-box" id="reviewFormBox" hidden></div>
+                        <ol class="reviews-list" id="reviewsList">
+                            <?php foreach ($reviewList as $review): ?>
+                                <li class="review-item">
+                                    <div class="review-top"><span class="rating-stars" aria-label="<?= $review['rating'] ?> de 5 estrellas"><?= $reviewStars((float)$review['rating']) ?></span><?php if ($review['title'] !== ''): ?><strong class="review-title"><?= htmlspecialchars($review['title'], ENT_QUOTES, 'UTF-8') ?></strong><?php endif; ?></div>
+                                    <div class="review-meta"><span><?= htmlspecialchars($review['author'], ENT_QUOTES, 'UTF-8') ?></span> · <time datetime="<?= htmlspecialchars(substr($review['date'], 0, 10), ENT_QUOTES, 'UTF-8') ?>"><?= $reviewDate($review['date']) ?></time><?php if ($review['verified']): ?> <span class="review-verified">✓ Compra verificada</span><?php endif; ?></div>
+                                    <p class="review-body"><?= nl2br(htmlspecialchars($review['body'], ENT_QUOTES, 'UTF-8')) ?></p>
+                                    <?php if ($review['reply'] !== ''): ?><div class="review-reply"><strong>Respuesta de SmartISP</strong><p><?= nl2br(htmlspecialchars($review['reply'], ENT_QUOTES, 'UTF-8')) ?></p></div><?php endif; ?>
+                                </li>
+                            <?php endforeach; ?>
+                        </ol>
+                        <?php if ($reviewSummary['count'] > count($reviewList)): ?><button class="btn-action btn-share reviews-more" id="reviewsMore" type="button">Ver más opiniones</button><?php endif; ?>
+                    </div>
+                </div>
+            </section>
+            <?php endif; ?>
 
             <!-- Productos Relacionados -->
             <?php if (!empty($relatedProducts)): ?>
@@ -803,5 +878,6 @@ $productWarrantyText = $product ? trim((string)($product['warrantyText'] ?? ''))
         }
     </script>
     <script src="/assets/js/store/storefront-discovery.js?v=familias-20261101" defer></script>
+    <?php if ($reviewsReady): ?><script src="/assets/js/store/product-reviews.js?v=resenas-20261115" defer></script><?php endif; ?>
 </body>
 </html>

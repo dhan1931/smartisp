@@ -25,6 +25,7 @@ export default defineConfig({
         cotizaciones: 'cotizaciones.html',
         fotos: 'fotos.html',
         precios: 'precios.html',
+        resenas: 'resenas.html',
         clientes: 'clientes.html',
         categorias: 'categorias.html',
         portada: 'portada.html',

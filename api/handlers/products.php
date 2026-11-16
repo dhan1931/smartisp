@@ -78,6 +78,7 @@ if ($action === 'catalog' && $method === 'GET') {
         $includeDetails = (string)($_GET['details'] ?? '') === '1';
         $cols = 'id, name, price, category, subcategory, image_url, external_url, sku, visible';
         if ($includeDetails) $cols .= ', description';
+        if (in_array('rating_count', smartispTableColumns($pdo, $pTable), true)) $cols .= ', rating_avg, rating_count';
         // id como desempate: en los datos reales created_at está vacío en todas las filas, así que sin un
         // criterio estable la paginación podía devolver un producto repetido o saltarse otro entre páginas.
         // ASC (no DESC): hay productos de prueba con id que empieza por "test_"/"prod_test_" e imagen rota;

@@ -335,7 +335,7 @@ if ($categoryName !== '') {
   <link rel="icon" type="image/svg+xml" href="/assets/favicons/favicon.svg">
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
   <script src="/assets/js/store/public-brand.js?v=seo2-20261025" defer></script>
-  <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=titulos-20261107">
+  <link rel="stylesheet" href="/assets/css/store/storefront-discovery.css?v=resenas-20261115">
   <script src="/assets/vendor/lucide-icons.min.js?v=68df8f2b" defer></script>
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="SmartISP Ecuador">

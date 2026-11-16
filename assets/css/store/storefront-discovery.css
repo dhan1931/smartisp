@@ -115,3 +115,4 @@ main.storefront-page,footer.storefront-footer{width:min(1680px,calc(100% - 48px)
 .storefront-category-menu{display:none !important}
 .about-us .eyebrow,.why-us .eyebrow,.services-grid-head .eyebrow,.services-grid-head>a,nav.breadcrumbs a{color:#0f6cb6}
 main .category-breadcrumb a,.category-sidebar-title .category-active-badge,summary .featured-filter-count,.store-product-add:not(.is-added):not(:disabled){color:#06708f}
+.store-product-rating{display:inline-flex;align-items:center;gap:4px;margin-top:4px;color:#334155;font-size:12px;font-weight:700;text-decoration:none}.store-product-rating>span{color:#e99824;letter-spacing:1px}.store-product-rating .is-off{color:#d5dde6}.store-product-rating small{color:#64748b;font-weight:500}.store-product-rating:hover small{text-decoration:underline}
