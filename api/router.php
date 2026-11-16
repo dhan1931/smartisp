@@ -468,6 +468,9 @@ if (in_array($action, ['store-campaigns', 'admin-store-campaigns', 'upload-campa
 if (in_array($action, ['admin-photos', 'admin-photo-candidates', 'admin-photo-replace', 'admin-photo-auto', 'admin-photo-ok', 'admin-photo-match', 'admin-photo-import'], true)) {
     require __DIR__ . '/handlers/photos.php';
 }
+if (in_array($action, ['admin-prices', 'admin-price-import'], true)) {
+    require __DIR__ . '/handlers/prices.php';
+}
 
 // 'categories' y 'categories-reset' vivian tambien aca arriba, duplicados y desactualizados
 // (sin macro_group_id ni los campos nuevos de familia) -- como este bloque corria ANTES del

@@ -24,6 +24,7 @@ await db.execute("DELETE FROM users_rows WHERE id = ? OR email = ?", [admin.id, 
 await db.execute("INSERT INTO users_rows (id,email,password_hash,name,role) VALUES (?,?,?,?, 'admin')", [admin.id, admin.email, await bcrypt.hash(admin.password, 10), 'Admin E2E']);
 await db.execute("DELETE FROM products_rows WHERE id LIKE 'e2e-%'");
 await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku,specs_json,warranty_text,content_text,external_url) VALUES ('e2e-router','Router E2E Mikrotik',89.9,1,'Redes','E2E-RTR','[{\"label\":\"Puertos\",\"value\":\"5\"}]','1 año','Contenido','https://example.test/router')");
+await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku) VALUES ('e2e-precio-a','Precio E2E Alfa',0,1,'Redes','E2E-PRA'),('e2e-precio-b','Precio E2E Beta',0,1,'Redes','E2E-PRB')");
 await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku) VALUES ('e2e-switch','Switch E2E 8 puertos',34.5,1,'Redes','E2E-SW')");
 await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku,image_url) VALUES ('e2e-foto-a','Foto E2E Alfa',10,1,'Redes','E2E-FA',''),('e2e-foto-b','Foto E2E Beta',10,1,'Redes','E2E-FB',''),('e2e-foto-c','Foto E2E Gamma',10,1,'Redes','E2E-FC','/api/auth/serve-upload?category=products&file=e2e-gamma.webp')");
 await db.execute('ALTER TABLE orders_rows ADD COLUMN IF NOT EXISTS customer_email VARCHAR(255) NULL');
@@ -64,7 +65,7 @@ const shot = async (page, name) => { if (process.env.E2E_SHOTS) await page.scree
 try {
   const { context, page } = await session();
 
-  for (const screen of ['admin', 'pedidos', 'clientes', 'cotizaciones', 'inventario', 'estadisticas', 'reportes', 'categorias', 'configuracion', 'campanas', 'portada', 'editor-catalogo', 'editor-landing', 'equipo', 'actividad', 'fotos']) {
+  for (const screen of ['admin', 'pedidos', 'clientes', 'cotizaciones', 'inventario', 'estadisticas', 'reportes', 'categorias', 'configuracion', 'campanas', 'portada', 'editor-catalogo', 'editor-landing', 'equipo', 'actividad', 'fotos', 'precios']) {
     await open(page, `/${screen}.html`);
     assert.ok(new URL(page.url()).pathname.endsWith(`/${screen}.html`), `${screen}.html no debe redirigir: ${page.url()}`);
   }
@@ -108,15 +109,15 @@ try {
   await hiddenLoad;
   assert.equal(await page.inputValue('#filterVisibility'), 'hidden', 'la cifra de ocultos del resumen filtra los ocultos');
 
-  await page.evaluate(() => { for (const id of ['importPriceMargin', 'importPriceMargin2']) { const input = document.getElementById(id); input.value = '15'; input.dispatchEvent(new Event('input', { bubbles: true })); } });
-  assert.ok((await page.textContent('#importPriceFormula')).includes('132,25'), 'el importador aplica 15 % y luego 15 % (× 1,3225)');
+  await page.evaluate(() => { for (const id of ['importPriceMargin', 'importPriceMargin2']) { const input = document.getElementById(id); input.value = id === 'importPriceMargin' ? '25' : '15'; input.dispatchEvent(new Event('input', { bubbles: true })); } });
+  assert.ok((await page.textContent('#importPriceFormula')).includes('143,75'), 'el importador aplica 25 % de ganancia y luego 15 % de IVA (× 1,4375)');
   await db.execute("UPDATE products_rows SET cost = 100, price = 34.5 WHERE id = 'e2e-switch'");
   const preview = await page.evaluate(() => SmartAdmin.post('admin-products-bulk-update', { op: 'price', mode: 'from_cost', value: 0, ids: ['e2e-switch', 'e2e-router'], dry_run: true }));
-  assert.deepEqual(preview.changes.map(c => [c.id, c.after]), [['e2e-switch', 132.25]], 'recalcular desde el costo: $100 → $132,25 y omite lo que no tiene costo');
+  assert.deepEqual(preview.changes.map(c => [c.id, c.after]), [['e2e-switch', 143.75]], 'recalcular desde el costo: $100 → $143,75 y omite lo que no tiene costo');
   await page.evaluate(() => SmartAdmin.post('admin-products-bulk-update', { op: 'price', mode: 'from_cost', value: 0, ids: ['e2e-switch'] }));
   await page.evaluate(() => SmartAdmin.post('admin-products-bulk-update', { op: 'price', mode: 'from_cost', value: 0, ids: ['e2e-switch'] }));
   const [[repriced]] = await db.query("SELECT price FROM products_rows WHERE id = 'e2e-switch'");
-  assert.equal(Number(repriced.price), 132.25, 'aplicarlo dos veces no vuelve a subir el precio');
+  assert.equal(Number(repriced.price), 143.75, 'aplicarlo dos veces no vuelve a subir el precio');
 
   await open(page, '/configuracion.html');
   const draftLabel = () => page.textContent('.settings-draft');
@@ -185,6 +186,37 @@ try {
   if (savedFeatured) await db.execute("UPDATE settings_rows SET setting_value = ? WHERE setting_key = 'store_featured_category_ids'", [savedFeatured.setting_value]);
   else await db.execute("DELETE FROM settings_rows WHERE setting_key = 'store_featured_category_ids'");
 
+  await open(page, '/precios.html');
+  await page.fill('#search', 'Precio E2E');
+  await page.waitForFunction(() => document.querySelectorAll('#rows tr').length === 2);
+  assert.ok((await page.textContent('#formula')).includes('1,25 × 1,15'), 'muestra la fórmula: ' + await page.textContent('#formula'));
+  await shot(page, 'precios');
+  const priceForm = page.locator('form.price-set[data-id="e2e-precio-b"]');
+  await priceForm.locator('input[name="cost"]').fill('100');
+  assert.equal(await priceForm.locator('input[name="price"]').inputValue(), '143.75', 'el costo calcula el precio con la fórmula');
+  await priceForm.locator('button[type="submit"]').click();
+  await page.waitForFunction(() => document.querySelectorAll('#rows tr').length === 1);
+  const [[priceB]] = await db.query("SELECT price, cost FROM products_rows WHERE id = 'e2e-precio-b'");
+  assert.deepEqual([Number(priceB.price), Number(priceB.cost)], [143.75, 100], 'guarda el precio y el costo');
+  const priceDownload = page.waitForEvent('download');
+  await page.click('#exportCsv');
+  const priceFile = await priceDownload;
+  assert.equal(priceFile.suggestedFilename(), 'precios-sin-precio.csv', 'exporta la lista de la pestaña a CSV');
+  const priceCsv = fs.readFileSync(await priceFile.path(), 'utf8').trim().split(/\r?\n/);
+  assert.ok(priceCsv[0].endsWith('costo_nuevo;precio_nuevo'), 'el CSV trae las columnas para completar: ' + priceCsv[0]);
+  assert.deepEqual(priceCsv.slice(1).map(l => l.split(';')[2]), ['Precio E2E Alfa'], 'y lo que se ve con la búsqueda');
+  await page.setInputFiles('#importFile', { name: 'intcomex.csv', mimeType: 'text/csv', buffer: Buffer.from('Lista de Precios;;;;;;\nCategoría;Nombre;Marca;Precio;Disponibilidad;No. de Parte;SKU\nPuntos de Acceso;Ubiquiti Alfa;Ubiquiti;116;3;U7-Lite;E2E-PRA\nPuntos de Acceso;Otro;Ubiquiti;188;0;U7-LR;NO-EXISTE-E2E\n') });
+  await page.waitForSelector('#importBox:not([hidden]) table');
+  const priceImport = await page.textContent('#importBox');
+  assert.ok(priceImport.includes('Sin precio: se pone') && priceImport.includes('No está en la tienda') && priceImport.includes('166,75'), 'la vista previa de la lista de Intcomex: ' + priceImport.slice(0, 400));
+  assert.ok(await page.isVisible('#genericAs'), 'pregunta si la columna «Precio» es costo o precio final');
+  assert.equal((await page.textContent('#importApply')).trim(), 'Guardar 1 precio', 'solo ofrece guardar lo que está en la tienda');
+  await shot(page, 'precios-importar');
+  await page.click('#importApply');
+  await page.waitForFunction(() => document.querySelector('#importBox')?.textContent.includes('Guardado'));
+  const [[priceA]] = await db.query("SELECT price, cost FROM products_rows WHERE id = 'e2e-precio-a'");
+  assert.deepEqual([Number(priceA.price), Number(priceA.cost)], [166.75, 116], 'la lista del proveedor pone precio = costo × 1,25 × 1,15');
+
   await open(page, '/fotos.html?status=sin-foto');
   await page.fill('#search', 'Foto E2E');
   await page.locator('#grid .photo-card').nth(1).waitFor();
@@ -243,7 +275,7 @@ try {
   await context.close();
 
   const mobile = await session({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-  for (const screen of ['admin', 'pedidos']) {
+  for (const screen of ['admin', 'pedidos', 'precios']) {
     await open(mobile.page, `/${screen}.html`);
     assert.equal(await mobile.page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 0, `${screen} sin scroll horizontal en móvil`);
   }

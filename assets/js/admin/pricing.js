@@ -1,7 +1,7 @@
 // Cálculo de precios compartido por el panel y las pruebas. Igual que smartispPriceFromCost (api/lib/shop.php).
 (function (root) {
   const IVA_RATE = 0.15;
-  const DEFAULT_INCREMENTS = [15, 15];
+  const DEFAULT_INCREMENTS = [25, 15];
   const round2 = value => Math.round(Number(Number(value).toPrecision(12)) * 100) / 100;
   // Cada incremento se aplica sobre el resultado del anterior y se redondea una sola vez al final.
   const applyIncrements = (base, increments = DEFAULT_INCREMENTS) => {

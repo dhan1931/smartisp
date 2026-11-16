@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SmartISP | Precios</title>
+  <link rel="icon" href="/assets/favicons/favicon.ico">
+  <meta name="theme-color" content="#102A43">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <script src="/assets/js/admin/admin-theme.js?v=ds-20261027"></script>
+  <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261027">
+  <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=menu-movil-20261101">
+  <link rel="stylesheet" href="/assets/css/admin/precios-page.css?v=precios-20261115">
+  <script src="/assets/vendor/lucide-icons.min.js?v=fotos-lote-20261105" defer></script>
+  <script src="/assets/js/admin/admin-nav.js?v=precios-20261115" defer></script>
+  <script src="/assets/js/admin/admin-page.js?v=ds-20261027" defer></script>
+  <script src="/assets/js/admin/pricing.js?v=ganancia25-20261115" defer></script>
+  <script src="/assets/js/admin/precios-page.js?v=precios-20261115" defer></script>
+</head>
+<body>
+  <div id="smartisp-admin-nav" class="is-loading" data-active="precios"></div>
+  <main class="shell" id="app" hidden>
+    <header class="page-head">
+      <div>
+        <p class="eyebrow"><i data-lucide="circle-dollar-sign" aria-hidden="true"></i> Catálogo</p>
+        <h1>Precios</h1>
+        <p>Productos sin precio, precios sin costo y listas de precios de tus proveedores. Fórmula: <strong id="formula">costo del proveedor + ganancia + IVA</strong>.</p>
+      </div>
+      <div class="head-actions"><button class="button" id="refresh" type="button"><i data-lucide="refresh-cw" aria-hidden="true"></i> Actualizar</button></div>
+    </header>
+    <section class="stats" id="stats" aria-label="Estado de los precios"></section>
+    <section class="card price-tools" aria-labelledby="importTitle">
+      <h2 id="importTitle">Importar lista de precios</h2>
+      <p class="price-hint">Sube la lista del proveedor tal como la descargas (por ejemplo la de Intcomex: columnas <strong>SKU</strong>, <strong>No. de Parte</strong> y <strong>Precio</strong>) o la lista de abajo exportada y completada. Cada fila se busca en la tienda por id, SKU o número de parte; el precio del proveedor se toma como costo sin IVA y se le aplica la fórmula. Antes de guardar ves qué cambia en cada producto: nada se guarda hasta que confirmas.</p>
+      <div class="price-actions"><label class="button primary" for="importFile"><i data-lucide="file-up" aria-hidden="true"></i> Elegir Excel o CSV</label><input type="file" id="importFile" accept=".csv,.txt,.xlsx,.xls" multiple hidden><label class="price-check"><input type="checkbox" id="importShow"> Mostrar en la tienda los productos ocultos que reciben precio</label></div>
+      <div class="price-run" id="runBox" hidden><p id="runStatus" role="status"></p><button class="button small" id="stop" type="button"><i data-lucide="pause" aria-hidden="true"></i> Pausar</button></div>
+      <div class="price-import" id="importBox" hidden></div>
+    </section>
+    <section class="card workspace" aria-label="Productos">
+      <div class="toolbar">
+        <div class="search">
+          <i data-lucide="search" aria-hidden="true"></i>
+          <label class="sr-only" for="search">Buscar productos</label>
+          <input id="search" type="search" placeholder="Buscar por nombre o SKU…" autocomplete="off">
+        </div>
+        <label class="sr-only" for="category">Filtrar por categoría</label>
+        <select id="category"><option value="">Todas las categorías</option></select>
+        <span class="result-count" id="count" aria-live="polite"></span>
+        <button class="button small" id="exportCsv" type="button" title="Exportar esta lista a CSV"><i data-lucide="file-down" aria-hidden="true"></i> CSV</button>
+        <button class="button small" id="exportXlsx" type="button" title="Exportar esta lista a Excel"><i data-lucide="file-spreadsheet" aria-hidden="true"></i> Excel</button>
+      </div>
+      <p class="price-hint price-list-hint">Escribe el costo del proveedor (sin IVA) y el precio se calcula solo, o escribe directamente el precio final con IVA. Para muchos a la vez, exporta con «CSV» o «Excel», completa <strong>costo_nuevo</strong> o <strong>precio_nuevo</strong> y súbelo arriba.</p>
+      <div class="table-wrap"><table class="price-table"><thead><tr><th class="price-thumb"><span class="sr-only">Foto</span></th><th>Producto</th><th class="num">Precio actual</th><th class="num">Costo</th><th>Poner precio</th></tr></thead><tbody id="rows"></tbody></table></div>
+      <div id="empty" hidden></div>
+      <footer class="pager"><button class="button small" id="prev" type="button"><i data-lucide="arrow-left" aria-hidden="true"></i> Anterior</button><span id="pageInfo"></span><button class="button small" id="next" type="button">Siguiente <i data-lucide="arrow-right" aria-hidden="true"></i></button></footer>
+    </section>
+  </main>
+</body>
+</html>
