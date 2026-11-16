@@ -24,6 +24,7 @@ export default defineConfig({
         comprobante: 'comprobante.html',
         cotizaciones: 'cotizaciones.html',
         fotos: 'fotos.html',
+        precios: 'precios.html',
         clientes: 'clientes.html',
         categorias: 'categorias.html',
         portada: 'portada.html',

@@ -684,6 +684,46 @@ try {
   assert.equal(impOver.data.results[0].status, 'saved', 'con «reemplazar» sí se cambia');
   assert.equal((await req('admin-photos?status=propias&q=smkimp&all=1', { cookie: ac })).data.products.length, 2, 'all=1 trae la lista completa para exportar');
   await db.execute("DELETE FROM products_rows WHERE id IN ('smk-imp1', 'smk-imp2')");
+  // Precios: lista de productos sin precio, vista previa de una lista de proveedor y guardado.
+  await db.execute("DELETE FROM products_rows WHERE id LIKE 'smk-pr%'");
+  await db.execute(`INSERT INTO products_rows (id,name,price,cost,visible,category,sku) VALUES
+    ('smk-pr1','Precio smkpr Ubiquiti U7-Lite',0,NULL,1,'Smoke Precios','SMK-UBQ79'),
+    ('smk-pr2','Precio smkpr Tapo C500',0,NULL,1,'Smoke Precios','SMKCAMIP0SMKC500X'),
+    ('smk-pr3','Precio smkpr Router ZXQ-9871X',50,NULL,1,'Smoke Precios','SKU-PR3'),
+    ('smk-pr4','Precio smkpr con costo',143.75,100,1,'Smoke Precios','SKU-PR4'),
+    ('smk-pr5','Precio smkpr oculto',0,NULL,0,'Smoke Precios','SKU-PR5'),
+    ('smk-pr6','Precio smkpr barato',10,NULL,1,'Smoke Precios','SKU-PR6')`);
+  assert.equal((await req('admin-prices')).status, 401, 'la pantalla de precios requiere sesión de administrador');
+  assert.equal((await req('admin-price-import', { method: 'POST', body: { rows: [] } })).status, 401, 'importar precios requiere sesión de administrador');
+  const prList = await req('admin-prices?status=sin-precio&category=' + encodeURIComponent('Smoke Precios'), { cookie: ac });
+  assert.deepEqual(prList.data.products.map(p => p.id), ['smk-pr2', 'smk-pr1'], 'lista los visibles sin precio: ' + JSON.stringify(prList.data));
+  assert.deepEqual([prList.data.counts['sin-precio'], prList.data.counts['sin-costo'], prList.data.counts.ocultos], [2, 2, 1], JSON.stringify(prList.data.counts));
+  assert.deepEqual(prList.data.formula.increments, [25, 15], 'la fórmula es 25 % de ganancia y 15 % de IVA');
+  assert.equal((await req('admin-prices?status=sin-precio&all=1&category=' + encodeURIComponent('Smoke Precios'), { cookie: ac })).data.products.length, 2, 'all=1 trae la lista completa para exportar');
+  const prPreview = await req('admin-price-import', { method: 'POST', cookie: ac, body: { rows: [
+    { row: 3, sku: 'SMK-UBQ79', part: 'U7-Lite', cost: 116, stock: '3' },
+    { row: 4, part: 'SMKC500X', cost: 29.98 },
+    { row: 5, part: 'ZXQ-9871X', cost: 40 },
+    { row: 6, sku: 'sku-pr4', cost: 100 },
+    { row: 7, sku: 'SKU-PR6', cost: 100 },
+    { row: 8, sku: 'NO-EXISTE-PR', cost: 5 },
+    { row: 9, id: 'smk-pr5', price: 99.9 },
+    { row: 10, sku: 'SKU-PR3', price: 50, cost: 30 },
+  ] } });
+  assert.equal(prPreview.status, 200, JSON.stringify(prPreview.data));
+  assert.deepEqual(prPreview.data.results.map(r => [r.row, r.status, r.id || null, r.how || null, r.newPrice]), [
+    [3, 'quote', 'smk-pr1', 'sku', 166.75], [4, 'quote', 'smk-pr2', 'parte', 43.1], [5, 'up', 'smk-pr3', 'nombre', 57.5], [6, 'same', 'smk-pr4', 'sku', 143.75],
+    [7, 'suspicious', 'smk-pr6', 'sku', 143.75], [8, 'not_found', null, null, 7.19], [9, 'quote', 'smk-pr5', 'id', 99.9], [10, 'cost', 'smk-pr3', 'sku', 50],
+  ], 'la vista previa busca por SKU, número de parte (también en el código de Siglo21 y en el nombre) e id: ' + JSON.stringify(prPreview.data.results));
+  const [[prBefore]] = await db.query("SELECT price FROM products_rows WHERE id = 'smk-pr1'");
+  assert.equal(Number(prBefore.price), 0, 'la vista previa no cambia nada');
+  const prApply = await req('admin-price-import', { method: 'POST', cookie: ac, body: { apply: true, rows: [{ id: 'smk-pr1', price: 166.75, cost: 116 }, { id: 'smk-pr5', price: 99.9, show: true }, { id: 'smk-no-existe', price: 5 }, { id: 'smk-pr2', price: 0 }] } });
+  assert.deepEqual(prApply.data.results.map(r => r.status), ['saved', 'saved', 'not_found', 'invalid'], JSON.stringify(prApply.data));
+  const prRows = Object.fromEntries((await db.query("SELECT id, price, cost, visible FROM products_rows WHERE id IN ('smk-pr1', 'smk-pr5')"))[0].map(r => [r.id, [Number(r.price), r.cost === null ? null : Number(r.cost), Number(r.visible)]]));
+  assert.deepEqual(prRows, { 'smk-pr1': [166.75, 116, 1], 'smk-pr5': [99.9, null, 1] }, 'guarda precio y costo, y muestra el oculto si se pidió');
+  assert.deepEqual((await req('admin-prices?status=sin-precio&category=' + encodeURIComponent('Smoke Precios'), { cookie: ac })).data.products.map(p => p.id), ['smk-pr2']);
+  assert.equal((await req('admin-price-import', { cookie: ac })).status, 405, 'importar precios exige POST');
+  await db.execute("DELETE FROM products_rows WHERE id LIKE 'smk-pr%'");
   await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku,image_url) VALUES ('smk-ph3','Sin foto smkph en otra categoría',5,0,'Smoke Fotos','SKU-PH3','')");
   const byCat = await req('admin-photos?status=sin-foto&q=smkph&category=' + encodeURIComponent('Smoke Fotos'), { cookie: ac });
   assert.deepEqual(byCat.data.products.map(p => p.id), ['smk-ph3'], 'filtra por categoría: ' + JSON.stringify(byCat.data));
