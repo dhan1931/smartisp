@@ -17,6 +17,9 @@ $paramsFor = static fn(string $where, array $params): array => array_filter($par
 $external = "(image_url LIKE 'http://%' OR image_url LIKE 'https://%')";
 $noPhoto = "(image_url IS NULL OR TRIM(image_url) = '')";
 $local = "(image_url LIKE '/api/auth/serve-upload%')";
+$hasGallery = smartispTableExists($pdo, 'product_images');
+$onePhoto = "(image_url IS NOT NULL AND TRIM(image_url) <> '' AND image_url NOT LIKE '%|%' AND image_url NOT LIKE 'data:%'" . ($hasGallery ? ' AND id NOT IN (SELECT product_id FROM product_images GROUP BY product_id HAVING COUNT(*) > 1)' : '') . ')';
+$photoFile = static fn(string $url): string => 'file=arch_' . substr(md5($url), 0, 20) . '.';
 
 if ($action === 'admin-photos') {
     $tried = smartispPhotoMap($pdo, SMARTISP_PHOTO_AUTO_TRIED_KEY);
@@ -30,6 +33,7 @@ if ($action === 'admin-photos') {
         'por-revisar' => "($external AND id NOT IN ($in))",
         'web' => "($local AND id IN ($inWeb))",
         'propias' => $local,
+        'una-foto' => "($onePhoto AND id NOT IN ($in))",
     ];
     $category = trim((string)($_GET['category'] ?? ''));
     $byCategory = '';
@@ -63,6 +67,7 @@ if ($action === 'admin-photos') {
         return [
             'id' => $row['id'], 'name' => $row['name'], 'sku' => $row['sku'], 'category' => $row['category'],
             'visible' => (int)$row['visible'] === 1,
+            'photos' => count(smartispSplitImageUrls((string)$row['image_url'])),
             'image' => smartispIsLocalProductUpload($first) ? $first : '',
             'original' => smartispIsExternalImage($first) ? $first : '',
             'autoTried' => isset($tried[$row['id']]),
@@ -103,6 +108,16 @@ if ($action === 'admin-photo-replace') {
         echo json_encode(['error' => 'No se pudo descargar una imagen válida desde esa dirección. Prueba con otra o sube el archivo.']);
         exit;
     }
+    if (!empty($body['add'])) {
+        $stmt = $pdo->prepare("SELECT image_url FROM `$pTable` WHERE id = :id");
+        $stmt->execute([':id' => $id]);
+        $list = smartispSplitImageUrls((string)$stmt->fetchColumn());
+        if (str_starts_with($list[0] ?? '', 'data:')) { http_response_code(422); echo json_encode(['error' => 'La foto principal está pegada dentro del producto: primero cámbiala por una guardada en tu servidor.']); exit; }
+        if (in_array($localUrl, $list, true)) { http_response_code(409); echo json_encode(['error' => 'Esa foto ya está en el producto.']); exit; }
+        smartispPhotoAppend($pdo, $pTable, $id, $list, [$localUrl], $hasGallery);
+        echo json_encode(['ok' => true, 'url' => $localUrl, 'photos' => count($list) + 1]);
+        exit;
+    }
     smartispPhotoSetLocal($pdo, $pTable, $id, $localUrl);
     smartispPhotoForget($pdo, SMARTISP_PHOTO_WEB_FIXED_KEY, [$id]);
     echo json_encode(['ok' => true, 'url' => $localUrl]);
@@ -140,11 +155,13 @@ if ($action === 'admin-photo-match') {
 
 // Importar fotos desde enlaces (Excel o CSV): cada fila trae el id o el SKU y una o varias direcciones.
 // Sin apply solo dice qué pasaría; con apply descarga y guarda en el servidor. Una foto que ya está en el
-// servidor (elegida a mano o copiada antes) no se reemplaza salvo con overwrite.
+// servidor (elegida a mano o copiada antes) no se reemplaza salvo con overwrite. Con extra, las fotos se
+// añaden detrás de las que ya tiene (sin repetir ninguna, 8 como máximo) y la principal no cambia.
 if ($action === 'admin-photo-import') {
     smartispRequirePost();
     $apply = !empty($body['apply']);
     $overwrite = !empty($body['overwrite']);
+    $extra = !empty($body['extra']);
     $rows = array_slice(array_values(array_filter((array)($body['rows'] ?? []), 'is_array')), 0, $apply ? 8 : 3000);
     if ($apply) @set_time_limit(90);
     $norm = static fn(string $s): string => preg_replace('/[^A-Z0-9]/', '', strtoupper($s));
@@ -156,6 +173,10 @@ if ($action === 'admin-photo-import') {
         if (strlen($key) >= 3) $bySku[$key][] = $row;
     }
     $failed = smartispArchivePruneFailed($pdo, $pTable, smartispArchiveFailed($pdo));
+    $gallery = [];
+    if ($extra && $hasGallery) {
+        foreach ($pdo->query('SELECT product_id, image_url FROM product_images')->fetchAll(PDO::FETCH_ASSOC) as $g) $gallery[(string)$g['product_id']][] = (string)$g['image_url'];
+    }
     $started = microtime(true);
     $downloaded = [];
     $results = [];
@@ -172,16 +193,31 @@ if ($action === 'admin-photo-import') {
                 : ($current === '' ? 'missing'
                 : (!preg_match('#^https?://#i', $current) ? 'own'
                 : (isset($failed[$id]) ? 'broken' : 'external')));
-            $result = $base + ['id' => $id, 'name' => (string)$product['name'], 'sku' => (string)$product['sku'], 'visible' => (int)$product['visible'] === 1, 'current' => $current, 'status' => $status];
-            $writable = in_array($status, ['missing', 'broken', 'external'], true) || ($status === 'own' && $overwrite);
+            $list = smartispSplitImageUrls((string)$product['image_url']);
+            $new = $urls;
+            if ($extra && in_array($status, ['own', 'external'], true) && !str_starts_with($current, 'data:')) {
+                $have = array_merge($list, $gallery[$id] ?? []);
+                $new = array_values(array_filter($urls, static function (string $url) use ($have, $photoFile): bool {
+                    foreach ($have as $h) if ($h === $url || str_contains($h, $photoFile($url))) return false;
+                    return true;
+                }));
+                $room = 8 - max(count($list), count($gallery[$id] ?? []));
+                $status = !$new ? 'duplicate' : ($room <= 0 ? 'full' : 'extra');
+                $new = array_slice($new, 0, max(0, $room));
+            }
+            $result = array_merge($base, ['id' => $id, 'name' => (string)$product['name'], 'sku' => (string)$product['sku'], 'visible' => (int)$product['visible'] === 1, 'current' => $current, 'status' => $status, 'urls' => $new, 'photos' => count($list)]);
+            $writable = in_array($status, ['missing', 'broken', 'external', 'extra'], true) || ($status === 'own' && $overwrite);
             if ($apply && $writable) {
                 if (microtime(true) - $started > 45) { $results[] = ['status' => 'pending'] + $result; continue; }
                 $saved = [];
-                foreach ($urls as $url) {
+                foreach ($new as $url) {
                     $downloaded[$url] ??= smartispArchiveImageUrl($url);
-                    if ($downloaded[$url] !== null) $saved[] = $downloaded[$url];
+                    if ($downloaded[$url] !== null && !in_array($downloaded[$url], $saved, true)) $saved[] = $downloaded[$url];
                 }
-                if ($saved) {
+                if ($saved && $status === 'extra') {
+                    smartispPhotoAppend($pdo, $pTable, $id, $list, $saved, isset($gallery[$id]));
+                    $result = ['status' => 'saved', 'saved' => $saved] + $result;
+                } elseif ($saved) {
                     smartispPhotoSetLocal($pdo, $pTable, $id, implode('|', $saved));
                     smartispPhotoForget($pdo, SMARTISP_PHOTO_WEB_FIXED_KEY, [$id]);
                     $result = ['status' => 'saved', 'saved' => $saved] + $result;

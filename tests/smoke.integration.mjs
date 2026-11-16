@@ -684,6 +684,33 @@ try {
   assert.equal(impOver.data.results[0].status, 'saved', 'con «reemplazar» sí se cambia');
   assert.equal((await req('admin-photos?status=propias&q=smkimp&all=1', { cookie: ac })).data.products.length, 2, 'all=1 trae la lista completa para exportar');
   await db.execute("DELETE FROM products_rows WHERE id IN ('smk-imp1', 'smk-imp2')");
+  const archOf = url => `/api/auth/serve-upload?category=products&file=arch_${createHash('md5').update(url).digest('hex').slice(0, 20)}.webp`;
+  await db.execute(`INSERT INTO products_rows (id,name,price,visible,category,sku,image_url) VALUES ('smk-ext1','Extra smkext con una foto',5,1,'General','SKU-EXT1','${archOf(impUrl)}'),('smk-ext2','Extra smkext con dos fotos',5,1,'General','SKU-EXT2','/api/auth/serve-upload?category=products&file=a.webp|/api/auth/serve-upload?category=products&file=b.webp'),('smk-ext3','Extra smkext pegada',5,1,'General','SKU-EXT3','data:image/png;base64,iVBORw0KGgo=')`);
+  const oneList = await req('admin-photos?status=una-foto&q=smkext', { cookie: ac });
+  assert.deepEqual(oneList.data.products.map(p => [p.id, p.photos]), [['smk-ext1', 1]], '«Una sola foto» lista los productos con una sola foto guardada: ' + JSON.stringify(oneList.data));
+  assert.equal((await req('admin-photos?status=propias&q=smkext', { cookie: ac })).data.products.find(p => p.id === 'smk-ext2').photos, 2, 'cada producto dice cuántas fotos tiene');
+  const extUrl = 'http://127.0.0.1/extra-smk.jpg';
+  fs.writeFileSync(path.join(root, 'uploads/cache', createHash('md5').update(extUrl + '|w=640|webp=1').digest('hex') + '.png'), Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64'));
+  assert.equal((await req('admin-photo-import', { method: 'POST', cookie: ac, body: { rows: [{ key: 'SKU-EXT1', urls: extUrl }] } })).data.results[0].status, 'own', 'sin «fotos extra» todo sigue igual');
+  const extPreview = await req('admin-photo-import', { method: 'POST', cookie: ac, body: { extra: true, rows: [{ key: 'sku-ext1', urls: `${impUrl}|${extUrl}`, row: 2 }, { key: 'SKU-EXT3', urls: extUrl, row: 3 }] } });
+  assert.deepEqual(extPreview.data.results.map(r => [r.row, r.status, r.urls, r.photos]), [[2, 'extra', [extUrl], 1], [3, 'own', [extUrl], 1]], 'como extra solo se añade lo que el producto no tiene; una foto pegada no admite extras: ' + JSON.stringify(extPreview.data));
+  const extApply = await req('admin-photo-import', { method: 'POST', cookie: ac, body: { apply: true, extra: true, rows: [{ key: 'smk-ext1', urls: `${impUrl}|${extUrl}` }] } });
+  assert.equal(extApply.data.results[0].status, 'saved', JSON.stringify(extApply.data));
+  const [[ext1]] = await db.query("SELECT image_url FROM products_rows WHERE id = 'smk-ext1'");
+  const ext1List = ext1.image_url.split('|');
+  assert.equal(ext1List.length, 2, 'queda con dos fotos: ' + ext1.image_url);
+  assert.equal(ext1List[0], archOf(impUrl), 'la foto principal no cambia');
+  assert.ok(ext1List[1].includes(archOf(extUrl).split('file=')[1].split('.')[0]), 'la foto extra queda guardada en el servidor detrás de la principal: ' + ext1.image_url);
+  assert.equal((await req('admin-photo-import', { method: 'POST', cookie: ac, body: { extra: true, rows: [{ key: 'smk-ext1', urls: extUrl }] } })).data.results[0].status, 'duplicate', 'volver a importar la misma no la repite');
+  assert.equal((await req('admin-photos?status=una-foto&q=smkext', { cookie: ac })).data.total, 0, 'con dos fotos sale de «Una sola foto»');
+  const third = '/api/auth/serve-upload?category=products&file=tercera.webp';
+  const added = await req('admin-photo-replace', { method: 'POST', cookie: ac, body: { id: 'smk-ext2', url: third, add: true } });
+  assert.equal(added.data.photos, 3, 'añadir a mano suma una foto: ' + JSON.stringify(added.data));
+  const [[ext2]] = await db.query("SELECT image_url FROM products_rows WHERE id = 'smk-ext2'");
+  assert.equal(ext2.image_url, '/api/auth/serve-upload?category=products&file=a.webp|/api/auth/serve-upload?category=products&file=b.webp|' + third);
+  assert.equal((await req('admin-photo-replace', { method: 'POST', cookie: ac, body: { id: 'smk-ext2', url: third, add: true } })).status, 409, 'no se añade dos veces la misma foto');
+  assert.equal((await req('admin-photo-replace', { method: 'POST', cookie: ac, body: { id: 'smk-ext3', url: third, add: true } })).status, 422, 'a una foto pegada no se le añaden extras');
+  await db.execute("DELETE FROM products_rows WHERE id LIKE 'smk-ext%'");
   // Precios: lista de productos sin precio, vista previa de una lista de proveedor y guardado.
   await db.execute("DELETE FROM products_rows WHERE id LIKE 'smk-pr%'");
   await db.execute(`INSERT INTO products_rows (id,name,price,cost,visible,category,sku) VALUES
