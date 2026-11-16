@@ -1,13 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => {
   const { $, esc, api, post, toast, icons, state: stateHtml, modal } = SmartAdmin;
-  const STATS = [['rotas', 'image-off', 'Rotas'], ['sin-foto', 'image-minus', 'Sin foto'], ['por-revisar', 'hourglass', 'Por revisar'], ['web', 'globe', 'Desde la web: revisar'], ['propias', 'hard-drive', 'En tu servidor']];
+  const STATS = [['rotas', 'image-off', 'Rotas'], ['sin-foto', 'image-minus', 'Sin foto'], ['por-revisar', 'hourglass', 'Por revisar'], ['web', 'globe', 'Desde la web: revisar'], ['propias', 'hard-drive', 'En tu servidor'], ['una-foto', 'image', 'Una sola foto']];
   const SOURCE = { icecat: 'Fabricante', archivo: 'Internet Archive', web: 'Web', manual: 'Elegida a mano', lote: 'Subida en lote', importada: 'Importada desde enlace' };
   const params = new URLSearchParams(location.search);
   const st = { status: STATS.some(s => s[0] === params.get('status')) ? params.get('status') : 'rotas', q: '', category: '', page: 1, totalPages: 1 };
   let webSearch = false, loadSeq = 0, running = false, products = [];
 
   const thumb = p => p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy">` : '<i data-lucide="image-off" aria-hidden="true"></i>';
-  const card = p => `<article class="photo-card"><div class="photo-thumb">${thumb(p)}</div><div><h3>${esc(p.name)}</h3><div class="meta">${p.sku ? `<span>${esc(p.sku)}</span>` : ''}${p.visible ? '' : '<span class="badge">Oculto</span>'}${p.autoTried && !p.image ? '<span class="badge warn">Sin coincidencia automática</span>' : ''}</div></div><div class="photo-card-actions">${p.fromWeb && p.image ? `<button class="button small primary" type="button" data-ok="${esc(p.id)}"><i data-lucide="check" aria-hidden="true"></i> Está bien</button>` : ''}<button class="button small${p.image ? '' : ' primary'}" type="button" data-pick="${esc(p.id)}"><i data-lucide="image-plus" aria-hidden="true"></i> ${p.image ? 'Cambiar foto' : 'Elegir foto'}</button></div></article>`;
+  const card = p => `<article class="photo-card"><div class="photo-thumb">${thumb(p)}</div><div><h3>${esc(p.name)}</h3><div class="meta">${p.sku ? `<span>${esc(p.sku)}</span>` : ''}${p.visible ? '' : '<span class="badge">Oculto</span>'}${p.photos > 1 ? `<span class="badge">${p.photos} fotos</span>` : ''}${p.autoTried && !p.image ? '<span class="badge warn">Sin coincidencia automática</span>' : ''}</div></div><div class="photo-card-actions">${p.fromWeb && p.image ? `<button class="button small primary" type="button" data-ok="${esc(p.id)}"><i data-lucide="check" aria-hidden="true"></i> Está bien</button>` : ''}${st.status === 'una-foto' ? `<button class="button small primary" type="button" data-add="${esc(p.id)}"><i data-lucide="image-plus" aria-hidden="true"></i> Añadir otra foto</button>` : ''}<button class="button small${p.image || st.status === 'una-foto' ? '' : ' primary'}" type="button" data-pick="${esc(p.id)}"><i data-lucide="${p.image ? 'replace' : 'image-plus'}" aria-hidden="true"></i> ${p.image ? 'Cambiar foto' : 'Elegir foto'}</button></div></article>`;
 
   const load = async () => {
     const seq = ++loadSeq;
@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
       $('#quickMode').hidden = !['rotas', 'sin-foto'].includes(st.status) || !products.length;
       $('#webFix').disabled = running || !webSearch; $('#webHint').hidden = webSearch;
       $('#empty').hidden = products.length !== 0;
-      if (!products.length) $('#empty').innerHTML = st.q || st.category ? stateHtml('search', 'Ningún producto coincide', 'Prueba con otra búsqueda o categoría.') : stateHtml('empty', st.status === 'propias' ? 'Todavía no hay fotos en tu servidor' : 'Nada pendiente aquí', st.status === 'por-revisar' ? 'Todas las fotos del proveedor ya fueron revisadas.' : '', 'circle-check');
+      if (!products.length) $('#empty').innerHTML = st.q || st.category ? stateHtml('search', 'Ningún producto coincide', 'Prueba con otra búsqueda o categoría.') : stateHtml('empty', st.status === 'propias' ? 'Todavía no hay fotos en tu servidor' : st.status === 'una-foto' ? 'Todos los productos con foto tienen más de una' : 'Nada pendiente aquí', st.status === 'por-revisar' ? 'Todas las fotos del proveedor ya fueron revisadas.' : '', 'circle-check');
       icons();
     } catch (e) {
       if (seq !== loadSeq) return;
@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
 
   // Exportar la lista actual (pestaña, categoría y búsqueda) e importar fotos desde enlaces con vista previa.
   const STATUS_LABEL = Object.fromEntries(STATS.map(([key, , label]) => [key, label]));
-  const EXPORT_HEAD = ['id', 'sku', 'nombre', 'categoria', 'visible', 'estado', 'foto_actual', 'foto_nueva'];
+  const exportHead = () => ['id', 'sku', 'nombre', 'categoria', 'visible', 'estado', 'foto_actual', st.status === 'una-foto' ? 'foto_extra' : 'foto_nueva'];
   let xlsxReady = null;
   const loadXlsx = () => xlsxReady || (xlsxReady = new Promise((resolve, reject) => {
     if (window.XLSX) { resolve(window.XLSX); return; }
@@ -150,10 +150,10 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
       const [X, rows] = await Promise.all([xlsx ? loadXlsx() : null, exportRows()]);
       if (!rows.length) { toast('No hay productos en esta lista.', true); return; }
       if (xlsx) {
-        const ws = X.utils.aoa_to_sheet([EXPORT_HEAD, ...rows]);
+        const ws = X.utils.aoa_to_sheet([exportHead(), ...rows]);
         ws['!cols'] = [18, 22, 60, 26, 8, 12, 50, 50].map(wch => ({ wch }));
         const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'Fotos'); X.writeFile(wb, exportName('xlsx'));
-      } else SmartAdmin.csv(exportName('csv'), EXPORT_HEAD, rows);
+      } else SmartAdmin.csv(exportName('csv'), exportHead(), rows);
       toast(`${rows.length} producto${rows.length === 1 ? '' : 's'} exportado${rows.length === 1 ? '' : 's'}.`);
     } catch (e) { toast(e.message, true); }
   };
@@ -184,23 +184,31 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
   const colName = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
   const cellText = v => String(v ?? '').trim().replace(/^'/, '');
   // Columnas: id y/o sku, y foto_nueva (o url, imagen, foto, enlace…; también foto_nueva_2…). Sin encabezados: A = SKU o id, B = foto.
+  // Un archivo con foto_extra (y sin foto_nueva) se importa en modo «fotos extra».
   const toImportRows = table => {
     const head = (table[0] || []).map(colName);
     const idCol = head.indexOf('id'), skuCol = head.findIndex(h => ['sku', 'codigo', 'sku_proveedor', 'item_code', 'itemcode', 'numero_de_parte'].includes(h));
-    let urlCols = head.map((h, i) => /^(foto_nueva|url|imagen|image|image_url|foto|enlace|link)(_\d+)?$/.test(h) ? i : -1).filter(i => i >= 0);
+    const colsOf = re => head.map((h, i) => re.test(h) ? i : -1).filter(i => i >= 0);
+    let urlCols = colsOf(/^(foto_nueva|url|imagen|image|image_url|foto|enlace|link)(_\d+)?$/);
+    const extraCols = colsOf(/^foto_extra(_\d+)?$/), extra = !urlCols.length && extraCols.length > 0;
+    if (extra) urlCols = extraCols;
     let body = table.slice(1), offset = 2, keyCols = [idCol, skuCol].filter(i => i >= 0);
     if (!keyCols.length && !urlCols.length) { body = table; offset = 1; keyCols = [0]; urlCols = [1]; }
-    return body.map((r, i) => ({ row: i + offset, key: keyCols.map(c => cellText(r[c])).find(Boolean) || '', urls: urlCols.map(c => cellText(r[c])).filter(Boolean).join('|') }))
+    const rows = body.map((r, i) => ({ row: i + offset, key: keyCols.map(c => cellText(r[c])).find(Boolean) || '', urls: urlCols.map(c => cellText(r[c])).filter(Boolean).join('|') }))
       .filter(r => r.key && r.urls);
+    return { rows, extra };
   };
 
   const IMPORT_STATUS = {
     missing: ['ok', 'Sin foto: se pone'], broken: ['ok', 'Foto rota: se reemplaza'], external: ['info', 'Foto del proveedor: se reemplaza'],
     own: ['warn', 'Ya tiene foto en tu servidor'], not_found: ['bad', 'Ningún producto con ese SKU o id'], bad_url: ['bad', 'La dirección no es válida'],
-    saved: ['ok', 'Guardada en tu servidor'], download_failed: ['bad', 'No se pudo descargar una imagen de esa dirección'], pending: ['info', 'Pendiente']
+    saved: ['ok', 'Guardada en tu servidor'], download_failed: ['bad', 'No se pudo descargar una imagen de esa dirección'], pending: ['info', 'Pendiente'],
+    extra: ['ok', 'Se añaden como fotos extra'], duplicate: ['warn', 'Ya tiene esas fotos'], full: ['warn', 'Ya tiene 8 fotos']
   };
-  let importRows = [];
-  const writable = r => ['missing', 'broken', 'external'].includes(r.status) || (r.status === 'own' && $('#importOverwrite').checked);
+  const AUTO = ['missing', 'broken', 'external', 'extra'];
+  let importRows = [], lastRows = [];
+  const isExtra = () => $('#importExtra').checked;
+  const writable = r => AUTO.includes(r.status) || (r.status === 'own' && !isExtra() && $('#importOverwrite').checked);
   const thumbOf = url => url ? `<img src="${esc(url)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<i data-lucide="image-off" aria-hidden="true"></i>';
   const renderImport = () => {
     const box = $('#importBox'), counts = {};
@@ -208,24 +216,31 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
     const todo = importRows.filter(r => r.checked && writable(r) && !r.done).length;
     box.hidden = false;
     box.innerHTML = `<div class="photo-import-summary"><strong>${importRows.length} fila${importRows.length === 1 ? '' : 's'}</strong>${Object.entries(counts).map(([k, n]) => `<span class="badge ${IMPORT_STATUS[k]?.[0] || ''}">${n} · ${esc(IMPORT_STATUS[k]?.[1] || k)}</span>`).join('')}</div>
-      <div class="photo-actions"><button class="button primary" type="button" id="importApply"${todo && !running ? '' : ' disabled'}><i data-lucide="check" aria-hidden="true"></i> Guardar ${todo} foto${todo === 1 ? '' : 's'}</button><button class="button" type="button" id="importReport"><i data-lucide="file-down" aria-hidden="true"></i> Descargar resultado (CSV)</button><button class="button" type="button" id="importClose">Cerrar</button></div>
+      <div class="photo-actions"><button class="button primary" type="button" id="importApply"${todo && !running ? '' : ' disabled'}><i data-lucide="check" aria-hidden="true"></i> ${isExtra() ? `Añadir fotos a ${todo} producto${todo === 1 ? '' : 's'}` : `Guardar ${todo} foto${todo === 1 ? '' : 's'}`}</button><button class="button" type="button" id="importReport"><i data-lucide="file-down" aria-hidden="true"></i> Descargar resultado (CSV)</button><button class="button" type="button" id="importClose">Cerrar</button></div>
       <div class="table-wrap photo-import-table"><table><thead><tr><th><span class="sr-only">Guardar</span></th><th>Fila</th><th>Producto</th><th>Foto actual</th><th>Foto nueva</th><th>Qué pasa</th></tr></thead><tbody>${importRows.map((r, i) => {
-        const [tone, label] = IMPORT_STATUS[r.status] || ['', r.status];
+        const [tone, base] = IMPORT_STATUS[r.status] || ['', r.status];
+        const label = r.status === 'extra' ? `Se ${r.urls.length === 1 ? 'añade 1 foto' : `añaden ${r.urls.length} fotos`} (tiene ${r.photos})` : base;
         const can = writable(r) && !r.done;
         return `<tr><td><input type="checkbox" data-import-row="${i}" aria-label="Guardar la foto de la fila ${r.row}"${r.checked && can ? ' checked' : ''}${can && !running ? '' : ' disabled'}></td><td>${r.row}</td><td>${r.name ? `<strong>${esc(r.name)}</strong><small>${esc(r.sku || r.key)}${r.visible === false ? ' · oculto' : ''}</small>` : `<small>${esc(r.key)}</small>`}</td><td class="photo-import-thumb">${thumbOf(r.current)}</td><td class="photo-import-thumb">${thumbOf((r.saved || r.urls || [])[0])}${(r.urls || []).length > 1 ? `<small>+${r.urls.length - 1} más</small>` : ''}</td><td><span class="badge ${tone}">${esc(label)}</span></td></tr>`;
       }).join('')}</tbody></table></div>`;
     box.querySelectorAll('img').forEach(img => img.addEventListener('error', () => { img.replaceWith(Object.assign(document.createElement('small'), { textContent: 'No carga' })); }));
     icons();
   };
+  const syncImportMode = () => { $('#importOverwrite').disabled = isExtra(); };
+  const runPreview = async rows => {
+    const { results = [] } = await post('admin-photo-import', { rows, extra: isExtra() });
+    importRows = results.map(r => ({ ...r, checked: AUTO.includes(r.status) }));
+    renderImport();
+  };
   const previewImport = async file => {
     if (!file || running) return;
     try {
-      const rows = toImportRows(await readTable(file));
-      if (!rows.length) { toast('El archivo no tiene filas con SKU (o id) y foto_nueva.', true); return; }
+      const { rows, extra } = toImportRows(await readTable(file));
+      if (!rows.length) { toast('El archivo no tiene filas con SKU (o id) y foto_nueva (o foto_extra).', true); return; }
       if (rows.length > 3000) { toast('Máximo 3000 filas por archivo.', true); return; }
-      const { results = [] } = await post('admin-photo-import', { rows });
-      importRows = results.map(r => ({ ...r, checked: ['missing', 'broken', 'external'].includes(r.status) }));
-      renderImport();
+      if (extra) { $('#importExtra').checked = true; syncImportMode(); }
+      lastRows = rows;
+      await runPreview(rows);
     } catch (e) { toast(e.message, true); }
     $('#importFile').value = '';
   };
@@ -238,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
     try {
       while (running && todo.some(r => !r.done)) {
         const batch = todo.filter(r => !r.done).slice(0, 6);
-        const { results = [] } = await post('admin-photo-import', { apply: true, overwrite, rows: batch.map(r => ({ key: r.id, urls: r.urls.join('|'), row: r.row })) });
+        const { results = [] } = await post('admin-photo-import', { apply: true, overwrite, extra: isExtra(), rows: batch.map(r => ({ key: r.id, urls: r.urls.join('|'), row: r.row })) });
         for (const out of results) {
           const r = batch.find(x => x.id === out.id);
           if (!r || out.status === 'pending') continue;
@@ -254,10 +269,15 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
   };
   $('#importFile').addEventListener('change', e => previewImport(e.target.files[0]));
   $('#importOverwrite').addEventListener('change', () => { importRows.forEach(r => { if (r.status === 'own') r.checked = $('#importOverwrite').checked; }); if (importRows.length) renderImport(); });
+  $('#importExtra').addEventListener('change', async () => {
+    syncImportMode();
+    if (!lastRows.length || running || $('#importBox').hidden) return;
+    try { await runPreview(lastRows); } catch (e) { toast(e.message, true); }
+  });
   $('#importBox').addEventListener('change', e => { const cb = e.target.closest('[data-import-row]'); if (cb) { importRows[Number(cb.dataset.importRow)].checked = cb.checked; renderImport(); } });
   $('#importBox').addEventListener('click', e => {
     if (e.target.closest('#importApply')) applyImport();
-    else if (e.target.closest('#importClose')) { importRows = []; $('#importBox').hidden = true; $('#importBox').innerHTML = ''; }
+    else if (e.target.closest('#importClose')) { importRows = []; lastRows = []; $('#importBox').hidden = true; $('#importBox').innerHTML = ''; }
     else if (e.target.closest('#importReport')) SmartAdmin.csv('fotos-importacion-resultado.csv', ['fila', 'sku_o_id', 'producto', 'resultado', 'foto_nueva', 'foto_guardada'], importRows.map(r => [r.row, r.key, r.name || '', IMPORT_STATUS[r.status]?.[1] || r.status, (r.urls || []).join('|'), (r.saved || []).join('|')]));
   });
 
@@ -365,10 +385,10 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
     show();
   });
 
-  const openPicker = (id, name, query) => {
+  const openPicker = (id, name, query, add = false) => {
     let busy = false;
     const google = 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(query || name);
-    const m = modal({ title: 'Elegir foto', subtitle: name, body: `<form class="pick-search" id="pickForm"><label class="sr-only" for="pickQ">Buscar</label><input class="input" id="pickQ" value="${esc(query || name)}"><button class="button" type="submit"><i data-lucide="search" aria-hidden="true"></i> Buscar</button></form><div class="cand-grid" id="pickGrid"></div><div class="pick-extra"><a class="button small" href="${esc(google)}" target="_blank" rel="noopener"><i data-lucide="external-link" aria-hidden="true"></i> Buscar en Google Imágenes</a><p class="pick-note">Abre la foto que corresponda, clic derecho → «Copiar imagen» y pégala aquí con Ctrl+V (o «Copiar dirección de imagen» y pégala abajo).</p><label for="pickUrl">Pegar la dirección de una imagen</label><div class="pick-row"><input class="input" id="pickUrl" type="url" placeholder="https://…/foto.jpg"><button class="button" type="button" id="pickUseUrl">Usar</button></div><label for="pickFile">O subir un archivo desde tu equipo</label><input id="pickFile" type="file" accept="image/png,image/jpeg,image/webp"><p class="pick-note">${webSearch ? 'Se busca en el fabricante (Icecat), en el Internet Archive y en la web.' : 'Se busca en el fabricante (Icecat) y en el Internet Archive. Para buscar también en toda la web, agrega SMARTISP_BRAVE_SEARCH_KEY al .env del servidor.'}</p></div><p class="quick-status is-busy pick-busy" id="pickBusy" role="status" hidden><i data-lucide="refresh-cw" aria-hidden="true"></i> Guardando en tu servidor…</p>` });
+    const m = modal({ title: add ? 'Añadir otra foto' : 'Elegir foto', subtitle: add ? `${name} · busca otro ángulo, la caja o el producto en uso. La foto principal no cambia.` : name, body: `<form class="pick-search" id="pickForm"><label class="sr-only" for="pickQ">Buscar</label><input class="input" id="pickQ" value="${esc(query || name)}"><button class="button" type="submit"><i data-lucide="search" aria-hidden="true"></i> Buscar</button></form><div class="cand-grid" id="pickGrid"></div><div class="pick-extra"><a class="button small" href="${esc(google)}" target="_blank" rel="noopener"><i data-lucide="external-link" aria-hidden="true"></i> Buscar en Google Imágenes</a><p class="pick-note">Abre la foto que corresponda, clic derecho → «Copiar imagen» y pégala aquí con Ctrl+V (o «Copiar dirección de imagen» y pégala abajo).</p><label for="pickUrl">Pegar la dirección de una imagen</label><div class="pick-row"><input class="input" id="pickUrl" type="url" placeholder="https://…/foto.jpg"><button class="button" type="button" id="pickUseUrl">Usar</button></div><label for="pickFile">O subir un archivo desde tu equipo</label><input id="pickFile" type="file" accept="image/png,image/jpeg,image/webp"><p class="pick-note">${webSearch ? 'Se busca en el fabricante (Icecat), en el Internet Archive y en la web.' : 'Se busca en el fabricante (Icecat) y en el Internet Archive. Para buscar también en toda la web, agrega SMARTISP_BRAVE_SEARCH_KEY al .env del servidor.'}</p></div><p class="quick-status is-busy pick-busy" id="pickBusy" role="status" hidden><i data-lucide="refresh-cw" aria-hidden="true"></i> Guardando en tu servidor…</p>` });
     const grid = m.body.querySelector('#pickGrid');
     const lock = on => { busy = on; m.body.querySelectorAll('button,input').forEach(el => { el.disabled = on; }); m.body.querySelector('#pickBusy').hidden = !on; };
     const search = async q => {
@@ -385,8 +405,8 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
       if (busy || !url) return;
       lock(true);
       try {
-        const res = await post('admin-photo-replace', { id, url });
-        toast('Foto guardada en tu servidor.');
+        const res = await post('admin-photo-replace', { id, url, add });
+        toast(add ? `Foto añadida: el producto ya tiene ${res.photos} fotos.` : 'Foto guardada en tu servidor.');
         addFixed([{ id, name, source: 'manual', url: res.url }]);
         m.close(true); load();
       } catch (e) { toast(e.message, true); lock(false); }
@@ -417,10 +437,10 @@ document.addEventListener('DOMContentLoaded', () => SmartAdmin.boot(async () => 
   document.addEventListener('click', e => {
     const ok = e.target.closest('[data-ok]');
     if (ok) { approve([ok.dataset.ok]); return; }
-    const b = e.target.closest('[data-pick]');
+    const b = e.target.closest('[data-pick], [data-add]');
     if (!b) return;
-    const p = products.find(x => x.id === b.dataset.pick);
-    openPicker(b.dataset.pick, p ? p.name : (b.dataset.name || ''), p ? p.query : '');
+    const id = b.dataset.pick || b.dataset.add, p = products.find(x => x.id === id);
+    openPicker(id, p ? p.name : (b.dataset.name || ''), p ? p.query : '', !!b.dataset.add);
   });
   $('#stats').addEventListener('click', e => { const b = e.target.closest('[data-status]'); if (b && b.dataset.status !== st.status) { st.status = b.dataset.status; st.page = 1; load(); } });
   let debounce; $('#search').addEventListener('input', e => { clearTimeout(debounce); debounce = setTimeout(() => { st.q = e.target.value.trim(); st.page = 1; load(); }, 300); });
