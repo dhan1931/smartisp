@@ -108,4 +108,9 @@ $categoryRedirects = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.C
     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'category_redirects' AND COLUMN_NAME IN ('old_slug', 'old_name', 'target_name')")->fetchColumn();
 $assert($categoryRedirects === 3, 'Falta la tabla category_redirects (migración 048).');
 
+$supplierColumn = $pdo->query("SHOW COLUMNS FROM products_rows LIKE 'supplier'")->fetch();
+$supplierIndex = (int)$pdo->query("SELECT COUNT(*) FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'products_rows' AND INDEX_NAME = 'idx_products_supplier'")->fetchColumn();
+$assert($supplierColumn && $supplierColumn['Type'] === 'varchar(60)' && $supplierIndex === 1, 'Falta products_rows.supplier con su índice (migración 051).');
+
 echo "Migraciones verificadas: claves, tipos, fecha, correo, historial y esquema de campañas correctos.\n";

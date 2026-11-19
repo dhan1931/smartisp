@@ -408,6 +408,7 @@ if ($action === 'admin-products') {
         }
         foreach ($products as $i => &$product) {
             $product['cost'] = $hasCost && isset($rawRows[$i]['cost']) ? (float)$rawRows[$i]['cost'] : null;
+            $product['supplier'] = (string)($rawRows[$i]['supplier'] ?? '');
             $inv = $stock[$product['id']] ?? null;
             $product['stock'] = $inv ? ['available' => (int)$inv['available'], 'reserved' => (int)$inv['reserved'], 'free' => max(0, (int)$inv['available'] - (int)$inv['reserved'])] : null;
         }
@@ -506,6 +507,10 @@ if ($action === 'admin-products') {
                 $cost = round((float)$rawCost, 2);
             }
         }
+        // Proveedor opcional, igual que el costo: solo se toca si viene en el cuerpo; vacío lo borra.
+        $hasSupplier = in_array('supplier', smartispTableColumns($pdo, $pTable), true);
+        $supplierSent = $hasSupplier && array_key_exists('supplier', $body);
+        $supplier = $supplierSent ? (mb_substr(trim((string)preg_replace('/[\x00-\x1F\x7F]+/u', ' ', is_scalar($body['supplier']) ? (string)$body['supplier'] : '')), 0, 60) ?: null) : null;
 
         if (!$name) {
             http_response_code(400);
@@ -576,6 +581,7 @@ if ($action === 'admin-products') {
                 'content_text'  => [$sent('content_text', 'contentText'), $contentText],
                 'warranty_text' => [$sent('warranty_text', 'warrantyText'), $warrantyText],
                 'cost'          => [$costSent, $cost],
+                'supplier'      => [$supplierSent, $supplier],
             ];
             $sets = ['name = :name', 'description = :description', 'price = :price', 'category = :category',
                 'subcategory = :subcategory', 'image_url = :image_url', 'sku = :sku', 'visible = :visible'];
@@ -606,10 +612,10 @@ if ($action === 'admin-products') {
                 'message' => 'Producto actualizado con éxito.'
             ]);
         } else {
-            $sql = "INSERT INTO `$pTable` (id, name, description, price, category, subcategory, image_url, external_url, sku, visible, specs_json, content_text, warranty_text" . ($hasCost ? ', cost' : '') . ")
-                    VALUES (:id, :name, :description, :price, :category, :subcategory, :image_url, :external_url, :sku, :visible, :specs_json, :content_text, :warranty_text" . ($hasCost ? ', :cost' : '') . ")";
+            $sql = "INSERT INTO `$pTable` (id, name, description, price, category, subcategory, image_url, external_url, sku, visible, specs_json, content_text, warranty_text" . ($hasCost ? ', cost' : '') . ($hasSupplier ? ', supplier' : '') . ")
+                    VALUES (:id, :name, :description, :price, :category, :subcategory, :image_url, :external_url, :sku, :visible, :specs_json, :content_text, :warranty_text" . ($hasCost ? ', :cost' : '') . ($hasSupplier ? ', :supplier' : '') . ")";
             $stmt = $pdo->prepare($sql);
-            $stmt->execute(($hasCost ? [':cost' => $cost] : []) + [
+            $stmt->execute(($hasCost ? [':cost' => $cost] : []) + ($hasSupplier ? [':supplier' => $supplier] : []) + [
                 ':id'           => $id,
                 ':name'         => $name,
                 ':description'  => $description,
@@ -863,9 +869,11 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
         $priceStmt = $pdo->prepare("SELECT price + 0 FROM `$pTable` WHERE id = :id");
         $allowPriceJumps = !empty($body['allowPriceJumps']) || !empty($unpacked['allowPriceJumps'] ?? null);
 
-        $hasCost = in_array('cost', smartispTableColumns($pdo, $pTable), true);
-        $insertStmt = $pdo->prepare("INSERT INTO `$pTable` (id, name, description, price, category, subcategory, image_url, external_url, sku, visible" . ($hasCost ? ', cost' : '') . ")
-                VALUES (:id, :name, :description, :price, :category, :subcategory, :image_url, :external_url, :sku, :visible" . ($hasCost ? ', :cost' : '') . ")");
+        $importTableColumns = smartispTableColumns($pdo, $pTable);
+        $hasCost = in_array('cost', $importTableColumns, true);
+        $hasSupplier = in_array('supplier', $importTableColumns, true);
+        $insertStmt = $pdo->prepare("INSERT INTO `$pTable` (id, name, description, price, category, subcategory, image_url, external_url, sku, visible" . ($hasCost ? ', cost' : '') . ($hasSupplier ? ', supplier' : '') . ")
+                VALUES (:id, :name, :description, :price, :category, :subcategory, :image_url, :external_url, :sku, :visible" . ($hasCost ? ', :cost' : '') . ($hasSupplier ? ', :supplier' : '') . ")");
 
         // Columna -> claves aceptadas en la fila. Al actualizar solo se tocan las presentes, y un
         // texto vacío (celda vacía en el archivo) no borra lo que ya había.
@@ -880,6 +888,7 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
             'visible'      => ['visible'],
         ];
         if ($hasCost) $importColumns['cost'] = ['cost', 'costo'];
+        if ($hasSupplier) $importColumns['supplier'] = ['supplier', 'proveedor'];
 
         $inserted = 0;
         $errors = [];
@@ -923,9 +932,10 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
                     $values['cost'] = round((float)$rawCost, 2);
                 }
             }
-            foreach (['description', 'category', 'subcategory', 'image_url', 'external_url', 'sku'] as $column) {
+            foreach (['description', 'category', 'subcategory', 'image_url', 'external_url', 'sku', 'supplier'] as $column) {
                 if (!array_key_exists($column, $values)) continue;
-                $values[$column] = trim((string)$values[$column]);
+                $values[$column] = trim((string)(is_scalar($values[$column]) ? $values[$column] : ''));
+                if ($column === 'supplier') $values[$column] = mb_substr($values[$column], 0, 60);
                 if ($values[$column] === '') unset($values[$column]);
             }
             if (array_key_exists('visible', $values)) $values['visible'] = $values['visible'] ? 1 : 0;
@@ -972,7 +982,7 @@ if ($action === 'import-products' || $action === 'import-excel' || $action === '
                     }
                     $pdo->prepare("UPDATE `$pTable` SET " . implode(', ', $sets) . ", updated_at = CURRENT_TIMESTAMP WHERE id = :id")->execute($params);
                 } else {
-                    $insertStmt->execute(($hasCost ? [':cost' => $values['cost'] ?? null] : []) + [
+                    $insertStmt->execute(($hasCost ? [':cost' => $values['cost'] ?? null] : []) + ($hasSupplier ? [':supplier' => $values['supplier'] ?? null] : []) + [
                         ':id'           => $id,
                         ':name'         => $name,
                         ':description'  => $values['description'] ?? '',

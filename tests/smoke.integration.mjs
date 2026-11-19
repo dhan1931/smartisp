@@ -727,6 +727,11 @@ try {
   assert.deepEqual([prList.data.counts['sin-precio'], prList.data.counts['sin-costo'], prList.data.counts.ocultos], [2, 2, 1], JSON.stringify(prList.data.counts));
   assert.deepEqual(prList.data.formula.increments, [25, 15], 'la fórmula es 25 % de ganancia y 15 % de IVA');
   assert.equal((await req('admin-prices?status=sin-precio&all=1&category=' + encodeURIComponent('Smoke Precios'), { cookie: ac })).data.products.length, 2, 'all=1 trae la lista completa para exportar');
+  const prScoped = params => req('admin-prices?status=sin-precio&category=' + encodeURIComponent('Smoke Precios') + '&' + params, { cookie: ac });
+  assert.deepEqual(prList.data.brands.map(b => b.name).sort(), ['TP-Link', 'Ubiquiti'], 'ofrece las marcas de la lista: ' + JSON.stringify(prList.data.brands));
+  assert.deepEqual((await prScoped('brand=ubiquiti')).data.products.map(p => p.id), ['smk-pr1'], 'filtra por marca');
+  assert.deepEqual((await prScoped('brand=TP-Link')).data.products.map(p => p.id), ['smk-pr2'], 'la marca reconoce sus otros nombres (Tapo es TP-Link)');
+  assert.deepEqual((await prScoped('brand=ubiquiti')).data.counts['sin-precio'], 1, 'los contadores respetan la marca');
   const prPreview = await req('admin-price-import', { method: 'POST', cookie: ac, body: { rows: [
     { row: 3, sku: 'SMK-UBQ79', part: 'U7-Lite', cost: 116, stock: '3' },
     { row: 4, part: 'SMKC500X', cost: 29.98 },
@@ -744,11 +749,18 @@ try {
   ], 'la vista previa busca por SKU, número de parte (también en el código de Siglo21 y en el nombre) e id: ' + JSON.stringify(prPreview.data.results));
   const [[prBefore]] = await db.query("SELECT price FROM products_rows WHERE id = 'smk-pr1'");
   assert.equal(Number(prBefore.price), 0, 'la vista previa no cambia nada');
-  const prApply = await req('admin-price-import', { method: 'POST', cookie: ac, body: { apply: true, rows: [{ id: 'smk-pr1', price: 166.75, cost: 116 }, { id: 'smk-pr5', price: 99.9, show: true }, { id: 'smk-no-existe', price: 5 }, { id: 'smk-pr2', price: 0 }] } });
+  const prApply = await req('admin-price-import', { method: 'POST', cookie: ac, body: { apply: true, rows: [{ id: 'smk-pr1', price: 166.75, cost: 116, supplier: ' Intcomex ' }, { id: 'smk-pr5', price: 99.9, show: true }, { id: 'smk-no-existe', price: 5 }, { id: 'smk-pr2', price: 0 }] } });
   assert.deepEqual(prApply.data.results.map(r => r.status), ['saved', 'saved', 'not_found', 'invalid'], JSON.stringify(prApply.data));
   const prRows = Object.fromEntries((await db.query("SELECT id, price, cost, visible FROM products_rows WHERE id IN ('smk-pr1', 'smk-pr5')"))[0].map(r => [r.id, [Number(r.price), r.cost === null ? null : Number(r.cost), Number(r.visible)]]));
   assert.deepEqual(prRows, { 'smk-pr1': [166.75, 116, 1], 'smk-pr5': [99.9, null, 1] }, 'guarda precio y costo, y muestra el oculto si se pidió');
   assert.deepEqual((await req('admin-prices?status=sin-precio&category=' + encodeURIComponent('Smoke Precios'), { cookie: ac })).data.products.map(p => p.id), ['smk-pr2']);
+  const prSup = Object.fromEntries((await db.query("SELECT id, supplier FROM products_rows WHERE id IN ('smk-pr1', 'smk-pr5')"))[0].map(r => [r.id, r.supplier]));
+  assert.deepEqual(prSup, { 'smk-pr1': 'Intcomex', 'smk-pr5': null }, 'guarda el proveedor de la lista y no toca el de los demás');
+  await db.execute("UPDATE products_rows SET supplier = 'Siglo21' WHERE id = 'smk-pr6'");
+  const prBySup = await req('admin-prices?status=sin-costo&category=' + encodeURIComponent('Smoke Precios') + '&supplier=Siglo21', { cookie: ac });
+  assert.deepEqual([prBySup.data.products.map(p => [p.id, p.supplier]), prBySup.data.hasSupplier], [[['smk-pr6', 'Siglo21']], true], 'filtra por proveedor: ' + JSON.stringify(prBySup.data));
+  assert.deepEqual((await req('admin-prices?status=sin-costo&category=' + encodeURIComponent('Smoke Precios') + '&supplier=-', { cookie: ac })).data.products.map(p => p.id), ['smk-pr5', 'smk-pr3'], 'y los que no tienen proveedor');
+  assert.deepEqual(prBySup.data.suppliers, [{ name: 'Siglo21', count: 1 }, { name: '', count: 2 }], 'cuenta los productos por proveedor');
   assert.equal((await req('admin-price-import', { cookie: ac })).status, 405, 'importar precios exige POST');
   await db.execute("DELETE FROM products_rows WHERE id LIKE 'smk-pr%'");
   // Reseñas: la de quien compró se publica sola, el resto espera al panel; el promedio queda en el producto y en la ficha.
