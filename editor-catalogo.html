@@ -414,6 +414,14 @@
         </div>
         <div class="form-row">
           <div class="form-group">
+            <label class="form-label" for="prodSupplierInput">Proveedor (opcional):</label>
+            <input type="text" id="prodSupplierInput" class="form-control" maxlength="60" list="prodSupplierList" placeholder="Por ejemplo Intcomex o Siglo21" autocomplete="off">
+            <datalist id="prodSupplierList"><option value="Intcomex"></option><option value="Siglo21"></option><option value="Artecma"></option></datalist>
+            <span style="font-size:11px; color:var(--muted); margin-top:3px; display:block;">Solo se ve en el panel: a quién le compras este producto.</span>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
             <label class="form-label" for="prodCategorySelect">* Categoría del producto:</label>
             <select id="prodCategorySelect" class="form-control" required></select>
             <small id="prodCategoryFamilyInfo" style="color:var(--muted)"></small>
@@ -552,7 +560,7 @@
   </div>
 
   <script src="/assets/js/admin/admin-page.js?v=ds-20261027" defer></script>
-  <script src="/assets/js/admin/pricing.js?v=ganancia25-20261115" defer></script>
+  <script src="/assets/js/admin/pricing.js?v=proveedor-20261119" defer></script>
   <script src="/assets/js/admin/editor-catalogo-page.js?v=ganancia25-20261115" defer></script>
   <script src="/assets/js/admin/products-layout.js?v=conteos-20261108"></script>
 </body>

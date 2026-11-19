@@ -12,12 +12,12 @@
   <script src="/assets/js/admin/admin-theme.js?v=ds-20261027"></script>
   <link rel="stylesheet" href="/assets/css/admin/admin-page.css?v=ds-20261027">
   <link rel="stylesheet" href="/assets/css/admin/admin-nav.css?v=menu-movil-20261101">
-  <link rel="stylesheet" href="/assets/css/admin/precios-page.css?v=precios-20261115">
+  <link rel="stylesheet" href="/assets/css/admin/precios-page.css?v=proveedor-20261119">
   <script src="/assets/vendor/lucide-icons.min.js?v=fotos-lote-20261105" defer></script>
   <script src="/assets/js/admin/admin-nav.js?v=resenas-20261115" defer></script>
   <script src="/assets/js/admin/admin-page.js?v=ds-20261027" defer></script>
-  <script src="/assets/js/admin/pricing.js?v=ganancia25-20261115" defer></script>
-  <script src="/assets/js/admin/precios-page.js?v=precios-20261115" defer></script>
+  <script src="/assets/js/admin/pricing.js?v=proveedor-20261119" defer></script>
+  <script src="/assets/js/admin/precios-page.js?v=proveedor-20261119" defer></script>
 </head>
 <body>
   <div id="smartisp-admin-nav" class="is-loading" data-active="precios"></div>
@@ -47,6 +47,11 @@
         </div>
         <label class="sr-only" for="category">Filtrar por categoría</label>
         <select id="category"><option value="">Todas las categorías</option></select>
+        <label class="sr-only" for="brand">Filtrar por marca</label>
+        <select id="brand"><option value="">Todas las marcas</option></select>
+        <label class="sr-only" for="supplier">Filtrar por proveedor</label>
+        <select id="supplier" hidden><option value="">Todos los proveedores</option></select>
+        <datalist id="supplierOptions"></datalist>
         <span class="result-count" id="count" aria-live="polite"></span>
         <button class="button small" id="exportCsv" type="button" title="Exportar esta lista a CSV"><i data-lucide="file-down" aria-hidden="true"></i> CSV</button>
         <button class="button small" id="exportXlsx" type="button" title="Exportar esta lista a Excel"><i data-lucide="file-spreadsheet" aria-hidden="true"></i> Excel</button>

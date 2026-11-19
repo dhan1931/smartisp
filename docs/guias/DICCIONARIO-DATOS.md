@@ -227,6 +227,7 @@ subcategory	text	Yes	NULL
 cost	decimal(10,2)	Yes	NULL	Costo de compra, solo panel (migración 041)
 rating_avg	decimal(3,2)	No	0	Promedio de reseñas publicadas (migración 050)
 rating_count	int(10) unsigned	No	0	Cantidad de reseñas publicadas (migración 050)
+supplier	varchar(60)	Yes	NULL	Proveedor del producto (Intcomex, Siglo21…), solo panel; índice idx_products_supplier (migración 051)
 Indexes
 Keyname	Type	Unique	Packed	Column	Cardinality	Collation	Null	Comment
 PRIMARY	BTREE	Yes	No	id	2657	A	No	

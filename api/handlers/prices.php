@@ -6,7 +6,9 @@ requireAdminAuth();
 smartispReleaseSession();
 require_once __DIR__ . '/../lib/price-guard.php';
 $pTable = getProductsTableName($pdo);
-$hasCost = in_array('cost', smartispTableColumns($pdo, $pTable), true);
+$columns = smartispTableColumns($pdo, $pTable);
+$hasCost = in_array('cost', $columns, true);
+$hasSupplier = in_array('supplier', $columns, true);
 $quote = '(price IS NULL OR price <= 0)';
 $filters = [
     'sin-precio' => "(visible = 1 AND $quote)",
@@ -16,21 +18,46 @@ $filters = [
 $formula = ['increments' => SMARTISP_PRICE_INCREMENTS, 'factor' => round(smartispPriceFromCost(10000) / 10000, 4)];
 
 if ($action === 'admin-prices') {
+    require_once __DIR__ . '/../lib/catalog-search.php';
     $category = trim((string)($_GET['category'] ?? ''));
-    $catParams = $category !== '' ? [':cat' => $category] : [];
-    $byCategory = $category !== '' ? ' AND category = :cat' : '';
+    $brand = smartispFindBrand((string)($_GET['brand'] ?? ''));
+    // supplier=- son los que no tienen proveedor asignado.
+    $supplier = $hasSupplier ? mb_substr(trim((string)($_GET['supplier'] ?? '')), 0, 60) : '';
+    // Cada lista de opciones se cuenta sin su propio filtro, para poder cambiar de categoría, marca o proveedor.
+    $scope = static function (array $skip = []) use ($category, $brand, $supplier): array {
+        $sql = '';
+        $params = [];
+        if ($category !== '' && !in_array('category', $skip, true)) { $sql .= ' AND category = :cat'; $params[':cat'] = $category; }
+        if ($brand !== null && !in_array('brand', $skip, true)) { $sql .= ' AND LOWER(name) REGEXP :brand'; $params[':brand'] = smartispBrandPattern($brand); }
+        if ($supplier !== '' && !in_array('supplier', $skip, true)) {
+            if ($supplier === '-') $sql .= " AND (supplier IS NULL OR supplier = '')";
+            else { $sql .= ' AND supplier = :sup'; $params[':sup'] = $supplier; }
+        }
+        return [$sql, $params];
+    };
+    $run = static function (string $sql, array $params) use ($pdo): PDOStatement {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        return $stmt;
+    };
+    [$scopeSql, $scopeParams] = $scope();
     $counts = [];
-    foreach ($filters as $key => $where) {
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM `$pTable` WHERE $where$byCategory");
-        $stmt->execute($catParams);
-        $counts[$key] = (int)$stmt->fetchColumn();
-    }
+    foreach ($filters as $key => $where) $counts[$key] = (int)$run("SELECT COUNT(*) FROM `$pTable` WHERE $where$scopeSql", $scopeParams)->fetchColumn();
     $status = isset($filters[$_GET['status'] ?? '']) ? $_GET['status'] : 'sin-precio';
     $where = $filters[$status];
+    [$sql, $params] = $scope(['category']);
     $categories = array_map(static fn($row) => ['name' => (string)$row['category'], 'count' => (int)$row['n']],
-        $pdo->query("SELECT category, COUNT(*) AS n FROM `$pTable` WHERE $where AND category <> '' GROUP BY category ORDER BY category")->fetchAll(PDO::FETCH_ASSOC));
-    $where .= $byCategory;
-    $params = $catParams;
+        $run("SELECT category, COUNT(*) AS n FROM `$pTable` WHERE $where$sql AND category <> '' GROUP BY category ORDER BY category", $params)->fetchAll(PDO::FETCH_ASSOC));
+    [$sql, $params] = $scope(['brand']);
+    $brands = smartispBrandFacets($run("SELECT name FROM `$pTable` WHERE $where$sql", $params)->fetchAll(PDO::FETCH_COLUMN), 80);
+    $suppliers = [];
+    if ($hasSupplier) {
+        [$sql, $params] = $scope(['supplier']);
+        $suppliers = array_map(static fn($row) => ['name' => (string)$row['supplier'], 'count' => (int)$row['n']],
+            $run("SELECT COALESCE(supplier, '') AS supplier, COUNT(*) AS n FROM `$pTable` WHERE $where$sql GROUP BY COALESCE(supplier, '') ORDER BY COALESCE(supplier, '') = '', COALESCE(supplier, '')", $params)->fetchAll(PDO::FETCH_ASSOC));
+    }
+    $where .= $scopeSql;
+    $params = $scopeParams;
     $q = trim((string)($_GET['q'] ?? ''));
     if ($q !== '') { $where .= ' AND (name LIKE :q1 OR sku LIKE :q2)'; $params[':q1'] = $params[':q2'] = '%' . $q . '%'; }
     // all=1: la lista completa para exportarla a Excel o CSV.
@@ -40,7 +67,7 @@ if ($action === 'admin-prices') {
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM `$pTable` WHERE $where");
     $stmt->execute($params);
     $total = (int)$stmt->fetchColumn();
-    $stmt = $pdo->prepare("SELECT id, name, sku, category, visible, price + 0 AS price, " . ($hasCost ? 'cost + 0' : 'NULL') . " AS cost, image_url FROM `$pTable` WHERE $where ORDER BY category ASC, name ASC LIMIT $limit OFFSET " . (($page - 1) * $limit));
+    $stmt = $pdo->prepare("SELECT id, name, sku, category, visible, price + 0 AS price, " . ($hasCost ? 'cost + 0' : 'NULL') . " AS cost, " . ($hasSupplier ? 'supplier' : 'NULL') . " AS supplier, image_url FROM `$pTable` WHERE $where ORDER BY category ASC, name ASC LIMIT $limit OFFSET " . (($page - 1) * $limit));
     $stmt->execute($params);
     $products = array_map(static function ($row) {
         $first = trim(explode('|', (string)$row['image_url'])[0] ?? '');
@@ -48,10 +75,12 @@ if ($action === 'admin-prices') {
             'id' => $row['id'], 'name' => $row['name'], 'sku' => $row['sku'], 'category' => $row['category'],
             'visible' => (int)$row['visible'] === 1, 'price' => (float)$row['price'],
             'cost' => $row['cost'] !== null && (float)$row['cost'] > 0 ? (float)$row['cost'] : null,
+            'supplier' => (string)($row['supplier'] ?? ''),
             'image' => preg_match('#^(https?://|/api/auth/serve-upload)#', $first) ? $first : '',
         ];
     }, $stmt->fetchAll(PDO::FETCH_ASSOC));
-    echo json_encode(['counts' => $counts, 'status' => $status, 'categories' => $categories, 'products' => $products, 'total' => $total, 'page' => $page, 'totalPages' => max(1, (int)ceil($total / $limit)), 'formula' => $formula, 'hasCost' => $hasCost]);
+    echo json_encode(['counts' => $counts, 'status' => $status, 'categories' => $categories, 'brands' => $brands, 'brand' => $brand, 'suppliers' => $suppliers,
+        'products' => $products, 'total' => $total, 'page' => $page, 'totalPages' => max(1, (int)ceil($total / $limit)), 'formula' => $formula, 'hasCost' => $hasCost, 'hasSupplier' => $hasSupplier]);
     exit;
 }
 
@@ -67,8 +96,9 @@ $amount = static function ($value): ?float {
     $value = round((float)$value, 2);
     return $value > 0 && $value <= 1000000 ? $value : null;
 };
+$supplierName = static fn($value): string => mb_substr(trim((string)preg_replace('/[\x00-\x1F\x7F]+/u', ' ', is_scalar($value) ? (string)$value : '')), 0, 60);
 
-// Guardar lo confirmado en la vista previa: [{id, price, cost?, show?}].
+// Guardar lo confirmado en la vista previa: [{id, price, cost?, show?, supplier?}].
 if (!empty($body['apply'])) {
     $find = $pdo->prepare("SELECT id, name, visible FROM `$pTable` WHERE id = :id");
     $results = [];
@@ -84,10 +114,12 @@ if (!empty($body['apply'])) {
         $sets = ['price = :price'];
         $params = [':price' => $price, ':id' => $id];
         if ($hasCost && $cost !== null) { $sets[] = 'cost = :cost'; $params[':cost'] = $cost; }
+        $supplier = $hasSupplier ? $supplierName($row['supplier'] ?? '') : '';
+        if ($supplier !== '') { $sets[] = 'supplier = :supplier'; $params[':supplier'] = $supplier; }
         $show = !empty($row['show']) && (int)$product['visible'] === 0;
         if ($show) $sets[] = 'visible = 1';
         $pdo->prepare("UPDATE `$pTable` SET " . implode(', ', $sets) . ", updated_at = CURRENT_TIMESTAMP WHERE id = :id")->execute($params);
-        $results[] = ['id' => $id, 'status' => 'saved', 'price' => $price, 'cost' => $hasCost ? $cost : null, 'shown' => $show];
+        $results[] = ['id' => $id, 'status' => 'saved', 'price' => $price, 'cost' => $hasCost ? $cost : null, 'supplier' => $supplier, 'shown' => $show];
         if ($show || (int)$product['visible'] === 1) $paths[] = smartispProductPath($id, (string)$product['name']);
     }
     $saved = count(array_filter($results, static fn($r) => $r['status'] === 'saved'));
@@ -99,7 +131,7 @@ if (!empty($body['apply'])) {
 
 // Vista previa: cada fila trae id, sku y/o número de parte, y costo del proveedor (sin IVA) o precio final.
 $norm = static fn($value): string => preg_replace('/[^A-Z0-9]/', '', strtoupper(trim((string)$value)));
-$catalog = $pdo->query("SELECT id, name, sku, category, visible, price + 0 AS price, " . ($hasCost ? 'cost + 0' : 'NULL') . " AS cost FROM `$pTable`")->fetchAll(PDO::FETCH_ASSOC);
+$catalog = $pdo->query("SELECT id, name, sku, category, visible, price + 0 AS price, " . ($hasCost ? 'cost + 0' : 'NULL') . " AS cost, " . ($hasSupplier ? 'supplier' : 'NULL') . " AS supplier FROM `$pTable`")->fetchAll(PDO::FETCH_ASSOC);
 $byId = $bySku = $byTail = $byToken = [];
 foreach ($catalog as $i => $product) {
     $byId[(string)$product['id']] = $i;
@@ -135,7 +167,7 @@ foreach (array_values($rows) as $index => $row) {
         'row' => (int)($row['row'] ?? $index + 1), 'file' => mb_substr((string)($row['file'] ?? ''), 0, 80),
         'key' => mb_substr(trim((string)($row['sku'] ?? '')) ?: trim((string)($row['part'] ?? '')) ?: trim((string)($row['id'] ?? '')), 0, 80),
         'part' => mb_substr(trim((string)($row['part'] ?? '')), 0, 80), 'supplierName' => mb_substr(trim((string)($row['name'] ?? '')), 0, 160),
-        'stock' => mb_substr(trim((string)($row['stock'] ?? '')), 0, 30),
+        'stock' => mb_substr(trim((string)($row['stock'] ?? '')), 0, 30), 'fileSupplier' => $supplierName($row['fileSupplier'] ?? ''),
     ];
     $price = $amount($row['price'] ?? null);
     $cost = $amount($row['cost'] ?? null);
@@ -155,7 +187,7 @@ foreach (array_values($rows) as $index => $row) {
         else $status = $newPrice > $old ? 'up' : 'down';
         $results[] = $base + [
             'status' => $status, 'how' => $how, 'multi' => $multi, 'id' => $p['id'], 'name' => $p['name'], 'sku' => $p['sku'],
-            'category' => $p['category'], 'visible' => (int)$p['visible'] === 1,
+            'category' => $p['category'], 'visible' => (int)$p['visible'] === 1, 'supplier' => (string)($p['supplier'] ?? ''),
             'oldPrice' => $old, 'oldCost' => $oldCost, 'newPrice' => $newPrice, 'newCost' => $newCost,
         ];
     }

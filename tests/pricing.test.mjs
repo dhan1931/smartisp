@@ -15,4 +15,8 @@ assert.equal(P.applyIncrements(100, [30]), 130);
 assert.equal(Math.round(P.factor() * 10000) / 10000, 1.4375);
 assert.equal(P.withIva(115), 132.25);
 assert.equal(P.withoutIva(132.25), 115);
+assert.equal(P.guessSupplier(['NW001UBQ79', 'ES215HIK67', '100018908', 'MM111KLX76-B1']), 'Intcomex', 'códigos de Intcomex');
+assert.equal(P.guessSupplier(['TPLCAMIP0TAPOC500', 'HPICOMPORD66V1LT#ABM', 'LG0TELUHD55QNED70BSA']), 'Siglo21', 'códigos de Siglo21');
+assert.equal(P.guessSupplier(['NW001UBQ79', 'TAPOC500', 'DS-2CD2143G2-IS']), '', 'sin mayoría clara no adivina');
+assert.equal(P.guessSupplier([]), '');
 console.log(`pricing OK (${cases.length} casos)`);
