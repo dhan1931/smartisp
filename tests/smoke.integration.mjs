@@ -756,6 +756,12 @@ try {
   assert.deepEqual(byCat.data.products.map(p => p.id), ['smk-ph3'], 'filtra por categoría: ' + JSON.stringify(byCat.data));
   assert.equal(byCat.data.counts['sin-foto'], 1, 'los contadores respetan la categoría elegida');
   assert.ok(byCat.data.categories.some(c => c.name === 'Smoke Fotos' && c.count === 1) && byCat.data.categories.some(c => c.name === 'General'), 'la lista de categorías no se reduce a la elegida: ' + JSON.stringify(byCat.data.categories));
+  const byVis = params => req(`admin-photos?status=sin-foto&q=smkph&${params}`, { cookie: ac });
+  const onlyHidden = await byVis('visible=0');
+  assert.deepEqual(onlyHidden.data.products.map(p => p.id), ['smk-ph3'], 'solo los ocultos: ' + JSON.stringify(onlyHidden.data.products));
+  assert.deepEqual((await byVis('visible=1')).data.products.map(p => p.id), ['smk-ph2'], 'solo los visibles en la tienda');
+  assert.deepEqual((await byVis('visible=1&category=' + encodeURIComponent('Smoke Fotos'))).data.counts['sin-foto'], 0, 'los contadores respetan la visibilidad elegida');
+  assert.ok(!(await byVis('visible=1')).data.categories.some(c => c.name === 'Smoke Fotos'), 'y la lista de categorías también');
   await db.execute("DELETE FROM products_rows WHERE id = 'smk-ph3'");
   const ssrf = await req('admin-photo-replace', { method: 'POST', cookie: ac, body: { id: 'smk-ph1', url: 'http://127.0.0.1/otra.jpg' } });
   assert.equal(ssrf.status, 422, 'no se descargan fotos de direcciones internas');

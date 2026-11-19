@@ -272,6 +272,15 @@ try {
   assert.ok(extraText.includes('Se añaden 2 fotos (tiene 1)'), 'la vista previa dice cuántas fotos se suman: ' + extraText.slice(0, 300));
   assert.equal((await page.textContent('#importApply')).trim(), 'Añadir fotos a 1 producto', 'el botón dice a cuántos productos se añaden fotos');
   if (process.env.E2E_SHOTS) await page.screenshot({ path: `${process.env.E2E_SHOTS}/fotos-extra.png`, fullPage: true });
+  await page.click('#importClose');
+  const hiddenOnly = page.waitForResponse(res => res.url().includes('action=admin-photos') && res.url().includes('visible=0'));
+  await page.selectOption('#visibility', '0');
+  await hiddenOnly;
+  await page.waitForSelector('#empty:not([hidden])');
+  assert.ok((await page.textContent('#empty')).includes('Ningún producto coincide'), 'con «Solo ocultos» no aparecen los productos visibles');
+  await open(page, '/fotos.html');
+  assert.equal(await page.inputValue('#visibility'), '0', 'recuerda la visibilidad elegida');
+  await page.selectOption('#visibility', '');
   await context.close();
 
   const mobile = await session({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });

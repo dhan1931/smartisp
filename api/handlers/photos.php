@@ -38,6 +38,10 @@ if ($action === 'admin-photos') {
     $category = trim((string)($_GET['category'] ?? ''));
     $byCategory = '';
     if ($category !== '') { $byCategory = ' AND category = :cat'; $params[':cat'] = $category; }
+    // visible=1 o visible=0: solo los que se ven en la tienda o solo los ocultos.
+    $visibility = (string)($_GET['visible'] ?? '');
+    $byVisible = $visibility === '1' ? ' AND visible = 1' : ($visibility === '0' ? ' AND visible = 0' : '');
+    $byCategory .= $byVisible;
     $counts = [];
     foreach ($filters as $key => $where) {
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM `$pTable` WHERE $where$byCategory");
@@ -46,7 +50,7 @@ if ($action === 'admin-photos') {
     }
     $status = isset($filters[$_GET['status'] ?? '']) ? $_GET['status'] : 'rotas';
     $where = $filters[$status];
-    $stmt = $pdo->prepare("SELECT category, COUNT(*) AS n FROM `$pTable` WHERE $where AND category <> '' GROUP BY category ORDER BY category");
+    $stmt = $pdo->prepare("SELECT category, COUNT(*) AS n FROM `$pTable` WHERE $where$byVisible AND category <> '' GROUP BY category ORDER BY category");
     $stmt->execute($paramsFor($where, $params));
     $categories = array_map(static fn($row) => ['name' => (string)$row['category'], 'count' => (int)$row['n']], $stmt->fetchAll(PDO::FETCH_ASSOC));
     $where .= $byCategory;
