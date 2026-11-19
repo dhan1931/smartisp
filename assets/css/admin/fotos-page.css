@@ -64,6 +64,7 @@
   .pick-row, .pick-search { flex-wrap: wrap; }
 }
 #category { max-width: 260px; }
+#visibility { max-width: 220px; }
 .photo-check { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); font-size: 13px; }
 .photo-import { margin-top: 14px; display: grid; gap: 10px; }
 .photo-import-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
