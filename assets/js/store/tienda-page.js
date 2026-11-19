@@ -41,6 +41,7 @@
 						brand: product.category || 'SmartISP',
 						image: getProductImageUrl(product),
 						reviews: Number(product.reviews || 0),
+						rating: Number(product.rating || 0),
 						tag: product.tag || '',
 						specs: Array.isArray(product.specs) ? product.specs : []
 					}));
@@ -122,6 +123,7 @@
 					brand: product.category || 'SmartISP',
 					image: getProductImageUrl(product),
 					reviews: Number(product.reviews || 0),
+					rating: Number(product.rating || 0),
 					tag: product.tag || '',
 					specs: Array.isArray(product.specs) ? product.specs : []
 				}));
@@ -775,7 +777,7 @@
 				const pUrl = getProductUrl(product);
 				const hasReviews = Number(product.reviews || 0) > 0;
 				const reviewsHtml = hasReviews
-					? `<div><span class="stars">★★★★★</span><span class="reviews">(${Number(product.reviews)})</span></div>`
+					? `<a class="card-rating" href="${escapeHtml(pUrl)}#resenas" aria-label="${Number(product.rating).toFixed(1).replace('.', ',')} de 5 estrellas, ${Number(product.reviews)} reseña${Number(product.reviews) === 1 ? '' : 's'}"><span class="stars" aria-hidden="true">${'★'.repeat(Math.round(product.rating))}<span class="stars-off">${'★'.repeat(5 - Math.round(product.rating))}</span></span><span class="reviews">${Number(product.rating).toFixed(1).replace('.', ',')} (${Number(product.reviews)})</span></a>`
 					: `<div><span class="reviews" style="margin-left:0;font-style:italic;">Sin reseñas aún</span></div>`;
 				const productIndex = productIndexMap.get(product) ?? productIndexMap.get(String(product.id));
 				const priority = productIndex < 4;
@@ -1689,6 +1691,7 @@
 						brand: product.category || 'SmartISP',
 						image: getProductImageUrl(product),
 						reviews: Number(product.reviews || 0),
+						rating: Number(product.rating || 0),
 						tag: product.tag || '',
 						specs: Array.isArray(product.specs) ? product.specs : []
 					}));
@@ -1999,7 +2002,7 @@
 				const res = await fetch(`/api/auth/catalog?${params.toString()}`, { cache: 'no-store' });
 				if (!res.ok) throw new Error(String(res.status));
 				const data = await res.json();
-				filter.products = (data.products || []).map(product => ({ ...product, brand: product.category || 'SmartISP', image: getProductImageUrl(product), reviews: 0, tag: '', specs: [] }));
+				filter.products = (data.products || []).map(product => ({ ...product, brand: product.category || 'SmartISP', image: getProductImageUrl(product), reviews: Number(product.reviews || 0), rating: Number(product.rating || 0), tag: '', specs: [] }));
 				filter.total = Number(data.total) || filter.products.length;
 			} catch (e) {
 				filter.error = true;
@@ -2354,6 +2357,7 @@
 					brand: product.category || 'SmartISP',
 					image: getProductImageUrl(product),
 					reviews: Number(product.reviews || 0),
+					rating: Number(product.rating || 0),
 					tag: '',
 					specs: []
 				})) : [];

@@ -65,7 +65,7 @@ const shot = async (page, name) => { if (process.env.E2E_SHOTS) await page.scree
 try {
   const { context, page } = await session();
 
-  for (const screen of ['admin', 'pedidos', 'clientes', 'cotizaciones', 'inventario', 'estadisticas', 'reportes', 'categorias', 'configuracion', 'campanas', 'portada', 'editor-catalogo', 'editor-landing', 'equipo', 'actividad', 'fotos', 'precios']) {
+  for (const screen of ['admin', 'pedidos', 'clientes', 'cotizaciones', 'inventario', 'estadisticas', 'reportes', 'categorias', 'configuracion', 'campanas', 'portada', 'editor-catalogo', 'editor-landing', 'equipo', 'actividad', 'fotos', 'precios', 'resenas']) {
     await open(page, `/${screen}.html`);
     assert.ok(new URL(page.url()).pathname.endsWith(`/${screen}.html`), `${screen}.html no debe redirigir: ${page.url()}`);
   }
@@ -185,6 +185,31 @@ try {
   await db.execute("DELETE FROM categories_rows WHERE id LIKE 'e2e-mc-%'");
   if (savedFeatured) await db.execute("UPDATE settings_rows SET setting_value = ? WHERE setting_key = 'store_featured_category_ids'", [savedFeatured.setting_value]);
   else await db.execute("DELETE FROM settings_rows WHERE setting_key = 'store_featured_category_ids'");
+
+  await db.execute("DELETE FROM product_reviews WHERE product_id LIKE 'e2e-%'");
+  await db.execute("INSERT INTO products_rows (id,name,price,visible,category,sku) VALUES ('e2e-resena','Antena E2E Opiniones',25,1,'Redes','E2E-RES')");
+  await open(page, '/producto/e2e-resena');
+  await page.waitForFunction(() => document.querySelector('#btnWriteReview')?.getAttribute('role') === 'button');
+  await page.click('#btnWriteReview');
+  await page.click('label[for="rs4"]');
+  await page.fill('#reviewBody', 'Buena antena, llegó rápido y bien empacada.');
+  await page.click('#reviewForm [type="submit"]');
+  await page.waitForFunction(() => document.querySelector('#reviewMsg')?.textContent.includes('cuando la revisemos'));
+  await shot(page, 'resena-ficha');
+  await open(page, '/resenas.html');
+  const pendingCard = page.locator('.review-card', { hasText: 'Buena antena' });
+  await pendingCard.waitFor();
+  assert.ok((await pendingCard.textContent()).includes('Sin compra registrada'), 'sin compra la reseña espera en el panel');
+  await shot(page, 'resenas');
+  await pendingCard.locator('[data-op="publish"]').click();
+  await page.waitForFunction(() => !document.querySelector('#list')?.textContent.includes('Buena antena'));
+  await open(page, '/producto/e2e-resena');
+  assert.ok((await page.textContent('#reviewsList')).includes('Buena antena'), 'publicada, se ve en la ficha');
+  assert.ok((await page.textContent('.rating-summary')).includes('4,0'), 'el promedio aparece junto al título');
+  assert.equal((await page.textContent('#btnWriteReview')).trim(), 'Editar tu reseña', 'quien ya opinó puede editar la suya');
+  await shot(page, 'resena-publicada');
+  await db.execute("DELETE FROM product_reviews WHERE product_id = 'e2e-resena'");
+  await db.execute("DELETE FROM products_rows WHERE id = 'e2e-resena'");
 
   await open(page, '/precios.html');
   await page.fill('#search', 'Precio E2E');

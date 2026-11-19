@@ -70,6 +70,7 @@ function smartispInsightsAlerts(PDO $pdo, array $ctx): array {
 
     require_once __DIR__ . '/../lib/price-guard.php';
     $suspicious = count(smartispSuspiciousPrices($pdo, $ctx['products']));
+    $reviewsPending = smartispTableExists($pdo, 'product_reviews') ? (int)$pdo->query("SELECT COUNT(*) FROM product_reviews WHERE status = 'pending'")->fetchColumn() : 0;
 
     return [
         'stale_days' => $ctx['stale_days'],
@@ -82,6 +83,7 @@ function smartispInsightsAlerts(PDO $pdo, array $ctx): array {
         'products_no_photo' => (int)($catalog['no_photo'] ?? 0),
         'products_no_price' => (int)($catalog['no_price'] ?? 0),
         'products_suspicious_price' => $suspicious,
+        'reviews_pending' => $reviewsPending,
     ];
 }
 

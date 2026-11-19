@@ -459,7 +459,9 @@ function normalizeProductRow(array $row): array {
         'visible'     => $visible,
         'specs'       => is_array($decodedSpecs = json_decode((string)($row['specs_json'] ?? ''), true)) ? $decodedSpecs : [],
         'contentText' => (string)($row['content_text'] ?? ''),
-        'warrantyText' => (string)($row['warranty_text'] ?? '')
+        'warrantyText' => (string)($row['warranty_text'] ?? ''),
+        'rating'      => round((float)($row['rating_avg'] ?? 0), 1),
+        'reviews'     => (int)($row['rating_count'] ?? 0)
     ];
 }
 

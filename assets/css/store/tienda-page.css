@@ -222,6 +222,9 @@
 		.btn-card-view:hover { background: #e2e8f0; color: var(--blue); border-color: #94a3b8; }
 		.stars { color: #e99824; font-size: 12px; letter-spacing: 1px; }
 		.reviews { color: var(--muted); font-size: 11px; margin-left: 4px; letter-spacing: 0; }
+		.stars-off { color: #d5dde6; }
+		.card-rating { display: inline-flex; align-items: center; text-decoration: none; }
+		.card-rating:hover .reviews { color: var(--blue); text-decoration: underline; }
 		.price-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 13px; }
 		.price-block { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
 		.price { color: var(--navy); font-family: 'Space Grotesk', sans-serif; font-size: 21px; font-weight: 700; line-height: 1.15; }

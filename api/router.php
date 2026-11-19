@@ -427,7 +427,7 @@ if (!$pdo) {
 // Registro central de actividad: toda escritura hecha por un admin, con el código HTTP final.
 // Login, contraseñas y cierres de sesión los registra auth.php con su propio detalle; las acciones
 // de la tienda (comprar, favoritos, cotizar) no son administración aunque las haga un admin.
-const SMARTISP_AUDIT_SKIP_ACTIONS = ['login', 'logout', 'register', 'change-password', 'change_password', 'reset-password', 'request-password-reset', 'revoke-other-sessions', 'orders', 'customer-wishlist', 'service-quote-requests'];
+const SMARTISP_AUDIT_SKIP_ACTIONS = ['login', 'logout', 'register', 'change-password', 'change_password', 'reset-password', 'request-password-reset', 'revoke-other-sessions', 'orders', 'customer-wishlist', 'service-quote-requests', 'product-review'];
 if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true) && $action !== '' && !in_array($action, SMARTISP_AUDIT_SKIP_ACTIONS, true)) {
     $auditQuery = $_GET;
     $auditBody = is_array($body) ? $body : [];
@@ -470,6 +470,9 @@ if (in_array($action, ['admin-photos', 'admin-photo-candidates', 'admin-photo-re
 }
 if (in_array($action, ['admin-prices', 'admin-price-import'], true)) {
     require __DIR__ . '/handlers/prices.php';
+}
+if (in_array($action, ['product-reviews', 'product-review', 'admin-reviews', 'admin-review-update'], true)) {
+    require __DIR__ . '/handlers/reviews.php';
 }
 
 // 'categories' y 'categories-reset' vivian tambien aca arriba, duplicados y desactualizados

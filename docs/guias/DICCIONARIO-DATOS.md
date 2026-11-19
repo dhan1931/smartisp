@@ -225,6 +225,8 @@ external_url	text	Yes	NULL
 sku	text	Yes	NULL	
 subcategory	text	Yes	NULL	
 cost	decimal(10,2)	Yes	NULL	Costo de compra, solo panel (migración 041)
+rating_avg	decimal(3,2)	No	0	Promedio de reseñas publicadas (migración 050)
+rating_count	int(10) unsigned	No	0	Cantidad de reseñas publicadas (migración 050)
 Indexes
 Keyname	Type	Unique	Packed	Column	Cardinality	Collation	Null	Comment
 PRIMARY	BTREE	Yes	No	id	2657	A	No	
@@ -258,6 +260,28 @@ Keyname	Type	Unique	Packed	Column	Cardinality	Collation	Null	Comment
 PRIMARY	BTREE	Yes	No	id	0	A	No	
 idx_product_images_product_order	BTREE	No	No	product_id	0	A	No	
 sort_order	0	A	No
+product_reviews
+Column	Type	Null	Default	Comments
+id (Primary)	int(10) unsigned	No		
+product_id	varchar(191)	No		
+user_id	varchar(191)	No		Cliente que la escribió (una por cliente y producto)
+author_name	varchar(120)	No	''	Nombre e inicial del apellido que se publica
+rating	tinyint(3) unsigned	No		1 a 5 estrellas
+title	varchar(120)	No	''	
+body	text	No		
+verified	tinyint(1)	No	0	El cliente tiene un pedido pagado o entregado con el producto
+status	varchar(20)	No	pending	pending, published o hidden
+reply	text	Yes	NULL	Respuesta pública de la tienda
+replied_at	timestamp	Yes	NULL	
+created_at	timestamp	Yes	current_timestamp()	
+updated_at	timestamp	Yes	current_timestamp()	
+Indexes
+Keyname	Type	Unique	Packed	Column	Cardinality	Collation	Null	Comment
+PRIMARY	BTREE	Yes	No	id	0	A	No	
+uq_product_reviews_user	BTREE	Yes	No	product_id	0	A	No	
+user_id	0	A	No
+idx_product_reviews_product	BTREE	No	No	product_id	0	A	No	
+idx_product_reviews_status	BTREE	No	No	status	0	A	No	
 product_inventory
 Column	Type	Null	Default	Comments
 product_id (Primary)	varchar(191)	No		

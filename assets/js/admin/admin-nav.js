@@ -26,6 +26,7 @@
     { key: 'clientes', group: 'operacion', href: '/clientes.html', label: 'Clientes', icon: 'users', hint: 'Cuentas y compradores', shortcut: 'c' },
     { key: 'productos', group: 'catalogo', href: '/editor-catalogo.html', label: 'Productos', icon: 'package', hint: 'Catálogo, precios e importación', shortcut: 'r' },
     { key: 'precios', group: 'catalogo', href: '/precios.html', label: 'Precios', icon: 'circle-dollar-sign', hint: 'Sin precio, costos y listas de proveedores' },
+    { key: 'resenas', group: 'catalogo', href: '/resenas.html', label: 'Reseñas', icon: 'star', hint: 'Opiniones de clientes por revisar', badge: 'reviews' },
     { key: 'fotos', group: 'catalogo', href: '/fotos.html', label: 'Fotos', icon: 'images', hint: 'Fotos rotas, faltantes y copias propias' },
     { key: 'categorias', group: 'catalogo', href: '/categorias.html', label: 'Categorías', icon: 'folder-tree', hint: 'Familias y categorías' },
     { key: 'inventario', group: 'catalogo', href: '/inventario.html', label: 'Inventario', icon: 'boxes', hint: 'Stock y reservas', shortcut: 'n', badge: 'stock' },
@@ -149,7 +150,8 @@
     if (a.out_of_stock) items.push({ tone: 'bad', icon: 'package-x', href: '/inventario.html?filter=out', title: plural(a.out_of_stock, 'producto agotado', 'productos agotados'), text: 'Visibles en la tienda sin unidades libres.' });
     if (a.low_stock) items.push({ tone: 'warn', icon: 'triangle-alert', href: '/inventario.html?filter=low', title: plural(a.low_stock, 'producto con stock bajo', 'productos con stock bajo'), text: 'Conviene reponer pronto.' });
     if (a.products_suspicious_price) items.push({ tone: 'bad', icon: 'badge-alert', href: '/editor-catalogo.html?price=suspicious', title: plural(a.products_suspicious_price, 'producto con precio sospechoso', 'productos con precio sospechoso'), text: 'Por debajo del costo o muy baratos para su categoría.' });
-    if (a.products_no_price) items.push({ tone: 'warn', icon: 'circle-dollar-sign', href: '/editor-catalogo.html?price=quote', title: plural(a.products_no_price, 'producto visible sin precio', 'productos visibles sin precio'), text: 'Se muestran como “consultar precio”.' });
+    if (a.reviews_pending) items.push({ tone: 'warn', icon: 'star', href: '/resenas.html', title: plural(a.reviews_pending, 'reseña por revisar', 'reseñas por revisar'), text: 'No se publican hasta que las apruebes.' });
+    if (a.products_no_price) items.push({ tone: 'warn', icon: 'circle-dollar-sign', href: '/precios.html', title: plural(a.products_no_price, 'producto visible sin precio', 'productos visibles sin precio'), text: 'Se muestran como “consultar precio”.' });
     if (a.admin_login_alerts) items.push({ tone: 'bad', icon: 'shield-alert', href: '/actividad.html?act=login-*', title: plural(a.admin_login_alerts, 'alerta de acceso al panel', 'alertas de acceso al panel') + ' en 24 h', text: 'Varios intentos fallidos seguidos en una cuenta admin.' });
     else if (a.admin_login_failures >= 3) items.push({ tone: 'warn', icon: 'shield-alert', href: '/actividad.html?act=login-failed', title: plural(a.admin_login_failures, 'intento fallido', 'intentos fallidos') + ' de acceso al panel en 24 h', text: 'Revisa el registro de actividad.' });
     if (a.products_no_photo) items.push({ tone: 'info', icon: 'image-off', href: '/editor-catalogo.html?photo=without_photo', title: plural(a.products_no_photo, 'producto visible sin foto', 'productos visibles sin foto'), text: 'Una foto mejora la conversión.' });
@@ -158,7 +160,7 @@
 
   function paintAlerts(root, a) {
     alertsState = a;
-    var counts = { orders: (a.orders_pending || 0) + (a.orders_quote_requested || 0), quotes: a.service_quotes_new || 0, stock: a.out_of_stock || 0 };
+    var counts = { orders: (a.orders_pending || 0) + (a.orders_quote_requested || 0), quotes: a.service_quotes_new || 0, stock: a.out_of_stock || 0, reviews: a.reviews_pending || 0 };
     root.querySelectorAll('[data-badge]').forEach(function (el) {
       var n = counts[el.getAttribute('data-badge')] || 0;
       el.hidden = !n;
