@@ -314,6 +314,14 @@ try {
     assert.equal(await mobile.page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 0, `${screen} sin scroll horizontal en móvil`);
   }
   await mobile.context.close();
+  const phone = await session({ viewport: { width: 320, height: 640 }, isMobile: true, hasTouch: true });
+  for (const [path, strip] of [['/tienda.html', '.public-nav-strip'], ['/servicios.html', '.storefront-nav-strip']]) {
+    await open(phone.page, path);
+    const tabs = await phone.page.$$eval(`${strip} a`, links => links.map(a => { const r = a.getBoundingClientRect(); return [a.textContent.trim(), r.left >= 0 && r.right <= innerWidth && a.scrollWidth <= a.clientWidth]; }));
+    assert.deepEqual(tabs.map(t => t[0]), ['Tienda', 'Categorías', 'Nosotros', 'Servicios', 'Productos'], path);
+    assert.ok(tabs.every(t => t[1]), `${path}: las cinco pestañas caben en un celular de 320 px sin desplazar: ${JSON.stringify(tabs)}`);
+  }
+  await phone.context.close();
 
   assert.deepEqual(problems, [], `errores en el navegador:\n${problems.join('\n')}`);
   console.log('E2E-OK');
