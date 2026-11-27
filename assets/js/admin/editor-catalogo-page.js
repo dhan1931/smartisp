@@ -1327,6 +1327,7 @@
       document.getElementById('prodPriceInput').value = '';
       document.getElementById('prodPriceInput').required = true;
       document.getElementById('prodCostInput').value = '';
+      document.getElementById('prodSupplierInput').value = '';
       updateMarginHint();
       if (chkQuotePriceEl) chkQuotePriceEl.checked = false;
       let ivaPref = '1';
@@ -1381,6 +1382,7 @@
       }
 
       document.getElementById('prodCostInput').value = p.cost ?? '';
+      document.getElementById('prodSupplierInput').value = p.supplier ?? '';
       syncPriceFromCostButton();
       updateMarginHint();
       // Lo guardado ya es el precio final: editarlo con la casilla desmarcada sumaría el IVA dos veces.
@@ -1550,6 +1552,7 @@
         fd.append('content_text', document.getElementById('prodContentInput').value.trim());
         fd.append('warranty_text', document.getElementById('prodWarrantyInput').value.trim());
         fd.append('cost', document.getElementById('prodCostInput').value.trim());
+        fd.append('supplier', document.getElementById('prodSupplierInput').value.trim());
 
         await api('admin-products', {
           method: 'POST',
@@ -1839,7 +1842,7 @@
     };
 
     const detectColumnsMapping = (headers, sampleRows) => {
-      const mapping = { name: null, price: null, cost: null, category: null, sku: null, imageUrl: null, description: null };
+      const mapping = { name: null, price: null, cost: null, category: null, sku: null, imageUrl: null, description: null, supplier: null };
       const normHeaders = headers.map(h => normalizeText(h));
 
       const findMatch = regexList => {
@@ -1857,6 +1860,7 @@
       mapping.imageUrl = findMatch([/^foto/, /^imagen/, /^image/, /^picture/, /^urlfoto/, /^urlimagen/]);
       mapping.description = findMatch([/^descripcion/, /^description/, /^detalle/, /^especificaciones/]);
       mapping.cost = findMatch([/^costo/, /^cost$/, /^cost /, /^precio( de)? compra/, /^preciocompra/]);
+      mapping.supplier = findMatch([/^proveedor/, /^supplier/]);
 
       if (mapping.name === null) {
         if (mapping.description !== null) {
@@ -1909,6 +1913,7 @@
         const description = fileState.mapping.description !== null ? String(row[fileState.mapping.description] || '').trim() : '';
         const rawCost = fileState.mapping.cost != null ? String(row[fileState.mapping.cost] ?? '').trim() : '';
         const cost = rawCost !== '' ? parseImportNumber(rawCost) : NaN;
+        const supplier = fileState.mapping.supplier != null ? String(row[fileState.mapping.supplier] ?? '').trim() : '';
 
         // Análisis de Afinidad en tiempo real
         const affinity = matchCategoryAffinity(rawCategory, name, categoriesList);
@@ -1927,9 +1932,13 @@
           priceProvided,
           cost: Number.isFinite(cost) && cost >= 0 ? round2(cost) : (basePrice > 0 ? round2(basePrice) : null),
           visible: true,
+          supplier,
           fileName: fileState.fileName
         });
       }
+      // Sin columna «proveedor», el formato de los códigos dice si la lista es de Intcomex o de Siglo21.
+      const guessedSupplier = window.SmartPricing.guessSupplier(products.map(p => p.sku));
+      if (guessedSupplier) products.forEach(p => { if (!p.supplier) p.supplier = guessedSupplier; });
 
       fileState.parsedProducts = products;
     };
@@ -2206,7 +2215,8 @@
           imageUrl: String(p.imageUrl || p.image_url || '').trim(),
           externalUrl: String(p.externalUrl || p.external_url || '').trim(),
           sku: String(p.sku || '').trim(),
-          cost: p.cost ?? undefined
+          cost: p.cost ?? undefined,
+          supplier: p.supplier || undefined
         }));
 
         let batchSuccess = false;

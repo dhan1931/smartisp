@@ -228,7 +228,7 @@ try {
   const priceFile = await priceDownload;
   assert.equal(priceFile.suggestedFilename(), 'precios-sin-precio.csv', 'exporta la lista de la pestaña a CSV');
   const priceCsv = fs.readFileSync(await priceFile.path(), 'utf8').trim().split(/\r?\n/);
-  assert.ok(priceCsv[0].endsWith('costo_nuevo;precio_nuevo'), 'el CSV trae las columnas para completar: ' + priceCsv[0]);
+  assert.ok(priceCsv[0].endsWith('costo_nuevo;precio_nuevo;proveedor'), 'el CSV trae las columnas para completar y el proveedor: ' + priceCsv[0]);
   assert.deepEqual(priceCsv.slice(1).map(l => l.split(';')[2]), ['Precio E2E Alfa'], 'y lo que se ve con la búsqueda');
   await page.setInputFiles('#importFile', { name: 'intcomex.csv', mimeType: 'text/csv', buffer: Buffer.from('Lista de Precios;;;;;;\nCategoría;Nombre;Marca;Precio;Disponibilidad;No. de Parte;SKU\nPuntos de Acceso;Ubiquiti Alfa;Ubiquiti;116;3;U7-Lite;E2E-PRA\nPuntos de Acceso;Otro;Ubiquiti;188;0;U7-LR;NO-EXISTE-E2E\n') });
   await page.waitForSelector('#importBox:not([hidden]) table');
@@ -236,11 +236,19 @@ try {
   assert.ok(priceImport.includes('Sin precio: se pone') && priceImport.includes('No está en la tienda') && priceImport.includes('166,75'), 'la vista previa de la lista de Intcomex: ' + priceImport.slice(0, 400));
   assert.ok(await page.isVisible('#genericAs'), 'pregunta si la columna «Precio» es costo o precio final');
   assert.equal((await page.textContent('#importApply')).trim(), 'Guardar 1 precio', 'solo ofrece guardar lo que está en la tienda');
+  await page.fill('#importSupplier', 'Intcomex');
   await shot(page, 'precios-importar');
   await page.click('#importApply');
   await page.waitForFunction(() => document.querySelector('#importBox')?.textContent.includes('Guardado'));
   const [[priceA]] = await db.query("SELECT price, cost FROM products_rows WHERE id = 'e2e-precio-a'");
   assert.deepEqual([Number(priceA.price), Number(priceA.cost)], [166.75, 116], 'la lista del proveedor pone precio = costo × 1,25 × 1,15');
+  const [[supplierA]] = await db.query("SELECT supplier FROM products_rows WHERE id = 'e2e-precio-a'");
+  assert.equal(supplierA.supplier, 'Intcomex', 'guarda el proveedor escrito en la importación');
+  const bySupplier = page.waitForResponse(res => res.url().includes('action=admin-prices') && res.url().includes('supplier=Intcomex'));
+  await open(page, '/precios.html?status=sin-costo&supplier=Intcomex');
+  await bySupplier;
+  await page.waitForSelector('#supplier:not([hidden])');
+  assert.equal(await page.inputValue('#supplier'), 'Intcomex', 'abre la lista filtrada por proveedor desde la dirección');
 
   await open(page, '/fotos.html?status=sin-foto');
   await page.fill('#search', 'Foto E2E');
