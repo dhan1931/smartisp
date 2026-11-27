@@ -1096,7 +1096,10 @@
 			if (!sidebar || !backdrop) return;
 			if (!expandedGroups.size) {
 				const firstGroup = buildCategoryTree().groups[0];
-				if (firstGroup) expandedGroups.add(firstGroup.id);
+				if (firstGroup) {
+					expandedGroups.add(firstGroup.id);
+					sidebar.querySelector(`.sidebar-group[data-macro-id="${CSS.escape(firstGroup.id)}"]`)?.classList.add('is-expanded');
+				}
 			}
 			sidebar.classList.add('is-mobile-open');
 			sidebar.removeAttribute('inert');
@@ -1163,6 +1166,13 @@
 				document.querySelector('#publicMenuBtn')?.focus({ preventScroll: true });
 			}
 		});
+		// En el celular el panel se cierra y los productos quedan dos pantallas más abajo, tras el banner.
+		const revealCatalog = () => {
+			const catEl = document.querySelector('#catalogo');
+			if (!catEl || document.body.classList.contains('category-drawer-open')) return;
+			const top = catEl.getBoundingClientRect().top;
+			if (top > window.innerHeight * .6 || top < -120) catEl.scrollIntoView({ behavior: 'smooth' });
+		};
 		document.addEventListener('click', event => {
 			// 1. Quitar filtro / Ver todas las categorías
 			if (event.target.closest('#clearCategoryFilter') || event.target.closest('#removeCategoryPill')) {
@@ -1178,10 +1188,7 @@
 				event.preventDefault();
 				setCategoryFilter('all');
 				closeCategoryDrawer();
-				const catEl = document.querySelector('#catalogo');
-				if (catEl && window.scrollY > catEl.offsetTop + 120) {
-					catEl.scrollIntoView({ behavior: 'smooth' });
-				}
+				revealCatalog();
 				return;
 			}
 
@@ -1221,10 +1228,7 @@
 				const category = subBtn.dataset.category;
 				setCategoryFilter({ type: 'category', macroId, category });
 				closeCategoryDrawer();
-				const catEl = document.querySelector('#catalogo');
-				if (catEl && window.scrollY > catEl.offsetTop + 120) {
-					catEl.scrollIntoView({ behavior: 'smooth' });
-				}
+				revealCatalog();
 				return;
 			}
 
@@ -1246,10 +1250,7 @@
 					setCategoryFilter({ type: 'macro', id: macroId });
 					closeCategoryDrawer();
 				}
-				const catEl = document.querySelector('#catalogo');
-				if (catEl && window.scrollY > catEl.offsetTop + 120) {
-					catEl.scrollIntoView({ behavior: 'smooth' });
-				}
+				revealCatalog();
 				return;
 			}
 
@@ -1258,10 +1259,7 @@
 			if (legacyFilter && (legacyFilter.closest('#catalogo') || legacyFilter.closest('.store-sidebar'))) {
 				event.preventDefault();
 				setCategoryFilter(legacyFilter.dataset.filter);
-				const catEl = document.querySelector('#catalogo');
-				if (catEl && window.scrollY > catEl.offsetTop + 120) {
-					catEl.scrollIntoView({ behavior: 'smooth' });
-				}
+				revealCatalog();
 				return;
 			}
 		});
