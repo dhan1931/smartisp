@@ -329,6 +329,16 @@ try {
     assert.deepEqual(tabs.map(t => t[0]), ['Tienda', 'Categorías', 'Nosotros', 'Servicios', 'Productos'], path);
     assert.ok(tabs.every(t => t[1]), `${path}: las cinco pestañas caben en un celular de 320 px sin desplazar: ${JSON.stringify(tabs)}`);
   }
+  // El espaciador hace de banner: en producción los productos quedan dos pantallas más abajo.
+  await open(phone.page, '/categorias-destacadas');
+  await phone.page.evaluate(() => document.querySelector('#catalogo').before(Object.assign(document.createElement('div'), { style: 'height:1500px' })));
+  await phone.page.click('#mNavCategories');
+  const firstSub = phone.page.locator('.store-sidebar .sidebar-group.is-expanded .sidebar-subcat-btn').first();
+  await firstSub.waitFor({ state: 'visible', timeout: 5000 }).catch(() => assert.fail('al abrir Categorías en el celular la primera familia sale desplegada'));
+  await firstSub.click();
+  await phone.page.waitForFunction(() => { const r = document.querySelector('#catalogo .product')?.getBoundingClientRect(); return r && r.top >= 0 && r.top < innerHeight; }, null, { timeout: 5000 })
+    .catch(() => assert.fail('al elegir una categoría en el celular los productos quedan a la vista'));
+  assert.equal(await phone.page.$$eval('#catalogo .add', buttons => buttons.filter(b => b.scrollWidth > b.clientWidth + 1).length), 0, 'el botón «Agregar» no se desborda en 320 px');
   await phone.context.close();
 
   assert.deepEqual(problems, [], `errores en el navegador:\n${problems.join('\n')}`);
